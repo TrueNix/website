@@ -39,6 +39,16 @@ function pageShell({title, canonical, description, body}){
   ${description ? `<meta name="description" content="${description.replaceAll('"','&quot;')}" />` : ''}
   <link rel="canonical" href="${canonical}" />
   <meta name="robots" content="index,follow" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
   <link rel="stylesheet" href="/assets/css/site.css" />
 </head>
 <body>
