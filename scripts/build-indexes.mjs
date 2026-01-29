@@ -1,0 +1,181 @@
+import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { join, posix } from 'node:path';
+import { execSync } from 'node:child_process';
+
+const BASE = 'https://al-ice.ai';
+const SITE_DIR = 'website';
+
+function getGitLastMod(filePath){
+  try{
+    const out = execSync(`git log -1 --format=%cI -- ${filePath}`, { stdio: ['ignore','pipe','ignore']}).toString().trim();
+    return out ? out.slice(0,10) : null;
+  } catch { return null; }
+}
+
+function meta(html, name){
+  const re = new RegExp(`<meta\\s+name=["']${name.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')}["']\\s+content=["']([^"']+)["']\\s*/?>`, 'i');
+  const m = html.match(re);
+  return m ? m[1].trim() : null;
+}
+
+async function walk(dir){
+  const out = [];
+  const items = await readdir(dir, { withFileTypes:true });
+  for (const it of items){
+    const p = join(dir, it.name);
+    if (it.isDirectory()) out.push(...await walk(p));
+    else out.push(p);
+  }
+  return out;
+}
+
+function pageShell({title, canonical, description, body}){
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${title}</title>
+  ${description ? `<meta name="description" content="${description.replaceAll('"','&quot;')}" />` : ''}
+  <link rel="canonical" href="${canonical}" />
+  <meta name="robots" content="index,follow" />
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+      </nav>
+    </header>
+    ${body}
+    <footer class="small muted">
+      <div>© ${new Date().getFullYear()} al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
+</body>
+</html>`;
+}
+
+async function main(){
+  const postRoot = join(SITE_DIR, 'posts');
+  const files = (await walk(postRoot)).filter(f => f.endsWith('index.html'));
+
+  const posts = [];
+  for (const file of files){
+    const html = await readFile(file, 'utf8');
+    const title = meta(html,'post:title');
+    const date = meta(html,'post:date');
+    const category = meta(html,'post:category') || 'workflows';
+    const categoryLabel = meta(html,'post:categoryLabel') || (category[0].toUpperCase()+category.slice(1));
+
+    if (!title || !date) continue;
+
+    // Convert file path to URL path: website/posts/.../index.html -> /posts/.../
+    const rel = file.replace(/^website\//,'').replace(/index\.html$/,'');
+    const urlPath = '/' + rel.replace(/\\/g,'/');
+
+    const lastmod = getGitLastMod(file) || date;
+
+    posts.push({ title, date, category, categoryLabel, urlPath, lastmod });
+  }
+
+  posts.sort((a,b) => (b.date).localeCompare(a.date));
+
+  // posts index
+  const postsItems = posts.map(p => `
+<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date} • <a href="/categories/${p.category}/">${p.categoryLabel}</a></span></li>`).join('');
+  const postsIndex = pageShell({
+    title: 'Posts — al-ice.ai',
+    canonical: `${BASE}/posts/`,
+    description: 'Guides, workflows, and tool comparisons for practical AI automation.',
+    body: `<main>
+<h1>Posts</h1>
+<p class="muted">Practical AI workflows and automation guides.</p>
+<div class="card"><ul>${postsItems || '<li class="muted">No posts yet.</li>'}</ul></div>
+</main>`
+  });
+  await mkdir(join(SITE_DIR,'posts'), { recursive:true });
+  await writeFile(join(SITE_DIR,'posts','index.html'), postsIndex);
+
+  // categories
+  const byCat = new Map();
+  for (const p of posts){
+    if (!byCat.has(p.category)) byCat.set(p.category, { label: p.categoryLabel, posts: [] });
+    byCat.get(p.category).posts.push(p);
+  }
+
+  // categories index
+  const catList = [...byCat.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([slug,v]) => `
+<li><a href="/categories/${slug}/">${v.label}</a> <span class="muted">(${v.posts.length})</span></li>`).join('');
+  const categoriesIndex = pageShell({
+    title: 'Categories — al-ice.ai',
+    canonical: `${BASE}/categories/`,
+    description: 'Browse workflows and guides by category.',
+    body: `<main>
+<h1>Categories</h1>
+<div class="card"><ul>${catList || '<li class="muted">No categories yet.</li>'}</ul></div>
+</main>`
+  });
+  await mkdir(join(SITE_DIR,'categories'), { recursive:true });
+  await writeFile(join(SITE_DIR,'categories','index.html'), categoriesIndex);
+
+  // category pages
+  for (const [slug, v] of byCat.entries()){
+    const items = v.posts.map(p => `
+<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date}</span></li>`).join('');
+    const html = pageShell({
+      title: `${v.label} — al-ice.ai`,
+      canonical: `${BASE}/categories/${slug}/`,
+      description: `AI workflows and guides for ${v.label}.`,
+      body: `<main>
+<h1>${v.label}</h1>
+<div class="card"><ul>${items}</ul></div>
+</main>`
+    });
+    await mkdir(join(SITE_DIR,'categories',slug), { recursive:true });
+    await writeFile(join(SITE_DIR,'categories',slug,'index.html'), html);
+  }
+
+  // workflows hub (alias category 'workflows' + links)
+  const workflows = byCat.get('workflows')?.posts ?? [];
+  const wfItems = workflows.map(p => `
+<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date}</span></li>`).join('');
+  const wfHub = pageShell({
+    title: 'Workflows — al-ice.ai',
+    canonical: `${BASE}/workflows/`,
+    description: 'Step-by-step AI automation workflows you can copy and adapt.',
+    body: `<main>
+<h1>Workflows</h1>
+<p class="muted">Step-by-step setups: what to do, what tools to use, and how to validate it works.</p>
+<div class="card"><ul>${wfItems || '<li class="muted">No workflows yet.</li>'}</ul></div>
+</main>`
+  });
+  await mkdir(join(SITE_DIR,'workflows'), { recursive:true });
+  await writeFile(join(SITE_DIR,'workflows','index.html'), wfHub);
+
+  // sitemap
+  const urls = new Map();
+  function add(path, lastmod){ urls.set(`${BASE}${path}`, lastmod || null); }
+  add('/', getGitLastMod(join(SITE_DIR,'index.html')));
+  add('/posts/', getGitLastMod(join(SITE_DIR,'posts','index.html')));
+  add('/categories/', getGitLastMod(join(SITE_DIR,'categories','index.html')));
+  add('/workflows/', getGitLastMod(join(SITE_DIR,'workflows','index.html')));
+  for (const [slug] of byCat.entries()) add(`/categories/${slug}/`, getGitLastMod(join(SITE_DIR,'categories',slug,'index.html')));
+  for (const p of posts) add(p.urlPath, p.lastmod);
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    [...urls.entries()].map(([loc,lastmod]) =>
+      `  <url>\n    <loc>${loc}</loc>\n${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ''}  </url>`
+    ).join('\n') +
+    `\n</urlset>\n`;
+  await writeFile(join(SITE_DIR,'sitemap.xml'), sitemap);
+
+  console.log(`Built indexes: ${posts.length} posts, ${byCat.size} categories`);
+}
+
+await main();
