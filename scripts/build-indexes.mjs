@@ -59,6 +59,7 @@ function pageShell({title, canonical, description, body}){
         <a href="/workflows/">Workflows</a>
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
       </nav>
     </header>
     ${body}
@@ -168,6 +169,23 @@ async function main(){
   await mkdir(join(SITE_DIR,'workflows'), { recursive:true });
   await writeFile(join(SITE_DIR,'workflows','index.html'), wfHub);
 
+  // news hub (alias category 'news')
+  const news = byCat.get('news')?.posts ?? [];
+  const newsItems = news.map(p => `
+<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date}</span></li>`).join('');
+  const newsHub = pageShell({
+    title: 'News — al-ice.ai',
+    canonical: `${BASE}/news/`,
+    description: 'Short, original summaries of AI automation and AI security news, with links to primary sources.',
+    body: `<main>
+<h1>News</h1>
+<p class="muted">Original summaries + links to sources. No copy/paste.</p>
+<div class="card"><ul>${newsItems || '<li class="muted">No news posts yet.</li>'}</ul></div>
+</main>`
+  });
+  await mkdir(join(SITE_DIR,'news'), { recursive:true });
+  await writeFile(join(SITE_DIR,'news','index.html'), newsHub);
+
   // sitemap
   const urls = new Map();
   function add(path, lastmod){ urls.set(`${BASE}${path}`, lastmod || null); }
@@ -175,6 +193,7 @@ async function main(){
   add('/posts/', getGitLastMod(join(SITE_DIR,'posts','index.html')));
   add('/categories/', getGitLastMod(join(SITE_DIR,'categories','index.html')));
   add('/workflows/', getGitLastMod(join(SITE_DIR,'workflows','index.html')));
+  add('/news/', getGitLastMod(join(SITE_DIR,'news','index.html')));
   for (const [slug] of byCat.entries()) add(`/categories/${slug}/`, getGitLastMod(join(SITE_DIR,'categories',slug,'index.html')));
   for (const p of posts) add(p.urlPath, p.lastmod);
 
