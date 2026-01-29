@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Anthropic mcp-server-git: prompt injection bugs in official MCP Git server (CVE-2025-68143/4/5)" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="news" />
+  <meta name="post:categoryLabel" content="News" />
+
+  <title>Anthropic mcp-server-git: prompt injection bugs in official MCP Git server (CVE-2025-68143/4/5) — al-ice.ai</title>
+  <meta name="description" content="Researchers reported three vulnerabilities in Anthropic’s official MCP Git server (mcp-server-git) exploitable via prompt injection; what they enable, why it matters, and how to mitigate." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/anthropic-mcp-git-prompt-injection/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Anthropic mcp-server-git: prompt injection bugs in official MCP Git server (CVE-2025-68143/4/5)" />
+  <meta property="og:description" content="Researchers reported three vulnerabilities in Anthropic’s official MCP Git server (mcp-server-git) exploitable via prompt injection; what they enable, why it matters, and how to mitigate." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/anthropic-mcp-git-prompt-injection/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
+        <a href="/services/">Services</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Anthropic mcp-server-git: prompt injection bugs in official MCP Git server (CVE-2025-68143/4/5)</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/news/">News</a></p>
+
+        <ul>
+          <li><strong>What happened:</strong> Researchers disclosed three vulnerabilities in Anthropic’s official MCP Git server (<code>mcp-server-git</code>), exploitable via prompt injection (indirectly, by influencing content the assistant reads).</li>
+          <li><strong>Attack model:</strong> The attacker doesn’t need credentials; they need the assistant to ingest attacker-controlled text (e.g., a malicious README, a poisoned issue, or a compromised web page) and then take tool actions through MCP.</li>
+          <li><strong>Impact described:</strong> path/argument validation failures can let an attacker push the Git server to operate outside its intended repo boundary.</li>
+          <li><strong>Reported outcomes:</strong> arbitrary file deletion, loading arbitrary files into model context, and (in certain combinations) code execution when paired with filesystem/write capabilities.</li>
+          <li><strong>CVEs:</strong> CVE-2025-68143, CVE-2025-68144, CVE-2025-68145 (per the reporting).</li>
+          <li><strong>Status:</strong> Fixes were released in December 2025; update if you run older builds.</li>
+          <li><strong>Pattern:</strong> “safe tool” assumptions break when tools compose—Git + filesystem access can quickly become “read/write anywhere,” especially under prompt injection pressure.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>MCP turns text into actions:</strong> prompt injection isn’t just “the model said something weird” — it’s an avenue to trigger real tool calls.</li>
+          <li><strong>Reference implementations become defaults:</strong> many teams adopt the “official” server as-is; issues here propagate widely.</li>
+          <li><strong>Composability is the risk multiplier:</strong> a Git connector that can wander directories becomes much more dangerous when any other connector can write files or execute commands.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Update:</strong> ensure <code>mcp-server-git</code> is at a fixed release (and pin versions in lockfiles).</li>
+          <li><strong>Minimize tool scope:</strong> run MCP servers with least-privilege filesystem access (dedicated working directory; no home dir mounts; no secrets in readable paths).</li>
+          <li><strong>Prevent dangerous tool composition:</strong> avoid enabling “Git” + “filesystem write” together unless you have strong policy enforcement and audit logs.</li>
+          <li><strong>Harden prompts & policies:</strong> implement explicit allowlists for tool actions; require user confirmation for destructive operations (delete/overwrite) and for reading sensitive paths.</li>
+          <li><strong>Log tool calls:</strong> record every tool invocation with inputs/outputs; alert on attempts to access paths outside allowed roots.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/categories/ai-cves/">AI CVEs</a> • <a href="/posts/2026/01/ai-related-cves-tracker/">AI-related CVEs tracker</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Infosecurity Magazine: <a href="https://www.infosecurity-magazine.com/news/prompt-injection-bugs-anthropic/">Prompt Injection Bugs Found in Official Anthropic Git MCP Server</a></li>
+          <li>Cyata research: <a href="https://cyata.ai/blog/cyata-research-breaking-anthropics-official-mcp-server/">Breaking Anthropic’s official MCP server (Cyata)</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/news/">← News</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>
