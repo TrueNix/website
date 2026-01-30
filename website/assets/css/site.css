@@ -298,6 +298,84 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--border)}
   opacity:.55;
 }
 
+/* ----- connect/disconnect vibes (like plugging a console) ----- */
+.theme-toggle .theme-screen .theme-ico{transform:translateZ(0)}
+
+/* static/noise overlay */
+.theme-toggle .theme-screen .crt-noise{
+  position:absolute;
+  inset:0;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.12) 0px, rgba(255,255,255,.12) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 5px),
+    radial-gradient(circle at 40% 30%, rgba(255,255,255,.20), rgba(255,255,255,0) 55%),
+    radial-gradient(circle at 65% 60%, rgba(255,255,255,.14), rgba(255,255,255,0) 60%);
+  opacity:0;
+  pointer-events:none;
+  mix-blend-mode: screen;
+}
+
+/* "power line" collapse */
+.theme-toggle .theme-screen .crt-line{
+  position:absolute;
+  left:0;
+  right:0;
+  top:50%;
+  height:2px;
+  background:rgba(255,255,255,.9);
+  opacity:0;
+  transform:scaleX(.2);
+  filter: blur(.3px);
+  pointer-events:none;
+}
+
+@keyframes crtConnectNoise{
+  0%{opacity:0; transform:translateY(0)}
+  10%{opacity:.85; transform:translateY(-2px)}
+  35%{opacity:.55; transform:translateY(1px)}
+  60%{opacity:.25; transform:translateY(-1px)}
+  100%{opacity:0; transform:translateY(0)}
+}
+
+@keyframes crtConnectBloom{
+  0%{filter:brightness(.85) contrast(1.05) saturate(1.1)}
+  20%{filter:brightness(1.35) contrast(1.2) saturate(1.25)}
+  55%{filter:brightness(1.05) contrast(1.1) saturate(1.2)}
+  100%{filter:brightness(1) contrast(1.06) saturate(1.15)}
+}
+
+@keyframes crtDisconnectLine{
+  0%{opacity:0; transform:scaleX(.2)}
+  25%{opacity:1; transform:scaleX(1)}
+  55%{opacity:1; transform:scaleX(1)}
+  100%{opacity:0; transform:scaleX(.05)}
+}
+
+@keyframes crtDisconnectDim{
+  0%{filter:brightness(1.1) contrast(1.1)}
+  30%{filter:brightness(.75) contrast(1.2)}
+  100%{filter:brightness(.92) contrast(1.05)}
+}
+
+/* Triggered by JS on click */
+.theme-toggle.anim-connect .theme-screen{
+  animation: crtConnectBloom 700ms ease-out;
+}
+.theme-toggle.anim-connect .theme-screen::after{
+  opacity:.65;
+}
+.theme-toggle.anim-connect .theme-screen .crt-noise{
+  opacity:1;
+  animation: crtConnectNoise 700ms steps(6,end);
+}
+
+.theme-toggle.anim-disconnect .theme-screen{
+  animation: crtDisconnectDim 700ms ease-out;
+}
+.theme-toggle.anim-disconnect .theme-screen .crt-line{
+  opacity:1;
+  animation: crtDisconnectLine 700ms ease-in-out;
+}
+
 /* glass glare */
 .theme-toggle .theme-screen::before{
   content:"";

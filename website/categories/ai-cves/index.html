@@ -70,22 +70,34 @@
       function render(){
         if(isRetro()){
           btn.classList.add('is-retro');
-          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '</span><span class="theme-label">Modern</span>';
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
           btn.setAttribute('title','Switch to modern');
           btn.setAttribute('aria-label','Switch to modern');
         }else{
           btn.classList.remove('is-retro');
-          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '</span><span class="theme-label">CRT</span>';
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
           btn.setAttribute('title','Toggle CRT (80/90s) vibe');
           btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
         }
       }
 
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
       function setRetro(on){
         if(on){
+          pulse('anim-connect');
           document.documentElement.setAttribute('data-theme','retro');
           try{ localStorage.setItem('theme','retro'); }catch(e){}
         }else{
+          pulse('anim-disconnect');
           document.documentElement.removeAttribute('data-theme');
           try{ localStorage.removeItem('theme'); }catch(e){}
         }
