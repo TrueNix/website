@@ -330,14 +330,17 @@ ${latestGrid}
 
     // Ensure the init script matches the current logic (overwrite older variants)
     if (html.includes('/assets/css/site.css')){
-      // remove any previous injected theme init blocks
-      html = html.replace(/\s*<script>\s*\(function\(\)\{[\s\S]*?localStorage\.getItem\('theme'\)[\s\S]*?\}\)\(\);\s*<\/script>\s*/g, '\n');
-      html = html.replace(/\s*<script>\(function\(\)\{try\{var t=localStorage\.getItem\('theme'\)[\s\S]*?<\/script>\s*/g, '\n');
+      // Remove any previous theme init scripts (they live in <head> and mention localStorage.getItem('theme') + data-theme)
+      html = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, body) => {
+        const b = String(body || '');
+        const readsTheme = b.includes("localStorage.getItem('theme')") || b.includes('localStorage.getItem("theme")');
+        const touchesRootTheme = b.includes("document.documentElement.setAttribute('data-theme'") || b.includes("document.documentElement.removeAttribute('data-theme'");
+        if (readsTheme && touchesRootTheme) return '';
+        return m;
+      });
 
-      // insert current init script right after the stylesheet link
-      if (!html.includes('if(t==="retro")')){
-        html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
-      }
+      // Insert the current init script right after the stylesheet link (always)
+      html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
     }
 
     // Ensure the toggle button exists and matches our current markup
@@ -427,6 +430,7 @@ ${latestGrid}
   });
   await mkdir(join(SITE_DIR,'categories'), { recursive:true });
   await writeFile(join(SITE_DIR,'categories','index.html'), categoriesIndex);
+  await ensureThemeOnHtmlFile(join(SITE_DIR,'categories','index.html'));
 
   // category pages
   for (const [slug, v] of byCat.entries()){
@@ -442,7 +446,9 @@ ${latestGrid}
 </main>`
     });
     await mkdir(join(SITE_DIR,'categories',slug), { recursive:true });
-    await writeFile(join(SITE_DIR,'categories',slug,'index.html'), html);
+    const out = join(SITE_DIR,'categories',slug,'index.html');
+    await writeFile(out, html);
+    await ensureThemeOnHtmlFile(out);
   }
 
   // search index (client-side)
