@@ -1,5 +1,5 @@
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
-import { join, posix } from 'node:path';
+import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
 const BASE = 'https://al-ice.ai';
@@ -56,7 +56,6 @@ function pageShell({title, canonical, description, body}){
     <header class="site">
       <div class="brand"><a href="/">al-ice.ai</a></div>
       <nav class="small">
-        <a href="/workflows/">Workflows</a>
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
@@ -81,7 +80,7 @@ async function main(){
     const html = await readFile(file, 'utf8');
     const title = meta(html,'post:title');
     const date = meta(html,'post:date');
-    const category = meta(html,'post:category') || 'workflows';
+    const category = meta(html,'post:category') || 'security';
     const categoryLabel = meta(html,'post:categoryLabel') || (category[0].toUpperCase()+category.slice(1));
 
     if (!title || !date) continue;
@@ -165,10 +164,10 @@ async function main(){
     return pageShell({
       title: pageNum > 1 ? `Posts (Page ${pageNum}) — al-ice.ai` : 'Posts — al-ice.ai',
       canonical: `${BASE}${pageUrl(pageNum)}`,
-      description: 'Guides, workflows, and tool comparisons for practical AI automation.',
+      description: 'High-signal AI/security/automation notes and links.',
       body: `<main>
 <h1>Posts</h1>
-<p class="muted">Practical AI workflows and automation guides.</p>
+<p class="muted">High-signal AI/security/automation notes.</p>
 ${filterPills}
 ${grid}
 ${renderPagination(pageNum)}
@@ -191,7 +190,7 @@ ${renderPagination(pageNum)}
   const categoriesIndex = pageShell({
     title: 'Categories — al-ice.ai',
     canonical: `${BASE}/categories/`,
-    description: 'Browse workflows and guides by category.',
+    description: 'Browse posts by category.',
     body: `<main>
 <h1>Categories</h1>
 <div class="card"><ul>${catList || '<li class="muted">No categories yet.</li>'}</ul></div>
@@ -207,7 +206,7 @@ ${renderPagination(pageNum)}
     const html = pageShell({
       title: `${v.label} — al-ice.ai`,
       canonical: `${BASE}/categories/${slug}/`,
-      description: `AI workflows and guides for ${v.label}.`,
+      description: `Posts tagged ${v.label}.`,
       body: `<main>
 <h1>${v.label}</h1>
 <div class="card"><ul>${items}</ul></div>
@@ -216,23 +215,6 @@ ${renderPagination(pageNum)}
     await mkdir(join(SITE_DIR,'categories',slug), { recursive:true });
     await writeFile(join(SITE_DIR,'categories',slug,'index.html'), html);
   }
-
-  // workflows hub (alias category 'workflows' + links)
-  const workflows = byCat.get('workflows')?.posts ?? [];
-  const wfItems = workflows.map(p => `
-<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date}</span></li>`).join('');
-  const wfHub = pageShell({
-    title: 'Workflows — al-ice.ai',
-    canonical: `${BASE}/workflows/`,
-    description: 'Step-by-step AI automation workflows you can copy and adapt.',
-    body: `<main>
-<h1>Workflows</h1>
-<p class="muted">Step-by-step setups: what to do, what tools to use, and how to validate it works.</p>
-<div class="card"><ul>${wfItems || '<li class="muted">No workflows yet.</li>'}</ul></div>
-</main>`
-  });
-  await mkdir(join(SITE_DIR,'workflows'), { recursive:true });
-  await writeFile(join(SITE_DIR,'workflows','index.html'), wfHub);
 
   // search index (client-side)
   const searchIndex = posts.map(p => ({
@@ -257,7 +239,6 @@ ${renderPagination(pageNum)}
     }
   }
   add('/categories/', getGitLastMod(join(SITE_DIR,'categories','index.html')));
-  add('/workflows/', getGitLastMod(join(SITE_DIR,'workflows','index.html')));
   for (const [slug] of byCat.entries()) add(`/categories/${slug}/`, getGitLastMod(join(SITE_DIR,'categories',slug,'index.html')));
   for (const p of posts) add(p.urlPath, p.lastmod);
 

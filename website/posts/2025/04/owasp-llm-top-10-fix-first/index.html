@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="OWASP — Top 10 for LLM Apps: what to fix first" />
+  <meta name="post:date" content="2025-04-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>OWASP — Top 10 for LLM Apps: what to fix first — al-ice.ai</title>
+  <meta name="description" content="A practical prioritization of the OWASP Top 10 for LLM Applications: where teams should start, and the most common implementation traps." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2025/04/owasp-llm-top-10-fix-first/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="OWASP — Top 10 for LLM Apps: what to fix first" />
+  <meta property="og:description" content="A practical prioritization of the OWASP Top 10 for LLM Applications: where teams should start, and the most common implementation traps." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2025/04/owasp-llm-top-10-fix-first/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>OWASP — Top 10 for LLM Apps: what to fix first</h1>
+        <p class="muted small"><time datetime="2025-04-18">2025-04-18</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li>The OWASP Top 10 for LLM Applications is useful because it names failure modes teams actually ship (not just “AI is scary”).</li>
+          <li>If you can only fix three things first: <strong>Prompt injection</strong>, <strong>Sensitive info disclosure</strong>, and <strong>Excessive agency</strong>.</li>
+          <li>“Insecure output handling” matters when your model output crosses a trust boundary (SQL, shell, templates, browsers, ticketing systems).</li>
+          <li>Supply chain risk here includes: model providers, prompt/tooling libraries, connectors, and third-party data sources feeding retrieval.</li>
+          <li>“Overreliance” is a security issue when humans stop verifying: it turns plausible-but-wrong output into privileged actions.</li>
+          <li>The strongest pattern across the Top 10: restrict what the model can do, and require verification at boundaries.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>
+          LLM apps often blend natural language with automation. That combination is exactly what attackers love: low-friction input channels
+          connected to high-privilege actions. OWASP’s list gives you a common vocabulary to drive engineering changes (not just policy).
+        </p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Define <strong>tool permissions</strong>: explicit allowlists per tool and per action; no “general web access” by default.</li>
+          <li>Put a <strong>guardrail boundary</strong> between model output and execution (validation + escaping + schema enforcement).</li>
+          <li>Assume <strong>prompt injection</strong> will happen: isolate instructions from untrusted content and add adversarial tests in CI.</li>
+          <li>Minimize <strong>data exposure</strong>: least-privilege retrieval scopes; redact secrets from logs; don’t ship raw internal docs to the model.</li>
+          <li>Add <strong>human approval</strong> for state-changing actions (payments, code merges, IAM changes) until you have strong monitoring + rollback.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://genai.owasp.org/llm-top-10/">OWASP GenAI Security Project — LLM Top 10</a></li>
+          <li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">OWASP project overview</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="site muted small">
+      <p><a href="/posts/">All posts</a> • <a href="/categories/">Categories</a></p>
+    </footer>
+  </div>
+</body>
+</html>
