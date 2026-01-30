@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Microsoft — turning threat reports into detection insights with AI" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>Microsoft — turning threat reports into detection insights with AI — al-ice.ai</title>
+  <meta name="description" content="Microsoft outlines an AI-assisted workflow that extracts TTPs from reports, maps to MITRE ATT&CK, and does coverage/gap analysis against a detection catalog (with human validation)." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/microsoft-threat-reports-to-detections-ai/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Microsoft — turning threat reports into detection insights with AI" />
+  <meta property="og:description" content="Microsoft outlines an AI-assisted workflow that extracts TTPs from reports, maps to MITRE ATT&CK, and does coverage/gap analysis against a detection catalog (with human validation)." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/microsoft-threat-reports-to-detections-ai/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Microsoft — turning threat reports into detection insights with AI</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>Problem:</strong> turning long, messy threat intel / red-team reports into usable detection engineering work is slow (days to weeks), and it’s easy to miss details.</li>
+          <li><strong>Workflow idea:</strong> use an LLM to extract candidate <strong>TTPs</strong> + metadata from reports, then normalize and map them to <strong>MITRE ATT&amp;CK</strong>.</li>
+          <li><strong>Coverage step:</strong> compare extracted TTPs against your existing detection catalog to label each item as “likely covered” vs “likely gap.”</li>
+          <li><strong>How they reduce false positives:</strong> combine <strong>vector similarity search</strong> (to shortlist candidate detections) with <strong>LLM-based validation</strong> (to check whether the mapping is actually plausible).</li>
+          <li><strong>Context preservation:</strong> ingestion keeps document structure (headings/lists/etc.) because where a detail appears can change how it should be interpreted.</li>
+          <li><strong>Output:</strong> a prioritized list of detection opportunities + likely gaps — explicitly framed as a starting point, not an auto-ship decision.</li>
+          <li><strong>Explicit guardrails:</strong> use structured outputs (schemas), deterministic prompts for critical steps, and reviewer checkpoints for “coverage vs gap” conclusions.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>High-signal reports pile up during active campaigns; anything that cuts “time-to-first-detection-draft” without lowering rigor helps.</li>
+          <li>This is a practical pattern for security automation: <strong>LLMs for extraction + normalization</strong>, classic IR/IRL tools for retrieval, and <strong>humans for final validation</strong>.</li>
+          <li>It also highlights a non-obvious failure mode: “coverage” inferred from text similarity can be wrong when telemetry isn’t present, scope differs, or correlation logic is missing — so you need explicit validation loops.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Build a detection catalog you can query:</strong> standardize fields (title, description, ATT&amp;CK mappings, code/query language, required telemetry) and make it searchable.</li>
+          <li><strong>Automate TTP extraction as a first pass:</strong> run LLM extraction into a strict schema (technique, evidence snippet, confidence, telemetry needed).</li>
+          <li><strong>Do two-stage matching:</strong> vector search to shortlist candidate detections, then an LLM (or rule-based checks) to validate whether the match really covers the behavior.</li>
+          <li><strong>Gate “likely gaps” with real evidence:</strong> simulate or replay telemetry (where possible) before investing deeply in new detections.</li>
+          <li><strong>Measure drift:</strong> keep a small gold set of reports + expected TTPs/mappings so prompt/model changes don’t silently degrade quality.</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Microsoft Security Blog: <a href="https://www.microsoft.com/en-us/security/blog/2026/01/29/turning-threat-reports-detection-insights-ai/" rel="nofollow">Turning threat reports into detection insights with AI</a></li>
+          <li>MITRE ATT&amp;CK: <a href="https://attack.mitre.org/" rel="nofollow">https://attack.mitre.org/</a></li>
+          <li>Referenced paper (ACSAC 2025): <a href="https://www.acsac.org/2025/files/web/acsac25-casestudy-bulut.pdf" rel="nofollow">Towards Autonomous Detection Engineering</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>
