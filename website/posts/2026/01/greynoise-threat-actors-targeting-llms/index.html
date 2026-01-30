@@ -20,6 +20,63 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>GreyNoise — Threat actors actively targeting exposed LLM endpoints</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>What happened:</strong> GreyNoise summarized findings from an Ollama honeypot that recorded <strong>91,403</strong> attack sessions (Oct 2025–Jan 2026) aimed at AI/LLM deployment surfaces.</li>
+          <li><strong>Campaign 1 (SSRF-style callbacks):</strong> attackers tried to force servers to make outbound “phone home” requests, including attempts via <strong>Ollama model pull</strong> URL handling (and co-occurring probes against Twilio SMS webhook patterns).</li>
+          <li><strong>Validation channel:</strong> GreyNoise says attackers used ProjectDiscovery <strong>OAST</strong> callback domains to confirm the server made the outbound request.</li>
+          <li><strong>Campaign 2 (enumeration):</strong> two IPs launched a high-volume probe across <strong>73+ model endpoints</strong>, generating <strong>80,469 sessions</strong> in ~11 days to fingerprint exposed LLM proxies.</li>
+          <li><strong>Fingerprint prompts:</strong> the probe used deliberately innocuous queries (e.g., “How many states are there…?”, “What model are you?”) likely to identify which backend responds without tripping content filters.</li>
+          <li><strong>Model coverage:</strong> the probe list included OpenAI-compatible and Gemini formats, spanning OpenAI, Anthropic, Meta (Llama), DeepSeek, Google (Gemini), Mistral, Qwen, xAI, etc.</li>
+          <li><strong>Attribution posture:</strong> GreyNoise frames the SSRF/OAST campaign as possibly research/bug bounty behavior, but assesses the enumeration as a more concerning threat-actor recon pattern.</li>
+          <li><strong>Defensive indicators:</strong> the post includes suggested blocks (OAST domains, IPs/ASNs, and JA4 fingerprints) and highlights egress filtering + rate limiting.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>LLM endpoints are becoming “internet services”:</strong> once you expose an OpenAI-compatible API, you inherit the same recon/scan lifecycle as any other service.</li>
+          <li><strong>Misconfigured proxies are a real prize:</strong> if a proxy forwards to paid/commercial APIs, attackers can turn it into free inference (or a foothold for deeper access) via simple enumeration.</li>
+          <li><strong>Egress is security:</strong> the SSRF angle is a reminder that outbound connectivity from model hosts can be the exploit confirmation path.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Require auth + isolate:</strong> keep LLM APIs off the public internet where possible; enforce strong auth and per-tenant rate limits where not.</li>
+          <li><strong>Detect the “innocuous fingerprint” pattern:</strong> alert on rapid requests across many model names/endpoints, especially using the exact prompt strings GreyNoise highlighted.</li>
+          <li><strong>Defensive validation (safe):</strong> run an internal scan of your environment for accidentally exposed OpenAI-compatible routes (e.g., <code>/v1/chat/completions</code>, <code>/v1/models</code>) on non-edge hosts.</li>
+          <li><strong>Egress filtering:</strong> restrict model servers from making arbitrary outbound HTTP requests; explicitly allow only required registries and upstream APIs.</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>GreyNoise (primary): <a href="https://www.greynoise.io/blog/threat-actors-actively-targeting-llms">Threat Actors Actively Targeting LLMs</a></li>
+          <li>DefusedCyber (referenced by GreyNoise): <a href="https://xcancel.com/DefusedCyber/status/2009007964246692130?ct=rw-null">Post referenced in report</a></li>
+          <li>ProjectDiscovery OAST (background): <a href="https://docs.projectdiscovery.io/tools/interactsh">Interactsh / OAST</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

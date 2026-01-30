@@ -20,6 +20,67 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv — “Breaking the Protocol”: MCP’s protocol-level security gaps</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/research/">Research</a></p>
+
+        <ul>
+          <li>A new paper claims the <strong>Model Context Protocol (MCP)</strong> has <em>protocol-level</em> design issues that increase attack leverage in tool-integrated agents, even if individual servers are well implemented.</li>
+          <li>Three highlighted gaps:
+            <ul>
+              <li><strong>No capability attestation:</strong> a server can claim arbitrary permissions/capabilities without a strong verification mechanism.</li>
+              <li><strong>Bidirectional sampling without origin authentication:</strong> server-initiated “sampling” can act as a channel for server-side prompt injection unless messages are authenticated/attributed.</li>
+              <li><strong>Implicit trust propagation:</strong> in multi-server setups, trust can “flow” across components in ways that are hard to reason about and contain.</li>
+            </ul>
+          </li>
+          <li>The paper reports an evaluation over <strong>847 attack scenarios</strong> across multiple MCP server implementations, and argues MCP integration <strong>amplifies attack success rates</strong> versus equivalent non-MCP integrations.</li>
+          <li>It proposes a mitigation approach (<strong>“AttestMCP”</strong>) adding capability attestation and message authentication, with a reported low median latency overhead.</li>
+          <li>Even if you don’t buy every number, the central ops takeaway holds: <strong>protocol primitives shape your threat model</strong>—not just individual tool implementations.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>Teams adopting MCP often focus on “is this server safe?”, but protocol-level gaps can create new classes of cross-tool and cross-server exploit chains.</li>
+          <li>As MCP becomes glue between IDEs, agent runtimes, and infra tools, missing provenance/attestation becomes a scalable problem (supply-chain + runtime trust).</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Threat-model sampling:</strong> treat server-initiated LLM sampling as an injection surface; log it distinctly and gate it behind policy.</li>
+          <li><strong>Adopt explicit allowlists:</strong> pin MCP servers (hash/version), and prefer curated registries over “run random npx/uvx from a blog post”.</li>
+          <li><strong>Isolate servers:</strong> run MCP servers with minimal OS/network privileges; avoid sharing credentials across servers.</li>
+          <li><strong>Add provenance to your agent traces:</strong> record which server/tool produced which text that entered the model context (helps post-incident forensics).</li>
+          <li><strong>Design for containment:</strong> assume injection succeeds sometimes; focus on limiting the set of actions a compromised context can trigger.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://arxiv.org/html/2601.17549v1/">arXiv HTML: “Breaking the Protocol: Security Analysis of the Model Context Protocol …”</a></li>
+          <li><a href="https://arxiv.org/abs/2601.17549">arXiv abstract page</a></li>
+          <li><a href="https://modelcontextprotocol.io/">Model Context Protocol (spec/site)</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

@@ -20,6 +20,61 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>OpenAI — Hardening ChatGPT Atlas against prompt injection</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>What happened:</strong> OpenAI published a detailed note on defending “<strong>agent in the browser</strong>” systems (ChatGPT Atlas) against prompt injection.</li>
+          <li><strong>Threat model:</strong> attackers don’t need a browser 0-day; they plant malicious instructions in <em>content</em> the agent reads (emails, docs, webpages) to redirect behavior.</li>
+          <li><strong>Open problem stance:</strong> OpenAI frames prompt injection as long-term, similar to scams/social engineering—unlikely to be “solved” once-and-for-all.</li>
+          <li><strong>Automated attacker:</strong> they trained an LLM-based red teamer end-to-end with <strong>reinforcement learning</strong> to find prompt injections that lead to harmful long-horizon actions.</li>
+          <li><strong>“Try before it ships” simulation:</strong> the attacker proposes injections and tests them in an external simulator that produces an action trace of how the victim agent would behave.</li>
+          <li><strong>Defense loop:</strong> new discovered attack classes become training data for <strong>adversarially trained agent checkpoints</strong>, plus opportunities to harden system-level safeguards/monitoring.</li>
+          <li><strong>Operational point:</strong> this is a concrete “<em>discovery → patch → rollout</em>” pattern for agent security, rather than a static checklist.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Agent security is now a production discipline:</strong> if your product can click/submit/transfer money/send email, prompt injection becomes a safety+security incident class.</li>
+          <li><strong>Fast iteration beats perfect prevention:</strong> a high-throughput red-team pipeline can reduce time-to-mitigation, which is often what matters operationally.</li>
+          <li><strong>Useful for builders:</strong> the post is a rare window into how a major vendor is actually operationalizing agent red teaming (not just “be careful”).</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Adopt a “content is untrusted” posture:</strong> treat retrieved text, emails, web pages, and documents as adversarial inputs (like user-supplied HTML).</li>
+          <li><strong>Constrain actions:</strong> implement allowlists, step-up confirmations, and scoped credentials for high-impact tools (email send, payments, admin consoles).</li>
+          <li><strong>Defensive validation (safe):</strong> add a “dry-run mode” in your agent that logs intended actions without executing; regularly replay real workflows through it to catch injection drift.</li>
+          <li><strong>Build your own feedback loop:</strong> even without RL, you can continuously generate and test prompt-injection variants in staging and harden both prompts and guardrails.</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>OpenAI (primary): <a href="https://openai.com/index/hardening-atlas-against-prompt-injection/">Continuously hardening ChatGPT Atlas against prompt injection attacks</a></li>
+          <li>OpenAI (background): <a href="https://openai.com/index/prompt-injections/">Prompt injections</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

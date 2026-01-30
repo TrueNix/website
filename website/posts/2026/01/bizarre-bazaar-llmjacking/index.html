@@ -20,6 +20,70 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Bizarre Bazaar: attackers monetizing exposed LLM &amp; MCP endpoints (LLMjacking)</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>What happened:</strong> Researchers observed a campaign targeting <strong>exposed LLM service endpoints</strong> (and, increasingly, MCP endpoints) and turning access into a commodity.</li>
+          <li><strong>Observed scale:</strong> The report cites tens of thousands of attack sessions seen in honeypots over ~40 days.</li>
+          <li><strong>Monetization:</strong> Abuse includes stealing compute (inference is expensive), reselling API access, and mining value from prompts/conversation history.</li>
+          <li><strong>Target surface:</strong> self-hosted LLM servers, OpenAI-compatible APIs, development/staging environments with public IPs, and publicly reachable MCP servers.</li>
+          <li><strong>Typical weak points:</strong> no auth, weak auth, missing network segmentation, permissive CORS/proxying, and “it’s just a dev box” deployment habits.</li>
+          <li><strong>Timing:</strong> Attackers reportedly move quickly after endpoints appear in internet scanners (Shodan/Censys).</li>
+          <li><strong>Not just cost-fraud:</strong> MCP exposure turns LLM endpoint compromise into a path for <strong>lateral movement</strong> (shell commands, Kubernetes interactions, cloud access), depending on how tools are wired.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>New perimeter:</strong> “LLM endpoints” are becoming production infrastructure, but many orgs still protect them like a demo. Attackers are adapting faster than governance.</li>
+          <li><strong>High blast radius:</strong> Even without classic RCE, prompt logs + tool integrations can expose secrets, internal docs, and operational context.</li>
+          <li><strong>Billing risk is real:</strong> A single abused endpoint can generate outsized compute costs, especially if you proxy to paid providers.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Inventory:</strong> list every LLM/MCP endpoint (prod + staging + dev) and who can reach it.</li>
+          <li><strong>Close the internet:</strong> default to private networking (VPN, VPC-only). If it must be public, enforce auth (mTLS/OAuth/API keys) + rate limits + WAF rules.</li>
+          <li><strong>Separate tools:</strong> don’t run “LLM gateway” and “privileged tools” in the same trust zone. Treat MCP servers as sensitive backends.</li>
+          <li><strong>Log & alert:</strong> track unusual request volume, unknown user agents, high token usage, and unexpected tool invocation patterns.</li>
+          <li><strong>Harden defaults:</strong> ensure Ollama/OpenAI-compatible servers aren’t exposed unauthenticated; lock down reverse proxies and disable directory listings/debug routes.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/posts/2026/01/ai-security-news-digest/">AI security news digest</a></li>
+            <li><a href="/posts/2026/01/ai-related-cves-tracker/">AI-related CVEs tracker</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>BleepingComputer: <a href="https://www.bleepingcomputer.com/news/security/hackers-hijack-exposed-llm-endpoints-in-bizarre-bazaar-operation/">Hackers hijack exposed LLM endpoints in Bizarre Bazaar operation</a></li>
+          <li>Pillar Security: <a href="https://www.pillar.security/blog/operation-bizarre-bazaar-first-attributed-llmjacking-campaign-with-commercial-marketplace-monetization">Operation Bizarre Bazaar (attributed LLMjacking campaign)</a></li>
+          <li>GreyNoise (related): <a href="https://www.bleepingcomputer.com/news/security/hackers-target-misconfigured-proxies-to-access-paid-llm-services/">Hackers target misconfigured proxies to access paid LLM services</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

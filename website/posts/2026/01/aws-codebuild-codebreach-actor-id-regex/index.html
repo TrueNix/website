@@ -20,6 +20,62 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>AWS/Wiz — CodeBreach: unanchored ACTOR_ID filters in CodeBuild webhooks</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li>AWS published an advisory about a configuration issue in several AWS-managed OSS repos using CodeBuild webhooks with insufficient regex filters for actor IDs.</li>
+          <li>The core bug pattern: using regex allowlists without start/end anchors (<code>^</code> / <code>$</code>) can turn “exact match” into “substring match.”</li>
+          <li>Wiz describes how sequential GitHub numeric IDs create windows where newly created IDs can contain older, shorter “trusted” IDs as substrings (“eclipses”).</li>
+          <li>Once an attacker can trigger privileged CI from an untrusted PR, the biggest risk is credential exposure inside the build environment (tokens in memory / cache).</li>
+          <li>AWS says this was project-specific misconfiguration (not a CodeBuild service vulnerability) and that no inappropriate code was introduced.</li>
+          <li>Defense-in-depth is shifting toward explicit build gates for untrusted PRs (e.g., “comment approval” / human approval) rather than regex cleverness.</li>
+          <li>Broader trend: CI/CD misconfigurations are becoming “single-line” supply chain primitives with outsized blast radius.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>
+          CI is a security boundary. If an untrusted contributor can run code in a build that has write-capable GitHub credentials, you’re one logging bug or one memory scrape away from repo takeover.
+          This isn’t hypothetical: the most damaging supply chain incidents often begin as “small” pipeline assumptions that quietly stopped being true.
+        </p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit webhook filters: if you use regex for identity allowlists, anchor it (<code>^…$</code>) and keep it minimal.</li>
+          <li>Prefer explicit PR build policies (human approval gates) for any build that can access secrets or publish artifacts.</li>
+          <li>Split pipelines: run untrusted PRs in a low-privilege build that has <em>no</em> secrets; only promote after review.</li>
+          <li>Rotate and scope tokens: one PAT per project, least privilege, and assume build memory is readable if the build can be influenced.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://aws.amazon.com/security/security-bulletins/2026-002-AWS/">AWS Security Bulletin 2026-002-AWS</a></li>
+          <li><a href="https://www.wiz.io/blog/wiz-research-codebreach-vulnerability-aws-codebuild">Wiz Research: CodeBreach write-up</a></li>
+          <li><a href="https://docs.aws.amazon.com/codebuild/latest/userguide/webhooks.html#webhook-best-practices">AWS CodeBuild webhook best practices</a></li>
+          <li><a href="https://docs.aws.amazon.com/codebuild/latest/userguide/pull-request-build-policy.html">AWS CodeBuild pull request build policy / comment approval</a></li>
+          <li><a href="https://www.infoq.com/news/2026/01/aws-github-vulnerability/">InfoQ summary</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="site muted small">
+      <p><a href="/posts/">All posts</a> • <a href="/categories/">Categories</a></p>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

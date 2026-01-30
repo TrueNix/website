@@ -20,6 +20,62 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv — Breaking the Protocol: MCP security analysis (capability attestation + origin auth gaps)</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/research/">Research</a></p>
+
+        <ul>
+          <li><strong>What this is:</strong> an arXiv paper that does a protocol-focused security analysis of the <strong>Model Context Protocol (MCP)</strong> (tool integration via JSON-RPC for LLM agents).</li>
+          <li><strong>Big claim:</strong> MCP’s weaknesses are <strong>architectural</strong> (not just “some server had a bug”), so hardening one implementation doesn’t fully solve the class of problems.</li>
+          <li><strong>Issue #1 — capability attestation:</strong> the paper argues MCP lacks a way to prove what permissions/tools a server <em>should</em> have, so a server can <strong>claim arbitrary capabilities</strong> and rely on user trust/UI gaps.</li>
+          <li><strong>Issue #2 — sampling origin authentication:</strong> MCP “sampling” lets servers request model completions; the paper argues missing <strong>origin authentication</strong> makes server-side prompt injection easier to launder into “system-like” instructions.</li>
+          <li><strong>Issue #3 — trust propagation:</strong> in multi-server setups, the paper claims implicit trust chains can form where one compromised server influences decisions that reach other, more-privileged tools.</li>
+          <li><strong>Measurement angle:</strong> they describe an evaluation framework (“ProtoAmp”) and report experiments across many scenarios; treat the exact deltas as “paper claims,” but the direction matches what practitioners see in the wild.</li>
+          <li><strong>Mitigation direction:</strong> they propose a backward-compatible extension (“AttestMCP”) adding capability attestation + message authentication, aiming to reduce successful attacks with low latency overhead.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>MCP is quickly becoming infrastructure:</strong> once a protocol gets “copy/pasted into production,” the default threat model matters as much as individual app hardening.</li>
+          <li><strong>Protocol-level gaps become ecosystem-level incidents:</strong> if the standard doesn’t specify strong identity, auth, and provenance, marketplaces and tutorials will normalize unsafe patterns.</li>
+          <li><strong>Security teams need new controls:</strong> the classic AppSec mindset (patch CVE, add WAF) won’t cover tool graphs and cross-server trust — you need governance on <em>which tools exist</em>, <em>who can add them</em>, and <em>what they can do</em>.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Inventory MCP servers</strong> and classify them by privilege (read-only vs write vs network vs shell). Treat “can write files” and “can run commands” as high-risk.</li>
+          <li><strong>Adopt an allowlist-by-default model:</strong> explicitly approve each server + each tool (and versions), rather than “anything in a marketplace/tutorial.”</li>
+          <li><strong>Separate trust zones:</strong> keep untrusted data ingestion (web, email, tickets) in a different runtime than privileged tools; assume content can contain indirect instructions.</li>
+          <li><strong>Watch for provenance controls:</strong> push your vendors/projects toward signed server manifests, capability attestation, and message auth (even if not standardized yet).</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Paper (HTML): <a href="https://arxiv.org/html/2601.17549v1/">Breaking the Protocol: Security Analysis of the Model Context Protocol…</a></li>
+          <li>Paper (abstract/PDF links): <a href="https://arxiv.org/abs/2601.17549v1">arXiv:2601.17549v1</a></li>
+          <li>MCP context (background): <a href="https://modelcontextprotocol.io/">Model Context Protocol (official site)</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

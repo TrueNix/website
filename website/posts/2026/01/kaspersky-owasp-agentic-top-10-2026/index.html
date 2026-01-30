@@ -20,6 +20,74 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Kaspersky — OWASP Agentic Top 10 (2026): practical risks + controls for AI agents</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>New framing:</strong> OWASP published a <strong>Top 10 for Agentic Applications (2026)</strong> — a risk list aimed at systems that <em>plan + act</em>, not just chat.</li>
+          <li><strong>Key shift:</strong> In agentic systems, the main failure mode isn’t “a bad answer” — it’s <strong>unsafe actions via tools</strong> (APIs, code execution, browsers, automation runners).</li>
+          <li><strong>ASI01 (goal hijack):</strong> Indirect prompt injection becomes “agent goal hijack” when it bends the <em>multi-step plan</em> rather than a single response.</li>
+          <li><strong>ASI02 (tool misuse):</strong> Even <em>legitimate</em> tools become dangerous if an agent can be nudged into harmful parameters, high-cost loops, or stealthy exfil flows.</li>
+          <li><strong>ASI03 (identity/privilege abuse):</strong> Agents tend to reuse tokens, inherit creator permissions, or operate under shared identities — making “who approved this?” fuzzy.</li>
+          <li><strong>ASI04 (agentic supply chain):</strong> Dynamic tool selection and package installs add new supply-chain angles (typosquatting / “slopsquatting”).</li>
+          <li><strong>ASI05 (unexpected code exec / RCE):</strong> If an agent can run code, a prompt can become an execution pathway — and once you get a sandbox escape, monitoring often loses visibility.</li>
+          <li><strong>ASI06 (memory/context poisoning):</strong> Persistent agent memory and RAG stores can be poisoned to create <strong>long-lived behavioral backdoors</strong>, not just one-off misbehavior.</li>
+          <li><strong>ASI08 (cascading failures):</strong> The “blast radius” grows when multiple agents hand off tasks quickly; one compromised step can propagate.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Agent security is operational security:</strong> You need controls at <em>runtime</em> (what the agent is doing now), not only at prompt time.</li>
+          <li><strong>Classic principles still win:</strong> Least privilege, short-lived creds, approvals, and immutable logs matter more when the actor is fast and non-deterministic.</li>
+          <li><strong>Defenders need new telemetry:</strong> “Tool invocation logs” and “plan/intent logs” become as important as web logs or endpoint logs.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Inventory agent capabilities:</strong> List every tool/API the agent can touch and explicitly define what “safe” parameters look like.</li>
+          <li><strong>Enforce least privilege + least autonomy:</strong> Prefer read-only access; keep destructive actions behind explicit approvals.</li>
+          <li><strong>Use short-lived, scoped credentials:</strong> Treat long-lived API keys inside agents as an incident waiting to happen.</li>
+          <li><strong>Gate tool use:</strong> Add deterministic policy checks before executing tool calls (allowlists, cost limits, URL/network egress rules, private-IP blocking).</li>
+          <li><strong>Harden memory/RAG:</strong> Separate trusted vs untrusted sources, add attribution, and treat “saved memory” as a data store that needs security review and change control.</li>
+          <li><strong>Log for forensics:</strong> Capture prompts, tool calls, parameters, and outcomes to support post-incident reconstruction.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/posts/2026/01/ai-security-news-digest/">AI security news digest</a></li>
+            <li><a href="/posts/2026/01/microsoft-defender-runtime-protection-ai-agents/">Microsoft: runtime protection for AI agents</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Kaspersky: <a href="https://www.kaspersky.com/blog/top-agentic-ai-risks-2026/55184/" rel="nofollow">AI agents in your organization: managing the risks</a></li>
+          <li>OWASP (primary): <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/" rel="nofollow">OWASP Top 10 for Agentic Applications for 2026</a></li>
+          <li>AWS Security Bulletin (referenced example): <a href="https://aws.amazon.com/security/security-bulletins/AWS-2025-019/" rel="nofollow">AWS-2025-019</a></li>
+          <li>Kaspersky (background): <a href="https://www.kaspersky.com/blog/ai-slopsquatting-supply-chain-risk/53327/" rel="nofollow">Slopsquatting supply-chain risk</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

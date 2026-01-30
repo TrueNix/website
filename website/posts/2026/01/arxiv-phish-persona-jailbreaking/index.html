@@ -20,6 +20,61 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv/EACL — PHISH: persona jailbreaking via implicit steering in chat history</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/research/">Research</a></p>
+
+        <ul>
+          <li><strong>Paper:</strong> “<strong>Persona Jailbreaking in Large Language Models</strong>” (accepted at <strong>EACL 2026 Findings</strong>).</li>
+          <li><strong>Claim:</strong> you can <em>predictably</em> shift an LLM’s induced persona using <strong>adversarial conversational history</strong> (black-box / inference-only) — without needing system prompt access.</li>
+          <li><strong>Technique:</strong> the authors propose <strong>PHISH</strong> (Persona Hijacking via Implicit Steering in History): semantically loaded cues embedded into user-side turns to gradually induce “reverse personas.”</li>
+          <li><strong>Multi-turn amplification:</strong> the effect reportedly strengthens over longer conversations (which mirrors real deployments in support/tutoring/therapy-like apps).</li>
+          <li><strong>Collateral drift:</strong> persona shifts also trigger changes in correlated traits (so “just” manipulating tone can bleed into policy adherence, risk posture, etc.).</li>
+          <li><strong>High-risk domains tested:</strong> the paper highlights mental health, tutoring, and customer support settings.</li>
+          <li><strong>Guardrails aren’t enough:</strong> authors say current defenses offer partial protection but are brittle under sustained, subtle steering.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Persona is a security boundary now:</strong> if your product relies on a “safe, compliant, calm” assistant persona, the chat history itself becomes an attack surface.</li>
+          <li><strong>Long-lived sessions are risky:</strong> the more context you retain, the more an attacker can shape it — which is exactly what many “agentic” apps want for UX.</li>
+          <li><strong>Hard-to-detect failure mode:</strong> gradual drift can look like natural variation until the assistant crosses a threshold at the worst time (sensitive advice, approvals, escalations).</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Decide what “persona invariants” are:</strong> write explicit requirements (e.g., never provide self-harm instructions; always recommend a human escalation path; never claim to be a licensed professional).</li>
+          <li><strong>Add drift detection:</strong> periodically re-anchor the assistant with short “self-check” probes or classifiers to detect when the assistant’s behavior diverges from intended persona.</li>
+          <li><strong>Constrain memory:</strong> don’t blindly persist everything; segment user content vs. operator instructions; consider expiring or summarizing older turns with a safety-preserving pipeline.</li>
+          <li><strong>Test for history-based steering:</strong> add regression suites that attempt subtle multi-turn manipulation (not just single-turn jailbreak prompts).</li>
+          <li><strong>Operationalize escalation:</strong> when drift is detected, degrade capabilities (fewer tools, no actions) and route to human review.</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>arXiv (primary): <a href="https://arxiv.org/abs/2601.16466">Persona Jailbreaking in Large Language Models</a></li>
+          <li>Code/dataset (primary): <a href="https://github.com/Jivnesh/PHISH">Jivnesh/PHISH</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/categories/research/">← Research</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;
