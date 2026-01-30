@@ -262,6 +262,43 @@ ${latestGrid}
     });
   }
 
+  // Ensure theme toggle + persistence on *all* pages (including individual post pages created by the publisher).
+  function themeInitScript(){
+    return `<script>(function(){try{var t=localStorage.getItem('theme');if(t!=="modern")document.documentElement.setAttribute('data-theme','retro');}catch(e){document.documentElement.setAttribute('data-theme','retro');}})();</script>`;
+  }
+  function themeToggleButton(){
+    return `<button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch site style">Style: 80/90s</button>`;
+  }
+  function themeHandlerScript(){
+    return `<script>(function(){var btn=document.getElementById('themeToggle');if(!btn)return;function isRetro(){return document.documentElement.getAttribute('data-theme')==='retro';}
+      function render(){btn.textContent=isRetro()?'Style: 80/90s':'Style: Modern';}
+      function setRetro(on){if(on){document.documentElement.setAttribute('data-theme','retro');try{localStorage.removeItem('theme');}catch(e){}}else{document.documentElement.removeAttribute('data-theme');try{localStorage.setItem('theme','modern');}catch(e){}}render();}
+      render();btn.addEventListener('click',function(){setRetro(!isRetro());});})();</script>`;
+  }
+
+  async function ensureThemeOnHtmlFile(file){
+    let html = await readFile(file, 'utf8');
+
+    // head init script
+    if (html.includes('/assets/css/site.css') && !html.includes('localStorage.getItem(\'theme\')')){
+      html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
+    }
+
+    // header toggle button (best-effort)
+    if (!html.includes('id="themeToggle"') && html.includes('<nav') && html.includes('class="small"')){
+      html = html.replace(/<nav\s+class="small">([\s\S]*?)<\/nav>/m, (m, inner) => {
+        return `<nav class="small">${inner}\n        ${themeToggleButton()}\n      </nav>`;
+      });
+    }
+
+    // handler script
+    if (!html.includes('btn.addEventListener') && html.includes('</body>')){
+      html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
+    }
+
+    await writeFile(file, html);
+  }
+
   // posts index + paginated pages
   await mkdir(join(SITE_DIR,'posts'), { recursive:true });
   await writeFile(join(SITE_DIR,'posts','index.html'), renderPostsPage(1));
@@ -272,6 +309,18 @@ ${latestGrid}
     const dir = join(SITE_DIR, 'posts', 'page', String(pageNum));
     await mkdir(dir, { recursive:true });
     await writeFile(join(dir, 'index.html'), renderPostsPage(pageNum));
+  }
+
+  // patch theme toggle into generated pages
+  await ensureThemeOnHtmlFile(join(SITE_DIR,'index.html'));
+  await ensureThemeOnHtmlFile(join(SITE_DIR,'posts','index.html'));
+  for (let pageNum = 2; pageNum <= totalPages; pageNum++){
+    await ensureThemeOnHtmlFile(join(SITE_DIR, 'posts', 'page', String(pageNum), 'index.html'));
+  }
+
+  // patch theme toggle into ALL post detail pages
+  for (const f of files){
+    await ensureThemeOnHtmlFile(f);
   }
 
   // categories index
