@@ -233,8 +233,8 @@ ${renderPagination(pageNum)}
   </div>
 </article>`).join('');
 
-    const topGrid = `<div class="posts-grid">${topCards || '<div class="card muted">No posts yet.</div>'}</div>`;
-    const latestGrid = `<div class="posts-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const topGrid = `<div class="posts-grid top-grid">${topCards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const latestGrid = `<div class="posts-grid latest-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
 
     return pageShell({
       title: 'al-ice.ai — latest AI signal',
