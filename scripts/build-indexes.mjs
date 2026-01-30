@@ -138,13 +138,14 @@ async function main(){
     return `<nav class="pagination" aria-label="Posts pagination">${parts.join('')}</nav>`;
   }
 
-  const filterPills = (() => {
+  function filterPills(activeAllHref){
     const cats = [...byCat.entries()]
       .sort((a,b)=>a[0].localeCompare(b[0]))
       .map(([slug, v]) => `<a class="pill" href="/categories/${slug}/">${v.label} <span class="muted">(${v.posts.length})</span></a>`)
       .join('');
-    return `<div class="pills"><span class="muted small">Filter:</span> <a class="pill active" href="/posts/">All</a>${cats ? ' ' + cats : ''}</div>`;
-  })();
+    return `<div class="pills"><span class="muted small">Filter:</span> <a class="pill active" href="${activeAllHref}">All</a>${cats ? ' ' + cats : ''}</div>`;
+  }
+
 
   function renderPostsPage(pageNum){
     const start = (pageNum - 1) * PER_PAGE;
@@ -168,9 +169,38 @@ async function main(){
       body: `<main>
 <h1>Posts</h1>
 <p class="muted">High-signal AI/security/automation notes.</p>
-${filterPills}
+${filterPills('/posts/')}
 ${grid}
 ${renderPagination(pageNum)}
+</main>`
+    });
+  }
+
+  function renderHomePage(){
+    const start = 0;
+    const slice = posts.slice(start, start + PER_PAGE);
+
+    const cards = slice.map(p => `
+<article class="post-card card">
+  <h2 class="post-title"><a href="${p.urlPath}">${p.title}</a></h2>
+  <div class="post-meta">
+    <time datetime="${p.date}">${p.date}</time>
+    <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
+  </div>
+</article>`).join('');
+
+    const grid = `<div class="posts-grid">${cards || '<div class="card muted">No posts yet.</div>'}</div>`;
+
+    return pageShell({
+      title: 'Posts — al-ice.ai',
+      canonical: `${BASE}/`,
+      description: 'High-signal AI/security/automation notes and links.',
+      body: `<main>
+<h1>Posts</h1>
+<p class="muted">High-signal AI/security/automation notes.</p>
+${filterPills('/')}
+${grid}
+${renderPagination(1)}
 </main>`
     });
   }
@@ -178,6 +208,9 @@ ${renderPagination(pageNum)}
   // posts index + paginated pages
   await mkdir(join(SITE_DIR,'posts'), { recursive:true });
   await writeFile(join(SITE_DIR,'posts','index.html'), renderPostsPage(1));
+
+  // homepage: render posts natively at /
+  await writeFile(join(SITE_DIR,'index.html'), renderHomePage());
   for (let pageNum = 2; pageNum <= totalPages; pageNum++){
     const dir = join(SITE_DIR, 'posts', 'page', String(pageNum));
     await mkdir(dir, { recursive:true });
