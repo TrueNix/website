@@ -50,6 +50,14 @@ function pageShell({title, canonical, description, body}){
   </script>
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>
+    (function(){
+      try{
+        var t = localStorage.getItem('theme');
+        if (t === 'retro') document.documentElement.setAttribute('data-theme','retro');
+      }catch(e){}
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap">
@@ -59,6 +67,7 @@ function pageShell({title, canonical, description, body}){
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle retro theme">80/90s</button>
       </nav>
     </header>
     ${body}
@@ -67,6 +76,27 @@ function pageShell({title, canonical, description, body}){
       <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
     </footer>
   </div>
+
+  <script>
+    (function(){
+      var btn = document.getElementById('themeToggle');
+      if(!btn) return;
+      function isRetro(){ return document.documentElement.getAttribute('data-theme') === 'retro'; }
+      function setRetro(on){
+        if(on){
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+          btn.textContent = 'Modern';
+        }else{
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+          btn.textContent = '80/90s';
+        }
+      }
+      setRetro(isRetro());
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();
+  </script>
 </body>
 </html>`;
 }
