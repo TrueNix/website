@@ -177,30 +177,52 @@ ${renderPagination(pageNum)}
   }
 
   function renderHomePage(){
-    const start = 0;
-    const slice = posts.slice(start, start + PER_PAGE);
+    const top = posts.slice(0, 3);
+    const latest = posts.slice(3, 3 + PER_PAGE);
 
-    const cards = slice.map(p => `
+    const topCards = top.map(p => `
 <article class="post-card card">
-  <h2 class="post-title"><a href="${p.urlPath}">${p.title}</a></h2>
+  <h3 class="post-title"><a href="${p.urlPath}">${p.title}</a></h3>
   <div class="post-meta">
     <time datetime="${p.date}">${p.date}</time>
     <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
   </div>
 </article>`).join('');
 
-    const grid = `<div class="posts-grid">${cards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const latestCards = latest.map(p => `
+<article class="post-card card">
+  <h3 class="post-title"><a href="${p.urlPath}">${p.title}</a></h3>
+  <div class="post-meta">
+    <time datetime="${p.date}">${p.date}</time>
+    <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
+  </div>
+</article>`).join('');
+
+    const topGrid = `<div class="posts-grid">${topCards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const latestGrid = `<div class="posts-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
 
     return pageShell({
-      title: 'Posts — al-ice.ai',
+      title: 'al-ice.ai — latest AI signal',
       canonical: `${BASE}/`,
-      description: 'High-signal AI/security/automation notes and links.',
+      description: 'Latest high-signal AI security, infrastructure, and research updates—short summaries with primary sources.',
       body: `<main>
-<h1>Posts</h1>
-<p class="muted">High-signal AI/security/automation notes.</p>
+<section class="hero">
+  <h1>Latest AI signal</h1>
+  <p class="muted">High-signal AI security, infrastructure, and research — short notes with primary sources.</p>
+  <div class="hero-cta">
+    <a class="btn" href="/posts/">Browse all posts</a>
+    <a class="btn secondary" href="/categories/">Browse categories</a>
+  </div>
+</section>
+
 ${filterPills('/')}
-${grid}
-${renderPagination(1)}
+
+<h2 class="section-title">Top 3</h2>
+${topGrid}
+
+<h2 class="section-title">Latest</h2>
+${latestGrid}
+<p class="muted small"><a href="/posts/">See full feed →</a></p>
 </main>`
     });
   }
