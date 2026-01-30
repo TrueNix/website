@@ -332,6 +332,20 @@ ${latestGrid}
     await ensureThemeOnHtmlFile(f);
   }
 
+  // patch theme toggle into other static pages (search/about/legal/etc)
+  const extraPages = [
+    join(SITE_DIR,'search','index.html'),
+    join(SITE_DIR,'about','index.html'),
+    join(SITE_DIR,'contact','index.html'),
+    join(SITE_DIR,'privacy','index.html'),
+    join(SITE_DIR,'terms','index.html'),
+    join(SITE_DIR,'disclosure','index.html'),
+    join(SITE_DIR,'404.html'),
+  ];
+  for (const p of extraPages){
+    try{ await ensureThemeOnHtmlFile(p); }catch{ /* ignore missing */ }
+  }
+
   // categories index
   const catList = [...byCat.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([slug,v]) => `
 <li><a href="/categories/${slug}/">${v.label}</a> <span class="muted">(${v.posts.length})</span></li>`).join('');
