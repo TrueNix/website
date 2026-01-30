@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Operation ‘Bizarre Bazaar’: LLMjacking campaign targets exposed LLM/MCP endpoints (Pillar Security)" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="news" />
+  <meta name="post:categoryLabel" content="News" />
+
+  <title>Operation ‘Bizarre Bazaar’: LLMjacking campaign targets exposed LLM/MCP endpoints (Pillar Security) — al-ice.ai</title>
+  <meta name="description" content="Pillar Security reports a coordinated campaign (“Operation Bizarre Bazaar”) scanning for exposed LLM and MCP endpoints, validating access, and reselling it. Why it matters and what to do." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/bizarre-bazaar-llmjacking-exposed-llm-endpoints/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Operation ‘Bizarre Bazaar’: LLMjacking campaign targets exposed LLM/MCP endpoints (Pillar Security)" />
+  <meta property="og:description" content="A high-volume campaign is scanning for exposed/weakly-authenticated LLM endpoints and MCP servers and monetizing access." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/bizarre-bazaar-llmjacking-exposed-llm-endpoints/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
+        <a href="/services/">Services</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Operation ‘Bizarre Bazaar’: LLMjacking campaign targets exposed LLM/MCP endpoints (Pillar Security)</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/news/">News</a></p>
+
+        <ul>
+          <li><strong>What happened:</strong> Pillar Security reports a coordinated operation (“Bizarre Bazaar”) that <strong>systematically finds exposed AI endpoints</strong>, validates access, and <strong>resells it</strong> through an online marketplace.</li>
+          <li><strong>Scale signal:</strong> their honeypots recorded <strong>~35,000 attack sessions</strong> over ~40 days (roughly ~1k/day), suggesting automation + sustained targeting, not one-off poking.</li>
+          <li><strong>Targets:</strong> exposed/unauthenticated LLM inference endpoints (e.g., Ollama on <code>11434</code>, OpenAI-compatible APIs on <code>8000</code>), plus publicly reachable production chatbots and dev/staging stacks with public IPs.</li>
+          <li><strong>MCP angle:</strong> they highlight exposed MCP servers as high-value pivot points because MCP can bridge the model to <strong>filesystems, databases, cloud APIs, Kubernetes, and shells</strong>.</li>
+          <li><strong>Monetization:</strong> Pillar describes a “scanner → validator → marketplace” supply chain, with a service (reported as <code>silver.inc</code>) reselling discounted access to many model providers.</li>
+          <li><strong>Impact isn’t just cost:</strong> beyond compute theft, exposed endpoints can leak sensitive prompt/context data, and can enable lateral movement if tool servers are reachable.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>AI endpoints are becoming “shadow infrastructure”</strong>: engineers spin up Ollama/vLLM, proxies, and tool servers quickly; security posture often lags.</li>
+          <li><strong>Discovery is fast:</strong> once an endpoint appears in internet scans (Shodan/Censys), exploitation attempts can start within hours.</li>
+          <li><strong>Agentic tooling changes the blast radius:</strong> an exposed “chatbot API” is bad; an exposed MCP server can be a bridge into internal systems.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Inventory and scan your external surface:</strong> find any public LLM endpoints, proxies, “OpenAI-compatible” APIs, and MCP servers (prod + staging + “temporary”).</li>
+          <li><strong>Require auth everywhere:</strong> don’t rely on obscurity or “it’s just a dev box” — add auth + network ACLs, and bind internal services to private interfaces.</li>
+          <li><strong>Keep MCP off the public internet:</strong> treat MCP servers like you’d treat a database: private network only, strict authn/z, least privilege.</li>
+          <li><strong>Add rate limits + usage caps:</strong> even public-facing assistants should have WAF/CDN protections and anomaly detection for enumeration patterns.</li>
+          <li><strong>Log for investigations:</strong> keep request logs for AI endpoints (models requested, tokens/volume, auth failures, unusual tool usage).</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Pillar Security (primary): <a href="https://www.pillar.security/blog/operation-bizarre-bazaar-first-attributed-llmjacking-campaign-with-commercial-marketplace-monetization">Operation Bizarre Bazaar</a> (links to full report + IOCs)</li>
+          <li>BleepingComputer: <a href="https://www.bleepingcomputer.com/news/security/hackers-hijack-exposed-llm-endpoints-in-bizarre-bazaar-operation/">Hackers hijack exposed LLM endpoints in Bizarre Bazaar operation</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/news/">← News</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>
