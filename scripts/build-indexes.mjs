@@ -354,7 +354,13 @@ ${latestGrid}
 
     // Ensure handler script exists (overwrite older versions)
     if (html.includes('</body>')){
-      html = html.replace(/\s*<script>\(function\(\)\{var btn=document\.getElementById\('themeToggle'\)[\s\S]*?<\/script>\s*/g, '\n');
+      // remove any legacy themeToggle handler scripts (both minified and pretty)
+      html = html.replace(/\s*<script>[\s\S]*?getElementById\(['"]themeToggle['"]\)[\s\S]*?<\/script>\s*/g, (m) => {
+        // only strip scripts that look like our theme toggle handlers
+        if (m.includes('btn.addEventListener') || m.includes('Style:') || m.includes('data-theme')) return '\n';
+        return m;
+      });
+
       html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
     }
 

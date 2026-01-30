@@ -20,62 +20,6 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-</head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small"><a href="/posts/">Posts</a>
-        <a href="/categories/">Categories</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
-    </header>
-
-    <main>
-      <article>
-        <h1>Microsoft: runtime inspection to block risky AI agent tool calls</h1>
-        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
-
-        <ul>
-          <li><strong>What Microsoft is pitching:</strong> treat <em>every</em> AI agent tool invocation like a privileged execution event (similar to command execution), and make an allow/block decision at runtime.</li>
-          <li><strong>Mechanism:</strong> Copilot Studio’s orchestrator sends a <strong>webhook</strong> to Defender before a tool/topic/knowledge action executes, including parameters + prior-step outputs + user context.</li>
-          <li><strong>Threat model:</strong> attackers steer the agent’s plan via <strong>prompt injection</strong> / embedded instructions / crafted documents, but stay “within permissions,” which makes traditional controls miss the abuse.</li>
-          <li><strong>Control point:</strong> Defender evaluates both <strong>intent</strong> and <strong>destination</strong> of the planned action (e.g., knowledge search query, email destination) and can block the step.</li>
-          <li><strong>Example 1 (event-triggered finance workflow):</strong> a malicious inbound email tries to smuggle instructions so the agent queries internal finance policies and emails results back to the attacker; runtime check blocks the knowledge search/tool call.</li>
-          <li><strong>Example 2 (poisoned SharePoint doc):</strong> a document edits the agent’s behavior to read a sensitive file and exfiltrate it; runtime controls can block the exfil email attempt.</li>
-          <li><strong>Example 3 (capability recon):</strong> attacker probes a public chatbot to enumerate tools/knowledge sources; controls can limit subsequent tool invocations triggered by the probing pattern.</li>
-        </ul>
-
-        <h2>Why it matters</h2>
-        <ul>
-          <li>“Prompt injection” stops being a content problem and becomes an <strong>execution governance</strong> problem once agents can read/write data, send emails, and mutate systems.</li>
-          <li>Build-time guardrails and prompt filtering won’t catch many real attacks, because the unsafe behavior only becomes obvious once you see the <strong>planned tool call</strong> (and where it’s going).</li>
-          <li>This framing maps well to how security teams already think: <strong>policy + telemetry + enforcement at the action boundary</strong> (like EDR/XDR for code execution).</li>
-        </ul>
-
-        <h2>What to do</h2>
-        <ol>
-          <li><strong>Inventory “agent tools” like privileges:</strong> list every connector/action an agent can call (email, ticket creation, CRM writes, file access). Remove what you don’t need.</li>
-          <li><strong>Add runtime gates for high-risk actions:</strong> even if you’re not using Copilot Studio, you can implement the same idea: log/inspect tool calls and enforce allow/block policies (destinations, data types, rate limits).</li>
-          <li><strong>Harden event triggers:</strong> treat inbound email/webhook triggers as untrusted input. Apply strict parsing, schema validation, and limit which tools a trigger can reach.</li>
-          <li><strong>Constrain data exfil paths:</strong> block unknown domains, require approvals for external sends, and alert on abnormal destinations or large payloads.</li>
-          <li><strong>Monitor for recon:</strong> detect repetitive “what tools do you have” probing patterns, and throttle/deny tool execution when an interaction looks like enumeration.</li>
-        </ol>
-
-        <h2>Sources</h2>
-        <ul>
-          <li>Microsoft Security Blog: <a href="https://www.microsoft.com/en-us/security/blog/2026/01/23/runtime-risk-realtime-defense-securing-ai-agents/">From runtime risk to real‑time defense: Securing AI agents</a></li>
-          <li>Microsoft Learn: <a href="https://learn.microsoft.com/en-us/microsoft-copilot-studio/fundamentals-what-is-copilot-studio">What is Copilot Studio?</a></li>
-          <li>Microsoft Digital Defense Report 2025 (referenced): <a href="https://www.microsoft.com/en-us/security/security-insider/threat-landscape/microsoft-digital-defense-report-2025">Threat landscape / MDRR</a></li>
-        </ul>
-      </article>
-    </main>
-
-    <footer class="small muted">
-      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
-    </footer>
-  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

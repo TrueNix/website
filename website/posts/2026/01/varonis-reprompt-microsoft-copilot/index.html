@@ -20,62 +20,6 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-</head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small"><a href="/posts/">Posts</a>
-        <a href="/categories/">Categories</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
-    </header>
-
-    <main>
-      <article>
-        <h1>Varonis — Reprompt one-click Copilot session hijack (patched)</h1>
-        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
-
-        <ul>
-          <li><strong>What happened:</strong> Varonis described “<strong>Reprompt</strong>”, a one-click flow that could trick <strong>Copilot Personal</strong> into running attacker-supplied instructions via a legitimate link.</li>
-          <li><strong>Key mechanism:</strong> Copilot accepted prompts via a URL <strong><code>q=</code></strong> parameter (parameter-to-prompt / “P2P injection”), and auto-executed on page load.</li>
-          <li><strong>Why it’s different:</strong> no plugins/connectors required; the attack abuses default “deep link” UX rather than an add-on integration.</li>
-          <li><strong>Bypass pattern:</strong> Varonis claims Copilot’s leak-prevention checks applied primarily to the <em>first</em> request; telling Copilot to repeat actions twice (“double-request”) could leak on the second attempt.</li>
-          <li><strong>Stealth escalation:</strong> “chain-request” lets the attacker’s server drip-feed follow-on instructions based on prior responses, making exfiltration intent hard to infer from the initial prompt alone.</li>
-          <li><strong>Session persistence:</strong> the write-up asserts the victim’s authenticated Copilot session remained usable <em>even after the chat/tab was closed</em>, which is what turns “one click” into “ongoing channel.”</li>
-          <li><strong>Status:</strong> Varonis and BleepingComputer report Microsoft patched the issue; Varonis says Microsoft 365 Copilot (enterprise) was not affected.</li>
-        </ul>
-
-        <h2>Why it matters</h2>
-        <ul>
-          <li><strong>“Prompt by URL” is a security boundary:</strong> if a product supports deep links that execute prompts automatically, that link format becomes a phishing primitive.</li>
-          <li><strong>Guardrails must persist across chains:</strong> applying policy only to the first tool/web request creates a predictable bypass target (“do it twice”).</li>
-          <li><strong>Agentic UX increases blast radius:</strong> if an assistant can read history, fetch URLs, and operate with a logged-in identity, prompt injection starts to look like <em>session abuse</em>, not “just bad output.”</li>
-        </ul>
-
-        <h2>What to do</h2>
-        <ol>
-          <li><strong>Patch:</strong> ensure Windows / Edge and Copilot components are fully updated (Reprompt is reported as fixed).</li>
-          <li><strong>Defensive validation (safe):</strong> in your environment, search web proxy/DNS logs for visits to <code>copilot.microsoft.com/?q=</code> originating from email or chat click-throughs; treat unusual volumes as suspicious.</li>
-          <li><strong>Harden “AI deep links”:</strong> if you build internal assistants, disable auto-execute on link open, or require an explicit “Run this prompt” confirmation when the prompt originates from a URL parameter.</li>
-          <li><strong>Telemetry:</strong> log (and alert on) repeated tool calls that are semantically identical but occur back-to-back, since “repeat twice” is now a known bypass motif.</li>
-        </ol>
-
-        <h2>Sources</h2>
-        <ul>
-          <li>Varonis (primary): <a href="https://www.varonis.com/blog/reprompt">Reprompt: The Single-Click Microsoft Copilot Attack that Silently Steals Your Personal Data</a></li>
-          <li>BleepingComputer (secondary): <a href="https://www.bleepingcomputer.com/news/security/reprompt-attack-let-hackers-hijack-microsoft-copilot-sessions/">Reprompt attack hijacked Microsoft Copilot sessions for data theft</a></li>
-          <li>Tenable (background mentioned by Varonis): <a href="https://www.tenable.com/security/research/tra-2025-22">TRA-2025-22</a></li>
-        </ul>
-      </article>
-    </main>
-
-    <footer class="small muted">
-      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
-      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
-    </footer>
-  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

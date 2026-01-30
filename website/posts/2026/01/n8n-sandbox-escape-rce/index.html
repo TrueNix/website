@@ -20,69 +20,6 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-</head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small"><a href="/posts/">Posts</a>
-        <a href="/categories/">Categories</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
-    </header>
-
-    <main>
-      <article>
-        <h1>n8n: sandbox escape bugs lead to full RCE in self-hosted instances</h1>
-        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/security/">Security</a></p>
-
-        <ul>
-          <li><strong>What happened:</strong> Researchers reported two sandbox-escape vulnerabilities in n8n that can result in remote code execution (RCE) on the main n8n node in affected self-hosted deployments.</li>
-          <li><strong>CVE-2026-1470 (critical):</strong> A JavaScript AST sandbox escape involving unsafe handling of the <code>with</code> statement, allowing an attacker to reach <code>Function</code> and execute arbitrary JS outside the intended sandbox.</li>
-          <li><strong>CVE-2026-0863:</strong> A Python AST sandbox escape that can regain access to restricted builtins/imports via Python runtime behavior, enabling OS command execution.</li>
-          <li><strong>Preconditions:</strong> Exploitation requires authentication (ability to create/modify workflows), but the impact is still “full instance compromise” once a low-privileged user can reach the workflow editor.</li>
-          <li><strong>Scope:</strong> n8n Cloud is reported as already addressed; the practical risk is on self-hosted instances running vulnerable versions.</li>
-          <li><strong>Patching:</strong> Vendor patch versions were published; upgrade is the fastest path to reducing risk.</li>
-          <li><strong>Bigger theme:</strong> “Sandboxing” dynamic languages is hard—assume clever escapes exist and build layered defenses (authz, isolation, monitoring), not just AST filters.</li>
-        </ul>
-
-        <h2>Why it matters</h2>
-        <ul>
-          <li>n8n sits at the center of automation: it often holds API tokens, can call SaaS apps, and can run code (JS/Python nodes). RCE here typically means <strong>credential theft + lateral movement</strong>.</li>
-          <li>Even if only “internal users” have access, many orgs treat workflow builders as semi-trusted. These CVEs show that a “non-admin builder” can become “infrastructure owner” if the sandbox boundary breaks.</li>
-          <li>Attackers increasingly hunt exposed automation/orchestration services (and they patch slowly). If your n8n is internet-reachable, the clock is not in your favor.</li>
-        </ul>
-
-        <h2>What to do</h2>
-        <ol>
-          <li><strong>Find exposure:</strong> locate all n8n instances (prod/staging/dev). Prioritize any reachable from the internet.</li>
-          <li><strong>Patch now:</strong> upgrade to a fixed n8n release (see vendor guidance / release notes). If you can’t patch immediately, restrict access to trusted IP ranges/VPN.</li>
-          <li><strong>Lock down workflow creation:</strong> minimize who can create/modify workflows; treat it as privileged access.</li>
-          <li><strong>Rotate secrets:</strong> if you suspect exposure, rotate tokens/credentials stored in n8n and review recent workflow changes.</li>
-          <li><strong>Add detection:</strong> alert on unusual workflow edits, new “code” nodes, and outbound connections from the n8n host.</li>
-        </ol>
-
-        <div class="card">
-          <strong>Related</strong>
-          <ul>
-            <li><a href="/categories/ai-cves/">AI CVEs</a> • <a href="/posts/2026/01/ai-related-cves-tracker/">AI-related CVEs tracker</a></li>
-          </ul>
-        </div>
-
-        <h2>Sources</h2>
-        <ul>
-          <li>BleepingComputer: <a href="https://www.bleepingcomputer.com/news/security/new-sandbox-escape-flaw-exposes-n8n-instances-to-rce-attacks/">New sandbox escape flaw exposes n8n instances to RCE attacks</a></li>
-          <li>JFrog research: <a href="https://research.jfrog.com/post/achieving-remote-code-execution-on-n8n-via-sandbox-escape/">Achieving Remote Code Execution on n8n via Sandbox Escape</a></li>
-          <li>NVD: <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-1470">CVE-2026-1470</a> • <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-0863">CVE-2026-0863</a></li>
-        </ul>
-      </article>
-    </main>
-
-    <footer class="small muted">
-      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
-    </footer>
-  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;
