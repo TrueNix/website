@@ -1,1 +1,91 @@
-utf-8
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Varonis — Reprompt: single-click Copilot prompt injection chain for silent data exfiltration" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="news" />
+  <meta name="post:categoryLabel" content="News" />
+
+  <title>Varonis — Reprompt: single-click Copilot prompt injection chain for silent data exfiltration — al-ice.ai</title>
+  <meta name="description" content="Varonis Threat Labs describes Reprompt: a one-click Copilot Personal deep-link technique (q=) combined with multi-request chaining that enabled silent data exfiltration; Microsoft says it has been patched." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/varonis-reprompt-copilot-single-click/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Varonis — Reprompt: single-click Copilot prompt injection chain for silent data exfiltration" />
+  <meta property="og:description" content="Varonis Threat Labs describes Reprompt: a one-click Copilot Personal deep-link technique (q=) combined with multi-request chaining that enabled silent data exfiltration; Microsoft says it has been patched." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/varonis-reprompt-copilot-single-click/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Varonis — Reprompt: single-click Copilot prompt injection chain for silent data exfiltration</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/news/">News</a></p>
+
+        <ul>
+          <li><strong>Claim (research):</strong> Varonis Threat Labs describes <strong>Reprompt</strong>, an attack flow against <strong>Microsoft Copilot Personal</strong> where a single click on a legitimate link can start a prompt-driven exfiltration chain.</li>
+          <li><strong>Entry point:</strong> The technique uses a deep-link pattern where the <code>q</code> URL parameter pre-fills (and can auto-execute) a prompt.</li>
+          <li><strong>Bypassing “first-request” guardrails:</strong> The writeup claims certain leak protections applied to an initial request, but could be bypassed by instructing Copilot to repeat actions (a “double-request” behavior).</li>
+          <li><strong>Stealthy follow-ups:</strong> In the “chain-request” pattern, Copilot fetches attacker-controlled URLs that respond with the next instructions, enabling iterative exfiltration.</li>
+          <li><strong>Why it’s hard to spot:</strong> If the real instructions arrive from the attacker’s server after the first click, the initial prompt may look benign while the later steps do the damage.</li>
+          <li><strong>Persistence (session):</strong> The report claims the process can continue even if the user closes the Copilot tab, because it leverages the victim’s active session.</li>
+          <li><strong>Scope note:</strong> Varonis states it affected Copilot Personal and that <strong>Microsoft 365 Copilot (enterprise)</strong> was not impacted.</li>
+          <li><strong>Status:</strong> Varonis says Microsoft confirmed the issue is patched.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>“One-click” is the new phishing bar:</strong> Deep links that carry prompts are UX-friendly, but they also reduce attacker friction to almost zero.</li>
+          <li><strong>Prompt injection without plugins:</strong> This isn’t “install a risky connector” — it’s leveraging default product behavior (pre-filled prompts + web requests).</li>
+          <li><strong>Design lesson:</strong> If guardrails apply only to the first tool/web call, attackers will structure flows to move the sensitive step to request #2.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Assume prompt deep-links are untrusted input:</strong> Treat <code>?q=...</code> (and equivalents) as a security boundary; require explicit user confirmation before executing pre-filled prompts.</li>
+          <li><strong>Make protections “sticky”:</strong> Apply DLP / URL-fetch controls across the entire chain, not just the first request.</li>
+          <li><strong>Constrain web fetching:</strong> If your assistant can retrieve URLs, enforce allowlists, block private IP ranges, and log all outbound fetches.</li>
+          <li><strong>Hunt for patterns:</strong> Detect repeated identical “tool calls” or repeated outbound fetches to newly seen domains (a typical chaining signal).</li>
+          <li><strong>User training:</strong> Teach staff that “it’s a Microsoft link” doesn’t mean the embedded prompt is safe — check the prefilled text before proceeding.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/posts/2026/01/ai-security-news-digest/">AI security news digest</a></li>
+            <li><a href="/posts/2026/01/prompt-injection-agentic-coding-assistants-sok/">Prompt injection SoK (agentic coding assistants)</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Varonis Threat Labs (primary): <a href="https://www.varonis.com/blog/reprompt">Reprompt: The Single-Click Microsoft Copilot Attack that Silently Steals Your Personal Data</a></li>
+          <li>BleepingComputer (secondary coverage): <a href="https://www.bleepingcomputer.com/news/security/reprompt-attack-let-hackers-hijack-microsoft-copilot-sessions/">Reprompt attack hijacked Microsoft Copilot sessions for data theft</a></li>
+          <li>Tenable (related deep-link parameter research referenced by Varonis): <a href="https://www.tenable.com/security/research/tra-2025-22">TRA-2025-22</a></li>
+          <li>LayerX (related, referenced by Varonis): <a href="https://layerxsecurity.com/blog/cometjacking-how-one-click-can-turn-perplexitys-comet-ai-browser-against-you/">Cometjacking</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/news/">← News</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>

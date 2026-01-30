@@ -1,1 +1,90 @@
-utf-8
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Model Context Protocol — MCP Apps: UI components inside agent chats" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="news" />
+  <meta name="post:categoryLabel" content="News" />
+
+  <title>Model Context Protocol — MCP Apps: UI components inside agent chats — al-ice.ai</title>
+  <meta name="description" content="The Model Context Protocol (MCP) project announced MCP Apps: an official extension that lets tools return sandboxed, interactive UI (iframes + JSON-RPC) inside supported clients like Claude, ChatGPT, Goose and VS Code." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/mcp-apps-ui-extension/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Model Context Protocol — MCP Apps: UI components inside agent chats" />
+  <meta property="og:description" content="The Model Context Protocol (MCP) project announced MCP Apps: an official extension that lets tools return sandboxed, interactive UI (iframes + JSON-RPC) inside supported clients like Claude, ChatGPT, Goose and VS Code." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/mcp-apps-ui-extension/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Model Context Protocol — MCP Apps: UI components inside agent chats</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/news/">News</a></p>
+
+        <ul>
+          <li><strong>What shipped:</strong> The MCP project announced <strong>MCP Apps</strong> as the <strong>first official MCP extension</strong>, letting tools return interactive UI components instead of only text.</li>
+          <li><strong>Mechanism:</strong> Tools attach UI metadata (a <code>resourceUri</code>) and the host renders the UI resource via a <code>ui://</code> scheme.</li>
+          <li><strong>Execution model:</strong> UI runs in a <strong>sandboxed iframe</strong>, with bidirectional communication using JSON-RPC over <code>postMessage</code>.</li>
+          <li><strong>Why now:</strong> It standardizes patterns pioneered by MCP-UI and the OpenAI Apps SDK, aiming for “write once, run across clients.”</li>
+          <li><strong>Use cases:</strong> dashboards, configuration wizards, document review, live system monitoring — basically anything that’s painful as a back-and-forth prompt loop.</li>
+          <li><strong>Security posture (as described):</strong> sandboxing + auditable messages + optional user consent for UI-initiated tool calls + host review of templates.</li>
+          <li><strong>Client support:</strong> the post lists Claude (web/desktop), Goose, VS Code Insiders, and ChatGPT “starting this week,” plus more to come.</li>
+          <li><strong>Dev entry point:</strong> there’s an SDK package (<code>@modelcontextprotocol/ext-apps</code>) and a quickstart + examples.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Agents become “real apps”:</strong> This pushes agent workflows from chat-only into richer, stateful interactions — which accelerates adoption in enterprise automation.</li>
+          <li><strong>New attack surface:</strong> Any “UI-from-a-tool” feature is effectively running code you didn’t write. Sandboxing helps, but trust and review remain central.</li>
+          <li><strong>Standardization pressure:</strong> Once multiple major clients support the same UI extension, the ecosystem will move faster (and so will security mistakes).</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>For host/client builders:</strong> ship with strict sandbox flags by default; require explicit consent for UI-initiated tool calls; log every JSON-RPC message.</li>
+          <li><strong>For tool authors:</strong> treat UI code as part of your supply chain; publish signed releases, pin dependencies, and document the permissions your UI expects.</li>
+          <li><strong>For security teams:</strong> add “MCP UI resources” to threat models and reviews (content security policy, origin isolation, token handling, clickjacking, SSRF via tool calls).</li>
+          <li><strong>For operators:</strong> allowlist MCP servers; don’t connect random public servers to privileged tools/data; keep a kill-switch (disable UI rendering) for incident response.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/posts/2026/01/anthropic-mcp-git-prompt-injection/">Anthropic Git MCP prompt injection advisories</a></li>
+            <li><a href="/posts/2026/01/ai-security-news-digest/">AI security news digest</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>MCP blog (primary): <a href="http://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/">MCP Apps - Bringing UI Capabilities To MCP Clients</a></li>
+          <li>Docs: <a href="https://modelcontextprotocol.io/docs/extensions/apps">MCP Apps Guide</a></li>
+          <li>SDK: <a href="https://www.npmjs.com/package/@modelcontextprotocol/ext-apps">@modelcontextprotocol/ext-apps</a></li>
+          <li>GitHub: <a href="https://github.com/modelcontextprotocol/ext-apps">modelcontextprotocol/ext-apps</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/news/">← News</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>
