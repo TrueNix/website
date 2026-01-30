@@ -354,7 +354,21 @@ ${latestGrid}
 
     // Ensure handler script exists (overwrite older versions)
     if (html.includes('</body>')){
-      html = html.replace(/\s*<script>\(function\(\)\{var btn=document\.getElementById\('themeToggle'\)[\s\S]*?<\/script>\s*/g, '\n');
+      // Remove any previous theme toggle handler scripts safely.
+      // We only strip <script> blocks that mention themeToggle + either legacy labels or our icon helpers.
+      html = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, body) => {
+        const b = String(body || '');
+        const mentionsToggle = b.includes('themeToggle') || b.includes("getElementById('themeToggle'") || b.includes('getElementById("themeToggle"');
+        if (!mentionsToggle) return m;
+
+        const isLegacy = b.includes('Style: 80/90s') || b.includes("localStorage.setItem('theme','modern')") || b.includes("localStorage.removeItem('theme')");
+        const isIconHandler = b.includes('crtIcon') || b.includes('flatIcon') || b.includes('theme-ico') || b.includes('Toggle CRT');
+
+        if (isLegacy || isIconHandler) return '';
+        return m;
+      });
+
+      // Inject the current handler (once)
       html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
     }
 
