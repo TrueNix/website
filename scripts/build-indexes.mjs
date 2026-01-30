@@ -276,8 +276,17 @@ ${latestGrid}
       render();btn.addEventListener('click',function(){setRetro(!isRetro());});})();</script>`;
   }
 
+  function stripWorkflows(html){
+    // Remove any Workflows nav link
+    html = html.replace(/\s*<a\s+href="\/workflows\/">Workflows<\/a>\s*/g, '');
+    // Remove any category link pointing to /categories/workflows/
+    html = html.replace(/<a\s+href="\/categories\/workflows\/">Workflows<\/a>/g, '<span class="muted">Workflows</span>');
+    return html;
+  }
+
   async function ensureThemeOnHtmlFile(file){
     let html = await readFile(file, 'utf8');
+    html = stripWorkflows(html);
 
     // head init script
     if (html.includes('/assets/css/site.css') && !html.includes('localStorage.getItem(\'theme\')')){
