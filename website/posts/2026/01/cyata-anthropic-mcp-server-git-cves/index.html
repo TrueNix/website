@@ -20,68 +20,6 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-</head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small">
-        <a href="/posts/">Posts</a>
-        <a href="/categories/">Categories</a>
-        <a href="/search/">Search</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
-    </header>
-
-    <main>
-      <article>
-        <h1>Cyata — Prompt-injection reachable CVEs in Anthropic’s official Git MCP server</h1>
-        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/ai-cves/">AI CVEs</a></p>
-
-        <p><strong>AI relevance:</strong> This is a concrete example of how “agent + tools” stacks turn prompt injection into real filesystem/code-impact via MCP tool calls and cross-tool chaining.</p>
-
-        <ul>
-          <li><strong>Cyata reports</strong> 3 vulnerabilities in <code>mcp-server-git</code> (Anthropic’s reference Git server for MCP) that are reachable when an attacker can influence what the assistant reads (e.g., README/issue text/webpage content that gets pulled into context).</li>
-          <li>The core pattern: the server trusts attacker-controlled tool arguments (notably <code>repo_path</code>) and forwards them into Git operations.</li>
-          <li><strong>CVE-2025-68145 (path validation bypass):</strong> lets an attacker direct operations to arbitrary directories/repositories on the host, not just the configured repo.</li>
-          <li><strong>CVE-2025-68143 (unrestricted git_init):</strong> enables initializing Git repos in arbitrary directories, which can be used as a stepping stone to reading/transforming files into model context.</li>
-          <li><strong>CVE-2025-68144 (argument injection in git_diff):</strong> attacker-controlled flags like <code>--output=...</code> can overwrite files (effectively deletion/corruption).</li>
-          <li>Cyata also demonstrates a <strong>code execution chain</strong> when Git is combined with a file-writing capability (e.g., a filesystem MCP server or IDE write APIs), via Git’s clean/smudge filters configured in <code>.git/config</code>.</li>
-          <li>Notably, the write-up emphasizes this works “out of the box” for default installs prior to the fix, making it a practical ops risk, not just a lab curiosity.</li>
-        </ul>
-
-        <h2>Why it matters</h2>
-        <ul>
-          <li>“Prompt injection” stops being a purely model-level problem once tools exist: it becomes <strong>argument injection</strong> + <strong>privileged automation</strong>.</li>
-          <li>MCP increases composability: Git + filesystem (or any writer) becomes a high-risk pairing because it enables multi-step exploit chains.</li>
-          <li>If your assistant ingests untrusted text (issues, PR descriptions, docs, web pages), treat it like user-controlled input to privileged functions.</li>
-        </ul>
-
-        <h2>What to do</h2>
-        <ul>
-          <li><strong>Patch:</strong> update <code>mcp-server-git</code> to a fixed release (Cyata cites <code>2025.12.18</code>+).</li>
-          <li><strong>Reduce tool blast radius:</strong> do not run Git + filesystem write tools together unless you must; scope filesystem servers to a minimal allowlist path.</li>
-          <li><strong>Constrain tool arguments:</strong> enforce server-side validation so parameters like <code>repo_path</code> cannot escape configured roots.</li>
-          <li><strong>Harden “tooling features”:</strong> consider blocking Git features that spawn shell commands (filters/hooks) in automated agent workflows, or run them inside a sandboxed runner/container.</li>
-          <li><strong>Detection:</strong> monitor for unexpected <code>.git/</code> directories created outside repos and for suspicious Git config keys (e.g., filter.*.clean/smudge).</li>
-        </ul>
-
-        <h2>Links</h2>
-        <ul>
-          <li><a href="https://cyata.ai/blog/cyata-research-breaking-anthropics-official-mcp-server/">Cyata: Breaking Anthropic’s Official MCP Server (primary write-up)</a></li>
-          <li><a href="https://www.infosecurity-magazine.com/news/prompt-injection-bugs-anthropic/">Infosecurity Magazine coverage</a></li>
-          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68143">CVE-2025-68143</a></li>
-          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68144">CVE-2025-68144</a></li>
-          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68145">CVE-2025-68145</a></li>
-        </ul>
-      </article>
-    </main>
-
-    <footer class="small muted">
-      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
-    </footer>
-  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;

@@ -20,60 +20,6 @@
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-</head>
-<body>
-  <div class="wrap">
-    <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small"><a href="/posts/">Posts</a>
-        <a href="/categories/">Categories</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
-    </header>
-
-    <main>
-      <article>
-        <h1>arXiv — MCP protocol security analysis: capability attestation &amp; sampling injection</h1>
-        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/categories/research/">Research</a></p>
-
-        <ul>
-          <li><strong>What it is:</strong> a protocol-level security analysis of the Model Context Protocol (MCP), focused on how tool-integrated agents authenticate (or fail to authenticate) what servers claim and what servers ask clients to do.</li>
-          <li><strong>Claimed vulnerability #1:</strong> <strong>no capability attestation</strong> — a server can claim broad permissions without a protocol-native way for the client to verify those claims.</li>
-          <li><strong>Claimed vulnerability #2:</strong> <strong>bidirectional sampling without origin authentication</strong> — server-initiated “sampling” can become a prompt-injection channel back into the client’s model context.</li>
-          <li><strong>Claimed vulnerability #3:</strong> <strong>implicit trust propagation</strong> in multi-server setups — a weak or malicious server can influence workflows that end up invoking other servers/tools.</li>
-          <li><strong>Measurement:</strong> authors describe running hundreds of attack scenarios across multiple MCP server implementations and report higher success rates vs non-MCP equivalents (attributed to protocol design choices).</li>
-          <li><strong>Proposed fix:</strong> a backward-compatible extension (“MCPSec”) with capability attestation + message authentication, with small reported latency overhead.</li>
-        </ul>
-
-        <h2>Why it matters</h2>
-        <ul>
-          <li><strong>Protocols become defaults:</strong> once MCP is “the way tools connect,” its security properties (good or bad) get inherited by every agent and every marketplace server.</li>
-          <li><strong>“Prompt injection” becomes a transport problem:</strong> when servers can solicit model completions, the attack surface isn’t just the content you read — it’s the protocol messages you accept.</li>
-          <li><strong>Enterprise agent sprawl:</strong> multi-server and multi-tool graphs are exactly where trust propagation issues become real (and hard to reason about).</li>
-        </ul>
-
-        <h2>What to do</h2>
-        <ol>
-          <li><strong>Inventory MCP servers:</strong> treat them like dependencies with SBOM-like tracking (owner, version, permissions, data touched).</li>
-          <li><strong>Constrain permissions outside the protocol:</strong> run servers in sandboxes/containers; scope filesystem mounts; isolate credentials per server.</li>
-          <li><strong>Gate sampling/tool calls:</strong> require explicit user confirmation (or policy allowlists) for server-initiated actions that can change model context or trigger tool execution.</li>
-          <li><strong>Log and alert:</strong> record the full chain of MCP interactions (server → request → tool invocation) so you can detect cross-server “weird graphs.”</li>
-        </ol>
-
-        <h2>Sources</h2>
-        <ul>
-          <li>arXiv (abstract): <a href="https://arxiv.org/abs/2601.17549v1">Breaking the Protocol… (2601.17549v1)</a></li>
-          <li>arXiv (HTML): <a href="https://arxiv.org/html/2601.17549v1">HTML version</a></li>
-          <li>arXiv (PDF): <a href="https://arxiv.org/pdf/2601.17549v1">2601.17549v1</a></li>
-        </ul>
-      </article>
-    </main>
-
-    <footer class="small muted">
-      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
-    </footer>
-  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;
