@@ -96,27 +96,92 @@ async function main(){
 
   posts.sort((a,b) => (b.date).localeCompare(a.date));
 
-  // posts index
-  const postsItems = posts.map(p => `
-<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date} • <a href="/categories/${p.category}/">${p.categoryLabel}</a></span></li>`).join('');
-  const postsIndex = pageShell({
-    title: 'Posts — al-ice.ai',
-    canonical: `${BASE}/posts/`,
-    description: 'Guides, workflows, and tool comparisons for practical AI automation.',
-    body: `<main>
-<h1>Posts</h1>
-<p class="muted">Practical AI workflows and automation guides.</p>
-<div class="card"><ul>${postsItems || '<li class="muted">No posts yet.</li>'}</ul></div>
-</main>`
-  });
-  await mkdir(join(SITE_DIR,'posts'), { recursive:true });
-  await writeFile(join(SITE_DIR,'posts','index.html'), postsIndex);
-
-  // categories
+  // categories (for filters + category pages)
   const byCat = new Map();
   for (const p of posts){
     if (!byCat.has(p.category)) byCat.set(p.category, { label: p.categoryLabel, posts: [] });
     byCat.get(p.category).posts.push(p);
+  }
+
+  const PER_PAGE = 20;
+  const totalPages = Math.max(1, Math.ceil(posts.length / PER_PAGE));
+
+  function pageUrl(n){
+    return n <= 1 ? '/posts/' : `/posts/page/${n}/`;
+  }
+
+  function renderPagination(current){
+    if (totalPages <= 1) return '';
+
+    const parts = [];
+    const mkLink = (n, label=n) => `<a class="page" href="${pageUrl(n)}">${label}</a>`;
+
+    if (current > 1) parts.push(mkLink(current - 1, 'Prev'));
+
+    // windowed page numbers
+    const window = 2;
+    const pages = new Set([1, totalPages]);
+    for (let i = current - window; i <= current + window; i++){
+      if (i >= 1 && i <= totalPages) pages.add(i);
+    }
+    const sorted = [...pages].sort((a,b)=>a-b);
+
+    let last = 0;
+    for (const n of sorted){
+      if (last && n - last > 1) parts.push('<span class="dots">…</span>');
+      parts.push(n === current ? `<span class="page current">${n}</span>` : mkLink(n));
+      last = n;
+    }
+
+    if (current < totalPages) parts.push(mkLink(current + 1, 'Next'));
+
+    return `<nav class="pagination" aria-label="Posts pagination">${parts.join('')}</nav>`;
+  }
+
+  const filterPills = (() => {
+    const cats = [...byCat.entries()]
+      .sort((a,b)=>a[0].localeCompare(b[0]))
+      .map(([slug, v]) => `<a class="pill" href="/categories/${slug}/">${v.label} <span class="muted">(${v.posts.length})</span></a>`)
+      .join('');
+    return `<div class="pills"><span class="muted small">Filter:</span> <a class="pill active" href="/posts/">All</a>${cats ? ' ' + cats : ''}</div>`;
+  })();
+
+  function renderPostsPage(pageNum){
+    const start = (pageNum - 1) * PER_PAGE;
+    const slice = posts.slice(start, start + PER_PAGE);
+
+    const cards = slice.map(p => `
+<article class="post-card card">
+  <h2 class="post-title"><a href="${p.urlPath}">${p.title}</a></h2>
+  <div class="post-meta">
+    <time datetime="${p.date}">${p.date}</time>
+    <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
+  </div>
+</article>`).join('');
+
+    const grid = `<div class="posts-grid">${cards || '<div class="card muted">No posts yet.</div>'}</div>`;
+
+    return pageShell({
+      title: pageNum > 1 ? `Posts (Page ${pageNum}) — al-ice.ai` : 'Posts — al-ice.ai',
+      canonical: `${BASE}${pageUrl(pageNum)}`,
+      description: 'Guides, workflows, and tool comparisons for practical AI automation.',
+      body: `<main>
+<h1>Posts</h1>
+<p class="muted">Practical AI workflows and automation guides.</p>
+${filterPills}
+${grid}
+${renderPagination(pageNum)}
+</main>`
+    });
+  }
+
+  // posts index + paginated pages
+  await mkdir(join(SITE_DIR,'posts'), { recursive:true });
+  await writeFile(join(SITE_DIR,'posts','index.html'), renderPostsPage(1));
+  for (let pageNum = 2; pageNum <= totalPages; pageNum++){
+    const dir = join(SITE_DIR, 'posts', 'page', String(pageNum));
+    await mkdir(dir, { recursive:true });
+    await writeFile(join(dir, 'index.html'), renderPostsPage(pageNum));
   }
 
   // categories index
@@ -173,6 +238,11 @@ async function main(){
   function add(path, lastmod){ urls.set(`${BASE}${path}`, lastmod || null); }
   add('/', getGitLastMod(join(SITE_DIR,'index.html')));
   add('/posts/', getGitLastMod(join(SITE_DIR,'posts','index.html')));
+  if (totalPages > 1){
+    for (let pageNum = 2; pageNum <= totalPages; pageNum++){
+      add(`/posts/page/${pageNum}/`, getGitLastMod(join(SITE_DIR,'posts','page',String(pageNum),'index.html')));
+    }
+  }
   add('/categories/', getGitLastMod(join(SITE_DIR,'categories','index.html')));
   add('/workflows/', getGitLastMod(join(SITE_DIR,'workflows','index.html')));
   for (const [slug] of byCat.entries()) add(`/categories/${slug}/`, getGitLastMod(join(SITE_DIR,'categories',slug,'index.html')));
