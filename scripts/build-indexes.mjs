@@ -328,20 +328,33 @@ ${latestGrid}
     let html = await readFile(file, 'utf8');
     html = stripWorkflows(html);
 
-    // head init script
-    if (html.includes('/assets/css/site.css') && !html.includes('localStorage.getItem(\'theme\')')){
-      html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
+    // Ensure the init script matches the current logic (overwrite older variants)
+    if (html.includes('/assets/css/site.css')){
+      // remove any previous injected theme init blocks
+      html = html.replace(/\s*<script>\s*\(function\(\)\{[\s\S]*?localStorage\.getItem\('theme'\)[\s\S]*?\}\)\(\);\s*<\/script>\s*/g, '\n');
+      html = html.replace(/\s*<script>\(function\(\)\{try\{var t=localStorage\.getItem\('theme'\)[\s\S]*?<\/script>\s*/g, '\n');
+
+      // insert current init script right after the stylesheet link
+      if (!html.includes('if(t==="retro")')){
+        html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
+      }
     }
 
-    // header toggle button (best-effort)
-    if (!html.includes('id="themeToggle"') && html.includes('<nav') && html.includes('class="small"')){
-      html = html.replace(/<nav\s+class="small">([\s\S]*?)<\/nav>/m, (m, inner) => {
-        return `<nav class="small">${inner}\n        ${themeToggleButton()}\n      </nav>`;
-      });
+    // Ensure the toggle button exists and matches our current markup
+    if (html.includes('class="small"')){
+      // remove legacy buttons that had text labels
+      html = html.replace(/\s*<button\s+id="themeToggle"[^>]*>[\s\S]*?<\/button>\s*/g, `\n        ${themeToggleButton()}\n`);
+
+      if (!html.includes('id="themeToggle"') && html.includes('<nav')){
+        html = html.replace(/<nav\s+class="small">([\s\S]*?)<\/nav>/m, (m, inner) => {
+          return `<nav class="small">${inner}\n        ${themeToggleButton()}\n      </nav>`;
+        });
+      }
     }
 
-    // handler script
-    if (!html.includes('btn.addEventListener') && html.includes('</body>')){
+    // Ensure handler script exists (overwrite older versions)
+    if (html.includes('</body>')){
+      html = html.replace(/\s*<script>\(function\(\)\{var btn=document\.getElementById\('themeToggle'\)[\s\S]*?<\/script>\s*/g, '\n');
       html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
     }
 
