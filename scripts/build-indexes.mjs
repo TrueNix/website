@@ -59,6 +59,7 @@ function pageShell({title, canonical, description, body}){
         <a href="/workflows/">Workflows</a>
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
       </nav>
     </header>
     ${body}
@@ -233,11 +234,23 @@ ${renderPagination(pageNum)}
   await mkdir(join(SITE_DIR,'workflows'), { recursive:true });
   await writeFile(join(SITE_DIR,'workflows','index.html'), wfHub);
 
+  // search index (client-side)
+  const searchIndex = posts.map(p => ({
+    title: p.title,
+    date: p.date,
+    category: p.category,
+    categoryLabel: p.categoryLabel,
+    urlPath: p.urlPath,
+  }));
+  await mkdir(join(SITE_DIR,'assets'), { recursive:true });
+  await writeFile(join(SITE_DIR,'assets','search-index.json'), JSON.stringify(searchIndex, null, 0));
+
   // sitemap
   const urls = new Map();
   function add(path, lastmod){ urls.set(`${BASE}${path}`, lastmod || null); }
   add('/', getGitLastMod(join(SITE_DIR,'index.html')));
   add('/posts/', getGitLastMod(join(SITE_DIR,'posts','index.html')));
+  add('/search/', getGitLastMod(join(SITE_DIR,'search','index.html')));
   if (totalPages > 1){
     for (let pageNum = 2; pageNum <= totalPages; pageNum++){
       add(`/posts/page/${pageNum}/`, getGitLastMod(join(SITE_DIR,'posts','page',String(pageNum),'index.html')));

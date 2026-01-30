@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Search — al-ice.ai</title>
+  <meta name="description" content="Search posts on al-ice.ai." />
+  <link rel="canonical" href="https://al-ice.ai/search/" />
+  <meta name="robots" content="index,follow" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <style>
+    .search-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .search-input{flex:1;min-width:260px;padding:10px 12px;border:1px solid var(--border,#ddd);border-radius:10px}
+    .search-results{margin-top:14px}
+    .search-results li{margin:10px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+      </nav>
+    </header>
+
+    <main>
+      <h1>Search</h1>
+      <p class="muted">Client-side search across post titles (fast, no tracking queries server-side).</p>
+
+      <div class="card">
+        <div class="search-row">
+          <input id="q" class="search-input" type="search" placeholder="Search titles (e.g., MCP, CVE-2026, prompt injection…)" autocomplete="off" />
+          <span class="muted small" id="count"></span>
+        </div>
+        <ul class="search-results" id="results"></ul>
+      </div>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
+
+  <script>
+  const $q = document.getElementById('q');
+  const $results = document.getElementById('results');
+  const $count = document.getElementById('count');
+
+  function norm(s){ return (s||'').toLowerCase().trim(); }
+
+  function render(items){
+    $results.innerHTML = items.map(p => {
+      const cat = p.categoryLabel || p.category;
+      return `<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date} • ${cat}</span></li>`;
+    }).join('') || `<li class="muted">No matches.</li>`;
+    $count.textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+  }
+
+  async function main(){
+    const res = await fetch('/assets/search-index.json', { cache: 'no-store' });
+    const all = await res.json();
+
+    function run(){
+      const q = norm($q.value);
+      if (!q){ render(all.slice(0, 50)); return; }
+      const terms = q.split(/\s+/).filter(Boolean);
+      const filtered = all.filter(p => {
+        const t = norm(p.title);
+        return terms.every(term => t.includes(term));
+      }).slice(0, 100);
+      render(filtered);
+    }
+
+    // URL param support: /search/?q=...
+    const params = new URLSearchParams(location.search);
+    const initial = params.get('q');
+    if (initial) $q.value = initial;
+
+    $q.addEventListener('input', run);
+    run();
+  }
+
+  main().catch(err => {
+    $results.innerHTML = `<li class="muted">Search failed to load index.</li>`;
+    console.error(err);
+  });
+  </script>
+</body>
+</html>
