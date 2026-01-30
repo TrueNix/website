@@ -52,10 +52,13 @@ function pageShell({title, canonical, description, body}){
   <link rel="stylesheet" href="/assets/css/site.css" />
   <script>
     (function(){
+      // Default theme: retro (80/90s). Visitors can switch to Modern and we'll remember it.
       try{
         var t = localStorage.getItem('theme');
-        if (t === 'retro') document.documentElement.setAttribute('data-theme','retro');
-      }catch(e){}
+        if (t !== 'modern') document.documentElement.setAttribute('data-theme','retro');
+      }catch(e){
+        document.documentElement.setAttribute('data-theme','retro');
+      }
     })();
   </script>
 </head>
@@ -67,7 +70,7 @@ function pageShell({title, canonical, description, body}){
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle retro theme">80/90s</button>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch site style">Style: 80/90s</button>
       </nav>
     </header>
     ${body}
@@ -82,18 +85,20 @@ function pageShell({title, canonical, description, body}){
       var btn = document.getElementById('themeToggle');
       if(!btn) return;
       function isRetro(){ return document.documentElement.getAttribute('data-theme') === 'retro'; }
+      function render(){
+        btn.textContent = isRetro() ? 'Style: 80/90s' : 'Style: Modern';
+      }
       function setRetro(on){
         if(on){
           document.documentElement.setAttribute('data-theme','retro');
-          try{ localStorage.setItem('theme','retro'); }catch(e){}
-          btn.textContent = 'Modern';
+          try{ localStorage.removeItem('theme'); }catch(e){}
         }else{
           document.documentElement.removeAttribute('data-theme');
-          try{ localStorage.removeItem('theme'); }catch(e){}
-          btn.textContent = '80/90s';
+          try{ localStorage.setItem('theme','modern'); }catch(e){}
         }
+        render();
       }
-      setRetro(isRetro());
+      render();
       btn.addEventListener('click', function(){ setRetro(!isRetro()); });
     })();
   </script>
