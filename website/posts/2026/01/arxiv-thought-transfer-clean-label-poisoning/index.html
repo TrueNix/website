@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="arXiv — Thought-Transfer: clean-label poisoning via chain-of-thought traces" />
+  <meta name="post:date" content="2026-01-30" />
+  <meta name="post:category" content="news" />
+  <meta name="post:categoryLabel" content="News" />
+
+  <title>arXiv — Thought-Transfer: clean-label poisoning via chain-of-thought traces — al-ice.ai</title>
+  <meta name="description" content="A new arXiv paper describes “Thought-Transfer,” an indirect targeted poisoning technique that manipulates chain-of-thought traces (not questions/answers) to induce behaviors on unseen target tasks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/arxiv-thought-transfer-clean-label-poisoning/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="arXiv — Thought-Transfer: clean-label poisoning via chain-of-thought traces" />
+  <meta property="og:description" content="A new arXiv paper describes “Thought-Transfer,” an indirect targeted poisoning technique that manipulates chain-of-thought traces (not questions/answers) to induce behaviors on unseen target tasks." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/arxiv-thought-transfer-clean-label-poisoning/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/workflows/">Workflows</a>
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/news/">News</a>
+        <a href="/services/">Services</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv — Thought-Transfer: clean-label poisoning via chain-of-thought traces</h1>
+        <p class="muted small"><time datetime="2026-01-30">2026-01-30</time> • Category: <a href="/news/">News</a></p>
+
+        <ul>
+          <li><strong>Context:</strong> Many teams fine-tune reasoning models using chain-of-thought (CoT) datasets from public repositories (e.g., Hugging Face).</li>
+          <li><strong>New attack class:</strong> The paper proposes <strong>Indirect Targeted Poisoning</strong> for reasoning models, dubbed <strong>Thought-Transfer</strong>.</li>
+          <li><strong>What’s different:</strong> Instead of poisoning the <em>question</em> or <em>final answer</em>, the attacker modifies only the <strong>CoT traces</strong> in training examples.</li>
+          <li><strong>“Clean label” angle:</strong> The queries and answers can remain unchanged, making the poisoned dataset look legitimate under naive spot checks.</li>
+          <li><strong>Cross-domain effect:</strong> The authors claim the induced behavior can transfer into <strong>target domains not present in training</strong>.</li>
+          <li><strong>Reported success:</strong> The abstract reports ~70% success at injecting targeted behaviors across tasks (per their setup).</li>
+          <li><strong>Incentive misalignment:</strong> They also claim poisoned reasoning data can <em>improve benchmark scores</em> (10–15%), giving adopters a perverse incentive to use tainted datasets.</li>
+          <li><strong>Defense gap:</strong> The paper argues existing mitigations for poisoning/backdoors don’t directly address this “trace-only” manipulation.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>CoT traces are becoming supply chain artifacts:</strong> If you treat reasoning datasets as “just text,” you may be importing behavior-level vulnerabilities.</li>
+          <li><strong>Detection is harder than typical poisoning:</strong> Keeping answers intact reduces obvious red flags, especially for teams doing weak validation or only checking accuracy.</li>
+          <li><strong>Agent impact:</strong> If an agent’s planning/reasoning style is subtly biased by poisoned traces, the downstream effect could be unsafe tool use or systematic policy bypass.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Pin + vet training data:</strong> Treat CoT corpora as dependencies: use version pinning, provenance checks, and signed artifacts where possible.</li>
+          <li><strong>Prefer minimal-trace training:</strong> Where you can, avoid training on “free-form” traces from unknown sources; use curated traces or synthetic data you generate and audit.</li>
+          <li><strong>Scan traces for invariants:</strong> Add static checks (format constraints, forbidden patterns, unusual tool references, hidden triggers, repeated motifs across samples).</li>
+          <li><strong>Red-team with behavior tests:</strong> Build evaluation suites that look for targeted misbehavior across multiple tasks/domains, not just accuracy on the training distribution.</li>
+          <li><strong>Separate planning from execution:</strong> In agent systems, treat reasoning outputs as untrusted; gate tool execution with deterministic policy checks.</li>
+        </ol>
+
+        <div class="card">
+          <strong>Related</strong>
+          <ul>
+            <li><a href="/posts/2026/01/prompt-injection-agentic-coding-assistants-sok/">Prompt injection SoK (agentic coding assistants)</a></li>
+            <li><a href="/posts/2026/01/kaspersky-owasp-agentic-top-10-2026/">OWASP Agentic Top 10 (2026) summary</a></li>
+          </ul>
+        </div>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>arXiv (primary): <a href="https://arxiv.org/abs/2601.19061" rel="nofollow">Thought-Transfer: Indirect Targeted Poisoning Attacks on Chain-of-Thought Reasoning Models</a></li>
+          <li>DOI: <a href="https://doi.org/10.48550/arXiv.2601.19061" rel="nofollow">10.48550/arXiv.2601.19061</a></li>
+          <li>Background (LLM attacks catalog): <a href="https://llm-attacks.org/" rel="nofollow">llm-attacks.org</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/news/">← News</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+</body>
+</html>
