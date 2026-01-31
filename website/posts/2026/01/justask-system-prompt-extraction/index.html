@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="arXiv — System prompt extraction via code agents (JustAsk)" />
+  <meta name="post:date" content="2026-01-31" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Research" />
+
+  <title>arXiv — System prompt extraction via code agents (JustAsk) — al-ice.ai</title>
+  <meta name="description" content="A new arXiv paper argues system prompts are an underprotected attack surface in agentic coding systems, and demonstrates autonomous prompt extraction strategies against black-box models." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/justask-system-prompt-extraction/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="arXiv — System prompt extraction via code agents (JustAsk)" />
+  <meta property="og:description" content="If you rely on ‘secret’ system prompts for guardrails in agentic systems, assume they can be probed and partially recovered via interaction." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/justask-system-prompt-extraction/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+  
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv — System prompt extraction via code agents (JustAsk)</h1>
+        <p class="muted small"><time datetime="2026-01-31">2026-01-31</time> • Category: <a href="/categories/research/">Research</a></p>
+
+        <p><strong>AI relevance:</strong> in agentic systems, “secret” system prompts are effectively a <em>security boundary</em> — and this work argues they can be autonomously probed and partially recovered via normal user interaction.</p>
+
+        <ul>
+          <li><strong>Claim:</strong> system prompt extraction is an <strong>emergent vulnerability</strong> of autonomous code agents, because tool use + long-horizon interaction expands the attack surface beyond single-shot chat prompts.</li>
+          <li><strong>Technique:</strong> the paper introduces <strong>JustAsk</strong>, a framework that <strong>autonomously discovers</strong> prompt-extraction strategies (no handcrafted prompts, no privileged access beyond standard interaction).</li>
+          <li><strong>Framing:</strong> extraction is treated as an <strong>online exploration</strong> problem; the authors describe using <strong>UCB-style strategy selection</strong> over a hierarchy of “skills.”</li>
+          <li><strong>Mechanism (high level):</strong> the skills exploit <strong>imperfect generalization</strong> of system instructions and <strong>tension</strong> between helpfulness vs. safety constraints.</li>
+          <li><strong>Evaluation:</strong> reported testing across <strong>41 black-box commercial models</strong> from multiple providers, with “full or near-complete” recovery in many cases (per abstract).</li>
+          <li><strong>Security takeaway:</strong> if your agent’s safety posture relies on keeping system prompts hidden, plan for <strong>prompt disclosure</strong> as a realistic failure mode.</li>
+          <li><strong>Practical angle:</strong> code agents are especially exposed because they can iteratively ask questions, run tools, reflect, and retry — i.e., <strong>they are built to explore</strong>.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Prompt secrecy isn’t a control:</strong> “security by secret system prompt” doesn’t hold up as agents get more autonomous and persistent.</li>
+          <li><strong>Second-order risk:</strong> if an attacker can infer guardrail wording, they can craft <strong>tailored jailbreaks</strong> or tool-use manipulations that target those exact constraints.</li>
+          <li><strong>Ops implication:</strong> you may need to treat system prompts like <strong>config that will leak</strong> (similar to client-side code), and build compensating controls elsewhere.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Threat-model disclosure:</strong> assume system prompts can be extracted and avoid embedding <strong>secrets</strong> (API keys, internal URLs, “hidden policies”).</li>
+          <li><strong>Move controls out of prompts:</strong> enforce tool permissions, data access, and policy in <strong>code</strong> (capability boundaries, allowlists, scoped credentials, isolated runtimes).</li>
+          <li><strong>Instrument probing:</strong> log and alert on interaction patterns consistent with <strong>prompt exfil / model probing</strong> (repeated meta-questions, structured extraction attempts, high retry rates).</li>
+          <li><strong>Red-team your agent loop:</strong> test multi-step prompt injection / probing across the <strong>entire</strong> agent workflow, not just the base model chat endpoint.</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Paper (arXiv): <a href="https://arxiv.org/abs/2601.21233">Just Ask: Curious Code Agents Reveal System Prompts in Frontier LLMs</a></li>
+          <li>PDF: <a href="https://arxiv.org/pdf/2601.21233.pdf">arXiv:2601.21233 PDF</a></li>
+          <li>HTML (experimental): <a href="https://arxiv.org/html/2601.21233v1">arXiv HTML v1</a></li>
+          <li>DOI (arXiv-issued): <a href="https://doi.org/10.48550/arXiv.2601.21233">10.48550/arXiv.2601.21233</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
+
+  
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
