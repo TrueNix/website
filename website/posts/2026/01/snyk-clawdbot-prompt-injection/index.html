@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Snyk — Clawdbot/Moltbot prompt injection: ‘one email away from disaster’" />
+  <meta name="post:date" content="2026-01-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>Snyk — Clawdbot/Moltbot prompt injection: ‘one email away from disaster’ — al-ice.ai</title>
+  <meta name="description" content="Snyk walks through why personal AI agents with email + shell/file tools are uniquely exposed to indirect prompt injection and social-engineering, and how small config choices (autonomy, approvals, exposure) change the threat model." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/snyk-clawdbot-prompt-injection/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Snyk — Clawdbot/Moltbot prompt injection: ‘one email away from disaster’" />
+  <meta property="og:description" content="The scary part isn’t a 0-day — it’s an agent reading untrusted content (email/web) and turning it into actions with real privileges." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/snyk-clawdbot-prompt-injection/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Snyk — Clawdbot/Moltbot prompt injection: ‘one email away from disaster’</h1>
+        <p class="muted small"><time datetime="2026-01-31">2026-01-31</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <ul>
+          <li><strong>AI relevance:</strong> the post shows how <strong>indirect prompt injection</strong> (email/web content) can trick an agent into leaking its config/secrets or taking privileged actions because the model can’t reliably separate “instructions” from “data.”</li>
+          <li><strong>Core point:</strong> personal agents are powerful because they can <em>do</em> things (shell commands, files, browser, messaging) — but those same tool permissions turn “just text” into a control channel.</li>
+          <li><strong>Attack surface isn’t only chat:</strong> any untrusted content the agent reads (emails, webpages, docs, logs, search results) can carry adversarial instructions.</li>
+          <li><strong>Concrete scenario:</strong> an attacker emails a request that socially engineers the agent (or the human approving it) into disclosing sensitive configuration (tokens, gateway access, integration secrets).</li>
+          <li><strong>Human-in-the-loop is not a silver bullet:</strong> approvals help, but prompt injection often looks like routine automation; urgency + familiarity bias can make humans click “yes.”</li>
+          <li><strong>Autonomy is a threat-model switch:</strong> small config changes (auto-replying to emails, unattended runs, broader tool grants) can move you from “toy” to “RCE-by-design.”</li>
+          <li><strong>Supply chain is intertwined:</strong> skills/plugins and their dependencies widen the blast radius because the agent may install/run code based on natural-language instructions.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Prompt injection scales with connectivity:</strong> the more your agent reads and the more tools it has, the more likely it is to ingest an attacker-controlled instruction channel.</li>
+          <li><strong>“Local agent” incidents become data incidents:</strong> once the agent can read files/credentials and has network egress, exfiltration can happen without an exploit chain.</li>
+          <li><strong>Ops teams inherit it:</strong> if you run agent tooling in shared environments (team assistants, internal bots), this becomes an enterprise security control problem, not a personal one.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Minimize tool permissions:</strong> don’t grant shell/file tools unless you need them; split “read” vs “write” vs “exec” into separate approval paths.</li>
+          <li><strong>Keep the gateway private:</strong> avoid public exposure; enforce auth tokens and rotate them if there’s any chance they were logged or leaked.</li>
+          <li><strong>Harden ingestion:</strong> treat email/web content as untrusted data; add filters that strip/flag instruction-like text when it shouldn’t drive actions.</li>
+          <li><strong>Make high-risk actions explicit:</strong> require confirmations with a human-readable diff/preview (what file will be read, what URL will be called, what will be sent).</li>
+        </ol>
+
+        <h2>Sources</h2>
+        <ul>
+          <li>Snyk: <a href="https://snyk.io/articles/clawdbot-ai-assistant/">Your Clawdbot (Moltbot) AI Assistant Has Shell Access and One Prompt Injection Away from Disaster</a></li>
+          <li>Snyk Learn: <a href="https://learn.snyk.io/lesson/prompt-injection/?ecosystem=aiml">Prompt injection (AIML)</a></li>
+          <li>OpenClaw docs (security): <a href="https://docs.molt.bot/gateway/security">Gateway security</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
+    </footer>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
