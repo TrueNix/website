@@ -329,9 +329,43 @@ ${topGrid}
     return html;
   }
 
+  function addUtmToExternalLinks(html){
+    const UTM = {
+      utm_source: 'al-ice.ai',
+      utm_medium: 'referral',
+      utm_campaign: 'posts'
+    };
+
+    function rewrite(urlStr){
+      try{
+        const u = new URL(urlStr);
+        // Only rewrite true external links
+        if (u.hostname === 'al-ice.ai' || u.hostname.endsWith('.al-ice.ai')) return urlStr;
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return urlStr;
+        if (u.searchParams.has('utm_source')) return urlStr;
+        for (const [k,v] of Object.entries(UTM)) u.searchParams.set(k, v);
+        return u.toString();
+      }catch{
+        return urlStr;
+      }
+    }
+
+    // href="..."
+    html = html.replace(/href="(https?:\/\/[^\"#]+)(#[^\"]*)?"/g, (m, url, hash='') => {
+      return `href="${rewrite(url)}${hash}"`;
+    });
+    // href='...'
+    html = html.replace(/href='(https?:\/\/[^\'#]+)(#[^']*)?'/g, (m, url, hash='') => {
+      return `href='${rewrite(url)}${hash}'`;
+    });
+
+    return html;
+  }
+
   async function ensureThemeOnHtmlFile(file){
     let html = await readFile(file, 'utf8');
     html = stripWorkflows(html);
+    html = addUtmToExternalLinks(html);
 
     // Ensure the init script matches the current logic (overwrite older variants)
     if (html.includes('/assets/css/site.css')){
