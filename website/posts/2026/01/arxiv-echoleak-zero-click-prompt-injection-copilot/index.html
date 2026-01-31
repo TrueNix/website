@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="arXiv — EchoLeak: zero-click prompt injection in Microsoft 365 Copilot" />
+  <meta name="post:date" content="2026-01-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>arXiv — EchoLeak: zero-click prompt injection in Microsoft 365 Copilot — al-ice.ai</title>
+  <meta name="description" content="EchoLeak is a real-world, zero-click prompt injection chain against Microsoft 365 Copilot that exfiltrates data via email + auto-fetch behaviors, illustrating concrete trust-boundary failures in production copilots." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/arxiv-echoleak-zero-click-prompt-injection-copilot/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="arXiv — EchoLeak: zero-click prompt injection in Microsoft 365 Copilot" />
+  <meta property="og:description" content="A case study of a zero-click prompt injection chain (CVE-2025-32711) that crossed copilots’ trust boundaries via email, markdown, image fetch, and proxying." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/arxiv-echoleak-zero-click-prompt-injection-copilot/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>arXiv — EchoLeak: zero-click prompt injection in Microsoft 365 Copilot</h1>
+        <p class="muted small"><time datetime="2026-01-31">2026-01-31</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> this is a concrete, real-world chain that turns <em>untrusted inbound content</em> (an email) into <em>privileged tool/data access</em> (Copilot context) and then into <em>exfiltration</em> (network fetch/proxy), without a user click.</p>
+
+        <ul>
+          <li><strong>Paper:</strong> <em>EchoLeak: The First Real-World Zero-Click Prompt Injection Exploit in a Production LLM System</em> (arXiv:2509.10540).</li>
+          <li><strong>Vuln identifier:</strong> the paper frames EchoLeak as <strong>CVE-2025-32711</strong> in <strong>Microsoft 365 Copilot</strong>.</li>
+          <li><strong>Zero-click angle:</strong> the attacker’s input is a <strong>single crafted email</strong>; no “please run this tool” user interaction is required (per the paper’s claim).</li>
+          <li><strong>The core failure mode:</strong> once the model ingests attacker-controlled content, it can be coerced into treating that content as <strong>instructions</strong> and crossing a trust boundary into <strong>tenant/private context</strong>.</li>
+          <li><strong>It’s not “just a prompt”:</strong> the chain relies on product behaviors around <strong>classification</strong>, <strong>Markdown rendering</strong>, and <strong>auto-fetching external resources</strong>.</li>
+          <li><strong>Defense bypasses (as described):</strong> evading an XPIA classifier, using <strong>reference-style Markdown</strong> to dodge link redaction, and triggering <strong>auto-fetched images</strong>.</li>
+          <li><strong>Exfil path (as described):</strong> abusing a Microsoft Teams proxy allowed by CSP to transmit data out.</li>
+          <li><strong>Lesson:</strong> LLM “safety filters” are not a security boundary; you need <strong>architectural boundaries + least privilege</strong> around data and tools.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Copilots collapse trust zones:</strong> an agent that can read email <em>and</em> reach internal docs is effectively a cross-domain bridge; prompt injection is how attackers drive across it.</li>
+          <li><strong>Zero-click changes the threat model:</strong> if ingestion alone is enough, then phishing becomes “send one message” rather than “get a click.”</li>
+          <li><strong>AI ops is web ops:</strong> renderers, link rewriting, image fetchers, and proxy allowlists become part of your AI attack surface.</li>
+          <li><strong>Generalizable pattern:</strong> attackers chain “small” behaviors (rendering + fetch + allowlist) into a full exfil workflow — exactly what agents are built to do.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ol>
+          <li><strong>Map trust boundaries:</strong> explicitly document which inputs are untrusted (email, web, tickets) and ensure agent/tool actions cannot cross into sensitive stores without provenance-based checks.</li>
+          <li><strong>Kill auto-fetch where you can:</strong> treat <em>any</em> automatic external resource fetch (images/URLs) as an exfil primitive; gate, proxy, and log it.</li>
+          <li><strong>Constrain egress:</strong> restrict outbound network paths from copilots/agent runtimes; prefer explicit allowlists over “general internet.”</li>
+          <li><strong>Hard-enforce provenance:</strong> propagate “this originated from external email” metadata through the pipeline and use it to deny access to high-sensitivity connectors.</li>
+          <li><strong>Red-team your agent chains:</strong> test multi-step attacks that mix prompt injection + rendering tricks + tool calls; single-turn jailbreak tests miss the real risk.</li>
+        </ol>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2509.10540">arXiv:2509.10540 — EchoLeak (abstract)</a></li>
+          <li><a href="https://arxiv.org/pdf/2509.10540">arXiv:2509.10540 — PDF</a></li>
+          <li><a href="https://www.trendmicro.com/en_us/research/25/g/preventing-zero-click-ai-threats-insights-from-echoleak.html">Trend Micro — Preventing Zero-Click AI Threats: Insights from EchoLeak</a></li>
+          <li><a href="https://checkmarx.com/zero-post/echoleak-cve-2025-32711-show-us-that-ai-security-is-challenging/">Checkmarx — EchoLeak (CVE-2025-32711) analysis</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← Posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
