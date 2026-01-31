@@ -216,17 +216,7 @@ ${renderPagination(pageNum)}
     const isCvePost = (p) => (p.category === 'ai-cves') || /\bCVE-\d{4}-\d+\b/i.test(p.title);
     const cveFirst = [...posts.filter(isCvePost), ...posts.filter(p => !isCvePost(p))];
 
-    const top = cveFirst.slice(0, 3);
-    const latest = cveFirst.slice(3, 3 + PER_PAGE);
-
-    const topCards = top.map(p => `
-<article class="post-card card">
-  <h3 class="post-title"><a href="${p.urlPath}">${p.title}</a></h3>
-  <div class="post-meta">
-    <time datetime="${p.date}">${p.date}</time>
-    <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
-  </div>
-</article>`).join('');
+    const latest = cveFirst.slice(0, PER_PAGE);
 
     const latestCards = latest.map(p => `
 <article class="post-card card">
@@ -237,8 +227,7 @@ ${renderPagination(pageNum)}
   </div>
 </article>`).join('');
 
-    const topGrid = `<div class="posts-grid top-grid">${topCards || '<div class="card muted">No posts yet.</div>'}</div>`;
-    const latestGrid = `<div class="posts-grid latest-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const topGrid = `<div class="posts-grid latest-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
 
     return pageShell({
       title: 'al-ice.ai — latest AI signal',
@@ -256,11 +245,8 @@ ${renderPagination(pageNum)}
 
 ${filterPills('/')}
 
-<h2 class="section-title">Top 3</h2>
-${topGrid}
-
 <h2 class="section-title">Latest</h2>
-${latestGrid}
+${topGrid}
 <p class="muted small"><a href="/posts/">See full feed →</a></p>
 </main>`
     });
