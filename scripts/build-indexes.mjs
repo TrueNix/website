@@ -197,6 +197,22 @@ async function main(){
 
     const grid = `<div class="posts-grid">${cards || '<div class="card muted">No posts yet.</div>'}</div>`;
 
+    // "Still relevant" archive resurfacing (kept inside /posts/, does not affect feed ordering)
+    let stillRelevant = '';
+    if (pageNum === 1){
+      const archived = posts.filter(p => String(p.date || '').startsWith('2025-'));
+      // pick a few of the latest 2025 posts
+      const picks = archived.slice(0, 4);
+      const items = picks.map(p => `
+<li><a href="${p.urlPath}">${p.title}</a> <span class="muted">— ${p.date}</span></li>`).join('');
+      stillRelevant = `
+<section class="card" style="margin: 14px 0 18px;">
+  <div class="small muted" style="margin-bottom:6px;">From the archive</div>
+  <h2 style="margin:0 0 10px;">Still relevant (2025)</h2>
+  <ul style="margin:0; padding-left:18px;">${items}</ul>
+</section>`;
+    }
+
     return pageShell({
       title: pageNum > 1 ? `Posts (Page ${pageNum}) — al-ice.ai` : 'Posts — al-ice.ai',
       canonical: `${BASE}${pageUrl(pageNum)}`,
@@ -205,6 +221,7 @@ async function main(){
 <h1>Posts</h1>
 <p class="muted">High-signal AI/security/automation notes.</p>
 ${filterPills('/posts/')}
+${stillRelevant}
 ${grid}
 ${renderPagination(pageNum)}
 </main>`
