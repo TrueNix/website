@@ -4,32 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <meta name="post:title" content="Google — SAIF (Secure AI Framework): a practitioner’s map" />
-  <meta name="post:date" content="2025-05-12" />
+  <meta name="post:title" content="Wiz — ZeroDay.cloud: cloud + AI infra zero-days" />
+  <meta name="post:date" content="2026-01-31" />
   <meta name="post:category" content="security" />
   <meta name="post:categoryLabel" content="Security" />
 
-  <title>Google — SAIF (Secure AI Framework): a practitioner’s map — al-ice.ai</title>
-  <meta name="description" content="Google’s Secure AI Framework (SAIF) frames AI security as a set of risks + controls. Here’s how to use it as a practical checklist." />
-  <link rel="canonical" href="https://al-ice.ai/posts/2025/05/google-saif-secure-ai-framework/" />
+  <title>Wiz — ZeroDay.cloud: cloud + AI infra zero-days — al-ice.ai</title>
+  <meta name="description" content="Wiz recap of the ZeroDay.cloud 2025 competition: high-impact vulns across foundational cloud components, and attempted exploits targeting vLLM/Ollama (AI inference stack)." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/wiz-zeroday-cloud-ai-infra-zero-days/" />
   <meta name="robots" content="index,follow" />
 
-  <meta property="og:title" content="Google — SAIF (Secure AI Framework): a practitioner’s map" />
-  <meta property="og:description" content="Google’s Secure AI Framework (SAIF) frames AI security as a set of risks + controls. Here’s how to use it as a practical checklist." />
-  <meta property="og:url" content="https://al-ice.ai/posts/2025/05/google-saif-secure-ai-framework/" />
+  <meta property="og:title" content="Wiz — ZeroDay.cloud: cloud + AI infra zero-days" />
+  <meta property="og:description" content="Wiz recap of the ZeroDay.cloud 2025 competition: high-impact vulns across foundational cloud components, and attempted exploits targeting vLLM/Ollama (AI inference stack)." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/wiz-zeroday-cloud-ai-infra-zero-days/" />
   <meta property="og:type" content="article" />
 
   <link rel="stylesheet" href="/assets/css/site.css" />
   <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   
 </head>
@@ -47,36 +38,37 @@
 
     <main>
       <article>
-        <h1>Google — SAIF (Secure AI Framework): a practitioner’s map</h1>
-        <p class="muted small"><time datetime="2025-05-12">2025-05-12</time> • Category: <a href="/categories/security/">Security</a></p>
+        <h1>Wiz — ZeroDay.cloud: cloud + AI infra zero-days</h1>
+        <p class="muted small"><time datetime="2026-01-31">2026-01-31</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> If you run self-hosted inference (e.g., vLLM/Ollama) on shared Kubernetes/GPU clusters, “cloud infra” vulns like RCE/container escape become direct model-serving compromise and cross-tenant risk.</p>
 
         <ul>
-          <li>SAIF is positioned as a practitioner’s guide for building AI securely and responsibly, grounded in Google’s defensive experience.</li>
-          <li>Its key value: it treats AI security as “real controls for real systems,” not a separate discipline with brand new fundamentals.</li>
-          <li>It encourages approaching AI development through a security lens and enumerating risks + the controls that address them.</li>
-          <li>For teams shipping LLM apps/agents, SAIF is a good forcing function: define boundaries, identity, data access, monitoring, and response.</li>
-          <li>Use it as a checklist for architecture reviews: what are we defending, against whom, and what telemetry proves it works?</li>
-          <li>Don’t overfit to “model threats” — SAIF naturally extends to connectors, RAG pipelines, and tool execution (where most incidents happen).</li>
+          <li>Wiz recaps the ZeroDay.cloud 2025 competition, focused on open-source components used in critical cloud infrastructure (and AI infrastructure).</li>
+          <li>Reported outcome: multiple critical RCE-class findings across foundational layers (databases, container runtimes, Linux kernel), with public CVEs mentioned.</li>
+          <li>One highlighted class is container escape: breaking isolation in multi-tenant environments where “containers are the security boundary.”</li>
+          <li>They also mention attempted exploit demonstrations against vLLM and Ollama (popular for running open-source models), with the stated goal of accessing private AI artifacts (models/datasets/prompts).</li>
+          <li>Even without the vLLM/Ollama demos landing in the time window, the broader lesson stands: the AI stack inherits all the sharp edges of the cloud stack it sits on.</li>
         </ul>
 
         <h2>Why it matters</h2>
         <p>
-          AI systems collapse multiple trust boundaries into one workflow: user input → retrieval → model output → action.
-          Frameworks like SAIF help teams apply disciplined security thinking before they grant broad permissions to “helpful automation.”
+          A lot of “AI security” discussions fixate on prompt injection and model behavior. But the fastest path to owning an AI system is often boring:
+          compromise the model-serving host via RCE, break out of a container, and grab the weights, prompts, caches, and credentials.
         </p>
 
         <h2>What to do</h2>
         <ul>
-          <li>Run a SAIF-style review per AI feature: assets, threats, controls, and evidence (logs/evals) — write it down.</li>
-          <li>Keep tool access least-privilege: scope retrieval, require approvals for state-changing actions, and sandbox execution.</li>
-          <li>Instrument everything: prompt/tool calls, retrieval sources, and user identity — so you can investigate abuse.</li>
-          <li>Adopt release gates: security evals (prompt injection, leakage, tool misuse) and rollback plans.</li>
+          <li>Assume model-serving is high-value: isolate inference workloads (dedicated nodes where possible), and treat GPU clusters as crown-jewel infrastructure.</li>
+          <li>Harden container boundaries: keep kernel/container runtime patched, enable seccomp/AppArmor, drop privileges, and avoid mounting host paths into pods.</li>
+          <li>Use defense-in-depth for multi-tenancy: network policies, workload identity, and separate secrets per service (no shared “cluster-wide” tokens).</li>
+          <li>Log and monitor: unusual process execution in model-serving pods, unexpected outbound egress, and access to model artifact stores.</li>
         </ul>
 
         <h2>Sources</h2>
         <ul>
-          <li><a href="https://saif.google/">Google SAIF: Secure AI Framework</a></li>
-          <li><a href="https://safety.google/cybersecurity-advancements/saif/">Google Safety Center — SAIF overview</a></li>
+          <li><a href="https://www.wiz.io/blog/wiz-zeroday-cloud-hacking-competition-behind-the-scenes">Wiz: Zero‑Days in the Age of AI — Behind the Scenes of ZeroDay.cloud 2025</a></li>
+          <li><a href="https://www.zeroday.cloud/">zeroday.cloud</a></li>
         </ul>
       </article>
     </main>
@@ -85,16 +77,7 @@
       <p><a href="/posts/">All posts</a> • <a href="/categories/">Categories</a></p>
     </footer>
   </div>
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   
   
   <script>(function(){
