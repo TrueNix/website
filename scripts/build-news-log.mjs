@@ -15,6 +15,7 @@ function pageShell({title, canonical, description, body}){
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>${title}</title>
   ${description ? `<meta name="description" content="${description.replaceAll('"','&quot;')}" />` : ''}
