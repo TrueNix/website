@@ -213,11 +213,8 @@ ${renderPagination(pageNum)}
   }
 
   function renderHomePage(){
-    // Homepage default: prioritize CVE-related posts, while still keeping category filters available.
-    const isCvePost = (p) => (p.category === 'ai-cves') || /\bCVE-\d{4}-\d+\b/i.test(p.title);
-    const cveFirst = [...posts.filter(isCvePost), ...posts.filter(p => !isCvePost(p))];
-
-    const latest = cveFirst.slice(0, PER_PAGE);
+    // Homepage default: newest posts first (already sorted by date desc).
+    const latest = posts.slice(0, PER_PAGE);
 
     const latestCards = latest.map(p => `
 <article class="post-card card">
