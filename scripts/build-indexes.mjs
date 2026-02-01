@@ -367,13 +367,14 @@ ${topGrid}
 
   async function ensureThemeOnHtmlFile(file){
     let html = await readFile(file, 'utf8');
+    const original = html;
     html = stripWorkflows(html);
     html = addUtmToExternalLinks(html);
 
-    // Ensure the init script matches the current logic (overwrite older variants)
+    // --- Theme init script (in <head>, after CSS link) ---
     if (html.includes('/assets/css/site.css')){
-      // Remove any previous theme init scripts (they live in <head> and mention localStorage.getItem('theme') + data-theme)
-      html = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, body) => {
+      // Strip ALL theme-init scripts (read theme + set data-theme)
+      html = html.replace(/\s*<script>([\s\S]*?)<\/script>/g, (m, body) => {
         const b = String(body || '');
         const readsTheme = b.includes("localStorage.getItem('theme')") || b.includes('localStorage.getItem("theme")');
         const touchesRootTheme = b.includes("document.documentElement.setAttribute('data-theme'") || b.includes("document.documentElement.removeAttribute('data-theme'");
@@ -381,13 +382,16 @@ ${topGrid}
         return m;
       });
 
-      // Insert the current init script right after the stylesheet link (always)
-      html = html.replace('<link rel="stylesheet" href="/assets/css/site.css" />', `<link rel="stylesheet" href="/assets/css/site.css" />\n  ${themeInitScript()}`);
+      // Insert once after CSS link
+      const cssTag = '<link rel="stylesheet" href="/assets/css/site.css" />';
+      const initTag = themeInitScript();
+      if (!html.includes(initTag)) {
+        html = html.replace(cssTag, `${cssTag}\n  ${initTag}`);
+      }
     }
 
-    // Ensure the toggle button exists and matches our current markup
+    // --- Theme toggle button ---
     if (html.includes('class="small"')){
-      // remove legacy buttons that had text labels
       html = html.replace(/\s*<button\s+id="themeToggle"[^>]*>[\s\S]*?<\/button>\s*/g, `\n        ${themeToggleButton()}\n`);
 
       if (!html.includes('id="themeToggle"') && html.includes('<nav')){
@@ -397,11 +401,10 @@ ${topGrid}
       }
     }
 
-    // Ensure handler script exists (overwrite older versions)
+    // --- Theme handler script (before </body>) ---
     if (html.includes('</body>')){
-      // Remove any previous theme toggle handler scripts safely.
-      // We only strip <script> blocks that mention themeToggle + either legacy labels or our icon helpers.
-      html = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, body) => {
+      // Strip old/legacy handler scripts
+      html = html.replace(/\s*<script>([\s\S]*?)<\/script>/g, (m, body) => {
         const b = String(body || '');
         const mentionsToggle = b.includes('themeToggle') || b.includes("getElementById('themeToggle'") || b.includes('getElementById("themeToggle"');
         if (!mentionsToggle) return m;
@@ -413,12 +416,17 @@ ${topGrid}
         return m;
       });
 
-      // Inject the current handler (once)
-      html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
+      // Inject once
+      const handler = themeHandlerScript();
+      if (!html.includes('themeToggle') || !html.includes("getElementById('themeToggle')")) {
+        html = html.replace('</body>', `  ${handler}\n</body>`);
+      }
     }
 
-    const existing = await readFile(file, 'utf8');
-    if (html !== existing) await writeFile(file, html);
+    // Collapse runs of blank lines (prevents whitespace drift)
+    html = html.replace(/\n{3,}/g, '\n\n');
+
+    if (html !== original) await writeFile(file, html);
   }
 
   // posts index + paginated pages
