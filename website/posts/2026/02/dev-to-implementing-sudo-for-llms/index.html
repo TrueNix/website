@@ -4,131 +4,76 @@
   <meta charset="utf-8" />
   <meta name="google-adsense-account" content="ca-pub-9044791241492233">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <meta name="post:title" content="AI Email Triage Workflow (labels, summaries, suggested replies)" />
-  <meta name="post:date" content="2026-01-29" />
+  <title>Dev.to — Implementing 'Sudo' for AI Agents</title>
+  <meta name="description" content="Middleware 'sudo' layers provide a deterministic authorization check before LLM agents execute privileged tools." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/dev-to-implementing-sudo-for-llms/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Dev.to — Implementing 'Sudo' for AI Agents" />
+  <meta name="post:date" content="2026-02-01" />
   <meta name="post:category" content="security" />
   <meta name="post:categoryLabel" content="Security" />
 
-  <title>AI Email Triage Workflow (labels, summaries, suggested replies) — al-ice.ai</title>
-  <meta name="description" content="A practical workflow to triage email: classify, summarize, propose a reply, and route the message automatically." />
-  <link rel="canonical" href="https://al-ice.ai/posts/2026/01/ai-email-triage-workflow/" />
-  <meta name="robots" content="index,follow" />
-
-  <meta property="og:title" content="AI Email Triage Workflow (labels, summaries, suggested replies)" />
-  <meta property="og:description" content="A practical workflow to triage email: classify, summarize, propose a reply, and route the message automatically." />
-  <meta property="og:url" content="https://al-ice.ai/posts/2026/01/ai-email-triage-workflow/" />
-  <meta property="og:type" content="article" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
 
   <link rel="stylesheet" href="/assets/css/site.css" />
   <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 </head>
 <body>
   <div class="wrap">
     <header class="site">
       <div class="brand"><a href="/">al-ice.ai</a></div>
-      <nav class="small"><a href="/posts/">Posts</a>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+      
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
-</nav>
+      </nav>
     </header>
-
     <main>
-      <article>
-        <h1>AI Email Triage Workflow (labels, summaries, suggested replies)</h1>
-        <p class="muted small"><time datetime="2026-01-29">2026-01-29</time> • Category: <span class="muted">Workflows</span></p>
-
-        <div class="card">
-          <strong>TL;DR</strong>
-          <ul>
-            <li>What you’ll build</li>
-            <li>Tools you need</li>
-            <li>Step-by-step setup</li>
-            <li>How to test + measure</li>
-          </ul>
+      <article class="post">
+        <h1 class="post-title">Dev.to — Implementing 'Sudo' for AI Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-02-01">2026-02-01</time>
+          <a class="badge" href="/categories/security/">Security</a>
         </div>
 
-        <h2>What this workflow does</h2>
-        <p>A practical workflow to triage email: classify, summarize, propose a reply, and route the message automatically.</p>
+        <p><strong>AI Relevance:</strong> Middleware 'sudo' layers provide a deterministic authorization check before LLM agents execute privileged tools.</p>
 
-        <h2>Tools</h2>
+        <h2>Why it matters</h2>
         <ul>
-          <li><strong>Option A:</strong> Zapier</li>
-          <li><strong>Option B:</strong> Make</li>
-          <li><strong>Option C:</strong> n8n</li>
+          <li><strong>Probabilistic Access:</strong> Giving LLMs direct access to critical APIs (Stripe, Cloud, DB) is risky because they are probabilistic, not deterministic.</li>
+          <li><strong>System Prompts Fail:</strong> "Asking nicely" in a system prompt is not a security control; injection attacks bypass these easily.</li>
+          <li><strong>Human-in-the-Loop:</strong> A dedicated governance layer (middleware) allows for policy-as-code checks and human approval for high-stakes actions.</li>
+          <li><strong>Async/Sync Mismatch:</strong> Most agent frameworks expect immediate tool returns; implementing a "wait for approval" loop requires careful handling (long polling) to avoid agent timeouts/hallucinations.</li>
         </ul>
 
-        <h2>Steps (fast setup)</h2>
-        <ol>
-          <li>Define the input (email / form submit / meeting transcript)</li>
-          <li>Run an LLM step (summarize/tag/extract fields)</li>
-          <li>Write results to the destination (Notion/Sheets/Slack/CRM)</li>
-          <li>Add guardrails (rate limits, PII, retries)</li>
-          <li>Test with 10 real examples</li>
-        </ol>
-
-        <h2>Common failure modes</h2>
+        <h2>What to do</h2>
         <ul>
-          <li>Bad prompts → inconsistent outputs (fix with schema + examples)</li>
-          <li>Too much context → high cost/latency (chunk + extract)</li>
-          <li>No feedback loop (log errors + track success rate)</li>
+          <li><strong>Use Middleware:</strong> Don't let agents call sensitive APIs directly. Wrap them in a governance SDK/proxy.</li>
+          <li><strong>Policy as Code:</strong> Define allowed/denied actions in declarative config (YAML), separate from application logic.</li>
+          <li><strong>Classify Risk:</strong> Identify "blast radius" actions (delete DB, charge card) and enforce `REQUIRE_APPROVAL` policies for them.</li>
+          <li><strong>Review SudoMode:</strong> Check the open-source implementation for architecture ideas on intercepting and pausing agent execution.</li>
         </ul>
 
-        <hr />
-        <p class="muted small">Affiliate disclosure: some links may be affiliate links.</p>
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://dev.to/namansharma00100/implementing-sudo-for-llms-a-middleware-approach-to-ai-security-1pam?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Dev.to Article (Primary)</a></li>
+          <li><a href="https://github.com/numcys/sudomode?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitHub: sudomode</a></li>
+        </ul>
       </article>
     </main>
-
     <footer class="small muted">
-      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
     </footer>
   </div>
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;
