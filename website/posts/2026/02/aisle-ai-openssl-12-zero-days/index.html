@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AISLE — AI Discovers 12 OpenSSL Zero-Days Including a 27-Year-Old Bug</title>
+  <meta name="description" content="AI system from AISLE found 12 zero-day vulnerabilities in OpenSSL, including CVE-2026-22796 (dating to 1998) and a HIGH-severity stack overflow in CMS parsing — bugs missed by 27 years of human review." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/aisle-ai-openssl-12-zero-days/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="AISLE — AI Discovers 12 OpenSSL Zero-Days Including a 27-Year-Old Bug" />
+  <meta name="post:date" content="2026-02-01" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI CVEs" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+  
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">AISLE — AI Discovers 12 OpenSSL Zero-Days Including a 27-Year-Old Bug</h1>
+        <div class="post-meta">
+          <time datetime="2026-02-01">2026-02-01</time>
+          <a class="badge" href="/categories/ai-cves/">AI CVEs</a>
+        </div>
+
+        <p><strong>AI Relevance:</strong> OpenSSL is the TLS backbone of every LLM API endpoint, model registry, and vector database connection—these vulnerabilities directly affect AI infrastructure transport security. Additionally, the discovery demonstrates AI-powered vulnerability research surpassing decades of human review.</p>
+
+        <ul>
+          <li>On January 27, 2026, OpenSSL released a coordinated patch for <strong>12 previously unknown vulnerabilities</strong>, all discovered by an AI system built by a company called <strong>AISLE</strong>.</li>
+          <li><strong>CVE-2026-22796</strong> (type confusion in PKCS#7 signature verification) dates back to <strong>1998</strong>—inherited from the original SSLeay codebase that predates OpenSSL itself. It survived 27 years of audits.</li>
+          <li><strong>CVE-2025-15467</strong> (HIGH severity): A stack buffer overflow in CMS AuthEnvelopedData parsing. An attacker can craft an oversized initialization vector that overflows a fixed-size stack buffer—<strong>before any cryptographic verification occurs</strong>. No valid key material required.</li>
+          <li><strong>CVE-2025-11187</strong>: Stack overflow in PKCS#12 (certificate/key bundle) processing via missing validation on password-based MAC parameters.</li>
+          <li><strong>CVE-2025-15468</strong>: Denial-of-service in QUIC protocol handling via unknown cipher suite triggering a crash.</li>
+          <li>Three additional bugs also date to 1998–2000. Four quarter-century-old vulnerabilities in the most scrutinized crypto library on Earth.</li>
+          <li>AISLE began analyzing OpenSSL in August 2025 and reported all findings through responsible disclosure. All 12 CVEs were confirmed and patched across <strong>seven release branches</strong>.</li>
+          <li>OpenSSL is used by <strong>~95% of IT organizations</strong> and encrypts roughly two-thirds of all internet traffic.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>Every LLM API call, every model download from Hugging Face, every vector DB query over TLS traverses OpenSSL (or a derivative). These bugs are in your AI stack's transport layer.</li>
+          <li>The HIGH-severity CMS overflow (<strong>CVE-2025-15467</strong>) fires before auth—any system parsing encrypted payloads (S/MIME processors, document verification) is exposed.</li>
+          <li>The discovery proves that <strong>AI vulnerability research can find bugs that 27 years of expert human review missed</strong>—a capability that attackers will also develop.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Patch immediately:</strong> Update OpenSSL across all systems. Check all seven affected release branches.</li>
+          <li><strong>Prioritize CMS exposure:</strong> If you process S/MIME, CMS-signed documents, or encrypted payloads, the HIGH-severity CVE-2025-15467 is your urgent priority.</li>
+          <li><strong>Audit AI infra TLS:</strong> Confirm that model serving endpoints (vLLM, Triton, TGI), registries, and vector databases are running patched OpenSSL versions.</li>
+          <li><strong>Monitor for exploitation:</strong> Stack overflow primitives attract exploit developers quickly—watch for PoC publications.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://hackingpassion.com/openssl-12-cves-ai-january-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">HackingPassion: AI Finds 12 OpenSSL Vulnerabilities (Primary)</a></li>
+          <li><a href="https://www.openssl.org/news/vulnerabilities.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">OpenSSL Security Advisories</a></li>
+        </ul>
+      </article>
+    </main>
+    <footer class="small muted">
+      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
