@@ -417,7 +417,8 @@ ${topGrid}
       html = html.replace('</body>', `  ${themeHandlerScript()}\n</body>`);
     }
 
-    await writeFile(file, html);
+    const existing = await readFile(file, 'utf8');
+    if (html !== existing) await writeFile(file, html);
   }
 
   // posts index + paginated pages
