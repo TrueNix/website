@@ -41,6 +41,11 @@ function pageShell({title, canonical, description, body}){
   <link rel="canonical" href="${canonical}" />
   <meta name="robots" content="index,follow" />
 
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32 16x16" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
   <script>
