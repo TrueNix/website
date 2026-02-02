@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Clutch Security — 95% of enterprise MCP servers run on endpoints with zero security visibility" />
+  <meta name="post:date" content="2026-02-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>Clutch Security — 95% of enterprise MCP servers run on endpoints with zero security visibility — al-ice.ai</title>
+  <meta name="description" content="Clutch Security analyzed MCP server deployments across enterprise environments and found 95% run on developer endpoints with no MCP-specific detection, 38% are unofficial packages from unknown authors, and 3% ship with hardcoded credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/clutch-security-mcp-shadow-it-enterprise-analysis/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Clutch Security — 95% of enterprise MCP servers run on endpoints with zero security visibility" />
+  <meta property="og:description" content="Clutch Security's enterprise MCP analysis reveals massive shadow IT: 3,056 unmanaged server deployments per 10k-person org, 38% unofficial, 3% with hardcoded creds." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/02/clutch-security-mcp-shadow-it-enterprise-analysis/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Clutch Security — 95% of enterprise MCP servers run on endpoints with zero security visibility</h1>
+        <p class="muted small"><time datetime="2026-02-02">2026-02-02</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> MCP servers are the primary tool-access layer connecting AI agents to enterprise APIs, databases, and file systems; this analysis shows the deployment layer is overwhelmingly unmanaged shadow IT running with full developer privileges and no security monitoring.</p>
+
+        <ul>
+          <li>Clutch Security analyzed MCP server deployments across enterprise environments and found that in a typical <strong>10,000-person organization</strong>, approximately 1,528 employees (15.28%) are running an average of 2 MCP servers each — totaling <strong>3,056 deployments</strong>.</li>
+          <li><strong>38% of deployed MCP servers</strong> (1,161 per 10k org) are unofficial community packages from unknown or anonymous authors on npm and GitHub — not vendor-published, not audited, and not approved by security teams.</li>
+          <li><strong>86% of users choose local MCP architecture</strong> over remote alternatives, meaning the server code runs directly on developer endpoints with full filesystem access, no sandboxing, and no credential isolation.</li>
+          <li><strong>95% of MCP servers run on employee endpoints</strong> where traditional security tools have no MCP-specific detection capabilities. The remaining 5% run in production environments (CI pipelines, Kubernetes pods, cloud workloads) with even broader credential access.</li>
+          <li><strong>3% of published MCP servers contain valid, hardcoded credentials</strong> in their source code — AWS keys, GitHub tokens, Anthropic API keys, Stripe keys — active secrets embedded in packages on npm and GitHub.</li>
+          <li>Installation requires <strong>no security approval and generates no alert</strong>: a developer runs <code>npm install -g</code> or <code>npx -y</code> and within seconds, arbitrary code from an unknown author has full access to their credentials and filesystem.</li>
+          <li>The 3,056 servers connect to <strong>115 distinct enterprise services</strong> including AWS (5.0%), Atlassian (12.3%), GitHub (3.6%), Docker (4.7%), Terraform, Postgres, Snowflake, Slack, and 107 others.</li>
+          <li>Package registries (npm, PyPI) provide <strong>no meaningful verification</strong> — no code signing required, anonymous repository creation, unprotected package names, and easily manipulated download/star counts.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>This is the first data-driven measurement of MCP deployment patterns in real enterprise environments, and the picture is worse than most threat models assumed — it is effectively unmanaged shadow IT at scale.</li>
+          <li>While the Check Point/Lakera audit showed 40% of MCP <em>servers</em> have exploitable vulnerabilities, Clutch's analysis shows the <em>deployment layer</em> is equally broken: unvetted code, plaintext credentials, and zero security visibility across 95% of installations.</li>
+          <li>The combination of local execution (86%), unknown authors (38%), and hardcoded credentials (3%) creates a supply-chain attack surface where a single malicious or compromised npm package can harvest secrets from thousands of developer machines.</li>
+          <li>Security teams cannot answer basic questions: what MCP servers exist, which are official vs. community, what credentials are configured, what network connections they make, or what actions they perform.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Discover and inventory:</strong> Enumerate all MCP server processes on endpoints and production infrastructure — most security tools don't distinguish MCP server processes from normal <code>node</code> or <code>python</code> execution.</li>
+          <li><strong>Classify official vs. unofficial:</strong> Map each deployed server to its source package and determine whether it's a vendor-published implementation or anonymous community code.</li>
+          <li><strong>Audit credential storage:</strong> Scan <code>.env</code> files, JSON configs, and environment variables on developer machines for plaintext secrets being consumed by MCP servers.</li>
+          <li><strong>Enforce remote-first architecture:</strong> Prefer vendor-hosted remote MCP servers where credentials never leave the hosting environment; restrict local server installation to an approved allowlist.</li>
+          <li><strong>Monitor package installs:</strong> Instrument npm/PyPI install activity on endpoints to flag MCP-related packages and route them through a lightweight review process before execution.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://www.clutch.security/blog/mcp-servers-what-we-found-when-we-actually-looked?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Clutch Security — MCP Servers: What We Found When We Actually Looked (primary source)</a></li>
+          <li><a href="https://siliconangle.com/2026/01/31/expanding-cyberattack-surface-ai-agents-models-rogue-nations-raises-new-alarms/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SiliconANGLE — Expanding cyberattack surface from AI agents, models and rogue nations</a></li>
+          <li><a href="https://www.checkpoint.com/press-releases/check-point-softwares-2026-cyber-security-report-shows-global-attacks-reach-record-levels-as-ai-accelerates-the-threat-landscape/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Check Point 2026 Cyber Security Report (related: Lakera MCP server audit)</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
