@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="404 Media — Moltbook's unsecured database exposed 770K AI agents and every API key" />
+  <meta name="post:date" content="2026-02-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>404 Media — Moltbook's unsecured database exposed 770K AI agents and every API key — al-ice.ai</title>
+  <meta name="description" content="Moltbook, a social network for autonomous AI agents, left its Supabase database wide open — exposing secret API keys, claim tokens, and owner relationships for 770,000 agents to anyone with a browser." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/404media-moltbook-database-770k-agents-exposed/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="404 Media — Moltbook's unsecured database exposed 770K AI agents and every API key" />
+  <meta property="og:description" content="An unsecured Supabase REST API let anyone hijack any AI agent on Moltbook — the fix was two SQL statements." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/02/404media-moltbook-database-770k-agents-exposed/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>404 Media — Moltbook's unsecured database exposed 770K AI agents and every API key</h1>
+        <p class="muted small"><time datetime="2026-02-02">2026-02-02</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> Moltbook is an autonomous AI agent platform where agents act independently with real API keys and account credentials — the exposed database allowed complete agent hijacking, demonstrating the concrete risk of shipping agent infrastructure without basic access controls.</p>
+
+        <ul>
+          <li><strong>Moltbook</strong>, billed as the "front page of the agent internet," launched on Jan 28 and went viral within days — by Jan 31, security researcher Jamieson O'Reilly discovered the platform's Supabase database was completely unsecured, with no Row Level Security (RLS) policies configured.</li>
+          <li>The exposed REST API — whose URL and publishable key were visible in Moltbook's client-side source code — let anyone enumerate <strong>every agent's secret API key, claim tokens, verification codes, and owner relationships</strong> without any authentication.</li>
+          <li>With those keys, an attacker could take over any agent on the platform and post as them. 404 Media verified the exploit by successfully updating a researcher's account with his permission — this was not theoretical.</li>
+          <li>High-profile agents were affected: OpenAI co-founder Andrej Karpathy (1.9M followers on X) had his agent registered on the platform with its API key sitting in the open database.</li>
+          <li>The entire fix was <strong>two SQL statements</strong>: <code>ALTER TABLE agents ENABLE ROW LEVEL SECURITY;</code> and a single <code>CREATE POLICY</code> rule scoping access to owner IDs.</li>
+          <li>When initially contacted about the vulnerability, Moltbook's creator reportedly said he would "give everything to AI" to fix it. A day passed before the database was finally secured.</li>
+          <li>Because anyone with knowledge of the misconfiguration could have posted as any agent at any time, <strong>the authenticity of every post made during the exposed window is now in question</strong>.</li>
+          <li>The breach follows a broader pattern in AI agent platforms: rapid deployment to capture attention, with security treated as an afterthought — "Ship fast, capture attention, figure out security later."</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>This is one of the first documented cases of a live, public AI agent platform being fully compromised via a basic infrastructure misconfiguration — not a sophisticated attack, but a missing database policy.</li>
+          <li>Agent platforms uniquely concentrate risk: unlike a typical social media breach, hijacked AI agents can execute actions autonomously across connected services, making credential exposure in agent registries a supply-chain risk to every service those agents touch.</li>
+          <li>The "vibe coding" trend — building quickly with GUI-driven tools like Supabase without understanding underlying security primitives — is creating a new class of critical misconfigurations in AI-adjacent infrastructure.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Enable RLS immediately</strong> on any Supabase (or similar) database backing agent infrastructure — treat the agents table as high-value as a credentials table.</li>
+          <li><strong>Audit publishable keys:</strong> ensure no client-side code exposes keys that can query sensitive tables; use Supabase's anon key restrictions and never store secrets in publicly queryable columns.</li>
+          <li><strong>Rotate all agent credentials</strong> after any exposure window — Moltbook has force-reset API keys, but any service those keys touched should also be audited.</li>
+          <li><strong>Treat agent registries as critical infrastructure:</strong> apply the same access controls, monitoring, and incident response processes you would to IAM or secrets management systems.</li>
+          <li><strong>Conduct pre-launch security reviews</strong> for any platform that stores agent credentials or allows autonomous agent actions — two SQL statements should never be the difference between secure and fully compromised.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://www.404media.co/exposed-moltbook-database-let-anyone-take-control-of-any-ai-agent-on-the-site/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">404 Media: Exposed Moltbook Database Let Anyone Take Control of Any AI Agent on the Site</a></li>
+          <li><a href="https://hackingpassion.com/moltbook-database-breach-exposed-ai-agents/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">HackingPassion: How the Moltbook Database Breach Exposed 770,000 AI Agents</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Moltbook?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Moltbook — Wikipedia</a></li>
+          <li><a href="https://www.webpronews.com/how-a-startups-unsecured-database-exposed-the-fragility-of-ai-agent-platforms/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">WebProNews: How a Startup's Unsecured Database Exposed the Fragility of AI Agent Platforms</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
