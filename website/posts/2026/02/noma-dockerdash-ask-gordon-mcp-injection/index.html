@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Noma Security — DockerDash: Prompt Injection in Docker Ask Gordon AI Enables RCE via Image Metadata</title>
+  <meta name="description" content="A critical flaw in Docker Ask Gordon AI assistant lets attackers embed prompt-injection payloads in Docker image LABEL fields, which the MCP Gateway executes without validation — enabling RCE and data exfiltration." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/noma-dockerdash-ask-gordon-mcp-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Noma Security — DockerDash: Prompt Injection in Docker Ask Gordon AI Enables RCE via Image Metadata" />
+  <meta name="post:date" content="2026-02-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Noma Security — DockerDash: Prompt Injection in Docker Ask Gordon AI Enables RCE via Image Metadata</h1>
+        <div class="post-meta">
+          <time datetime="2026-02-06">2026-02-06</time>
+          <a class="badge" href="/categories/security/">Security</a>
+        </div>
+
+        <p><strong>AI relevance:</strong> DockerDash is a textbook MCP-mediated prompt injection — a malicious Docker image label hijacks an AI assistant reasoning chain, which blindly forwards attacker instructions to the MCP Gateway for tool execution, demonstrating the real-world danger of unvalidated context in agent tool-calling architectures.</p>
+
+        <ul>
+          <li>Noma Security disclosed <strong>"DockerDash"</strong>, a critical vulnerability in <strong>Ask Gordon</strong>, Docker Desktop and CLI built-in AI assistant, patched in Docker Desktop <strong>v4.50.0</strong> (November 2025) but details published February 2026.</li>
+          <li><strong>Attack vector:</strong> An attacker publishes a Docker image with weaponized instructions embedded in Dockerfile <code>LABEL</code> fields. When a victim queries Ask Gordon about the image, Gordon reads the metadata, interprets the malicious instruction, and forwards it to the MCP Gateway.</li>
+          <li><strong>Zero validation at every layer:</strong> The MCP Gateway cannot distinguish between informational metadata and a pre-authorized runnable instruction. It interprets the forwarded request as coming from a trusted source and invokes MCP tools without additional checks.</li>
+          <li>Noma classifies this as <strong>"Meta-Context Injection"</strong> — a failure of contextual trust where unverified metadata becomes executable commands as it propagates through AI reasoning layers.</li>
+          <li><strong>Two attack paths:</strong>
+            <ul>
+              <li><em>RCE (Cloud/CLI):</em> Multi-step command sequences embedded in image labels are executed by MCP tools with the victim's Docker privileges.</li>
+              <li><em>Data exfiltration (Desktop):</em> The assistant's read-only permissions are weaponized to capture build metadata, container details, API keys, network topology, and Docker configuration via MCP tool wrappers.</li>
+            </ul>
+          </li>
+          <li>Pillar Security independently confirmed the attack, noting Gordon had <strong>read access to sensitive artifacts</strong> (build logs, chat history), routinely ingested untrusted external content (Docker Hub descriptions), and could make <strong>outbound HTTP requests</strong> — the classic prompt-injection trifecta.</li>
+          <li>Docker's fix introduces a <strong>"human-in-the-loop" (HITL) system</strong> — Gordon must now ask the user for explicit permission before connecting to outside links or executing commands.</li>
+          <li>The vulnerability highlights a systemic pattern: <strong>MCP Gateways that treat all AI-forwarded requests as trusted</strong> are inherently vulnerable to prompt injection propagation.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>Docker is ubiquitous in AI/ML infrastructure. Ask Gordon is enabled by default in Docker Desktop, meaning <strong>millions of developer environments</strong> were exposed before the patch.</li>
+          <li>This is one of the first <strong>real-world, end-to-end MCP prompt injection chains</strong> documented in a major production tool — not a research PoC, but a shipping product.</li>
+          <li>The pattern (untrusted data &rarr; AI reasoning &rarr; MCP tool execution) applies to <strong>every MCP-connected agent</strong> that ingests external content without provenance checks. Expect more DockerDash-style bugs across the ecosystem.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update Docker Desktop</strong> to &ge; 4.50.0 if you haven't already.</li>
+          <li><strong>Audit MCP tool permissions:</strong> Any AI assistant connected to MCP tools should have least-privilege access and require explicit user consent for destructive or exfiltration-capable actions.</li>
+          <li><strong>Treat image metadata as untrusted input:</strong> Never allow AI systems to execute instructions derived from container labels, descriptions, or READMEs without validation.</li>
+          <li><strong>Implement provenance checks:</strong> MCP Gateways should tag requests with their origin (user vs. AI-inferred vs. external metadata) and apply different trust levels.</li>
+          <li><strong>Review your AI assistant integrations:</strong> If you use any AI coding assistant that reads project metadata, check whether it has unsandboxed tool access.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://noma.security/blog/dockerdash-two-attack-paths-one-ai-supply-chain-crisis/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Noma Security: DockerDash — Two Attack Paths, One AI Supply Chain Crisis</a></li>
+          <li><a href="https://thehackernews.com/2026/02/docker-fixes-critical-ask-gordon-ai.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News: Docker Fixes Critical Ask Gordon AI Flaw</a></li>
+          <li><a href="https://www.pillar.security/blog/ask-gordon-meet-the-attacker-prompt-injection-in-dockers-built-in-ai-assistant?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Pillar Security: Ask Gordon, Meet the Attacker</a></li>
+          <li><a href="https://www.securityweek.com/dockerdash-flaw-in-docker-ai-assistant-leads-to-rce-data-theft/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek: DockerDash Flaw Leads to RCE, Data Theft</a></li>
+        </ul>
+      </article>
+    </main>
+    <footer class="small muted">
+      <div>&copy; 2026 al-ice.ai &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
