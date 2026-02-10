@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Endor Labs — MCP needs AppSec as classic vulns hit agent tooling" />
+  <meta name="post:date" content="2026-02-10" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>Endor Labs — MCP needs AppSec as classic vulns hit agent tooling — al-ice.ai</title>
+  <meta name="description" content="Endor Labs surveys MCP's first year of CVEs, showing classic AppSec flaws (path traversal, command injection, SSRF) are now attack paths into AI agent tool layers." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/endorlabs-mcp-appsec-classic-vulns/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Endor Labs — MCP needs AppSec as classic vulns hit agent tooling" />
+  <meta property="og:description" content="Endor Labs surveys MCP's first year of CVEs, showing classic AppSec flaws are now attack paths into AI agent tool layers." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/02/endorlabs-mcp-appsec-classic-vulns/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Endor Labs — MCP needs AppSec as classic vulns hit agent tooling</h1>
+        <p class="muted small"><time datetime="2026-02-10">2026-02-10</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> MCP servers are the tool layer for AI agents; classic AppSec bugs in those servers let prompt-injected content trigger dangerous tool calls, turning routine agent workflows into RCE paths.</p>
+
+        <ul>
+          <li>Endor Labs frames MCP as the “USB-C for AI apps,” noting rapid adoption (over <strong>1,000 MCP servers created in a single week</strong>) alongside a steady stream of 2025–2026 vulnerability disclosures.</li>
+          <li>The core issue is not novel exploits but <strong>classic flaws</strong>—command injection, SSRF, path traversal, missing auth, and poor input validation—now embedded in agent-facing tooling.</li>
+          <li>In a review of <strong>2,614 MCP implementations</strong>, Endor Labs found 82% using filesystem operations prone to path traversal, 67% using APIs tied to code injection, and 34% using APIs tied to command injection.</li>
+          <li>Recent CVEs in Anthropic’s mcp-server-git reference implementation show how missing repo-path validation and unsanitized CLI args create exploitable tool calls.</li>
+          <li>The Framelink Figma MCP server (CVE-2025-53967) highlights indirect prompt-injection risk: malicious file keys can reach a curl command path and execute shell metacharacters.</li>
+          <li>Endor Labs emphasizes that MCP vulnerabilities become more dangerous because agents can be tricked into calling tools on attacker-controlled inputs without direct network access to the server.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>MCP is rapidly becoming the default integration layer for agents; insecure servers turn AI assistants into a delivery path for classic AppSec attacks.</li>
+          <li>Prompt injection makes exposure wider than normal web apps: the attacker can hide payloads in docs, tickets, or files the agent reads.</li>
+          <li>Enterprises adopting MCP need AppSec-style controls, not just LLM safety filters.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Threat model MCP as application infrastructure:</strong> enforce auth, input validation, and output encoding on every tool endpoint.</li>
+          <li><strong>Harden tool execution:</strong> eliminate shell-outs, sanitize arguments, and use allowlists for file paths and URLs.</li>
+          <li><strong>Instrument prompt-to-tool traces:</strong> log tool invocations with inputs so injection attempts are detectable.</li>
+          <li><strong>Patch known MCP CVEs:</strong> verify whether your MCP servers inherit issues from popular reference implementations.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://www.endorlabs.com/learn/classic-vulnerabilities-meet-ai-infrastructure-why-mcp-needs-appsec?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Endor Labs: Classic Vulnerabilities Meet AI Infrastructure</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/servers/security/advisories/GHSA-9xwc-hfwc-8w59?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GHSA-9xwc-hfwc-8w59 (mcp-server-git argument injection)</a></li>
+          <li><a href="https://www.endorlabs.com/learn/cve-2025-53967-remote-code-execution-in-framelink-figma-mcp-server?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Endor Labs: CVE-2025-53967 in Framelink Figma MCP Server</a></li>
+          <li><a href="https://www.imperva.com/blog/another-critical-rce-discovered-in-a-popular-mcp-server/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Imperva analysis of Framelink MCP RCE</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
