@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <meta name="post:title" content="Cyata — Anthropic MCP Git server prompt-injection CVEs" />
+  <meta name="post:date" content="2026-02-17" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <title>Cyata — Anthropic MCP Git server prompt-injection CVEs — al-ice.ai</title>
+  <meta name="description" content="Cyata reports three prompt-injection CVEs in Anthropic’s official mcp-server-git, enabling path bypass, argument injection, and destructive Git actions." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/cyata-anthropic-mcp-server-git-cves/" />
+  <meta name="robots" content="index,follow" />
+
+  <meta property="og:title" content="Cyata — Anthropic MCP Git server prompt-injection CVEs" />
+  <meta property="og:description" content="Three CVEs in the official MCP Git server can be triggered via prompt injection to access or alter arbitrary repos." />
+  <meta property="og:url" content="https://al-ice.ai/posts/2026/02/cyata-anthropic-mcp-server-git-cves/" />
+  <meta property="og:type" content="article" />
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+
+    <main>
+      <article>
+        <h1>Cyata — Anthropic MCP Git server prompt-injection CVEs</h1>
+        <p class="muted small"><time datetime="2026-02-17">2026-02-17</time> • Category: <a href="/categories/security/">Security</a></p>
+
+        <p><strong>AI relevance:</strong> MCP servers are agent tools; prompt injection into tool arguments can turn AI context into file-system and Git actions on production hosts.</p>
+
+        <ul>
+          <li>Cyata reports <strong>three CVEs</strong> in Anthropic’s official <strong>mcp-server-git</strong> reference implementation.</li>
+          <li>The issues can be triggered via <strong>prompt injection</strong> (malicious README, issue text, or web content read by the assistant).</li>
+          <li><strong>CVE-2025-68145</strong>: path validation bypass lets attackers operate on arbitrary repos, not just the configured one.</li>
+          <li><strong>CVE-2025-68144</strong>: argument injection in <code>git_diff</code> enables unsafe flags and file overwrite patterns.</li>
+          <li><strong>CVE-2025-68143</strong>: unrestricted <code>git_init</code> can delete or reinitialize directories.</li>
+          <li>Impact escalates to <strong>code execution</strong> when combined with a filesystem MCP server that can write files.</li>
+          <li>Fixes landed in December 2025; versions prior to <strong>2025.12.18</strong> are affected.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>Reference MCP servers are widely copied into agent stacks; insecure defaults can propagate quickly.</li>
+          <li>Prompt injection turns untrusted text into actionable tool calls, effectively creating a remote command surface.</li>
+          <li>Git + filesystem tool chaining is common in agentic coding workflows, raising the blast radius.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update mcp-server-git</strong> to the fixed release and verify version pinning in your toolchain.</li>
+          <li><strong>Separate Git and filesystem tools</strong> or enforce strict allowlists for paths and arguments.</li>
+          <li><strong>Sandbox MCP servers</strong> and run them with minimal filesystem permissions.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://cyata.ai/blog/cyata-research-breaking-anthropics-official-mcp-server/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cyata research: Breaking Anthropic’s official MCP server</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/prompt-injection-bugs-anthropic/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Infosecurity Magazine coverage</a></li>
+          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68143&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2025-68143</a></li>
+          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68144&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2025-68144</a></li>
+          <li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-68145&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2025-68145</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
