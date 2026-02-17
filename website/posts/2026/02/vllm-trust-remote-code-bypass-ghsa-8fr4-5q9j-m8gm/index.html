@@ -1,64 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="google-adsense-account" content="ca-pub-9044791241492233">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Advisory — vLLM trust_remote_code bypass RCE</title>
-    <meta name="description" content="vLLM config loading can instantiate remote classes via auto_map even when trust_remote_code is false, enabling RCE; fixed by tightening the config path.">
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitHub Advisory — vLLM trust_remote_code bypass RCE — al-ice.ai</title>
+  <meta name="description" content="vLLM config loading can instantiate remote classes via auto_map even when trust_remote_code is false, enabling RCE; fixed by tightening the config path." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/vllm-trust-remote-code-bypass-ghsa-8fr4-5q9j-m8gm/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitHub Advisory — vLLM trust_remote_code bypass RCE" />
+  <meta name="post:date" content="2026-02-17" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI CVEs" />
 
-    <!-- Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-ZX0TZSMV99');
-    </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);} 
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
 
-    <link rel="stylesheet" href="/assets/css/site.css" />
+  <link rel="stylesheet" href="/assets/css/site.css" />
   <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
 </head>
-<body class="post-layout">
-    <header>
-        <a href="/" class="home-link">← Home</a>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
     </header>
-
     <main>
-        <article post:category="ai-cves" post:categoryLabel="AI CVEs" post:slug="vllm-trust-remote-code-bypass-ghsa-8fr4-5q9j-m8gm" post:date="2026-02-17 12:00">
-            <h1>GitHub Advisory — vLLM trust_remote_code bypass RCE</h1>
+      <article class="post">
+        <h1 class="post-title">GitHub Advisory — vLLM trust_remote_code bypass RCE</h1>
+        <div class="post-meta">
+          <time datetime="2026-02-17">2026-02-17</time>
+          <a class="badge" href="/categories/ai-cves/">AI CVEs</a>
+        </div>
 
-            <p class="ai-relevance"><strong>AI relevance:</strong> vLLM is a common LLM inference server, and this bug sits in its model config loading path, letting a malicious model repo execute code on AI serving hosts.</p>
+        <p class="ai-relevance"><strong>AI relevance:</strong> vLLM is a common LLM inference server, and this bug sits in its model config loading path, letting a malicious model repo execute code on AI serving hosts.</p>
 
-            <div class="post-content">
-                <ul>
-                    <li><strong>Issue:</strong> vLLM’s <code>Nemotron_Nano_VL_Config</code> resolves <code>auto_map</code> entries and instantiates the returned class automatically.</li>
-                    <li><strong>Bypass:</strong> This code path can fetch and execute Python from a remote repo even when <code>trust_remote_code=false</code>.</li>
-                    <li><strong>Exploit setup:</strong> A benign-looking “frontend” model repo can point its <code>config.json</code> to a separate “backend” repo containing malicious code.</li>
-                    <li><strong>Trigger:</strong> The attacker only needs the victim to load the model config with vLLM utilities; no extra interaction required.</li>
-                    <li><strong>Impact:</strong> Arbitrary code execution on the host running the model loader, affecting services, CI, or dev machines.</li>
-                    <li><strong>Fix:</strong> The advisory links to a patch that tightens this config path and enforces the intended safety boundary.</li>
-                </ul>
+        <div class="post-content">
+          <ul>
+            <li><strong>Issue:</strong> vLLM’s <code>Nemotron_Nano_VL_Config</code> resolves <code>auto_map</code> entries and instantiates the returned class automatically.</li>
+            <li><strong>Bypass:</strong> This code path can fetch and execute Python from a remote repo even when <code>trust_remote_code=false</code>.</li>
+            <li><strong>Exploit setup:</strong> A benign-looking “frontend” model repo can point its <code>config.json</code> to a separate “backend” repo containing malicious code.</li>
+            <li><strong>Trigger:</strong> The attacker only needs the victim to load the model config with vLLM utilities; no extra interaction required.</li>
+            <li><strong>Impact:</strong> Arbitrary code execution on the host running the model loader, affecting services, CI, or dev machines.</li>
+            <li><strong>Fix:</strong> The advisory links to a patch that tightens this config path and enforces the intended safety boundary.</li>
+          </ul>
 
-                <h2>Why it matters</h2>
-                <p>Model loaders are part of the AI supply chain. If <code>trust_remote_code</code> can be bypassed, a single “safe-looking” model repo can become a silent RCE vector in inference servers and build pipelines.</p>
+          <h2>Why it matters</h2>
+          <p>Model loaders are part of the AI supply chain. If <code>trust_remote_code</code> can be bypassed, a single “safe-looking” model repo can become a silent RCE vector in inference servers and build pipelines.</p>
 
-                <h2>What to do</h2>
-                <ul>
-                    <li><strong>Patch:</strong> Apply the vLLM fix referenced in the advisory.</li>
-                    <li><strong>Restrict sources:</strong> Only load models from vetted repositories; avoid unreviewed community repos in production pipelines.</li>
-                    <li><strong>Harden hosts:</strong> Run model loaders with minimal privileges and egress controls to reduce blast radius.</li>
-                </ul>
+          <h2>What to do</h2>
+          <ul>
+            <li><strong>Patch:</strong> Apply the vLLM fix referenced in the advisory.</li>
+            <li><strong>Restrict sources:</strong> Only load models from vetted repositories; avoid unreviewed community repos in production pipelines.</li>
+            <li><strong>Harden hosts:</strong> Run model loaders with minimal privileges and egress controls to reduce blast radius.</li>
+          </ul>
 
-                <p><a href="https://github.com/vllm-project/vllm/security/advisories/GHSA-8fr4-5q9j-m8gm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Read the GitHub advisory</a></p>
-                <p><a href="https://github.com/vllm-project/vllm/pull/28126?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Patch PR</a></p>
-            </div>
-        </article>
+          <p><a href="https://github.com/vllm-project/vllm/security/advisories/GHSA-8fr4-5q9j-m8gm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Read the GitHub advisory</a></p>
+          <p><a href="https://github.com/vllm-project/vllm/pull/28126?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Patch PR</a></p>
+        </div>
+
+      </article>
     </main>
 
     <footer class="small muted">
       <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
     </footer>
+  </div>
   <script>(function(){
       var btn=document.getElementById('themeToggle');
       if(!btn) return;
