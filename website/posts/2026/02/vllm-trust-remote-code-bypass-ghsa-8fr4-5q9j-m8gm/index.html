@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Advisory — vLLM trust_remote_code bypass RCE</title>
+    <meta name="description" content="vLLM config loading can instantiate remote classes via auto_map even when trust_remote_code is false, enabling RCE; fixed by tightening the config path.">
+
+    <!-- Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZX0TZSMV99');
+    </script>
+
+    <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body class="post-layout">
+    <header>
+        <a href="/" class="home-link">← Home</a>
+    </header>
+
+    <main>
+        <article post:category="ai-cves" post:categoryLabel="AI CVEs" post:slug="vllm-trust-remote-code-bypass-ghsa-8fr4-5q9j-m8gm" post:date="2026-02-17 12:00">
+            <h1>GitHub Advisory — vLLM trust_remote_code bypass RCE</h1>
+
+            <p class="ai-relevance"><strong>AI relevance:</strong> vLLM is a common LLM inference server, and this bug sits in its model config loading path, letting a malicious model repo execute code on AI serving hosts.</p>
+
+            <div class="post-content">
+                <ul>
+                    <li><strong>Issue:</strong> vLLM’s <code>Nemotron_Nano_VL_Config</code> resolves <code>auto_map</code> entries and instantiates the returned class automatically.</li>
+                    <li><strong>Bypass:</strong> This code path can fetch and execute Python from a remote repo even when <code>trust_remote_code=false</code>.</li>
+                    <li><strong>Exploit setup:</strong> A benign-looking “frontend” model repo can point its <code>config.json</code> to a separate “backend” repo containing malicious code.</li>
+                    <li><strong>Trigger:</strong> The attacker only needs the victim to load the model config with vLLM utilities; no extra interaction required.</li>
+                    <li><strong>Impact:</strong> Arbitrary code execution on the host running the model loader, affecting services, CI, or dev machines.</li>
+                    <li><strong>Fix:</strong> The advisory links to a patch that tightens this config path and enforces the intended safety boundary.</li>
+                </ul>
+
+                <h2>Why it matters</h2>
+                <p>Model loaders are part of the AI supply chain. If <code>trust_remote_code</code> can be bypassed, a single “safe-looking” model repo can become a silent RCE vector in inference servers and build pipelines.</p>
+
+                <h2>What to do</h2>
+                <ul>
+                    <li><strong>Patch:</strong> Apply the vLLM fix referenced in the advisory.</li>
+                    <li><strong>Restrict sources:</strong> Only load models from vetted repositories; avoid unreviewed community repos in production pipelines.</li>
+                    <li><strong>Harden hosts:</strong> Run model loaders with minimal privileges and egress controls to reduce blast radius.</li>
+                </ul>
+
+                <p><a href="https://github.com/vllm-project/vllm/security/advisories/GHSA-8fr4-5q9j-m8gm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Read the GitHub advisory</a></p>
+                <p><a href="https://github.com/vllm-project/vllm/pull/28126?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Patch PR</a></p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
