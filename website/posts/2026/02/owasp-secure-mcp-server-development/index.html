@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OWASP — Secure MCP Server Development Guide — al-ice.ai</title>
+  <meta name="description" content="OWASP GenAI Security Project publishes a practical guide for securing Model Context Protocol (MCP) servers with concrete architecture, auth, validation, isolation, and deployment controls." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/owasp-secure-mcp-server-development/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="OWASP — Secure MCP Server Development Guide" />
+  <meta name="post:date" content="2026-02-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">OWASP — Secure MCP Server Development Guide</h1>
+        <div class="post-meta">
+          <time datetime="2026-02-18">2026-02-18</time>
+          <a class="badge" href="/categories/security/">Security</a>
+        </div>
+
+        <p><strong>AI relevance:</strong> MCP servers are the tool-access layer for AI agents; OWASP’s guide gives concrete security controls for the exact infrastructure that agents use to touch data, APIs, and execution environments.</p>
+
+        <ul>
+          <li>OWASP GenAI Security Project released a <strong>practical, MCP-specific secure development guide</strong> aimed at architects and platform engineers building agent tool servers.</li>
+          <li>The guide frames MCP as <strong>delegated permission infrastructure</strong> (agents acting on behalf of users), which increases blast radius when authz, validation, or isolation fails.</li>
+          <li>It emphasizes <strong>strong authentication + authorization</strong> for tool access, including explicit scoping of tool permissions and user context to prevent agent overreach.</li>
+          <li><strong>Strict input validation and output constraints</strong> are highlighted to reduce prompt-injection-driven tool misuse and data exfiltration via tool responses.</li>
+          <li>Deployment guidance focuses on <strong>session isolation and hardened runtime environments</strong> so one compromised tool call cannot pivot into adjacent services.</li>
+          <li>Operationally, the guide recommends <strong>logging, monitoring, and auditability</strong> for tool calls to detect anomalous agent activity and enforce policy.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>MCP servers are quickly becoming the default integration layer for agents. A shared, vendor-neutral security baseline reduces the “shadow MCP” risk and improves defensibility.</li>
+          <li>Most incidents in agent systems trace back to tooling misuse, not model weights. This guide targets the exact control plane that determines what agents can actually do.</li>
+          <li>Having a standardized checklist helps platform teams move from ad-hoc guardrails to <strong>repeatable, auditable security practices</strong>.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Use the OWASP guide as your baseline:</strong> map its controls to your MCP implementation and document gaps.</li>
+          <li><strong>Scope tool permissions tightly:</strong> bind tools to user intent and enforce least-privilege on data/API access.</li>
+          <li><strong>Instrument tool-call telemetry:</strong> log prompt-to-tool chains so security teams can detect abuse patterns early.</li>
+          <li><strong>Harden MCP runtimes:</strong> isolate sessions and tools to limit lateral movement if a tool is compromised.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://genai.owasp.org/resource/a-practical-guide-for-secure-mcp-server-development/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">OWASP — A Practical Guide for Secure MCP Server Development</a></li>
+          <li><a href="https://genai.owasp.org/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">OWASP GenAI Security Project</a></li>
+          <li><a href="https://modelcontextprotocol.io/introduction?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Model Context Protocol (MCP) overview</a></li>
+        </ul>
+
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
