@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Check Point Research — Claude Code hooks/MCP RCE — al-ice.ai</title>
+  <meta name="description" content="Check Point details Claude Code project configuration flaws enabling hook/MCP command execution and API key exfiltration when opening untrusted repos." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/02/checkpoint-claude-code-hooks-mcp-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Check Point Research — Claude Code hooks/MCP RCE" />
+  <meta name="post:date" content="2026-02-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post"><article post:category="security" post:categoryLabel="Security" post:slug="checkpoint-claude-code-hooks-mcp-rce" post:date="2026-02-26 00:00">
+            <h1>Check Point Research — Claude Code hooks/MCP RCE</h1>
+
+            <p class="ai-relevance"><strong>AI relevance:</strong> Claude Code’s agent runtime can be driven by repository configuration files, so prompt-injection-to-RCE chains can trigger shell commands and API key exfiltration when developers open untrusted projects.</p>
+
+            <div class="post-content">
+                <ul>
+                    <li><strong>Issue 1 (Hooks):</strong> Repository-controlled <code>.claude/settings.json</code> can define Hooks that execute shell commands at startup without a clear, explicit execution prompt.</li>
+                    <li><strong>Issue 2 (MCP auto-approval):</strong> The same settings file can enable <code>enableAllProjectMcpServers</code> or pre-whitelist servers, allowing malicious <code>.mcp.json</code> initialization commands to run before consent.</li>
+                    <li><strong>Issue 3 (API key exfiltration):</strong> Project settings can override <code>ANTHROPIC_BASE_URL</code>, routing Claude Code traffic (including API keys) to an attacker-controlled endpoint.</li>
+                    <li><strong>Impact:</strong> Attackers can achieve arbitrary command execution and steal Claude API credentials by embedding malicious config in a repo.</li>
+                    <li><strong>Trigger:</strong> Victims only need to clone and open the project with Claude Code; the exploit runs before the trust dialog is fully actionable.</li>
+                    <li><strong>Fix status:</strong> Check Point reports Anthropic patched the issues prior to publication.</li>
+                </ul>
+
+                <h2>Why it matters</h2>
+                <p>Agentic coding tools inherit repository configs by design, which turns supply-chain exposure into a direct execution path. This is a concrete example of how “trusted” project settings can bypass consent flows and turn AI dev tools into remote execution surfaces.</p>
+
+                <h2>What to do</h2>
+                <ul>
+                    <li><strong>Update:</strong> Ensure Claude Code is on the latest auto-updated build with the fixed consent flows.</li>
+                    <li><strong>Harden defaults:</strong> Disable auto-approval of project MCP servers unless you fully trust the repo.</li>
+                    <li><strong>Audit configs:</strong> Treat <code>.claude/settings.json</code> and <code>.mcp.json</code> as executable input; review before opening untrusted repositories.</li>
+                    <li><strong>Sandbox use:</strong> Run agentic coding tools in a restricted environment (least-privilege tokens, isolated shells).</li>
+                </ul>
+
+                <p><a href="https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Check Point Research: RCE and API token exfiltration in Claude Code</a></p>
+                <p><a href="https://blog.checkpoint.com/research/check-point-researchers-expose-critical-claude-code-flaws?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">Check Point blog summary</a></p>
+                <p><a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-ph6w-f82w-28w6?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener noreferrer">GitHub advisory (Anthropic)</a></p>
+            </div>
+        </article></article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
