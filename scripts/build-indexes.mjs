@@ -82,7 +82,6 @@ function pageShell({title, canonical, description, body}){
     ${body}
     <footer class="small muted">
       <div>© ${new Date().getFullYear()} al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
-      <div class="muted">Affiliate disclosure: some links may be affiliate links. If you buy, we may earn a commission at no extra cost to you.</div>
     </footer>
   </div>
 
