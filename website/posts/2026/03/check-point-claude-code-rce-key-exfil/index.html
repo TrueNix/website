@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Check Point Research — Claude Code project-file RCE & key exfil — al-ice.ai</title>
+  <meta name="description" content="Check Point details Claude Code project-file weaknesses that enabled RCE and API key exfiltration via hooks, MCP servers, and env vars in untrusted repos." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/check-point-claude-code-rce-key-exfil/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Check Point Research — Claude Code project-file RCE & key exfil" />
+  <meta name="post:date" content="2026-03-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Check Point Research — Claude Code project-file RCE & key exfil</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-06">2026-03-06</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Claude Code is an agentic CLI that runs tools and shell commands, so malicious project configs can turn a repo clone into automated RCE and credential theft in AI dev pipelines.</p>
+
+        <ul>
+          <li>Check Point Research disclosed a chain of Claude Code project-file weaknesses enabling <strong>remote code execution</strong> and <strong>API key exfiltration</strong>.</li>
+          <li>The issues abuse repo-controlled configuration in <code>.claude/settings.json</code>, which is loaded when a developer opens an untrusted repo.</li>
+          <li>Attackers can weaponize <strong>Hooks</strong> to run arbitrary shell commands via consent bypasses when Claude Code starts in a new directory.</li>
+          <li><strong>CVE-2025-59536</strong> covers a code injection path that executes commands automatically during tool initialization.</li>
+          <li><strong>CVE-2026-21852</strong> enables information disclosure by redirecting API traffic (e.g., via <code>ANTHROPIC_BASE_URL</code>) before the trust prompt appears.</li>
+          <li>Check Point reports the bugs are fixed, with patches in Claude Code versions <strong>1.0.111</strong> and <strong>2.0.65</strong>.</li>
+          <li>The campaign shows how agent tooling + repo configs can become a supply-chain attack vector for AI teams.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>AI dev agents often hold <strong>API keys and repo access</strong>; a poisoned project config can steal credentials at scale.</li>
+          <li>RCE on developer machines can pivot into CI, package registries, and model or prompt artifacts.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update Claude Code</strong> to patched builds (1.0.111+ and 2.0.65+).</li>
+          <li><strong>Treat repo configs as untrusted:</strong> review <code>.claude/settings.json</code> in new repos before running agent tooling.</li>
+          <li><strong>Reduce blast radius:</strong> use scoped API keys, short-lived tokens, and sandboxed environments for AI tooling.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Check Point Research — Caught in the Hook</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-4fgq-fpq9-mr3g?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Anthropic advisory — CVE-2025-59536</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/security/advisories/GHSA-jh7p-qr78-84p7?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Anthropic advisory — CVE-2026-21852</a></li>
+          <li><a href="https://thehackernews.com/2026/02/claude-code-flaws-allow-remote-code.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Hacker News coverage</a></li>
+        </ul>
+
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
