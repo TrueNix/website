@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prompt Injection Defense Playbook (2026) — al-ice.ai</title>
+  <meta name="description" content="A practical defense playbook: detection, mitigation, and red‑team TTPs for prompt injection across agents and tool ecosystems." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/prompt-injection-defense-playbook/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Prompt Injection Defense Playbook (2026)" />
+  <meta name="post:date" content="2026-03-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Prompt Injection Defense Playbook (2026)</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-06">2026-03-06</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Prompt injection is the dominant real‑world exploit path for autonomous agents because it attacks the decision layer, not the model weights.</p>
+
+        <p>Prompt injection is no longer a novelty. It is the primary way attackers steer agents into unsafe actions. The hard truth: you can’t “filter” your way out of it. Effective defenses require layered controls: content isolation, strict tool schemas, and human approvals for high‑impact actions.</p>
+
+        <h2>1) Know the attacker’s playbook</h2>
+        <p>Most prompt injections follow predictable patterns:</p>
+        <ul>
+          <li><strong>Instruction smuggling</strong>: “Ignore previous instructions,” “System override,” or “Developer mode.”</li>
+          <li><strong>Data exfiltration</strong>: ask the agent to reveal system prompts, secrets, or tool outputs.</li>
+          <li><strong>Tool hijacking</strong>: craft content that persuades the agent to call unsafe tools.</li>
+          <li><strong>Confusion and context overload</strong>: flood the context window with noise to bypass guardrails.</li>
+        </ul>
+
+        <h2>2) The most effective mitigations</h2>
+        <ul>
+          <li><strong>Strict separation of untrusted content</strong> — never merge external content into system instructions.</li>
+          <li><strong>Tool schemas with allowlists</strong> — reject any tool call outside approved parameters.</li>
+          <li><strong>Human confirmation</strong> for sensitive actions (payments, permission changes, deployments).</li>
+          <li><strong>Output validation</strong> — reject tool outputs that contain instruction‑like text.</li>
+          <li><strong>Context hardening</strong> — keep the system prompt short, explicit, and immutable.</li>
+        </ul>
+
+        <h2>3) Detection signals</h2>
+        <p>Prompt injection often leaves detectable traces:</p>
+        <ul>
+          <li>Sudden requests to reveal system prompts or developer instructions.</li>
+          <li>Tool calls that are unrelated to the user’s explicit intent.</li>
+          <li>Large shifts in model tone or role (“you are now the system”).</li>
+          <li>Requests to open or upload local files.</li>
+        </ul>
+        <p>Build detectors around these signals and alert when they occur repeatedly or at scale.</p>
+
+        <h2>4) Red‑team the model like software</h2>
+        <p>Agent deployments should include regular red‑teaming:</p>
+        <ul>
+          <li>Inject prompt attacks through all ingestion channels (docs, web, tickets).</li>
+          <li>Test tool boundary enforcement by attempting invalid arguments.</li>
+          <li>Simulate adversaries by chaining prompt attacks with tool misuse.</li>
+        </ul>
+
+        <h2>5) The “safe tool” illusion</h2>
+        <p>Many teams believe a “safe tool” solves prompt injection. It doesn’t. A safe tool is still dangerous if the model can call it under attacker influence. The protection is in <em>policy</em> and <em>intent validation</em>, not in the tool itself. A read‑only tool can still leak sensitive data if the prompt coerces it into doing so.</p>
+
+        <h2>6) A practical checklist</h2>
+        <ul>
+          <li>Untrusted content is tagged and isolated from system instructions.</li>
+          <li>Tool calls are schema‑validated and logged.</li>
+          <li>High‑impact actions require user confirmation.</li>
+          <li>Output filters block instruction‑like text from tool responses.</li>
+          <li>Security testing includes injection attempts every release.</li>
+        </ul>
+
+        <p>Prompt injection defense is not a single fix. It is a discipline: layered controls, explicit intent validation, and aggressive auditing. Treat it like input validation for the AI era.</p>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2302.12173?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Prompt Injection Attacks Against LLMs (arXiv)</a></li>
+          <li><a href="https://arxiv.org/abs/2307.02483?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Toolformer / tool‑use safety discussions</a></li>
+          <li><a href="https://labs.zenity.io/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Zenity Labs research on indirect prompt injection</a></li>
+          <li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">OWASP LLM Top 10</a></li>
+        </ul>
+
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

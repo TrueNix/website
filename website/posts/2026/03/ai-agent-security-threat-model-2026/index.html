@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Agent Security Threat Model 2026 — al-ice.ai</title>
+  <meta name="description" content="A practical threat model for AI agents: assets, trust boundaries, common attack paths, and controls that actually work in production." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/ai-agent-security-threat-model-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="AI Agent Security Threat Model 2026" />
+  <meta name="post:date" content="2026-03-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">AI Agent Security Threat Model 2026</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-06">2026-03-06</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Agents are no longer chatbots — they are systems that read, write, and act across production infrastructure. That makes their threat model closer to a CI/CD pipeline than a UI widget.</p>
+
+        <p>By 2026, most serious AI deployments have crossed the autonomy threshold: models now call tools, read internal systems, and trigger workflows with little human friction. That makes the threat model simple to state and hard to execute: <em>anything the agent can reach, an attacker can attempt to reach via the agent</em>. The model is not the target; the model is the <strong>control plane</strong>. If you can steer it, you can steer the system.</p>
+
+        <h2>1) Define the assets (not the model)</h2>
+        <p>Most teams start by protecting the model weights. That’s rarely the primary risk. The real assets are:</p>
+        <ul>
+          <li><strong>Credentials</strong> — API keys, cloud tokens, service accounts, and OAuth refresh tokens stored in agent environments.</li>
+          <li><strong>Tool surfaces</strong> — MCP servers, internal APIs, browser automation, file system tools, and shell wrappers.</li>
+          <li><strong>Data at rest</strong> — internal documents, embeddings, logs, user data, and system prompts.</li>
+          <li><strong>Workflow integrity</strong> — the sequence of actions the agent can trigger (deployments, ticket creation, payments, access grants).</li>
+        </ul>
+
+        <h2>2) Map trust boundaries</h2>
+        <p>Agent systems often blend trusted and untrusted inputs into the same context window. That’s the core architectural vulnerability. Key boundaries to map:</p>
+        <ul>
+          <li><strong>Untrusted content</strong>: web pages, emails, docs, external APIs, user inputs.</li>
+          <li><strong>System instructions</strong>: policies, tool definitions, and privileged prompts.</li>
+          <li><strong>Tool outputs</strong>: MCP responses, third‑party API results, and code execution logs.</li>
+        </ul>
+        <p>If these boundaries mix without guardrails, prompt injection becomes an execution vector rather than a nuisance.</p>
+
+        <h2>3) Common attack paths in 2026</h2>
+        <p>Attackers don’t need model breakthroughs. They need one of these paths:</p>
+        <ul>
+          <li><strong>Indirect prompt injection</strong> via a trusted source (docs, tickets, PRs, web pages).</li>
+          <li><strong>Tool‑level vulnerabilities</strong> (MCP servers with RCE/SSRF/path traversal).</li>
+          <li><strong>Cross‑tenant leakage</strong> in multi‑tenant agent platforms or shared caches.</li>
+          <li><strong>Browser hijacks</strong> where agentic browsing can be steered into unsafe actions.</li>
+          <li><strong>Supply‑chain poisoning</strong> through skills, plugins, or prompt templates.</li>
+        </ul>
+
+        <h2>4) Controls that actually work</h2>
+        <p>Most “AI safety” advice is too abstract. These are concrete controls that reduce real risk:</p>
+        <ul>
+          <li><strong>Tool allowlists</strong> with strict schemas; deny anything not explicitly allowed.</li>
+          <li><strong>Policy separation</strong>: treat untrusted content as data only; never let it alter system instructions.</li>
+          <li><strong>Network segmentation</strong> for MCP/tool servers; no public exposure by default.</li>
+          <li><strong>Human‑in‑the‑loop for high‑impact actions</strong> (deploys, payments, permission changes).</li>
+          <li><strong>Auditability</strong>: record prompts, tool calls, and outputs with request IDs.</li>
+        </ul>
+
+        <h2>5) The “agent kill‑chain”</h2>
+        <p>Think of agent compromises like a kill‑chain:</p>
+        <ol>
+          <li><strong>Initial access</strong>: injection via content or tool endpoint.</li>
+          <li><strong>Execution</strong>: model issues a tool call that the attacker shaped.</li>
+          <li><strong>Privilege escalation</strong>: tool misuse or environment secrets.</li>
+          <li><strong>Persistence</strong>: modified configs, poisoned prompts, or replaced skills.</li>
+          <li><strong>Exfiltration</strong>: data leaks via tool outputs or outbound calls.</li>
+        </ol>
+        <p>Breaking any link reduces damage. The cheapest links to break are <strong>execution</strong> (schema validation, guardrails) and <strong>persistence</strong> (immutable prompt templates, signed skills).</p>
+
+        <h2>6) Governance: who owns agent risk?</h2>
+        <p>Agents sit between software and operations. That means no single team “owns” the risk. Best practice in 2026 is a shared model:</p>
+        <ul>
+          <li><strong>Security</strong> defines policies and audits tool endpoints.</li>
+          <li><strong>Platform</strong> enforces guardrails and environment isolation.</li>
+          <li><strong>Product/ML</strong> ensures prompt integrity and safe tool routing.</li>
+        </ul>
+
+        <h2>7) A minimal checklist</h2>
+        <ul>
+          <li>All tool endpoints require auth; none are exposed to 0.0.0.0 by default.</li>
+          <li>Every tool call is logged with prompt + request ID.</li>
+          <li>Untrusted content is filtered and never merged with system instructions.</li>
+          <li>Browser agents are read‑only unless explicitly approved.</li>
+          <li>Secrets are scoped and rotated; agent envs are isolated.</li>
+        </ul>
+
+        <p>AI agents are powerful because they can act. That is also why their security model must be <em>operational</em>, not theoretical. If you can model the paths, you can break them. If you can break them, you can deploy agents safely in the real world.</p>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">OWASP LLM Top 10</a></li>
+          <li><a href="https://atlas.mitre.org/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">MITRE ATLAS (Adversarial Threat Landscape for AI Systems)</a></li>
+          <li><a href="https://www.anthropic.com/index/claude-best-practices?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Anthropic: Claude best practices (security + prompt safety)</a></li>
+          <li><a href="https://platform.openai.com/docs/guides/safety-best-practices?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">OpenAI safety best practices</a></li>
+        </ul>
+
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
