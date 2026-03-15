@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Google — UNC6426 weaponized LLM tool to steal credentials, escalated to AWS admin in 72h — al-ice.ai</title>
+  <meta name="description" content="Google's Cloud Threat Horizons Report details how UNC6426 exploited the nx npm supply-chain breach to deploy QUIETVAULT — a credential stealer that weaponizes an LLM tool already installed on the victim's machine to find and exfiltrate secrets." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/unc6426-nx-npm-llm-credential-stealer-aws-admin/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Google — UNC6426 weaponized LLM tool to steal credentials, escalated to AWS admin in 72h" />
+  <meta name="post:date" content="2026-03-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);} 
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Google — UNC6426 weaponized LLM tool to steal credentials, escalated to AWS admin in 72h</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-11">2026-03-11</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> The QUIETVAULT credential stealer specifically weaponizes an LLM tool already installed on the victim's machine to autonomously scan the filesystem for tokens, API keys, and environment variables — turning the developer's own AI tooling into a secret-exfiltration engine.</p>
+
+        <ul>
+          <li>Google's <strong>Cloud Threat Horizons Report H1 2026</strong> details how threat actor UNC6426 turned the August 2025 nx npm supply-chain breach into a full cloud compromise within 72 hours.</li>
+          <li>The nx packages were trojanized via a <code>pull_request_target</code> workflow exploit ("Pwn Request"), embedding a postinstall script that launched <strong>QUIETVAULT</strong>, a JavaScript credential stealer.</li>
+          <li>QUIETVAULT's novel technique: it <strong>invokes an LLM tool already present on the developer's endpoint</strong> to scan the filesystem for sensitive data — GitHub PATs, environment variables, and system info — rather than relying on hardcoded regex patterns.</li>
+          <li>Stolen data was uploaded to a public GitHub repository (<code>/s1ngularity-repository-1</code>), and a developer running <strong>Nx Console</strong> in a code editor triggered the trojanized update.</li>
+          <li>UNC6426 used the stolen GitHub PAT to perform recon with <strong>Nord Stream</strong> (legitimate tool for extracting CI/CD secrets), leaking a GitHub service account credential.</li>
+          <li>The attackers then abused <strong>GitHub-to-AWS OIDC trust</strong> to generate STS tokens for an overly-permissive CloudFormation role, deploy a new stack, and create a persistent admin IAM role.</li>
+          <li>Final impact: <strong>data exfiltration from S3 buckets</strong> and <strong>data destruction in production</strong> cloud environments — all starting from a single npm install.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>This is a concrete, reported case of <strong>AI tools being weaponized during active intrusions</strong> — not a theoretical attack model, but a technique observed in production by Google's own incident response team.</li>
+          <li>Developer machines with LLM tools installed (copilots, code assistants, local inference) now represent an <strong>expanded credential-surface</strong> that traditional secret scanners don't model.</li>
+          <li>The supply-chain → credential theft → OIDC abuse → cloud destruction kill chain demonstrates how <strong>AI dev tooling is becoming a pivot point</strong> in multi-stage cloud compromises.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Restrict OIDC trust relationships</strong>: scope GitHub Actions OIDC roles to specific repositories and workflows; never use wildcard trust policies.</li>
+          <li><strong>Audit npm dependencies</strong> for postinstall scripts, especially in dev-tooling packages that interact with code editors or AI assistants.</li>
+          <li><strong>Monitor for anomalous LLM tool usage</strong> — if a credential stealer invokes an LLM API or local model to scan files, it generates detectable network or process activity.</li>
+          <li><strong>Apply least-privilege to CI/CD roles</strong>: the CloudFormation role in this breach was overly permissive; limit IAM capabilities to what each workflow actually needs.</li>
+          <li><strong>Rotate tokens aggressively</strong>: GitHub PATs, STS tokens, and service account credentials should have short lifetimes and be monitored for unusual usage patterns.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://cloud.google.com/security/report/resources/cloud-threat-horizons-report-h1-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Google Cloud Threat Horizons Report H1 2026</a></li>
+          <li><a href="https://thehackernews.com/2026/03/unc6426-exploits-nx-npm-supply-chain.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Hacker News — UNC6426 Exploits nx npm Supply-Chain Attack</a></li>
+          <li><a href="https://thehackernews.com/2025/08/malicious-nx-packages-in-s1ngularity.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Hacker News — Original nx npm compromise (Aug 2025)</a></li>
+          <li><a href="https://github.com/synacktiv/nord-stream?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Nord Stream (CI/CD secret extraction tool used by UNC6426)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
