@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spring AI — FilterExpressionConverter Injection Flaws (CVE-2026-22729, CVE-2026-22730) — al-ice.ai</title>
+  <meta name="description" content="Spring AI disclosed CVE-2026-22729 and CVE-2026-22730 in filter expression conversion paths, enabling metadata access-control bypass via JSONPath and SQL injection vectors." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/spring-ai-filterexpressionconverter-injection-cves-2026-22729-22730/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Spring AI — FilterExpressionConverter Injection Flaws (CVE-2026-22729, CVE-2026-22730)" />
+  <meta name="post:date" content="2026-03-20" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);} 
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Spring AI — FilterExpressionConverter Injection Flaws (CVE-2026-22729, CVE-2026-22730)</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-20">2026-03-20</time>
+          <a class="badge" href="/categories/ai-cves/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Spring AI published two March 2026 advisories in filter-expression conversion code paths used for metadata filtering, with one issue enabling JSONPath logic injection and another enabling SQL injection in MariaDB-specific conversion.</p>
+
+        <ul>
+          <li><strong>CVE-2026-22729</strong> affects vector-store filtering paths that extend <code>AbstractFilterExpressionConverter</code>, where unescaped user input can alter JSONPath semantics.</li>
+          <li>The JSONPath issue can let authenticated users bypass metadata-based document isolation controls, including tenant or role filters built on metadata selectors.</li>
+          <li><strong>CVE-2026-22730</strong> targets <code>MariaDBFilterExpressionConverter</code>, with missing sanitization that can lead to SQL injection and policy bypass in metadata queries.</li>
+          <li>Both flaws are dangerous in AI retrieval pipelines because metadata filters are frequently treated as a hard authorization boundary in RAG stacks.</li>
+          <li>Spring links both CVEs to patched release lines <code>1.0.4</code> and <code>1.1.3</code>, indicating remediation is available in maintained branches.</li>
+          <li>Even when primary app auth is intact, these issues can enable cross-tenant data exposure if filter expressions are built from user-controlled fields.</li>
+          <li>This is a recurring AI infra pattern: “semantic search access control” implemented inside query builders without strict expression escaping.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>In agentic and RAG systems, metadata filtering often doubles as authorization. If expression conversion is injectable, attackers do not need model jailbreaks to reach sensitive content—they can abuse query syntax itself. That turns retrieval infrastructure into an implicit privilege-escalation path across teams, tenants, or document classes.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Patch now:</strong> upgrade Spring AI components to fixed releases referenced by Spring security advisories.</li>
+          <li><strong>Assume filter input is hostile:</strong> prohibit raw user-controlled expression fragments in metadata query construction.</li>
+          <li><strong>Re-validate tenant boundaries:</strong> run cross-tenant retrieval tests (positive and negative) after upgrades.</li>
+          <li><strong>Add detection:</strong> alert on unusual JSONPath operators and high-entropy filter payloads in retrieval logs.</li>
+          <li><strong>Compartmentalize data stores:</strong> reduce blast radius with per-tenant indexes/schemas where practical.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://spring.io/security/cve-2026-22729?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Spring Security Advisory — CVE-2026-22729</a></li>
+          <li><a href="https://spring.io/security/cve-2026-22730?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Spring Security Advisory — CVE-2026-22730</a></li>
+          <li><a href="https://github.com/advisories/GHSA-rp9g-qx29-88cp?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">GitHub Advisory — GHSA-rp9g-qx29-88cp (CVE-2026-22729)</a></li>
+          <li><a href="https://github.com/advisories/GHSA-c267-rfvc-mvpm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">GitHub Advisory — GHSA-c267-rfvc-mvpm (CVE-2026-22730)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-22729?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">NVD — CVE-2026-22729</a></li>
+        </ul>
+
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
