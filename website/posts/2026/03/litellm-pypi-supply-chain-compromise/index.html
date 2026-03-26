@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LiteLLM — PyPI supply-chain compromise hits AI gateway — al-ice.ai</title>
+  <meta name="description" content="Compromised LiteLLM PyPI releases 1.82.7 and 1.82.8 turned a popular LLM gateway into a credential stealer and Kubernetes pivot point for AI teams." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/03/litellm-pypi-supply-chain-compromise/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="LiteLLM — PyPI supply-chain compromise hits AI gateway" />
+  <meta name="post:date" content="2026-03-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">LiteLLM — PyPI supply-chain compromise hits AI gateway</h1>
+        <div class="post-meta">
+          <time datetime="2026-03-26">2026-03-26</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> LiteLLM sits in front of model APIs and agent frameworks, so a poisoned package can steal provider keys, CI secrets, and Kubernetes credentials from the exact systems teams use to operate AI workloads.</p>
+
+        <ul>
+          <li>LiteLLM says the compromised PyPI versions were <strong>1.82.7</strong> and <strong>1.82.8</strong>; both have been removed from PyPI.</li>
+          <li>The incident appears to have bypassed the normal GitHub release path and landed as unauthorized PyPI publishes.</li>
+          <li><strong>1.82.7</strong> carried a malicious payload in <code>proxy_server.py</code>; <strong>1.82.8</strong> added <code>litellm_init.pth</code>, which can execute on Python startup even if LiteLLM is never imported.</li>
+          <li>Published analyses say the payload harvested environment variables, SSH material, cloud credentials, Kubernetes tokens, database secrets, and common <code>.env</code> files.</li>
+          <li>Multiple reports tie exfiltration to <code>models.litellm.cloud</code>, which LiteLLM says is <em>not</em> an official BerriAI / LiteLLM domain.</li>
+          <li>Researchers also describe Kubernetes-aware behavior: dumping cluster secrets when service-account access exists and attempting privileged pod deployment for persistence.</li>
+          <li>This matters beyond direct LiteLLM users because the package can arrive transitively through agent frameworks, MCP servers, and LLM orchestration tooling.</li>
+          <li>LiteLLM says the official proxy Docker image was <strong>not</strong> affected because it pins dependencies rather than pulling the compromised PyPI builds.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>AI infrastructure is now a first-class supply-chain target. LiteLLM is valuable to attackers precisely because it often centralizes access to OpenAI, Anthropic, Bedrock, Azure OpenAI, vector stores, CI pipelines, and internal connectors. That makes one poisoned package unusually efficient: it can turn a developer box, CI runner, or model gateway into a credential vacuum and a pivot into production clusters. The more teams standardize on shared agent gateways and MCP-style tool plumbing, the bigger the blast radius of a single dependency compromise becomes.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Find exposure:</strong> inventory every environment that could have installed <code>litellm==1.82.7</code> or <code>1.82.8</code>, including CI images, ephemeral build runners, dev boxes, and transitive dependency paths.</li>
+          <li><strong>Treat secrets as burned:</strong> rotate model API keys, cloud credentials, SSH keys, database passwords, and Kubernetes tokens that were reachable from affected hosts.</li>
+          <li><strong>Hunt for artifacts:</strong> check for <code>litellm_init.pth</code>, unexpected outbound traffic to <code>models.litellm.cloud</code>, and persistence files such as <code>~/.config/sysmon/sysmon.py</code>.</li>
+          <li><strong>Audit Kubernetes:</strong> review recent secret access, privileged pod creation, and unusual activity in <code>kube-system</code> if affected packages ran inside clusters.</li>
+          <li><strong>Reduce recurrence:</strong> pin Python dependencies, verify release provenance, and isolate agent gateways from broad cloud or cluster-admin permissions.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://docs.litellm.ai/blog/security-update-march-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">LiteLLM security update</a></li>
+          <li><a href="https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">FutureSearch incident write-up</a></li>
+          <li><a href="https://www.endorlabs.com/learn/teampcp-isnt-done?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Endor Labs technical analysis</a></li>
+          <li><a href="https://www.armosec.io/blog/litellm-supply-chain-attack-backdoor-analysis/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">ARMO backdoor analysis</a></li>
+        </ul>
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
