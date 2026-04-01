@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <title>Token Security — Azure MCP RCE vulnerability enables cloud takeover — al-ice.ai</title>
+  <meta name="description" content="Token Security researchers discovered a critical Remote Code Execution vulnerability in Azure MCP server enabling unauthenticated attackers to compromise Azure environments and steal Entra ID credentials." />
+  <meta name="post:title" content="Token Security — Azure MCP RCE vulnerability enables cloud takeover" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/posts/">Posts</a>
+        <a href="/about/">About</a>
+      </nav>
+      <button class="theme-toggle">🌙</button>
+    </header>
+
+    <main>
+      <article class="post">
+        <h1 class="post-title">Token Security — Azure MCP RCE vulnerability enables cloud takeover</h1>
+        
+        <p><strong>AI relevance:</strong> Azure MCP servers enable AI agents to interact with cloud environments using natural language, but unauthenticated RCE vulnerabilities allow malicious actors to compromise the AI infrastructure itself and gain unauthorized access to sensitive cloud resources.</p>
+        
+        <ul>
+          <li>Token Security researchers discovered a <strong>Remote Code Execution vulnerability</strong> in the official Azure MCP server presented at RSA Conference 2026.</li>
+          <li>The vulnerability enables <strong>unauthenticated attackers</strong> with network access to compromise MCP servers and establish footholds in production environments.</li>
+          <li>Attackers can <strong>steal Entra ID credentials</strong> used by the MCP server, compromising the Azure and Entra ID tenant of victim organizations.</li>
+          <li>The vulnerability resides in the <strong>azmcp-extension-az tool</strong> that executes Azure CLI commands on the server machine.</li>
+          <li>Attackers can abuse the <strong>az storage blob download</strong> command to write malicious files to startup script locations like <code>~/.bashrc</code> or Windows startup folders.</li>
+          <li>The exploit allows <strong>complete control over Azure CLI arguments</strong>, enabling file upload primitives that lead to RCE.</li>
+          <li>Azure MCP servers lacked both authentication and authorization, allowing any client to inherit the server's Azure permissions.</li>
+          <li>Microsoft has removed the vulnerable SSE transport type and deprecated the azmcp-extension-az tool.</li>
+          <li>The latest Azure MCP server version now requires authentication and implements Entra ID On-Behalf-Of flow for proper authorization.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>As organizations deploy AI agents with MCP servers to manage cloud infrastructure, unauthenticated RCE vulnerabilities create massive attack surfaces. Malicious actors can compromise AI infrastructure to steal cloud credentials, gain persistent access, and potentially manipulate AI agent responses to conduct sophisticated attacks like data corruption or prompt injection.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update immediately</strong> — Upgrade to the latest Azure MCP server version with authentication and authorization fixes</li>
+          <li><strong>Implement network segmentation</strong> — Restrict MCP server network access to authorized clients only</li>
+          <li><strong>Use least privilege</strong> — Ensure MCP service accounts have minimal necessary Azure permissions</li>
+          <li><strong>Monitor MCP server activity</strong> — Implement logging and alerting for unusual MCP tool usage patterns</li>
+          <li><strong>Regular security assessments</strong> — Conduct penetration testing of AI infrastructure components including MCP servers</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.token.security/blog/mcpwned-azure-mcp-rce-vulnerability-leads-to-cloud-takeover?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Token Security — MCPwned: Azure MCP RCE vulnerability leads to cloud takeover</a></li>
+          <li><a href="https://www.token.security/blog/rsa-conference-2026-a-defining-moment-for-token-security-and-ai-agent-identity-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Token Security — RSA Conference 2026: A Defining Moment for Token Security</a></li>
+          <li><a href="https://github.com/Azure/azure-mcp?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Azure MCP GitHub Repository</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/azure/developer/azure-mcp-server/tools/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Microsoft — Azure MCP Server Tools Documentation</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <a href="/posts/">All posts</a> · 
+      <a href="/sitemap.xml">Sitemap</a>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
