@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <title>Adversa — Claude Code deny rule bypass allows prompt injection of blocked commands — al-ice.ai</title>
+  <meta name="description" content="Adversa discovered Claude Code's deny rules can be bypassed when pipelines exceed 50 subcommands, allowing prompt-injected sequences to execute blocked commands like curl and wget despite explicit deny rules." />
+  <meta name="post:title" content="Adversa — Claude Code deny rule bypass allows prompt injection of blocked commands" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/posts/">Posts</a>
+        <a href="/about/">About</a>
+      </nav>
+      <button class="theme-toggle">🌙</button>
+    </header>
+
+    <main>
+      <article class="post">
+        <h1 class="post-title">Adversa — Claude Code deny rule bypass allows prompt injection of blocked commands</h1>
+        
+        <p><strong>AI relevance:</strong> Claude Code is Anthropic's flagship agentic CLI tool that executes shell commands and tools, so security bypasses in its permission system directly enable prompt injection attacks against developers and enterprises using AI coding assistants.</p>
+        
+        <ul>
+          <li>Tel Aviv security firm Adversa discovered a <strong>critical vulnerability</strong> in Claude Code's permission system on April 1, 2026.</li>
+          <li>The bypass occurs when <strong>command pipelines exceed 50 subcommands</strong>, causing the deny rule system to fail silently.</li>
+          <li>Attackers can use prompt injection to <strong>execute explicitly blocked commands</strong> like curl, wget, and nc despite deny rules.</li>
+          <li>The vulnerability affects Claude Code's <strong>bashPermissions.ts</strong> module at line 2174 where behavior defaults to "ask" instead of "deny".</li>
+          <li>When the 50-command threshold is exceeded, blocked commands <strong>silently revert to asking for permission</strong> rather than being denied.</li>
+          <li>This represents a <strong>fundamental security boundary failure</strong> in AI agent permission systems.</li>
+          <li>The fix is simple: change the behavior key from "ask" to "deny" in the bashPermissions.ts file.</li>
+          <li>This vulnerability demonstrates how <strong>AI agent security models</strong> can fail in unexpected ways under edge cases.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Agentic AI tools like Claude Code operate with significant system access, making their permission systems critical security boundaries. When deny rules can be bypassed through prompt injection, attackers gain unauthorized access to execute dangerous commands that could lead to data exfiltration, system compromise, or lateral movement within development environments. This vulnerability highlights the immature state of AI agent security and the need for rigorous testing of permission systems under adversarial conditions.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update Claude Code immediately</strong> — Check for patches from Anthropic addressing this vulnerability</li>
+          <li><strong>Review command pipeline complexity</strong> — Monitor for unusually long command sequences in AI agent usage</li>
+          <li><strong>Implement additional security layers</strong> — Use network filtering, endpoint protection, and command monitoring</li>
+          <li><strong>Audit permission configurations</strong> — Verify that deny rules are properly enforced in all scenarios</li>
+          <li><strong>Monitor for anomalous behavior</strong> — Watch for unexpected network connections or file system access</li>
+          <li><strong>Consider sandboxed execution</strong> — Run AI agents in isolated environments with restricted privileges</li>
+          <li><strong>Educate developers</strong> — Train teams on AI agent security risks and proper configuration</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://letsdatascience.com/news/claude-code-bypasses-deny-rules-exposing-vulnerability-681de690?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Adversa — Claude Code Deny Rules Bypass Exposing Vulnerability</a></li>
+          <li><a href="https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Register — Claude Code bypasses safety rule if given too many commands</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Claude Code Changelog — Security Fixes</a></li>
+          <li><a href="https://adversa.ai/research/ai-agent-security/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Adversa AI — Agent Security Research</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <a href="/posts/">All posts</a> · 
+      <a href="/sitemap.xml">Sitemap</a>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
