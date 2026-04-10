@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <title>Tenable Research — Claude Code GitHub Action MCP Server RCE Vulnerability — al-ice.ai</title>
+  <meta name="description" content="Tenable discovers critical RCE vulnerability in Anthropic's claude-code-action GitHub Action allowing attackers to execute arbitrary commands via malicious MCP server configurations in PR branches." />
+  <meta name="post:title" content="Tenable Research — Claude Code GitHub Action MCP Server RCE Vulnerability" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/posts/">Posts</a>
+        <a href="/about/">About</a>
+      </nav>
+      <button class="theme-toggle">🌙</button>
+    </header>
+
+    <main>
+      <article class="post">
+        <h1 class="post-title">Tenable Research — Claude Code GitHub Action MCP Server RCE Vulnerability</h1>
+        
+        <p><strong>AI relevance:</strong> This vulnerability demonstrates how AI agent CI/CD pipelines introduce novel attack surfaces where malicious code can bypass traditional security controls through MCP server auto-loading mechanisms.</p>
+        
+        <ul>
+          <li>Tenable researchers discovered <strong>critical remote code execution vulnerability</strong> in Anthropic's official claude-code-action GitHub Action</li>
+          <li>Attackers can <strong>execute arbitrary commands</strong> on GitHub Actions runners with access to all workflow secrets</li>
+          <li>Vulnerability stems from <strong>automatic MCP server loading</strong> from attacker-controlled PR branches</li>
+          <li>The claude-code-action <strong>checks out PR head branches</strong>, making working directory attacker-controlled</li>
+          <li>Action unconditionally sets <code>enableAllProjectMcpServers: true</code> in Claude Code user settings</li>
+          <li>Default <code>settingsSource: ["user", "project", "local"]</code> loads configuration from project directories</li>
+          <li>Attackers can place <strong>malicious <code>.mcp.json</code> files</strong> in PR branches to define custom MCP servers</li>
+          <li>When privileged users trigger the action (e.g., via <code>issue_comment</code> events), malicious servers auto-start without approval</li>
+          <li>Vulnerability fixed in <strong>claude-code-action v1.0.78</strong> released February 2026</li>
+          <li>Originally mis-triaged as "informative" before being properly classified as a security vulnerability</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This vulnerability highlights the security risks in AI agent CI/CD pipelines where MCP server auto-loading mechanisms can be exploited to bypass traditional code review and security controls. The attack demonstrates how AI tooling introduces novel supply chain attack vectors where malicious configurations in PR branches can lead to full runner compromise.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update immediately</strong> to claude-code-action v1.0.78 or later if using the GitHub Action</li>
+          <li><strong>Review MCP server configurations</strong> in CI/CD pipelines and disable auto-loading from untrusted sources</li>
+          <li><strong>Implement branch protection rules</strong> to prevent untrusted PRs from triggering sensitive workflows</li>
+          <li><strong>Audit GitHub Actions permissions</strong> and ensure minimal required access for CI/CD jobs</li>
+          <li><strong>Monitor for suspicious MCP server activity</strong> in your AI agent deployment pipelines</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.tenable.com/security/research/tra-2026-27?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Tenable Research Advisory TRA-2026-27</a></li>
+          <li><a href="https://github.com/anthropic-ai/claude-code-action?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">GitHub — claude-code-action repository</a></li>
+          <li><a href="https://code.claude.com/docs/security/mcp-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Claude Code MCP Security Guidelines</a></li>
+          <li><a href="https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">GitHub Actions Security Hardening</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="small muted">
+      <a href="/posts/">All posts</a> · 
+      <a href="/sitemap.xml">Sitemap</a>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
