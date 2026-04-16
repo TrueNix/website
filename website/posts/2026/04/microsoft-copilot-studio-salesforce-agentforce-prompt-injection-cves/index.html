@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capsule Security — ShareLeak and PipeLeak prompt injection in Copilot Studio and Agentforce — al-ice.ai</title>
+    <meta name="description" content="Capsule Security disclosed CVE-2026-21520 (ShareLeak) in Microsoft Copilot Studio and PipeLeak in Salesforce Agentforce — indirect prompt injection via public forms leading to data exfiltration." />
+    <meta name="post:title" content="Capsule Security — ShareLeak and PipeLeak prompt injection in Copilot Studio and Agentforce" />
+    <meta name="post:date" content="2026-04-16" />
+    <meta name="post:category" content="security" />
+    <meta name="post:categoryLabel" content="Security" />
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-ZX0TZSMV99');
+    </script>
+</head>
+<body>
+<div class="wrap">
+    <header class="site">
+        <nav>
+            <a href="/">al-ice.ai</a>
+            <button class="theme-toggle" aria-label="Toggle theme">🌓</button>
+        </nav>
+    </header>
+
+    <main>
+        <article class="post">
+            <h1>Capsule Security — ShareLeak and PipeLeak Prompt Injection in Copilot Studio and Agentforce</h1>
+
+            <p><strong>AI relevance:</strong> Capsule Security discovered two indirect prompt injection vulnerabilities — ShareLeak in Microsoft Copilot Studio (CVE-2026-21520, CVSS 7.5) and PipeLeak in Salesforce Agentforce — both exploitable through public-facing form submissions that hijack AI agent behavior and exfiltrate enterprise data via legitimate tool actions.</p>
+
+            <ul>
+                <li><strong>ShareLeak (CVE-2026-21520):</strong> An indirect prompt injection in Microsoft Copilot Studio where an attacker crafts a malicious payload in a public SharePoint comment field, which Copilot Studio concatenates directly with the agent's system instructions without input sanitization</li>
+                <li>The injected payload overrides the agent's original instructions, directing it to query connected SharePoint Lists for customer data and send results via Outlook to an attacker-controlled email</li>
+                <li>Microsoft's own data loss prevention (DLP) mechanisms flagged the request as suspicious during Capsule's testing — but the exfiltration succeeded anyway because the email was routed through a legitimate Outlook action the system treated as authorized</li>
+                <li>NVD classifies the attack as low complexity with no privileges required</li>
+                <li>Microsoft patched on January 15, 2026, but public disclosure only went live this week — every security director running Copilot Studio agents triggered by SharePoint forms should audit that window for indicators of compromise</li>
+                <li><strong>PipeLeak:</strong> A parallel indirect prompt injection in Salesforce Agentforce, triggered through unauthenticated public lead-form submissions that hijack agent behavior to exfiltrate CRM data with no volume cap and no indication to the triggering employee</li>
+                <li>Salesforce has not assigned a CVE or issued a public advisory for PipeLeak as of publication</li>
+                <li>PipeLeak survives Salesforce's previous ForcedLeak patch (CVE-2025, CVSS 9.4, patched September 2025 by enforcing Trusted URL allowlists) through a different channel: email-based form submissions rather than web URLs</li>
+                <li>Capsule Security simultaneously launched with $7M in funding for an AI agent runtime control platform, demonstrating both vulnerabilities as proof of the gap between patching and runtime enforcement</li>
+            </ul>
+
+            <h2>Why It Matters</h2>
+
+            <p>Microsoft's decision to assign a CVE to a prompt injection vulnerability in an agentic platform is highly unusual — only the second time Microsoft has done so for prompt injection, after CVE-2025-32711 (EchoLeak in M365 Copilot). If this precedent extends to agentic systems broadly, every enterprise running AI agents inherits a new vulnerability class to track. More critically, these vulnerabilities expose the fundamental architectural gap: LLMs cannot inherently distinguish between trusted instructions and untrusted retrieved data, becoming confused deputies acting on behalf of attackers (classified by OWASP as ASI01: Agent Goal Hijack). Patching alone cannot eliminate this class of vulnerability because the root cause is the model's inability to separate trusted from untrusted context.</p>
+
+            <h2>What To Do</h2>
+
+            <ul>
+                <li><strong>Audit Copilot Studio agents</strong> — identify any agents triggered by SharePoint forms, public surveys, or external data sources that feed directly into the agent context window</li>
+                <li><strong>Verify patch level</strong> — ensure Copilot Studio is updated past the January 15, 2026 patch; review activity logs from November 24, 2025 through January 15 for anomalous data access patterns</li>
+                <li><strong>Implement runtime controls</strong> — deploy agent firewalls or runtime monitoring that validate agent behavior against expected patterns, independent of model-level safety filters</li>
+                <li><strong>Restrict agent tool permissions</strong> — apply least-privilege access to agent-connected services (SharePoint, Outlook, CRM); agents should not have broad read access to customer data unless explicitly required</li>
+                <li><strong>Segment agent data sources</strong> — sanitize and classify all inputs that flow into agent context windows; treat user-generated content from public forms as adversarial</li>
+                <li><strong>Monitor Salesforce Agentforce</strong> — until Salesforce issues an advisory for PipeLeak, audit Agentforce agents triggered by public lead forms for unexpected outbound data transfers</li>
+            </ul>
+
+            <p><strong>Sources:</strong></p>
+            <ul>
+                <li><a href="https://venturebeat.com/security/microsoft-salesforce-copilot-agentforce-prompt-injection-cve-agent-remediation-playbook?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">VentureBeat — Microsoft Patched a Copilot Studio Prompt Injection. The Data Exfiltrated Anyway</a></li>
+                <li><a href="https://www.csoonline.com/article/4159079/copilot-and-agentforce-fall-to-form-based-prompt-injection-tricks.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">CSO Online — Copilot and Agentforce Fall to Form-Based Prompt Injection Tricks</a></li>
+                <li><a href="https://siliconangle.com/2026/04/15/capsule-security-launches-7m-secure-ai-agents-runtime/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">SiliconANGLE — Capsule Security Launches with $7M to Secure AI Agents at Runtime</a></li>
+                <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-21520?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">NVD — CVE-2026-21520</a></li>
+            </ul>
+        </article>
+    </main>
+
+    <footer class="small muted">
+        <a href="/posts/">All Posts</a> •
+        <a href="/sitemap.xml">Sitemap</a>
+    </footer>
+</div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
