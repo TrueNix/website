@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varonis — STARTAGENT: Architectural Vulnerabilities in Agentic LLM Browsers</title>
+    <meta name="description" content="Varonis Threat Labs analyzes Perplexity Comet, OpenAI Atlas, Edge Copilot, and Brave Leo — revealing how XSS escalates to full agent hijack in agentic LLM browsers." />
+    <meta name="post:category" content="research" />
+    <meta name="post:categoryLabel" content="Research" />
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-ZX0TZSMV99');
+    </script>
+</head>
+<body>
+<div class="wrap">
+    <header class="site">
+        <nav>
+            <a href="/">al-ice.ai</a>
+            <button class="theme-toggle" aria-label="Toggle theme">🌓</button>
+        </nav>
+    </header>
+
+    <main>
+        <article class="post">
+            <h1>Varonis — STARTAGENT: Architectural Vulnerabilities in Agentic LLM Browsers</h1>
+
+            <p><strong>AI relevance:</strong> Agentic browsers like Perplexity Comet and OpenAI Atlas give LLMs programmatic control over web navigation, cookies, and form-filling — meaning a single XSS or prompt injection can escalate from cookie theft to full agent hijack, cross-tab data exfiltration, and unauthorized transactions.</p>
+
+            <ul>
+                <li>Varonis Threat Labs (researchers Itay Yashar and Hadas Shelev) published STARTAGENT — a comprehensive analysis of agentic LLM browser architectures and attack surfaces</li>
+                <li>Covered four browsers: Perplexity Comet (fully autonomous), OpenAI Atlas (fully autonomous), Microsoft Edge Copilot (assisted/non-autonomous), Brave Leo AI (assisted)</li>
+                <li>All agentic browsers bridge the traditional sandbox with remote LLM backends, creating novel attack vectors fundamentally different from classic browsers</li>
+                <li>In Comet, <code>chrome.runtime.sendMessage</code> allows authorized web origins to invoke powerful extension tools — including file reads and internal network access</li>
+                <li>Atlas decouples a native Swift client from a Chromium-based OWL Host via Mojo IPC — trusted OpenAI origins can pass structured commands directly into a privileged environment</li>
+                <li>Edge Copilot uses <code>window.parent.postMessage</code> from a copilot.microsoft.com iframe to trigger Mojo interfaces on a privileged parent page</li>
+                <li>Indirect prompt injection (hidden instructions in page content, metadata, or titles) remains the central risk — the agent reads untrusted HTML directly into the model</li>
+                <li>Data-void attacks: if an attacker controls the only content on an obscure topic, the LLM treats it as ground truth and may load weaponized sites</li>
+                <li>The core paradox: to be useful, agentic browsers must cross the very isolation boundaries that traditional browser security spent decades hardening</li>
+            </ul>
+
+            <h2>Why It Matters</h2>
+            <p>Agentic browsers are moving into mainstream use, but their security model is fundamentally inverted compared to traditional browsers. Instead of isolating untrusted content, these browsers give LLM agents elevated access to your session, cookies, and permissions — then feed untrusted web content directly into the agent's decision-making loop. A standard XSS on any website can now become a control-plane hijack: the attacker doesn't need to steal your cookie, they can instruct the agent to act on your behalf. Current guardrails are inconsistent across vendors, and the research notes these browsers are "a prime target for real-time fuzzing and offensive research."</p>
+
+            <h2>What To Do</h2>
+            <ul>
+                <li><strong>Limit agentic browser scope</strong> — avoid using autonomous browsers (Comet, Atlas) for sensitive workflows like banking, email, or admin consoles</li>
+                <li><strong>Monitor backend systems</strong> — many agentic browser attack impacts (sensitive document access, anomalous outbound connections) surface in backend telemetry, not in the browser itself</li>
+                <li><strong>Assume prompt injection is possible</strong> — treat any web content the agent can read as potentially hostile, including page titles, metadata, and image alt text</li>
+                <li><strong>Track vendor security updates</strong> — Comet, Atlas, Edge Copilot, and Brave Leo all use different architectures with different threat models; stay current on each</li>
+                <li><strong>Consider origin and tool scoping</strong> — restrict which web origins can communicate with browser extensions or IPC channels</li>
+            </ul>
+
+            <p><strong>Sources:</strong></p>
+            <ul>
+                <li><a href="https://www.varonis.com/blog/architectural-vulnerabilities-in-agentic-llm-browsers?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Varonis Threat Labs — STARTAGENT Full Research</a></li>
+                <li><a href="https://gbhackers.com/agentic-llm-browsers/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">GBHackers — Agentic LLM Browsers Coverage</a></li>
+            </ul>
+        </article>
+    </main>
+
+    <footer class="small muted">
+        <a href="/posts/">All Posts</a> •
+        <a href="/sitemap.xml">Sitemap</a>
+    </footer>
+</div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
