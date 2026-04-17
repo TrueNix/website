@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <title>Comment and Control — Prompt Injection to Credential Theft in Claude Code, Gemini CLI, and Copilot Agent — al-ice.ai</title>
+  <meta name="description" content="Aonan Guan demonstrates Comment and Control, a cross-vendor prompt injection class that hijacks AI coding agents on GitHub Actions via PR titles and issue comments to steal repository secrets and API keys." />
+  <meta name="post:title" content="Comment and Control — Prompt Injection to Credential Theft in Claude Code, Gemini CLI, and Copilot Agent" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <nav>
+        <a href="/">Home</a>
+        <a href="/posts/">Posts</a>
+        <a href="/about/">About</a>
+      </nav>
+      <button class="theme-toggle">🌙</button>
+
+      <main>
+        <article class="post">
+          <h1 class="post-title">Comment and Control — Prompt Injection to Credential Theft in Claude Code, Gemini CLI, and Copilot Agent</h1>
+
+          <p><strong>AI relevance:</strong> Coding agents running in GitHub Actions inherit repository secrets (API keys, tokens) as environment variables, so prompt injection through PR titles, issue bodies, or comments directly translates into credential theft across three major vendor platforms simultaneously.</p>
+
+          <ul>
+            <li><strong>Researcher:</strong> Aonan Guan, with Zhengyu Liu and Gavin Zhong from Johns Hopkins University</li>
+            <li><strong>Attack name:</strong> "Comment and Control" — wordplay on C2 (command and control), using GitHub comments as the injection channel</li>
+            <li><strong>Cross-vendor impact:</strong> First coordinated disclosure affecting Anthropic, Google, and GitHub coding agents</li>
+            <li><strong>Claude Code Security Review (CVSS 9.4 Critical):</strong> PR title interpolated directly into prompt with no sanitization; Claude CLI invoked without <code>--disallowed-tools</code> or <code>--allowed-tools</code>, inheriting all env vars including <code>ANTHROPIC_API_KEY</code> and <code>GITHUB_TOKEN</code></li>
+            <li><strong>Attack technique:</strong> Malicious PR title breaks out of prompt context, instructs Claude to run <code>env</code> or <code>ps auxeww | grep</code> and embed results in JSON findings posted as PR comments</li>
+            <li><strong>Stealth path:</strong> Credentials also leak through GitHub Actions logs — a channel normal users rarely inspect</li>
+            <li><strong>Google Gemini CLI Action:</strong> Issue body and comments included in prompt; attacker injects fake "Trusted Content Section" to override safety instructions, Gemini posts <code>GEMINI_API_KEY</code> publicly as issue comment</li>
+            <li><strong>GitHub Copilot Agent (SWE Agent):</strong> Most sophisticated target — GitHub added environment filtering, secret scanning, and network firewall defenses; researcher bypassed all three layers</li>
+            <li><strong>Bounty results:</strong> Anthropic $100, Google VRP $1,337</li>
+            <li><strong>Anthropic fix:</strong> Added <code>--disallowed-tools 'Bash(ps:*)'</code> to block process enumeration; stated the action "is not designed to be hardened against prompt injection"</li>
+            <li><strong>Fundamental gap:</strong> All three agents share the same flow — read GitHub data, process as prompt context, execute tools — meaning any external contributor input becomes an attack surface</li>
+          </ul>
+
+          <h2>Why it matters</h2>
+          <p>AI coding agents are increasingly deployed in CI/CD pipelines with broad repository access. This research demonstrates that the entire loop — injection, execution, and exfiltration — can happen within GitHub's own platform, with no external infrastructure required. The fact that three independent vendors share the same vulnerability pattern suggests the entire class of GitHub-hosted AI agents needs architectural rethinking, not just vendor-specific patches. Anthropic's response that the tool "is not designed to be hardened against prompt injection" highlights a systemic disconnect between how these agents are deployed and the threat model they operate under.</p>
+
+          <h2>What to do</h2>
+          <ul>
+            <li><strong>Audit AI agent Actions:</strong> Review all GitHub Actions that invoke AI agents and check for secret exposure in runner environments</li>
+            <li><strong>Use <code>--disallowed-tools</code> and <code>--allowed-tools</code>:</strong> Explicitly restrict tool access when invoking Claude CLI or similar agents</li>
+            <li><strong>Branch protection rules:</strong> Require maintainer approval before AI agents run on PRs from forks or external contributors</li>
+            <li><strong>Rotate secrets:</strong> If you run any affected agent, rotate repository secrets and API keys immediately</li>
+            <li><strong>Monitor Actions logs:</strong> The stealth exfiltration path through Actions logs means attackers can retrieve credentials without any visible PR comment</li>
+          </ul>
+
+          <h2>References</h2>
+          <ul>
+            <li><a href="https://oddguan.com/blog/comment-and-control-prompt-injection-credential-theft-claude-code-gemini-cli-github-copilot/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Original research — Comment and Control by Aonan Guan</a></li>
+            <li><a href="https://www.securityweek.com/claude-code-gemini-cli-github-copilot-agents-vulnerable-to-prompt-injection-via-comments/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">SecurityWeek coverage</a></li>
+            <li><a href="https://github.com/anthropics/claude-code-security-review/commit/25e460eb0a12077f0c6a1934d5dbae2f50785dda?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Anthropic fix commit — disallow ps tool</a></li>
+            <li><a href="https://github.com/0dd/Claude-review-poc?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">PoC repository — Claude Code Security Review</a></li>
+          </ul>
+        </article>
+      </main>
+
+      <footer class="small muted">
+        <a href="/posts/">All posts</a> •
+        <a href="/sitemap.xml">Sitemap</a>
+      </footer>
+    </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
