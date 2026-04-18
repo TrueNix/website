@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GreyNoise — 91,403 Attack Sessions Target Exposed LLM Infrastructure — al-ice.ai</title>
+  <meta name="description" content="GreyNoise honeypots captured 91,403 attack sessions against exposed LLM endpoints between October 2025 and January 2026, revealing systematic reconnaissance and exploitation of misconfigured AI deployments." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/greynoise-exposed-llm-infrastructure-honeypot-91k-attacks/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GreyNoise — 91,403 Attack Sessions Target Exposed LLM Infrastructure" />
+  <meta name="post:date" content="2026-04-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GreyNoise — 91,403 Attack Sessions Target Exposed LLM Infrastructure</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-18">2026-04-18</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: Attackers are actively scanning and exploiting exposed LLM inference servers, MCP endpoints, and RAG pipelines — treating AI infrastructure the same way they treat any internet-facing service, often before teams realize it's reachable from the public internet.</p>
+
+<h2>What happened</h2>
+
+<ul>
+  <li>GreyNoise honeypot infrastructure captured <strong>91,403 attack sessions</strong> targeting exposed LLM endpoints between October 2025 and January 2026, across two distinct campaigns systematically mapping AI deployment attack surfaces.</li>
+  <li>Discovery is trivially easy: default ports (11434 for Ollama, 8000 for vLLM) make fingerprinting straightforward, and most teams deploy inference servers with out-of-the-box configurations that announce themselves to internet scanners.</li>
+  <li>A separate 293-day investigation covering 7.23 million observations found <strong>175,000 unique Ollama hosts</strong> publicly accessible across 130 countries — production AI servers belonging to real organizations.</li>
+  <li>Attackers pursue multiple exploitation paths simultaneously: compute abuse (running high-volume inference on victims' GPU resources), data exfiltration (extracting context-window contents including customer records and API keys), and lateral movement (using connected MCP servers and webhook integrations to reach internal infrastructure).</li>
+  <li>RAG-based deployments are particularly dangerous: attackers don't need to access the underlying databases or document stores directly — they just need to ask the model the right question through an exposed endpoint.</li>
+  <li>Common misconfigurations include exposed ports, unauthenticated APIs, and MCP servers with no access controls — teams often open ports for convenience during development and never close them when moving to production.</li>
+</ul>
+
+<h2>Why it matters</h2>
+
+<p>The assumption that AI infrastructure is "internal" is collapsing under the weight of rapid deployment. Inference servers, vector databases, and MCP tool endpoints are being spun up at developer speed without corresponding security controls. The GreyNoise data shows attackers already treat LLM infrastructure as a first-class target — not a theoretical risk, but a systematically exploited one.</p>
+
+<h2>What to do</h2>
+
+<ul>
+  <li>Audit all LLM inference endpoints for internet exposure — check Ollama (11434), vLLM (8000), and custom API ports against your firewall rules.</li>
+  <li>Require authentication on all model-serving endpoints, even those intended for internal use only.</li>
+  <li>Review MCP server configurations for access controls; treat every tool-connected agent endpoint as internet-facing by default.</li>
+  <li>Implement network segmentation between AI infrastructure and sensitive internal systems to prevent lateral movement through agent tool chains.</li>
+</ul>
+
+<h2>Sources</h2>
+
+<ul>
+  <li><a href="https://www.greynoise.io/blog/threat-actors-actively-targeting-llms?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GreyNoise — Threat Actors Actively Targeting LLMs</a></li>
+  <li><a href="https://securityboulevard.com/2026/04/exposed-llm-infrastructure-how-attackers-find-and-exploit-misconfigured-ai-deployments/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Security Boulevard — Exposed LLM Infrastructure Analysis</a></li>
+  <li><a href="https://thehackernews.com/2026/01/researchers-find-175000-publicly.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — 175,000 Publicly Exposed Ollama Servers</a></li>
+  <li><a href="https://www.indusface.com/blog/exposed-ollama-servers-llm-security-risks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Indusface — Exposed Ollama Servers: LLM Infrastructure Security Risks</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
