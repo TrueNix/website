@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wiz — AI-Generated Supply Chain Campaign Targets GitHub Actions via pull_request_target — al-ice.ai</title>
+  <meta name="description" content="Wiz Research traces a six-wave GitHub Actions supply chain campaign using AI-generated payloads across 500+ malicious PRs exploiting pull_request_target misconfigurations, compromising npm packages and stealing cloud credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/wiz-prt-scan-github-actions-ai-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Wiz — AI-Generated Supply Chain Campaign Targets GitHub Actions via pull_request_target" />
+  <meta name="post:date" content="2026-04-19" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Wiz — AI-Generated Supply Chain Campaign Targets GitHub Actions via pull_request_target</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-19">2026-04-19</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> A threat actor used AI to generate language-aware malicious payloads targeting CI/CD pipelines, evolving from crude bash scripts to repository-specific wrappers in Go, Python, and JavaScript — demonstrating how AI lowers the barrier to sophisticated supply chain attacks.</p>
+
+        <ul>
+          <li>Wiz Research identified a six-wave supply chain campaign starting March 11, 2026, operating under the <code>prt-scan</code> banner across six GitHub accounts</li>
+          <li>The attacker opened over 500 malicious PRs exploiting the <code>pull_request_target</code> workflow trigger, which runs CI in the base repository's context — granting access to secrets even from forked PRs</li>
+          <li>AI-generated, repository-aware payloads adapted to each target's tech stack: Go test files for Go repos, npm scripts for JavaScript, <code>conftest.py</code> for Python, <code>build.rs</code> for Rust</li>
+          <li>Multi-stage payloads followed a RECON/DISPATCH pattern: steal <code>GITHUB_TOKEN</code>, enumerate cloud secrets (AWS/Azure/GCP), and exfiltrate via base64-encoded workflow log markers</li>
+          <li>At least two npm packages were compromised with malicious published versions after attackers harvested <code>NPM_TOKEN</code> from workflow secrets</li>
+          <li>The campaign evolved across phases: from simple <code>os.system()</code> injections in Wave 1 to AI-generated wrappers with obfuscation and encoded stages by Wave 3</li>
+          <li>Despite the sophistication, the payloads contained logical errors and GitHub threat model misunderstandings that limited overall success</li>
+          <li>Attack infrastructure included ProtonMail addresses with consistent naming patterns (<code>testedbefore</code>, <code>elzotebo</code>, <code>ezmtebo</code>) and a <code>python-requests/2.32.5</code> user agent</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>The <code>pull_request_target</code> misconfiguration is a well-documented risk, yet remains widespread. This campaign shows how AI tools enable attackers to scale social engineering of CI/CD systems — generating plausible PR titles like "ci: update build configuration" and tailoring payloads to each repository's language and build system. The transition from manual script writing to AI-generated, context-aware attack code represents a step change in supply chain attack automation. AI agents and coding assistants that interact with GitHub repositories inherit this risk surface directly.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li><strong>Audit all GitHub Actions workflows</strong> using <code>pull_request_target</code> — ensure no secrets are accessible to fork-originated PRs</li>
+          <li><strong>Use <code>pull_request</code> instead of <code>pull_request_target</code></strong> unless secret access is strictly required, and then use environment protection rules</li>
+          <li><strong>Monitor for <code>prt-scan-</code> branch names</strong> and suspicious PRs with generic titles like "ci: update build configuration"</li>
+          <li><strong>Rotate all CI/CD secrets</strong> if you received a suspicious PR from accounts matching the <code>testedbefore</code>/<code>elzotebo</code>/<code>ezmtebo</code> pattern</li>
+          <li><strong>Enable required reviews for workflow changes</strong> — prevent malicious workflow modifications from merging without approval</li>
+          <li><strong>Treat AI-generated PRs as higher-risk</strong> — AI tools can produce convincing but malicious contributions at scale</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.wiz.io/blog/six-accounts-one-actor-inside-the-prt-scan-supply-chain-campaign?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Wiz — Six Accounts, One Actor: Inside the prt-scan Supply Chain Campaign</a></li>
+          <li><a href="https://x.com/CharlieEriksen/status/2040035905277231409?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Charlie Eriksen — Initial public disclosure (April 2, 2026)</a></li>
+          <li><a href="https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts#pull_request_target" target="_blank" rel="noopener">GitHub Docs — pull_request_target event documentation</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
