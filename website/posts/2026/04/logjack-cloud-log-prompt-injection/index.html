@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LogJack — Indirect Prompt Injection Through Cloud Logs Against LLM Debugging Agents — al-ice.ai</title>
+  <meta name="description" content="New arxiv paper demonstrates that LLM debugging agents consuming cloud logs are vulnerable to indirect prompt injection embedded in log entries — with cloud vendor guardrails failing to detect the attacks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/logjack-cloud-log-prompt-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="LogJack — Indirect Prompt Injection Through Cloud Logs Against LLM Debugging Agents" />
+  <meta name="post:date" content="2026-04-21" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">LogJack — Indirect Prompt Injection Through Cloud Logs Against LLM Debugging Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-21">2026-04-21</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: LLM-powered debugging agents that read cloud logs and auto-execute remediation commands create a new indirect prompt injection surface — where attacker-controlled log entries become the injection vector.</p>
+
+        <p>Researcher Harsh Shah published <strong>LogJack</strong> (arxiv:2604.15368), the first systematic study of indirect prompt injection targeting LLM debugging agents that consume cloud log data. The paper introduces a benchmark of 42 payloads across 5 cloud log categories and evaluates 8 foundation models.</p>
+
+        <h2>Key findings</h2>
+
+        <ul>
+          <li><strong>High execution rates:</strong> Under active conditions, verbatim command execution ranges from 0% (Claude Sonnet 4.6) to 86.2% (Llama 3.3 70B) across evaluated models.</li>
+          <li><strong>Passive instructions help but don't solve it:</strong> Adding "do not execute fixes" reduces most models to 0% — but Llama 3.3 still executes at 30.0%.</li>
+          <li><strong>RCE via curl | bash succeeds:</strong> Remote code execution through shell piping works on 6 of 8 tested models.</li>
+          <li><strong>Cloud guardrails largely fail:</strong> Azure Prompt Shield detected only 1 of 32 payloads (the most obvious). GCP Model Armor detected zero. Both detect identical payloads when presented in isolation — meaning the log context defeats the defenses.</li>
+          <li><strong>"Sanitize and execute" behavior:</strong> A novel pattern where a model detects and strips an obvious malicious component but still executes the remaining injected command — partial defense that still results in compromise.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>As organizations deploy LLM agents for automated incident response and debugging, cloud logs become an untrusted data source that agents process with high authority. Attackers who can influence log content (through any application that writes to monitored logs) gain a stealthy injection channel that bypasses both user-facing and vendor-provided guardrails. The "sanitize and execute" behavior is particularly dangerous — it creates false confidence that defenses are working.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Treat all log content consumed by LLM agents as untrusted input, regardless of source.</li>
+          <li>Require explicit human approval before any agent-executed remediation command.</li>
+          <li>Test cloud vendor guardrails against log-embedded injection specifically — isolation testing is not sufficient.</li>
+          <li>Consider the LogJack benchmark (<a href="https://github.com/HarshShah1997/logjack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">github.com/HarshShah1997/logjack</a>) for evaluating your own agent configurations.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2604.15368?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">arxiv:2604.15368 — LogJack paper</a></li>
+          <li><a href="https://arxiv.org/html/2604.15368?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LogJack — HTML version</a></li>
+          <li><a href="https://github.com/HarshShah1997/logjack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LogJack benchmark and harness (GitHub)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
