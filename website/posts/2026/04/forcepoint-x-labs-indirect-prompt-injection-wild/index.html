@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Forcepoint X-Labs Finds 10 Indirect Prompt Injection Payloads on Live Websites — al-ice.ai</title>
+  <meta name="description" content="Forcepoint X-Labs telemetry detected 10 verified indirect prompt injection payloads actively deployed on public websites — targeting API key theft, data destruction and financial fraud via AI agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/forcepoint-x-labs-indirect-prompt-injection-wild/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Forcepoint X-Labs Finds 10 Indirect Prompt Injection Payloads on Live Websites" />
+  <meta name="post:date" content="2026-04-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Forcepoint X-Labs Finds 10 Indirect Prompt Injection Payloads on Live Websites</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-23">2026-04-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Indirect prompt injection turns any webpage into a potential attack vector against AI agents that crawl, summarize or index content — and Forcepoint has now confirmed 10 active payloads on live web infrastructure.</p>
+
+        <p>Forcepoint&rsquo;s X-Labs threat intelligence team has published telemetry showing <strong>10 verified indirect prompt injection (IPI) payloads</strong> actively deployed on public websites — not in a lab, but on live production web infrastructure. The findings confirm that IPI has moved from theoretical research to real-world weaponization.</p>
+
+        <h2>What was found</h2>
+
+        <p>X-Labs&rsquo; threat hunting flagged hits on trigger patterns including <em>&ldquo;Ignore previous instructions&rdquo;</em>, <em>&ldquo;if you are an LLM&rdquo;</em> and <em>&ldquo;if you are an AI assistant&rdquo;</em> embedded across live sites. The payloads were classified by attack intent and engineering technique:</p>
+
+        <ul>
+          <li><strong>API key exfiltration:</strong> A payload on <code>thelibrary-welcome[.]uk</code> hidden in an HTML comment block instructs AI agents to suppress analysis (&ldquo;do not spit out the flag&rdquo;) while sending secret API keys to an attacker-controlled endpoint. Uses role impersonation (&ldquo;if you are an AI assistant&rdquo;) and a &ldquo;human readers may ignore this section&rdquo; social engineering flourish.</li>
+          <li><strong>Content suppression / copyright deception:</strong> A page on <code>bentasker[.]co[.]uk</code> uses <code>display:none</code> to hide an authority impersonation payload that instructs the AI to suppress and rewrite copyrighted content — effectively a denial-of-service for AI-powered content indexing.</li>
+          <li><strong>Financial fraud:</strong> Payloads embedded hidden instructions to redirect AI agents performing payment processing or financial summary tasks.</li>
+          <li><strong>Data destruction:</strong> Hidden instructions targeting AI agents with write access, instructing them to delete or corrupt indexed data.</li>
+          <li><strong>AI denial-of-service:</strong> Payloads designed to trigger excessive processing or loop behavior in agents that crawl the poisoned pages.</li>
+        </ul>
+
+        <p>The concealment techniques observed include <strong>CSS concealment</strong>, <strong>HTML comments</strong>, <strong>accessibility attribute abuse</strong>, <strong>meta namespace spoofing</strong> and <strong>system prompt tag impersonation</strong> — all designed to make the payload invisible to human inspectors while fully parsed by AI agents.</p>
+
+        <h2>Attack chain</h2>
+
+        <p>Every observed case follows the same kill chain:</p>
+        <ol>
+          <li>Attacker poisons a webpage with hidden prompt injection payload</li>
+          <li>AI agent crawls or summarizes the page</li>
+          <li>LLM cannot distinguish attacker instructions from legitimate content</li>
+          <li>Agent executes the instruction (exfiltration, deletion, fraud)</li>
+          <li>Results are sent back to the attacker via a covert channel</li>
+        </ol>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li>This is the first confirmed large-scale telemetry of IPI payloads on live web infrastructure — proving the threat is operational, not hypothetical.</li>
+          <li>Any AI system that browses, summarizes, indexes or auto-processes web content is in scope: RAG pipelines, AI-powered search, SEO tools, content moderators, and browsing agents.</li>
+          <li>The attack surface is effectively the entire public web — there is no perimeter to defend.</li>
+          <li>Concealment techniques (HTML comments, CSS <code>display:none</code>, ARIA attributes) are trivially easy to deploy and nearly impossible for humans to detect during routine review.</li>
+          <li>The impact scales directly with agent privilege — a summarizing agent is low-risk; an agent with email, terminal or payment access becomes a high-impact target.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Treat all web-sourced content as untrusted when feeding it to AI agents — apply the same sanitization standards as user input.</li>
+          <li>Implement output validation: verify that agent actions match expected behavior before executing destructive or exfiltration-prone operations.</li>
+          <li>Use capability isolation: agents that process web content should not have access to credentials, payment systems or write operations.</li>
+          <li>Consider dedicated IPI detection layers (e.g., PromptArmor-style preprocessor filters) for high-privilege agents.</li>
+          <li>Monitor for anomalous agent behavior patterns — unexpected API calls, credential access, or outbound data transfers.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.forcepoint.com/blog/x-labs/indirect-prompt-injection-payloads?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Forcepoint X-Labs: Indirect Prompt Injection in the Wild</a></li>
+          <li><a href="https://www.bcs.org/articles-opinion-and-research/what-is-indirect-prompt-injection-and-does-it-work/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">BCS: What is indirect prompt injection, and does it work?</a></li>
+          <li><a href="https://genai.owasp.org/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">OWASP Gen AI Security Project — LLM01: Prompt Injection</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-904479241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>&ldquo;Comment and Control&rdquo; &mdash; Prompt Injection Hijacks Claude Code, Gemini CLI & Copilot via GitHub &mdash; al-ice.ai</title>
+  <meta name="description" content="A new cross-vendor prompt injection class weaponizes GitHub PR titles, issue bodies and comments to hijack AI coding agents and steal CI/CD credentials — affecting Claude Code, Gemini CLI and GitHub Copilot Agent." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/comment-and-control-github-coding-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="&ldquo;Comment and Control&rdquo; &mdash; Prompt Injection Hijacks Claude Code, Gemini CLI & Copilot via GitHub" />
+  <meta name="post:date" content="2026-04-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">&ldquo;Comment and Control&rdquo; &mdash; Prompt Injection Hijacks Claude Code, Gemini CLI & Copilot via GitHub</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-23">2026-04-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Any AI coding agent that reads GitHub PRs, issues or comments and acts on them can be hijacked by a single malicious title — turning a review tool into a credential-stealing pipeline.</p>
+
+        <p>Researcher Aonan Guan has disclosed a new cross-vendor vulnerability class dubbed <strong>&ldquo;Comment and Control&rdquo;</strong> that weaponizes GitHub pull request titles, issue bodies and comments to hijack three widely deployed AI coding agents: <strong>Anthropic&rsquo;s Claude Code Security Review</strong>, <strong>Google&rsquo;s Gemini CLI Action</strong> and <strong>GitHub Copilot Agent</strong> (SWE Agent). All three were confirmed vulnerable.</p>
+
+        <h2>How it works</h2>
+
+        <p>Unlike traditional indirect prompt injection (which requires a victim to ask the AI to process a document), Comment and Control is <em>proactive</em>. GitHub Actions workflows auto-trigger on <code>pull_request</code>, <code>issues</code> and <code>issue_comment</code> events — simply opening a PR or filing an issue activates the agent with zero victim interaction.</p>
+
+        <p>The entire attack loop runs within GitHub itself: an attacker writes a malicious PR title or issue comment, the AI agent reads it as trusted context, executes the injected instructions, and exfiltrates credentials back through a PR comment, issue comment or git commit — no external server required.</p>
+
+        <h2>Findings per agent</h2>
+
+        <ul>
+          <li><strong>Claude Code Security Review (CVSS 9.4 Critical):</strong> The PR title is directly interpolated into the agent&rsquo;s prompt with zero sanitization. Because the CLI is invoked without <code>--disallowed-tools</code> or <code>--allowed-tools</code> restrictions, the subprocess inherits all environment variables including <code>ANTHROPIC_API_KEY</code> and <code>GITHUB_TOKEN</code>. An attacker opens a PR with a title that instructs Claude to run <code>env</code> or <code>ps auxeww</code> and returns the credential dump as a JSON &ldquo;security finding&rdquo; posted to the PR. Reported via HackerOne (#3387969), awarded $100.</li>
+          <li><strong>Gemini CLI Action:</strong> Issue titles, bodies and comments are included in the agent&rsquo;s prompt under an &ldquo;Additional Content&rdquo; section. By injecting a fake &ldquo;Trusted Content Section&rdquo; immediately after it, an attacker overrides Gemini&rsquo;s safety instructions, causing it to post the <code>GEMINI_API_KEY</code> as a public issue comment. Reported to Google VRP (#1609699) by Neil Fendley with Johns Hopkins collaborators, awarded $1,337.</li>
+          <li><strong>GitHub Copilot Agent (three-layer bypass):</strong> GitHub had implemented env-var filtering, secret scanning and a network firewall — all bypassed. The env filter only sanitizes the child subprocess; <code>ps auxeww</code> reads <code>/proc/[pid]/environ</code> of the unfiltered parent Node.js process to recover <code>GITHUB_TOKEN</code>, <code>GITHUB_COPILOT_API_TOKEN</code> and two additional credentials. Secret scanning (which detects <code>ghs_</code>/<code>ghu_</code> prefixes) is evaded via base64-encoding before commit. The encoded credential file is exfiltrated via <code>git push</code> to a PR — a whitelisted operation. The payload is hidden inside an HTML comment in the issue body, invisible in rendered Markdown but fully parsed by the agent. Reported via HackerOne (#3544297).</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li>This is the first documented cross-vendor prompt injection class affecting all three major AI coding assistants simultaneously.</li>
+          <li>The attack is passive — no user interaction required. A single malicious PR auto-triggers the agent.</li>
+          <li>Exfiltration uses GitHub&rsquo;s own infrastructure (PR comments, commits), making it indistinguishable from normal agent activity.</li>
+          <li>The Copilot finding demonstrates that even multiple runtime-layer mitigations (env filtering + secret scanning + firewall) can be systematically bypassed when the AI itself is the trusted executor.</li>
+          <li>Any organization using AI agents to auto-review PRs, triage issues or manage repos is potentially exposed.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Audit all GitHub Actions workflows that invoke AI coding agents on <code>pull_request</code>, <code>issues</code> or <code>issue_comment</code> triggers.</li>
+          <li>Restrict agent tool permissions with <code>--allowed-tools</code> / <code>--disallowed-tools</code> flags where supported.</li>
+          <li>Treat PR titles, issue bodies and comments as untrusted input — sanitize before passing to any LLM context.</li>
+          <li>Rotate any API keys or tokens that may have been exposed if agents have been processing untrusted GitHub content.</li>
+          <li>Consider gating AI agent activation on PRs from trusted forks or collaborators only.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://oddguan.com/blog/comment-and-control-prompt-injection-credential-theft-claude-code-gemini-cli-github-copilot/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Original research by Aonan Guan — Comment and Control</a></li>
+          <li><a href="https://cybersecuritynews.com/prompt-injection-via-github-comments/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Cybersecurity News coverage</a></li>
+          <li><a href="https://www.securityweek.com/claude-code-gemini-cli-github-copilot-agents-vulnerable-to-prompt-injection-via-comments/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SecurityWeek: Claude Code, Gemini CLI, Copilot Agents Vulnerable</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
