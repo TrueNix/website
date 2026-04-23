@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Comment and Control — Prompt Injection Leaks Secrets in Three AI Coding Agents — al-ice.ai</title>
+  <meta name="description" content="A single prompt injection in a GitHub PR title caused Claude Code, Gemini CLI, and GitHub Copilot Agent to leak their own credentials — rated CVSS 9.4 Critical by Anthropic." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/comment-and-control-prompt-injection-coding-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Comment and Control — Prompt Injection Leaks Secrets in Three AI Coding Agents" />
+  <meta name="post:date" content="2026-04-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Comment and Control — Prompt Injection Leaks Secrets in Three AI Coding Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-23">2026-04-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Three major AI coding agents — Claude Code, Gemini CLI, and GitHub Copilot Agent — all fell to the same prompt injection technique in GitHub Actions, demonstrating that agent-runtime boundaries (not model-level defenses) are the critical security perimeter for AI tooling.</p>
+
+        <p>Researcher <strong>Aonan Guan</strong> (Johns Hopkins University, with Zhengyu Liu and Gavin Zhong) demonstrated that a single malicious instruction embedded in a GitHub pull request title caused three AI coding agents to exfiltrate their own credentials. The attack, dubbed <strong>"Comment and Control,"</strong> required no external infrastructure — just a crafted PR.</p>
+
+        <h2>The attack</h2>
+        <ul>
+          <li>Guan opened a GitHub PR and placed a malicious instruction in the PR title.</li>
+          <li><strong>Claude Code Security Review</strong> (Anthropic's GitHub Action) processed the PR title and posted its own API key as a comment on the PR.</li>
+          <li>The same prompt injection worked against <strong>Google's Gemini CLI Action</strong> and <strong>GitHub's Copilot Agent</strong> (Microsoft).</li>
+          <li>GitHub Actions using <code>pull_request_target</code> (which most AI agent integrations require for secret access) inject secrets into the runner environment, making them accessible to injected prompts.</li>
+          <li>While <code>pull_request</code> triggers do not expose secrets to fork PRs by default, collaborators, comment fields, and any repo using <code>pull_request_target</code> with an AI agent are exposed.</li>
+        </ul>
+
+        <h2>Bounty responses</h2>
+        <ul>
+          <li><strong>Anthropic</strong>: CVSS 9.4 (Critical), $100 bounty — notably low relative to the severity score. Anthropic scopes agent-tooling findings separately from model-safety vulnerabilities.</li>
+          <li><strong>Google</strong>: $1,337 bounty.</li>
+          <li><strong>GitHub</strong>: $500 via the Copilot Bounty Program.</li>
+          <li>All three patched quietly; none had issued NVD CVEs or published GitHub Security Advisories as of the disclosure date.</li>
+        </ul>
+
+        <h2>What the system cards reveal</h2>
+        <ul>
+          <li>Anthropic's Opus 4.7 system card (232 pages) explicitly states that Claude Code Security Review is <strong>"not hardened against prompt injection."</strong> The system card disclosed the risk; Comment and Control proved it.</li>
+          <li>OpenAI's GPT-5.4 system card documents extensive red teaming but does not publish agent-runtime or tool-execution resistance metrics.</li>
+          <li>Google's Gemini 3.1 Pro model card defers most safety methodology to older documentation, with no external cyber verification program.</li>
+          <li>As Merritt Baer (CSO, Enkrypt AI; former Deputy CISO, AWS) noted: <em>"At the action boundary, not the model boundary. The runtime is the blast radius."</em></li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>This is the first public demonstration of a single prompt injection technique working across all three major AI coding agent platforms.</li>
+          <li>The attack surface is any repository that runs AI coding agents on untrusted input (PRs, issues, comments) with <code>pull_request_target</code>.</li>
+          <li>Vendor system cards document model-level safety but consistently under-specify agent-runtime protections — the actual attack surface.</li>
+          <li>The $100 bounty for a CVSS 9.4 finding raises questions about how agent-tooling vulnerabilities are valued compared to traditional software security.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>If you use Claude Code Security Review, Gemini CLI Action, or Copilot Agent in GitHub Actions, restrict them to trusted repositories and branches only.</li>
+          <li>Avoid running AI agent workflows on <code>pull_request_target</code> with secrets unless absolutely necessary — and scope secrets minimally.</li>
+          <li>Review which repositories expose agent actions to external PRs or forks.</li>
+          <li>Rotate any agent API keys that may have been exposed in repositories where untrusted PRs were processed.</li>
+          <li>Monitor agent action logs for unexpected behavior or credential exposure.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://oddguan.com/blog/comment-and-control-prompt-injection-credential-theft-claude-code-gemini-cli-github-copilot/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Aonan Guan — Comment and Control (Full Technical Disclosure)</a></li>
+          <li><a href="https://venturebeat.com/security/ai-agent-runtime-security-system-card-audit-comment-and-control-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">VentureBeat — Three AI Coding Agents Leaked Secrets Through a Single Prompt Injection</a></li>
+          <li><a href="https://www.anthropic.com/news/claude-opus-4-7?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Anthropic — Opus 4.7 System Card</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

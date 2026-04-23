@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>npm CanisterWorm — Self-Spreading Supply-Chain Attack Targets AI Agent Tooling — al-ice.ai</title>
+  <meta name="description" content="A self-propagating supply-chain worm infected multiple npm packages from Namastex Lab, stealing credentials and recursively spreading to other packages the attacker can publish." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/npm-canisterworm-supply-chain-attack-namastex/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="npm CanisterWorm — Self-Spreading Supply-Chain Attack Targets AI Agent Tooling" />
+  <meta name="post:date" content="2026-04-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">npm CanisterWorm — Self-Spreading Supply-Chain Attack Targets AI Agent Tooling</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-23">2026-04-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> The compromised packages are used in AI agent tooling and database operations, and the malware specifically harvests credentials for LLM platforms — making this a targeted attack against the AI development supply chain that propagates like a worm across package ecosystems.</p>
+
+        <p>Researchers at <strong>Socket</strong> and <strong>StepSecurity</strong> have identified a self-spreading supply-chain attack targeting the npm ecosystem. Sixteen packages from <strong>Namastex Lab</strong> — a company providing AI-based agentic solutions — were found to contain malicious code that steals credentials and attempts to propagate to other packages.</p>
+
+        <h2>How the worm works</h2>
+        <ul>
+          <li>Malicious versions were first published on <strong>April 21 at 22:14 UTC</strong>, with additional releases the same day.</li>
+          <li>On install, the injected code harvests sensitive data: API tokens, SSH keys, cloud service credentials, CI/CD system secrets, registry auth tokens, LLM platform keys, and Kubernetes/Docker configs.</li>
+          <li>It also extracts data from Chrome and Firefox browsers, including cryptocurrency wallets (MetaMask, Exodus, Atomic Wallet, Phantom).</li>
+          <li>If npm publish tokens are found in environment variables or <code>~/.npmrc</code>, the malware identifies packages the victim can publish, injects itself into each one, and republishes with an incremented version number — <strong>recursive worm-like propagation</strong>.</li>
+          <li>If PyPI credentials are found, the same method applies to Python packages using a <code>.pth</code>-based payload, making this a <strong>multi-ecosystem attack</strong>.</li>
+        </ul>
+
+        <h2>Affected packages</h2>
+        <ul>
+          <li><code>@automagik/genie</code> (4.260421.33–4.260421.39)</li>
+          <li><code>pgserve</code> (1.1.11–1.1.13)</li>
+          <li><code>@fairwords/websocket</code> (1.0.38–1.0.39)</li>
+          <li><code>@fairwords/loopback-connector-es</code> (1.4.3–1.4.4)</li>
+          <li><code>@openwebconcept/theme-owc</code> (1.0.3)</li>
+          <li><code>@openwebconcept/design-tokens</code> (1.0.3)</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>The attack targets high-value endpoints (AI agent tooling, LLM platform credentials) rather than aiming for broad infections — a focused, sophisticated approach.</li>
+          <li>The self-propagation mechanism means each infected developer machine can become a distribution point for further compromised packages.</li>
+          <li>Socket noted similarities to TeamPCP's CanisterWorm attacks, though attribution is not confirmed.</li>
+          <li>Multi-ecosystem (npm + PyPI) capability means defenders need to check both package registries.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Remove all listed package versions from development environments and CI/CD pipelines immediately.</li>
+          <li>Rotate all potentially exposed credentials: API keys, cloud tokens, SSH keys, npm auth tokens, LLM platform keys.</li>
+          <li>Check for internal package mirrors, artifacts, and caches that may hold compromised versions.</li>
+          <li>Audit for related packages sharing the same <code>public.pem</code> file, webhook host, or <code>postinstall</code> pattern.</li>
+          <li>Use Socket or StepSecurity IOCs to scan for compromised development environments.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.bleepingcomputer.com/news/security/new-npm-supply-chain-attack-self-spreads-to-steal-auth-tokens/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">BleepingComputer — npm Supply-Chain Attack Self-Spreads</a></li>
+          <li><a href="https://socket.dev/blog/namastex-npm-packages-compromised-canisterworm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Socket — Namastex npm Packages Compromised (CanisterWorm)</a></li>
+          <li><a href="https://www.stepsecurity.io/blog/pgserve-compromised-on-npm-malicious-versions-harvest-credentials?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">StepSecurity — pgserve Compromised on npm</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
