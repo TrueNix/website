@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CanisterSprawl — Self-Propagating npm Worm Installs LLM Proxy Backdoor — al-ice.ai</title>
+  <meta name="description" content="CanisterSprawl worm compromises npm and PyPI packages, installing covert LLM proxy infrastructure and self-propagating across publisher accounts." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/canistersprawl-npm-worm-llm-proxy-backdoor/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="CanisterSprawl — Self-Propagating npm Worm Installs LLM Proxy Backdoor" />
+  <meta name="post:date" content="2026-04-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">CanisterSprawl — Self-Propagating npm Worm Installs LLM Proxy Backdoor</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-24">2026-04-24</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: The worm installs a covert LLM proxy that routes AI traffic through compromised servers to Chinese LLM APIs — turning victim machines into unauthorized AI reselling infrastructure while exfiltrating tokens, credentials, and model API keys from AI development environments.</p>
+
+<h2>What Happened</h2>
+
+<p>Two distinct but related supply chain campaigns emerged in late April 2026, both weaponizing npm and PyPI packages to turn developer machines into LLM proxy relay nodes and credential-harvesting platforms.</p>
+
+<h3>Campaign 1: kube-health-tools LLM Proxy Backdoor</h3>
+
+<ul>
+<li>Malicious packages <code>kube-health-tools</code> (npm) and <code>kube-node-health</code> (PyPI) masqueraded as Kubernetes utilities.</li>
+<li>Both ship native binaries — a Cython-compiled <code>.so</code> extension (PyPI) and a Node.js <code>addon.node</code> native module (npm) — that execute on import or <code>require()</code>.</li>
+<li>The droppers download a stage 2 Go binary to <code>/tmp/.kh</code>, which establishes: a SOCKS5 proxy, a reverse proxy, an SFTP server, and <strong>an LLM proxy routing requests to Chinese LLM APIs</strong> via <code>sync[.]geeker[.]indevs[.]in</code>.</li>
+<li>Three reverse tunnels expose the victim's LLM proxy (port 4444), SSH server (port 4446), and HashiCorp Vault on port 8200 (Kubernetes secrets store) to the attacker's C2.</li>
+<li>The npm variant includes a ngrok fallback cycling through attacker-controlled accounts for persistent public exposure.</li>
+<li>The dropper then self-destructs: it deletes the binary, temp files, and recursively removes its own package directory from <code>node_modules</code> — leaving no trace within two seconds of execution.</li>
+<li>Compromised servers become relay nodes in what researchers describe as a commercial AI reselling platform, with the attacker able to inject malicious payloads into routed LLM traffic.</li>
+</ul>
+
+<h3>Campaign 2: CanisterSprawl Worm</h3>
+
+<ul>
+<li>Tracked by Socket and StepSecurity, CanisterSprawl is a self-propagating worm targeting npm packages. It appeared in compromised versions of <code>pgserve</code> (PostgreSQL server for Node.js) starting April 21.</li>
+<li>A <code>postinstall</code> hook injects a credential-harvesting script that searches for npm publish tokens, bumps patch versions of every package the victim can publish, reinjects itself, and republishes to npm.</li>
+<li>If a PyPI token is found, the worm jumps ecosystems entirely — a cross-platform propagation mechanism.</li>
+<li>Uses an Internet Computer Protocol (ICP) canister as a decentralized, resilient C2 channel — making takedown significantly harder than traditional C2 infrastructure.</li>
+<li>Socket's follow-up investigation linked compromised Namastex.ai packages (<code>@automagik/genie</code> and <code>pgserve</code>) to the same tradecraft: install-time execution, credential theft, off-host exfiltration to canister-backed infrastructure, and self-propagation logic.</li>
+<li>The Namastex payload included an explicit code reference to a <code>TeamPCP/LiteLLM method</code> — linking this campaign to the broader TeamPCP operation.</li>
+</ul>
+
+<h2>Why It Matters</h2>
+
+<ul>
+<li>The LLM proxy angle is novel: compromised machines aren't just credential targets — they're weaponized as AI infrastructure relay nodes, with the attacker able to intercept, modify, or inject payloads into LLM traffic.</li>
+<li>The self-propagation mechanism (CanisterSprawl) turns every infected developer machine into a distribution vector for further supply chain compromise, creating exponential spread.</li>
+<li>The ICP canister C2 is architecturally novel — decentralized, permissionless, and nearly impossible to take down through traditional means.</li>
+<li>The self-destructing dropper (deleting its own <code>node_modules</code> directory) defeats standard forensic investigation — a developer running <code>npm ls</code> after the fact would see no evidence of compromise.</li>
+<li>AI/ML teams are high-value targets: they run Kubernetes, use HashiCorp Vault, manage model API keys, and have elevated cloud permissions.</li>
+</ul>
+
+<h2>What to Do</h2>
+
+<ul>
+<li>Check for <code>kube-health-tools</code> or <code>kube-node-health</code> in your dependency trees. If found, assume the machine is compromised — the dropper self-destructs but the stage 2 binary persists.</li>
+<li>Search for suspicious processes named <code>node-health-check</code> or binaries at <code>/tmp/.kh</code>.</li>
+<li>If you published <code>pgserve</code> or any Namastex.ai packages — review all published versions and rotate npm/PyPI tokens immediately.</li>
+<li>Rotate all credentials found in environment variables, CI/CD secrets, and cloud configs on potentially affected machines.</li>
+<li>Monitor for unusual outbound connections to <code>geeker[.]indevs[.]in</code> or unknown ngrok tunnels.</li>
+<li>Use package integrity verification (lockfiles, provenance attestation) to detect unauthorized dependency modifications.</li>
+</ul>
+
+<h2>Sources</h2>
+
+<ul>
+<li><a href="https://www.aikido.dev/blog/gpt-proxy-backdoor-npm-pypi-chinese-llm-relay?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Aikido — GPT-Proxy Backdoor in npm and PyPI turns Servers into Chinese LLM Relays</a></li>
+<li><a href="https://socket.dev/blog/namastex-npm-packages-compromised-canisterworm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — Namastex.ai npm Packages Hit with TeamPCP-Style CanisterWorm</a></li>
+<li><a href="https://blog.gitguardian.com/three-supply-chain-campaigns-hit-npm-pypi-and-docker-hub-in-48-hours/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours</a></li>
+<li><a href="https://www.theregister.com/2026/04/22/another_npm_supply_chain_attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Register — Another npm supply chain worm hits dev environments</a></li>
+<li><a href="https://www.bleepingcomputer.com/news/security/new-npm-supply-chain-attack-self-spreads-to-steal-auth-tokens/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">BleepingComputer — New npm supply-chain attack self-spreads to steal auth tokens</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

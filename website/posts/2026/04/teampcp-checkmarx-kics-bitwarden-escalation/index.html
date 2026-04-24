@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP — Checkmarx KICS Docker and Bitwarden CLI Compromised in Escalating Supply Chain Campaign — al-ice.ai</title>
+  <meta name="description" content="TeamPCP returns with a triple-pronged supply chain assault across Docker Hub, npm, and PyPI in 48 hours, compromising KICS security scanner images, Bitwarden CLI, and xinference." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/teampcp-checkmarx-kics-bitwarden-escalation/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP — Checkmarx KICS Docker and Bitwarden CLI Compromised in Escalating Supply Chain Campaign" />
+  <meta name="post:date" content="2026-04-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP — Checkmarx KICS Docker and Bitwarden CLI Compromised in Escalating Supply Chain Campaign</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-24">2026-04-24</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: AI engineering teams widely use Checkmarx KICS for IaC scanning in CI/CD pipelines that deploy AI infrastructure, and Bitwarden CLI is a common secret-management tool in AI agent deployment workflows — both are now confirmed compromised.</p>
+
+<p>Between April 21–23, 2026, the threat group TeamPCP executed three coordinated supply chain campaigns across Docker Hub, npm, and PyPI simultaneously. This marks the group's second Checkmarx compromise in two months and represents a significant escalation in scope and sophistication.</p>
+
+<h2>What Happened</h2>
+
+<ul>
+<li><strong>Checkmarx KICS Docker images compromised (April 22).</strong> Official <code>checkmarx/kics</code> Docker Hub images and VS Code extensions were hijacked. An obfuscated payload harvested GitHub tokens, AWS/Azure/GCP credentials, npm configs, SSH keys, and environment variables — compressing and encrypting everything before exfiltration. Docker flagged the suspicious activity and alerted Socket.</li>
+<li><strong>Bitwarden CLI poisoned via compromised GitHub Action (April 22).</strong> Version <code>@bitwarden/cli@2026.4.0</code> was briefly distributed through npm (5:57–7:30 PM ET). The attack leveraged a compromised GitHub Action in Bitwarden's CI/CD pipeline, consistent with the same GitHub Actions supply chain vector used in the broader Checkmarx campaign. Bitwarden's Chrome extension, MCP server, and other distributions were not affected.</li>
+<li><strong>xinference PyPI compromise (April 22).</strong> Three consecutive releases of xinference on PyPI carried a credential-stealing payload. The malware decodes a second-stage collector that harvests SSH keys, cloud credentials, environment variables, and crypto wallets. The payload sends data as plain tar.gz directly to the C2 server — a departure from TeamPCP's prior encrypted exfil, suggesting either a copycat or operational sloppiness.</li>
+<li><strong>CVE-2026-33634 (CVSS 9.4)</strong> covers the Checkmarx GitHub Actions compromise. Affected components include <code>ast-github-action</code>, <code>kics-github-action</code>, and OpenVSX extensions <code>ast-results v2.53.0</code> and <code>cx-dev-assist v1.7.0</code>.</li>
+<li>TeamPCP claimed the attacks on X immediately after disclosure via <code>@pcpcats</code>.</li>
+<li>GitGuardian's analysis found damage spread to thousands of public targets across the ecosystem.</li>
+</ul>
+
+<h2>Why It Matters</h2>
+
+<ul>
+<li>This is a pattern: TeamPCP first hit LiteLLM, then Trivy, then Checkmarx (March), and now Checkmarx again + Bitwarden + xinference (April). The group is systematically targeting the developer toolchain.</li>
+<li>The attack vector is consistent: compromise GitHub Actions → poison build artifacts → steal credentials from CI/CD environments → use stolen tokens for lateral movement and further supply chain attacks.</li>
+<li>Every payload in this campaign was engineered for credential extraction, not software corruption. The attackers want access, not disruption.</li>
+<li>AI/ML teams are disproportionately affected because they tend to use these exact tools (KICS for IaC, Bitwarden for secrets, xinference for model serving) in automated pipelines with elevated permissions.</li>
+</ul>
+
+<h2>What to Do</h2>
+
+<ul>
+<li>If you used Checkmarx KICS Docker images, GitHub Actions, or OpenVSX extensions around April 22 — rotate all secrets accessible to those environments immediately.</li>
+<li>If you installed <code>@bitwarden/cli@2026.4.0</code> — rotate any credentials that CLI had access to and review your CI logs.</li>
+<li>If you installed xinference from PyPI around April 22 — rotate cloud credentials, SSH keys, and crypto wallets on affected machines.</li>
+<li>Audit all GitHub Actions workflows for unauthorized modifications, especially those using <code>pull_request_target</code> triggers.</li>
+<li>Pin dependency versions and enable provenance verification to reduce exposure to future supply chain compromises.</li>
+</ul>
+
+<h2>Sources</h2>
+
+<ul>
+<li><a href="https://blog.gitguardian.com/three-supply-chain-campaigns-hit-npm-pypi-and-docker-hub-in-48-hours/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours</a></li>
+<li><a href="https://socket.dev/blog/bitwarden-cli-compromised?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain Campaign</a></li>
+<li><a href="https://orca.security/resources/blog/checkmarx-supply-chain-compromise-ci-cd-secrets/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Orca Security — Checkmarx Supply Chain Compromise Exposes CI/CD Secrets (CVE-2026-33634)</a></li>
+<li><a href="https://www.sophos.com/en-us/blog/supply-chain-attacks-hit-checkmarx-and-bitwarden-developer-tools?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Sophos — Supply Chain Attacks Hit Checkmarx and Bitwarden Developer Tools</a></li>
+<li><a href="https://www.securityweek.com/bitwarden-npm-package-hit-in-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek — Bitwarden NPM Package Hit in Supply Chain Attack</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
