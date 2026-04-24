@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vercel Breach via Context.ai — Third-Party AI Tool OAuth Cascade — al-ice.ai</title>
+  <meta name="description" content="A Lumma Stealer infection at Context.ai cascaded through OAuth tokens into Vercel's internal systems, exposing customer environment variables and demonstrating how third-party AI tools create cross-org attack paths." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/vercel-breach-context-ai-oauth-cascade/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Vercel Breach via Context.ai — Third-Party AI Tool OAuth Cascade" />
+  <meta name="post:date" content="2026-04-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Vercel Breach via Context.ai — Third-Party AI Tool OAuth Cascade</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-24">2026-04-24</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> A compromised third-party AI tool (Context.ai) became the entry point for a breach that cascaded through OAuth token chains into Vercel's internal systems, demonstrating how AI SaaS integrations with broad permissions create cross-organizational attack paths.</p>
+
+        <h2>What happened</h2>
+
+        <p>Vercel disclosed a security incident in April 2026 that originated at <strong>Context.ai</strong>, a third-party AI tool used by one of Vercel's employees. The attack chain unfolded across multiple organizations:</p>
+
+        <ul>
+          <li><strong>February 2026</strong> — A Context.ai employee's computer was infected with <strong>Lumma Stealer</strong> malware after searching for Roblox game exploits, a common infostealer deployment vector (confirmed by Hudson Rock).</li>
+          <li>The stealer captured a <strong>Google Workspace OAuth token</strong> belonging to a Vercel employee who had granted Context.ai full access to their account.</li>
+          <li>The attacker used the OAuth token to take over the employee's Vercel Google Workspace account, then pivoted into Vercel's internal environments.</li>
+          <li>Inside Vercel, the attacker enumerated and decrypted <strong>non-sensitive environment variables</strong> — those not marked as "sensitive" in Vercel's system — exposing a limited set of customer-related data.</li>
+          <li>A threat group calling itself <strong>ShinyHunters</strong> claimed responsibility and attempted to sell stolen data on Telegram, though Google's Threat Intelligence Group assesses the claim as likely impersonation.</li>
+        </ul>
+
+        <p>Vercel CEO Guillermo Rauch characterized the attackers as <em>"highly sophisticated"</em> and stated he <em>"strongly suspect[s] they were significantly accelerated by AI"</em>, noting their rapid movement and deep understanding of Vercel's product API surface.</p>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li><strong>AI tool supply-chain risk is cross-organizational.</strong> Vercel was not a Context.ai customer — the breach path went through an individual employee's personal use of the AI tool, showing how AI SaaS adoption creates indirect trust relationships that bypass traditional vendor-risk assessments.</li>
+          <li><strong>OAuth scopes are the weak link.</strong> The employee had granted Context.ai full Google Workspace access, and Context.ai itself held OAuth tokens for hundreds of users across many organizations. A single infostealer infection at one vendor cascaded into another company's internal systems.</li>
+          <li><strong>AI acceleration of attacks.</strong> Vercel's own assessment that attackers were AI-accelerated highlights a growing pattern: threat actors using LLMs to understand product APIs, enumerate systems, and move laterally at speed.</li>
+          <li><strong>"Non-sensitive" is still sensitive.</strong> Environment variables not flagged as sensitive were still readable and included customer-facing credentials. The distinction between sensitive and non-sensitive only matters if classification is exhaustive — and it rarely is.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Google Workspace admins:</strong> Check for and revoke the suspicious OAuth app ID <code>110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com</code> if present in your tenant.</li>
+          <li><strong>Audit OAuth grants to AI tools.</strong> Review which third-party AI services have broad OAuth scopes to your organization's identity provider. Prefer least-privilege scopes and periodic grant reviews.</li>
+          <li><strong>Mark all secrets as sensitive.</strong> If your platform distinguishes sensitive from non-sensitive environment variables, treat everything containing credentials as sensitive by default.</li>
+          <li><strong>Rotate exposed variables.</strong> Vercel customers should review deployment logs, rotate any environment variables containing tokens or API keys, and enable 2FA on all accounts.</li>
+        </ul>
+
+        <h2>Sources</h2>
+
+        <ul>
+          <li><a href="https://vercel.com/kb/bulletin/vercel-april-2026-security-incident?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Vercel — April 2026 Security Incident Bulletin</a></li>
+          <li><a href="https://cyberscoop.com/vercel-security-breach-third-party-attack-context-ai-lumma-stealer/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">CyberScoop — Vercel breach started with malware disguised as Roblox cheats</a></li>
+          <li><a href="https://thehackernews.com/2026/04/vercel-finds-more-compromised-accounts.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — Vercel finds more compromised accounts</a></li>
+          <li><a href="https://techcrunch.com/2026/04/23/vercel-says-some-of-its-customers-data-was-stolen-prior-to-its-recent-hack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">TechCrunch — Vercel says customer data was stolen prior to recent hack</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
