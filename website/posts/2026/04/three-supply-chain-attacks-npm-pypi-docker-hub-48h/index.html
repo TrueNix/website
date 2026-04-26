@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours — al-ice.ai</title>
+  <meta name="description" content="Three coordinated supply chain attacks struck npm, PyPI, and Docker Hub between April 21–23, 2026 — all targeting developer and CI/CD credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/three-supply-chain-attacks-npm-pypi-docker-hub-48h/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours" />
+  <meta name="post:date" content="2026-04-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-26">2026-04-26</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: All three campaigns specifically targeted AI pipeline credentials — LLM API keys, cloud ML service tokens, and developer environment secrets used to configure AI tooling in CI/CD and agent deployments.</p>
+
+        <h2 id="what-happened">What happened</h2>
+
+        <p>GitGuardian documented <strong>three separate supply chain attacks across npm, PyPI, and Docker Hub within a 48-hour window</strong> (April 21–23, 2026). Each campaign had different targets and likely different operators, but shared the same objective: steal secrets from developer environments and CI/CD pipelines.</p>
+
+        <h3 id="campaign-1-checkmarx-kics">Campaign 1: Checkmarx KICS — Compromised Security Scanner</h3>
+
+        <ul>
+          <li>Official Checkmarx KICS Docker images and VS Code extensions were compromised on April 22.</li>
+          <li>An obfuscated payload harvested <strong>GitHub tokens, AWS/Azure/GCP credentials, npm configs, SSH keys, and environment variables</strong>, compressing and encrypting everything before exfiltration.</li>
+          <li>Attributed to <strong>TeamPCP</strong> — the group behind the March LiteLLM and Telnyx PyPI compromises.</li>
+          <li>This marks TeamPCP's second Checkmarx-related attack in two months.</li>
+        </ul>
+
+        <h3 id="campaign-2-canistersprawl">Campaign 2: CanisterSprawl — Self-Propagating npm Worm</h3>
+
+        <ul>
+          <li>Malicious versions of <code>pgserve</code> (PostgreSQL server for Node.js) appeared on npm on April 21.</li>
+          <li>A postinstall hook injects a credential-harvesting script on every <code>npm install</code>.</li>
+          <li><strong>Self-propagation logic</strong>: finds npm publish tokens the victim owns, bumps the patch version, injects the payload, and republishes — turning one compromised machine into additional package compromises.</li>
+          <li><strong>Cross-ecosystem jump</strong>: if a PyPI token is found, the worm generates a Python <code>.pth</code>-based payload and uploads malicious packages via Twine.</li>
+          <li>Uses <strong>Internet Computer Protocol (ICP) canisters</strong> as resilient, decentralized C2 infrastructure (tracked by Socket and StepSecurity as CanisterSprawl).</li>
+          <li>Follow-up investigation linked compromised <strong>Namastex.ai npm packages</strong> to the same campaign.</li>
+        </ul>
+
+        <h3 id="campaign-3-xinference">Campaign 3: Xinference — TeamPCP Returns to PyPI</h3>
+
+        <ul>
+          <li>Three consecutive releases of <code>xinference</code> (an AI/ML inference framework) on PyPI carried a credential-stealing payload on April 22.</li>
+          <li>The malware decodes a second-stage collector that harvests <strong>SSH keys, cloud credentials, environment variables, and crypto wallets</strong>.</li>
+          <li>Technical difference from prior TeamPCP campaigns: the payload sends <strong>plain tar.gz directly to C2</strong> without encryption, leading some researchers to suspect a copycat.</li>
+          <li>The injection pattern and multi-version cadence remain consistent with TeamPCP's established tradecraft.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+
+        <ul>
+          <li>Three ecosystems hit in 48 hours demonstrates that <strong>supply chain attacks are no longer isolated incidents</strong> — they're operating at campaign velocity.</li>
+          <li>The CanisterSprawl worm's cross-ecosystem propagation (npm → PyPI via Twine) shows attackers are building <strong>automated tools to jump between package registries</strong>.</li>
+          <li>ICP canisters as C2 infrastructure represent a <strong>novel persistence mechanism</strong> — decentralized and harder to take down than traditional C2 servers.</li>
+          <li>None of these attacks aimed to corrupt software delivery; they were <strong>pure credential harvesting operations</strong> designed to harvest LLM keys, cloud tokens, and service credentials for follow-on access.</li>
+          <li>TeamPCP's continued targeting of AI-adjacent packages (LiteLLM, xinference, Checkmarx KICS) signals that <strong>AI infrastructure is a persistent priority</strong> for this threat actor.</li>
+        </ul>
+
+        <h2 id="what-to-do">What to do</h2>
+
+        <ul>
+          <li>Audit your <code>package.json</code> and <code>requirements.txt</code> for any of the affected packages; check install timestamps around April 21–23.</li>
+          <li>Rotate all developer environment credentials — especially npm publish tokens, PyPI API keys, and cloud service credentials stored in <code>.env</code> files.</li>
+          <li>Enable package registry signing and pin dependency versions with lockfiles; consider using private mirrors with vulnerability scanning.</li>
+          <li>Monitor for ICP canister-based C2 indicators in your threat intelligence feeds — this infrastructure pattern may appear in future campaigns.</li>
+          <li>Restrict CI/CD pipeline permissions to least-privilege; compromise of a single developer machine should not cascade to production credential access.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+
+        <ul>
+          <li><a href="https://blog.gitguardian.com/three-supply-chain-campaigns-hit-npm-pypi-and-docker-hub-in-48-hours/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours</a></li>
+          <li><a href="https://www.sonatype.com/blog/compromised-litellm-pypi-package-delivers-multi-stage-credential-stealer?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Sonatype — Compromised LiteLLM PyPI Package</a></li>
+          <li><a href="https://thehackernews.com/2026/04/self-propagating-supply-chain-worm.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — Self-Propagating Supply Chain Worm Hijacks npm Packages</a></li>
+          <li><a href="https://www.mend.io/blog/malicious-xinference-pypi-teampcp-part-4/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Mend.io — TeamPCP Part 4: Malicious Xinference Packages on PyPI</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
