@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bitwarden CLI Compromised — Shai-Hulud Campaign Targets AI Coding Assistants — al-ice.ai</title>
+  <meta name="description" content="A malicious Bitwarden CLI package stole credentials from Claude, Cursor, Codex CLI, Kiro, and Aider configs — part of a broader Checkmarx supply chain campaign." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/bitwarden-cli-shai-hulud-ai-coding-assistant-targeting/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Bitwarden CLI Compromised — Shai-Hulud Campaign Targets AI Coding Assistants" />
+  <meta name="post:date" content="2026-04-27" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Bitwarden CLI Compromised — Shai-Hulud Campaign Targets AI Coding Assistants</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-27">2026-04-27</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: A compromised Bitwarden CLI package included a credential harvester that specifically targeted AI coding assistant configuration files (Claude, Cursor, Codex CLI, Kiro, Aider) — turning a password manager into a supply-chain vector for stealing AI toolchain credentials.</p>
+
+        <p>For roughly 90 minutes on April 22, installing <code>@bitwarden/cli@2026.4.0</code> from npm deployed a credential-stealing payload disguised as a routine update. The package was published through Bitwarden's CI/CD pipeline after attackers compromised a GitHub Action used in the project's release workflow — part of a broader campaign that also hit Checkmarx KICS Docker images, VS Code extensions, and the <code>xinference</code> PyPI package.</p>
+
+        <h2>What the malware did</h2>
+
+        <ul>
+          <li><strong>AI coding assistant configs:</strong> The payload actively scanned for and harvested configuration data for Claude Code, Cursor, Codex CLI, Kiro, and Aider — treating AI toolchain credentials as a first-class target alongside traditional secrets.</li>
+          <li><strong>Developer credential sweep:</strong> Collected GitHub tokens, npm publish tokens, SSH keys, <code>.env</code> files, shell history, GitHub Actions secrets, and cloud provider credentials (AWS, Azure, GCP).</li>
+          <li><strong>Dual exfiltration:</strong> Stolen data was AES-256-GCM encrypted and sent to <code>audit.checkmarx[.]cx</code> (a domain impersonating Checkmarx infrastructure). If that failed, the malware pushed credentials as commits to GitHub repositories in the victim's namespace — making exfiltrated data publicly discoverable.</li>
+          <li><strong>Self-propagation risk:</strong> A single infected developer becomes an entry point for broader supply-chain compromise, with the attacker gaining persistent CI/CD injection access to every pipeline the developer's tokens can reach.</li>
+        </ul>
+
+        <h2>How it happened</h2>
+
+        <ul>
+          <li>Attackers compromised a Bitwarden engineer's GitHub account, then created a new branch in the <code>bitwarden/clients</code> repository.</li>
+          <li>They staged a prebuilt malicious tarball and rewrote <code>publish-cli.yml</code> to exchange a GitHub Actions OIDC token for an npm auth token via the npm registry API.</li>
+          <li>The workflow then published the malicious tarball directly to npm as version 2026.4.0.</li>
+          <li>Only 334 downloads were recorded during the 90-minute window, but the CI/CD and AI toolchain targeting multiplies downstream impact.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li><strong>AI toolchain as a credential tier:</strong> The malware treats AI coding assistant configs as a distinct credential category. Compromised AI assistant tokens could grant access to codebases, CI/CD pipelines, and cloud resources those assistants are configured to use.</li>
+          <li><strong>GitHub as exfiltration channel:</strong> Using victim-owned GitHub repos as a fallback exfiltration channel means stolen credentials may be publicly accessible to anyone — not just the original threat actor.</li>
+          <li><strong>Cascading supply-chain risk:</strong> This campaign (attributed broadly to the "Shai-Hulud" malware ecosystem) demonstrates how compromising one developer tool's CI/CD can cascade across multiple ecosystems (npm, PyPI, Docker Hub).</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Confirm you're running <code>@bitwarden/cli@2026.4.1</code> or later. Remove any 2026.4.0 installation.</li>
+          <li>Rotate all secrets that were accessible on machines where the compromised CLI was installed — especially AI coding assistant API keys and tokens.</li>
+          <li>Audit your GitHub repositories for unexpected commits or new repos created during the April 22 window (5:57–7:30 PM ET).</li>
+          <li>Review CI/CD pipeline permissions and limit which GitHub Actions workflows can publish packages.</li>
+          <li>Include AI coding assistant configuration directories in your secret-scanning and DLP policies alongside traditional credential stores.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://socket.dev/blog/bitwarden-cli-compromised?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain Campaign</a></li>
+          <li><a href="https://www.techloy.com/bitwarden-cli-compromised-in-shai-hulud-supply-chain-attack-334-developers-exposed/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">TechLoy — Bitwarden CLI Compromised in 'Shai-Hulud' Supply Chain Attack</a></li>
+          <li><a href="https://www.endorlabs.com/learn/shai-hulud-the-third-coming----inside-the-bitwarden-cli-2026-4-0-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Endor Labs — The Bitwarden CLI Supply Chain Attack: What Happened and What to Do</a></li>
+          <li><a href="https://blog.gitguardian.com/three-supply-chain-campaigns-hit-npm-pypi-and-docker-hub-in-48-hours/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitGuardian — Three Supply Chain Campaigns Hit npm, PyPI, and Docker Hub in 48 Hours</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
