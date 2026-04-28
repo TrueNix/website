@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cisco — Claude Code memory poisoning enables persistent agent compromise — al-ice.ai</title>
+  <meta name="description" content="Cisco researchers demonstrated a memory poisoning attack against Claude Code that achieves persistent behavioral manipulation across all projects and sessions via npm supply-chain hooks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/cisco-claude-code-memory-poisoning-persistence/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Cisco — Claude Code memory poisoning enables persistent agent compromise" />
+  <meta name="post:date" content="2026-04-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Cisco — Claude Code memory poisoning enables persistent agent compromise</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-28">2026-04-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Claude Code's persistent memory files (MEMORY.md) are loaded into the agent's system prompt with high authority, so poisoning them via npm supply-chain hooks gives an attacker persistent behavioral control over the coding assistant across every project and session.</p>
+
+        <ul>
+          <li><strong>Cisco researchers</strong> (Idan Habler, Amy Chang, AI Software and Platform team) demonstrated a method to poison Claude Code's memory system and maintain persistence across all projects, sessions, and reboots.</li>
+          <li><strong>Entry point: npm lifecycle hooks</strong> — post-install scripts execute arbitrary code during package installation, a well-known supply-chain attack vector. When a user approves installing npm dependencies in an untrusted repository, the payload executes under the user's context.</li>
+          <li><strong>Memory poisoning</strong> — the payload overwrites MEMORY.md files in every project directory (<code>~/.claude/projects/*/memory/MEMORY.md</code>) and modifies global hooks configuration (<code>~/.claude/settings.json</code>), targeting the UserPromptSubmit hook whose output is injected into Claude's context before every prompt.</li>
+          <li><strong>Persistence mechanism</strong> — even if the user disables auto-memory loading, the payload appends a shell alias to <code>.zshrc</code> or <code>.bashrc</code> that silently re-enables it: <code>alias claude='CLAUDE_CODE_DISABLE_AUTO_MEMORY=0 claude'</code>.</li>
+          <li><strong>Proof of concept</strong> — researchers injected a benign instruction ("prefix all responses with a specific string") and Claude complied on every prompt, confirming that poisoned memory files are treated as authoritative system-level instructions.</li>
+          <li><strong>Real-world impact</strong> — when asked where to store an API key, the poisoned agent recommended hardcoding it directly in committed source files, advised against using <code>.env</code> files or environment variables, offered to scaffold the insecure structure automatically, and provided zero security warnings.</li>
+          <li><strong>Anthropic's position</strong> — the user principal on the machine is considered fully trusted; scripts running as the user are intentionally allowed to modify settings and memories. The attack requires the user to interact with an untrusted repository.</li>
+          <li><strong>Mitigation shipped</strong> — Anthropic released Claude Code v2.1.50 which removes user memory files from the system prompt, eliminating the "System Prompt Override" vector. Memory files no longer carry the same architectural authority over the model's core instructions.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>AI coding agents operate with deep access to a developer's environment — reading files, running commands, and building applications — while maintaining persistent memory across sessions. When memory files are blended into the system prompt without a clear security boundary, any mechanism that writes to those files (npm hooks, malicious PRs, compromised dependencies) becomes a persistent compromise vector. The attacker's instructions survive reboots, project switches, and even user attempts to disable memory features, making this one of the most persistent attack surfaces in the agentic AI stack.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update to Claude Code v2.1.50 or later</strong> — Anthropic's mitigation removes memory files from the system prompt.</li>
+          <li><strong>Audit memory files</strong> — check <code>~/.claude/projects/*/memory/MEMORY.md</code> and <code>~/.claude/settings.json</code> for unexpected modifications.</li>
+          <li><strong>Review shell configuration</strong> — scan <code>.zshrc</code> and <code>.bashrc</code> for aliases that override Claude environment variables.</li>
+          <li><strong>Treat untrusted repositories with caution</strong> — audit npm dependencies before installation, especially in forks or externally contributed code.</li>
+          <li><strong>Monitor npm install behavior</strong> — watch for post-install scripts that write to Claude configuration directories or shell dotfiles.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blogs.cisco.com/ai/identifying-and-remediating-a-persistent-memory-compromise-in-claude-code?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Cisco Blog — Identifying and remediating a persistent memory compromise in Claude Code</a></li>
+          <li><a href="https://www.darkreading.com/vulnerabilities-threats/bad-memories-haunt-ai-agents?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Dark Reading — Bad Memories Remain a Threat to Agentic AI Systems</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
