@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP — Claude Code Used to Publish Malicious SAP CAP npm Packages — al-ice.ai</title>
+  <meta name="description" content="The TeamPCP threat actor weaponized Claude Code's GitHub integration to commit malicious code to SAP's cap-js/cds-dbs repository and publish infected npm packages in the Mini Shai-Hulud supply chain campaign." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/04/team-pcp-mini-shai-hulud-sap-cap-npm-claude-code/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP — Claude Code Used to Publish Malicious SAP CAP npm Packages" />
+  <meta name="post:date" content="2026-04-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP — Claude Code Used to Publish Malicious SAP CAP npm Packages</h1>
+        <div class="post-meta">
+          <time datetime="2026-04-29">2026-04-29</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: An AI coding assistant's GitHub integration was weaponized as the attack vector to compromise an enterprise open-source release pipeline, enabling supply-chain poisoning at scale.</p>
+
+        <h2 id="what-happened">What Happened</h2>
+
+        <p>On April 29, 2026, the threat actor behind the TeamPCP campaign (previously responsible for the Bitwarden CLI compromise) published malicious versions of four SAP Cloud Application Programming (CAP) framework npm packages used by thousands of enterprise applications:</p>
+
+        <ul>
+          <li><code>@cap-js/sqlite@2.2.2</code></li>
+          <li><code>@cap-js/postgres@2.2.2</code></li>
+          <li><code>@cap-js/db-service@2.10.1</code></li>
+          <li><code>mbt@1.2.48</code></li>
+        </ul>
+
+        <p>The campaign, self-styled &ldquo;Mini Shai-Hulud,&rdquo; shares the same malware architecture as the earlier Bitwarden attack but introduces a novel attack method: rather than stealing static tokens or impersonating a developer, the attacker exploited Claude Code's GitHub integration running on an infected developer's machine to commit directly to SAP's <code>cap-js/cds-dbs</code> repository under the identity <code>claude@users.noreply.github.com</code>.</p>
+
+        <p>The malicious commits modified the repository's release workflow to extract an npm OIDC token, which was then used to publish the infected packages to the public registry. SAP detected the compromise and superseded all four packages with clean releases by 13:45 UTC the same day.</p>
+
+        <h2 id="technical-details">Technical Details</h2>
+
+        <ul>
+          <li>The compromised packages inject a <code>preinstall</code> script that acts as a runtime bootstrapper, downloading a platform-specific Bun ZIP from GitHub Releases and executing the extracted binary.</li>
+          <li>The downloaded Bun payload is an ~11 MB obfuscated script designed to harvest local developer credentials, GitHub and npm tokens, GitHub Actions secrets, and cloud secrets from AWS, Azure, GCP, and Kubernetes.</li>
+          <li>The implementation follows HTTP redirects without validating destination URLs, enabling secondary payload downloads from attacker-controlled infrastructure.</li>
+          <li>Forensic analysis shows the injected files were timestamped between 15:25 and 17:43 UTC on April 29, indicating the tarballs were post-processed after the Claude Code commit.</li>
+          <li>GitGuardian identified 7 stolen GitHub tokens providing access to 971 repositories, with the attack still actively propagating at time of reporting.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why It Matters</h2>
+
+        <p>This is the first documented case of an AI coding assistant's authenticated repository access being weaponized to compromise an enterprise release pipeline. The attacker didn't need to phish a maintainer or steal an npm token directly; they piggybacked on Claude Code's own GitHub OAuth session to make commits that appeared legitimate. This attack pattern fundamentally changes the threat model for AI-assisted development: any coding assistant with write access to a repository becomes a potential supply-chain vector.</p>
+
+        <p>The fact that this is an escalation of the same TeamPCP campaign that hit Bitwarden CLI earlier signals an organized, persistent adversary specifically targeting AI-adjacent tooling and developer ecosystems.</p>
+
+        <h2 id="what-to-do">What to Do</h2>
+
+        <ul>
+          <li>Immediately audit all SAP CAP project dependencies for the compromised package versions and remove them.</li>
+          <li>Rotate all npm tokens, GitHub tokens, and CI/CD secrets that may have been exposed during the window of compromise.</li>
+          <li>Review Claude Code (or any AI coding assistant) OAuth and GitHub app permissions; revoke access from any potentially infected developer machines.</li>
+          <li>Implement branch protection rules requiring human review for workflow file changes, even from trusted bot accounts.</li>
+          <li>Monitor for the known Indicators of Compromise published by Mend, Socket, and Wiz (see sources below).</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+
+        <ul>
+          <li><a href="https://www.mend.io/blog/shai-hulud-sap-cap-supply-chain-attack-claude-code/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Mend — Shai-Hulud: SAP CAP Supply Chain Attack Via Claude Code</a></li>
+          <li><a href="https://socket.dev/blog/sap-cap-npm-packages-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Socket — TeamPCP-Linked Supply Chain Attack Hits SAP CAP and Cloud MTA</a></li>
+          <li><a href="https://www.wiz.io/blog/mini-shai-hulud-supply-chain-sap-npm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Wiz — Supply Chain Campaign Targets SAP npm Packages with Credential-Stealing Malware</a></li>
+          <li><a href="https://www.stepsecurity.io/blog/a-mini-shai-hulud-has-appeared?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">StepSecurity — A Mini Shai-Hulud has Appeared</a></li>
+          <li><a href="https://blog.gitguardian.com/a-mini-shai-hulud-targeting-the-sap-ecosystem/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">GitGuardian — A Mini Shai-Hulud Targeting the SAP Ecosystem</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
