@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PyTorch Lightning — PyPI Package Compromised in Mini Shai-Hulud Supply Chain Attack — al-ice.ai</title>
+  <meta name="description" content="The popular PyTorch Lightning deep learning framework (31k+ GitHub stars) was compromised with credential-stealing malware in versions 2.6.2 and 2.6.3, part of the ongoing Mini Shai-Hulud campaign targeting AI infrastructure." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/pytorch-lightning-pypi-supply-chain-mini-shai-hulud/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="PyTorch Lightning — PyPI Package Compromised in Mini Shai-Hulud Supply Chain Attack" />
+  <meta name="post:date" content="2026-05-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">PyTorch Lightning — PyPI Package Compromised in Mini Shai-Hulud Supply Chain Attack</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-01">2026-05-01</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: PyTorch Lightning is a widely adopted deep learning training framework used by ML researchers and engineers — compromising it gives attackers direct access to GPU compute environments, cloud training credentials, and the model development pipelines of AI teams.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>The <code>lightning</code> PyPI package (PyTorch Lightning, 31,100+ GitHub stars) was compromised with malicious versions <strong>2.6.2 and 2.6.3</strong>, published on April 30, 2026. Version 2.6.1 is clean.</li>
+          <li>PyPI administrators have quarantined the project. The attack is attributed to the <strong>Mini Shai-Hulud</strong> campaign, which previously compromised LiteLLM (March 24), Telnyx (March 27), Xinference, and SAP-related npm packages.</li>
+          <li>The malicious package contains a hidden <code>_runtime</code> directory with a downloader and obfuscated JavaScript payload that executes automatically on <code>import lightning</code> — requiring no additional user action.</li>
+          <li>The attack chain runs a Python script (<code>start.py</code>) that downloads and executes the Bun JavaScript runtime, which then runs an 11 MB obfuscated payload (<code>router_runtime.js</code>) for comprehensive credential theft.</li>
+          <li>Harvested GitHub tokens are validated against the GitHub API, then used to <strong>inject a worm-like payload into up to 50 branches per repository</strong> — each commit authored using a hardcoded identity that <strong>impersonates Anthropic's Claude Code</strong>.</li>
+          <li>The malware also implements an npm-based propagation vector: it modifies the developer's local <code>package.json</code> with a <code>postinstall</code> hook to invoke the malicious payload, enabling lateral spread through the Node.js ecosystem.</li>
+          <li>A parallel compromise of the <code>intercom-client</code> npm package was detected in the same campaign.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>PyTorch Lightning is foundational infrastructure for training and deploying ML models — any developer or CI/CD pipeline importing the package during the malicious window had their environment compromised.</li>
+          <li>The attacker gains access to cloud training credentials (AWS, GCP, Azure), model API keys, and GPU cluster tokens — enabling follow-on attacks on AI model training infrastructure.</li>
+          <li>The worm-like GitHub repo poisoning impersonating Claude Code commits is a novel social engineering layer: poisoned commits appear to come from a trusted AI coding assistant.</li>
+          <li>This is the latest escalation in the Mini Shai-Hulud campaign's systematic targeting of the AI/ML toolchain — each compromise expands the attacker's reach into adjacent parts of the ecosystem.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Do <strong>not</strong> install <code>lightning</code> versions 2.6.2 or 2.6.3. Pin to version 2.6.1 or wait for a clean release from the maintainers.</li>
+          <li>If you installed a compromised version: rotate all credentials found on the affected machine (GitHub tokens, cloud API keys, SSH keys, crypto wallets, npm tokens).</li>
+          <li>Check your GitHub repositories for unauthorized commits authored by Claude Code — the attacker's hardcoded identity may have poisoned your branches.</li>
+          <li>Audit local <code>package.json</code> files for unexpected <code>postinstall</code> scripts that may have been injected by the npm propagation vector.</li>
+          <li>Monitor CI/CD logs for unexpected imports of the compromised package during the April 30 window.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://socket.dev/blog/lightning-pypi-package-compromised?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — lightning PyPI Package Compromised in Supply Chain Attack</a></li>
+          <li><a href="https://www.aikido.dev/blog/pytorch-lightning-pypi-compromise-mini-shai-hulud?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Aikido Security — PyTorch Lightning Compromised by Mini Shai-Hulud</a></li>
+          <li><a href="https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Semgrep — Shai-Hulud Malware in PyTorch Lightning</a></li>
+          <li><a href="https://thehackernews.com/2026/04/pytorch-lightning-compromised-in-pypi.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — PyTorch Lightning and Intercom-client Hit</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
