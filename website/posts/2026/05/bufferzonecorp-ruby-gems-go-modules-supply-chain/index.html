@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BufferZoneCorp — Poisoned Ruby Gems &amp; Go Modules Target CI Pipelines — al-ice.ai</title>
+  <meta name="description" content="A new supply chain campaign publishes sleeper packages across RubyGems and Go modules that harvest credentials, tamper with GitHub Actions, and plant SSH backdoors — with payloads impersonating Claude Code." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/bufferzonecorp-ruby-gems-go-modules-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="BufferZoneCorp — Poisoned Ruby Gems & Go Modules Target CI Pipelines" />
+  <meta name="post:date" content="2026-05-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">BufferZoneCorp — Poisoned Ruby Gems &amp; Go Modules Target CI Pipelines</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-01">2026-05-01</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: CI/CD pipelines are the backbone of AI/ML model training, deployment, and agent tooling — compromised runners can steal model API keys, poison ML build artifacts, and tamper with agent infrastructure, and this campaign's payloads explicitly impersonate Anthropic's Claude Code to evade scrutiny.</p>
+
+<p>Socket Security researcher Kirill Boychenko published analysis on May 1, 2026 of a cross-ecosystem supply chain campaign attributed to a GitHub account called "BufferZoneCorp," which published malicious Ruby gems and Go modules designed as sleeper packages that steal credentials and compromise build environments.</p>
+
+<h2>What was found</h2>
+
+<ul>
+  <li><strong>Ruby gems (RubyGems):</strong> Seven packages published under the "knot-" prefix, including two sleeper gems (<code>knot-date-utils-rb</code>, <code>knot-simple-formatter</code>) that masquerade as common utilities. All gems harvest environment variables, SSH keys, AWS secrets, <code>.npmrc</code>, <code>.netrc</code>, GitHub CLI config, and RubyGems credentials at install time, exfiltrating to a Webhook.site endpoint.</li>
+  <li><strong>Go modules:</strong> Eight modules under <code>github.com/BufferZoneCorp/</code>, including two sleepers (<code>log-core</code>, <code>go-envconfig</code>). These go further — they tamper with GitHub Actions workflows by detecting <code>GITHUB_ENV</code> and <code>GITHUB_PATH</code>, writing a fake Go executable into a cache directory, and prepending it to the workflow PATH so it intercepts future <code>go</code> executions while passing control to the real binary to avoid detection.</li>
+  <li><strong>SSH persistence:</strong> Go modules append a hard-coded SSH public key to <code>~/.ssh/authorized_keys</code> for persistent remote access.</li>
+  <li><strong>Claude Code impersonation:</strong> Every poisoned commit is authored using a hardcoded identity designed to impersonate Anthropic's Claude Code, an upsert operation that creates or overwrites files across up to 50 branches per compromised token.</li>
+</ul>
+
+<h2>Why it matters</h2>
+
+<p>This campaign demonstrates two evolving techniques that directly threaten AI/ML operations: first, the use of <strong>sleeper packages</strong> that appear benign until triggered, making them harder to detect through standard supply chain scanning. Second, the <strong>CI pipeline poisoning via Go module PATH manipulation</strong> allows attackers to intercept and modify build outputs — in an AI context, this means tampering with model weights, training scripts, or agent configuration without breaking the pipeline. The Claude Code impersonation is particularly notable, as it exploits trust in AI coding assistants to mask malicious commits.</p>
+
+<h2>What to do</h2>
+
+<ul>
+  <li>Remove any installed packages from the BufferZoneCorp GitHub account or "knot-" prefixed Ruby gems listed above.</li>
+  <li>Review CI/CD runners for unauthorized SSH keys in <code>~/.ssh/authorized_keys</code> and suspicious workflow modifications.</li>
+  <li>Check repository branches for commits authored with Claude Code impersonation identities.</li>
+  <li>Rotate any credentials that may have been exposed through environment variables or config files on affected systems.</li>
+  <li>Pin dependency versions and use lockfiles to prevent silent installation of new malicious package versions.</li>
+</ul>
+
+<h2>Sources</h2>
+
+<ul>
+  <li><a href="https://socket.dev/blog/malicious-ruby-gems-and-go-modules-steal-secrets-poison-ci?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — Malicious Ruby Gems and Go Modules Steal Secrets, Poison CI</a></li>
+  <li><a href="https://thehackernews.com/2026/05/poisoned-ruby-gems-and-go-modules.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — Poisoned Ruby Gems and Go Modules Exploit CI Pipelines</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
