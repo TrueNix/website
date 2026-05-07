@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SentinelLabs — PCPJack Cloud Worm Steals AI API Keys, Evicts TeamPCP — al-ice.ai</title>
+  <meta name="description" content="A new cloud-focused malware framework called PCPJack scans for exposed services and steals credentials including OpenAI and Anthropic API keys, while actively removing rival TeamPCP infections." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/pcpjack-cloud-worm-steals-ai-api-keys/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="SentinelLabs — PCPJack Cloud Worm Steals AI API Keys, Evicts TeamPCP" />
+  <meta name="post:date" content="2026-05-08" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">SentinelLabs — PCPJack Cloud Worm Steals AI API Keys, Evicts TeamPCP</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-08">2026-05-08</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: PCPJack specifically targets AI developer credentials — including OpenAI and Anthropic API keys — as part of a broad credential theft campaign against cloud infrastructure, and uses known CVEs including Next.js middleware bypass and React deserialization flaws to propagate.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>SentinelLabs discovered PCPJack, a new malware framework designed for large-scale credential theft from Linux-based cloud systems.</li>
+          <li>The malware targets exposed Docker, Kubernetes, Redis, MongoDB, RayML, and web applications, then performs lateral movement within compromised environments.</li>
+          <li>PCPJack steals credentials from cloud providers, developer platforms, databases, SSH keys, Slack tokens, WordPress configs — and specifically targets OpenAI and Anthropic API keys.</li>
+          <li>The infected system actively hunts for and removes TeamPCP tooling (processes, services, containers, files, persistence artifacts), suggesting a turf war between rival operators.</li>
+          <li>SentinelLabs believes PCPJack was likely developed by a former TeamPCP affiliate or member who splintered off after the group's high-profile supply-chain campaigns drew attention.</li>
+          <li>PCPJack propagates by exploiting known vulnerabilities: CVE-2025-29927 (Next.js middleware auth bypass), CVE-2025-55182 "React2Shell" (React/Next.js Server Actions deserialization), CVE-2026-1357 (WPVivid Backup unauthenticated file upload), CVE-2025-9501 (W3 Total Cache PHP injection), and CVE-2025-48703 (CentOS Web Panel shell injection).</li>
+          <li>It downloads hostname data from Common Crawl parquet files to generate new scanning targets, enabling autonomous expansion of its infection surface.</li>
+          <li>Stolen credentials are encrypted with X25519 ECDH + ChaCha20-Poly1305, split into 2800-byte chunks, and exfiltrated via Telegram channels.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>PCPJack represents the convergence of two critical AI security trends: attackers systematically harvesting AI platform API keys from compromised developer infrastructure, and the use of AI-framework-specific vulnerabilities (Next.js, React) as propagation vectors. AI API keys are high-value targets — they can be used for data exfiltration at scale, unauthorized model access, and billing fraud. The turf-war dynamic with TeamPCP also signals that AI infrastructure credential theft has become lucrative enough to spawn competing criminal operations.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Rotate all AI platform API keys (OpenAI, Anthropic, etc.) stored on cloud-facing systems; use short-lived tokens where possible.</li>
+          <li>Patch Next.js and React applications against CVE-2025-29927 and CVE-2025-55182 immediately.</li>
+          <li>Audit exposed Docker, Kubernetes, Redis, and MongoDB instances; ensure they are not internet-reachable without authentication.</li>
+          <li>Monitor for PCPJack indicators: <code>bootstrap.sh</code> scripts creating hidden working directories, <code>monitor.py</code> orchestrator processes, and outbound Telegram API traffic from cloud servers.</li>
+          <li>Review TeamPCP-related IOCs as well — systems compromised by PCPJack may have been previously infected and are actively being contested.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.sentinelone.com/labs/cloud-worm-evicts-teampcp-and-steals-credentials-at-scale/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">SentinelLabs — PCPJack full report</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/new-pcpjack-worm-steals-credentials-cleans-teampcp-infections/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">BleepingComputer — PCPJack coverage</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
