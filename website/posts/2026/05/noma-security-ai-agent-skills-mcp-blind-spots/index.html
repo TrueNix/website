@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Noma Security — MCP Servers and Skills: The Observability Gap in AI Agent Deployments — al-ice.ai</title>
+  <meta name="description" content="Noma Security analyzed hundreds of MCP servers and Skills: one in four MCP servers expose agents to code execution risk, and real-world attack chains like ContextCrush and ForcedLeak are already active." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/noma-security-ai-agent-skills-mcp-blind-spots/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Noma Security — MCP Servers and Skills: The Observability Gap in AI Agent Deployments" />
+  <meta name="post:date" content="2026-05-09" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Noma Security — MCP Servers and Skills: The Observability Gap in AI Agent Deployments</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-09">2026-05-09</time>
+          <a class="badge" href="/categories/RESEARCH/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Enterprise AI agent deployments now span hundreds of high-risk MCP tools and Skills, but defenders can audit MCP tool calls while Skill instructions execute invisibly inside the model's reasoning context — creating an asymmetry that real-world attackers are already exploiting.</p>
+
+        <p>Noma Security's whitepaper <a href="https://go.noma.security/lethal-by-design?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">"Lethal by Design"</a> analyzed hundreds of widely-used MCP servers and Skills against eight risky capability categories. Key findings:</p>
+
+        <ul>
+          <li><strong>One in four MCP servers</strong> exposes AI agents to code execution risk. Most widely deployed MCPs include high-risk capabilities, and the majority of popular Skills carry at least one risky characteristic.</li>
+          <li><strong>Observability gap:</strong> MCP tool calls are deterministic and loggable — defenders can inspect parameters and responses. Skills load textual instructions into the model's reasoning context, where downstream effects play out inside the model's reasoning and cannot be enumerated like source code.</li>
+          <li>A typical enterprise environment runs well over <strong>100 high-risk tools</strong> connected to its agents. The single most prevalent risk across both mechanisms is the ability to change state or data — meaning agents can cause irreversible damage through either attack or hallucination.</li>
+          <li><strong>ContextCrush</strong> attack chain: A developer asks Cursor for coding help, the agent pulls documentation from a poisoned Context7 library, hidden instructions tell it to read local files and dump contents into an attacker-controlled GitHub issue. Half of MCPs that can communicate externally also have untrusted input and sensitive data access in the same toolset.</li>
+          <li><strong>ForcedLeak</strong> attack chain: Malicious instructions arrive inside a Salesforce CRM record submitted through a Web-to-Lead form. When an employee asks Agentforce to process the lead, the agent treats the poisoned content as authoritative instruction and exfiltrates data.</li>
+          <li><strong>Rug-pull asymmetry:</strong> Skills are usually static files requiring manual updates, making them harder to rug-pull. MCP servers pinned to <code>@latest</code> fetch new package versions on every agent load — creating a supply-chain risk that's harder to detect.</li>
+          <li>Noma proposes defenders stop trying to guarantee every MCP server is clean and instead <strong>govern what they can control</strong>: agent capability policies, execution boundaries, and observable tool surfaces.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li>AI agents are being deployed with hundreds of high-risk tools without clear governance frameworks — the capability surface vastly outpaces security controls.</li>
+          <li>The distinction between MCP servers (auditable code execution) and Skills (opaque reasoning-context injection) means defenders need different strategies for each mechanism.</li>
+          <li>Real-world attack chains like ContextCrush and ForcedLeak show these aren't theoretical risks — they're being exploited now.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Inventory and classify all MCP servers and Skills in your agent environment by risk capability.</li>
+          <li>Apply agent capability governance: restrict which tool groups agents can access, rather than trying to audit every upstream package.</li>
+          <li>Treat Skills as untrusted context — validate and sandbox instructions that enter the reasoning window from external sources.</li>
+          <li>Pin MCP server versions instead of using <code>@latest</code> to reduce supply-chain exposure.</li>
+        </ul>
+
+        <h2>Links</h2>
+
+        <ul>
+          <li><a href="https://www.helpnetsecurity.com/2026/05/05/ai-agent-security-skills-blind-spots/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Help Net Security — Noma Security analysis</a></li>
+          <li><a href="https://go.noma.security/lethal-by-design?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Noma Security whitepaper</a></li>
+          <li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">OWASP Top 10 for LLMs (LLM06)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
