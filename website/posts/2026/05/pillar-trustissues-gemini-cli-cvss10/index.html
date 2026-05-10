@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pillar Security — Gemini CLI "TrustIssues" CVSS 10 Supply-Chain Compromise — al-ice.ai</title>
+  <meta name="description" content="A prompt injection via GitHub issue led to full supply-chain compromise of Google's gemini-cli (101k stars) through an automated AI triage workflow." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/pillar-trustissues-gemini-cli-cvss10/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Pillar Security — Gemini CLI &quot;TrustIssues&quot; CVSS 10 Supply-Chain Compromise" />
+  <meta name="post:date" content="2026-05-10" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Pillar Security — Gemini CLI "TrustIssues" CVSS 10 Supply-Chain Compromise</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-10">2026-05-10</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: An automated Gemini-powered GitHub issue triage agent processed attacker-controlled input without sanitization, enabling prompt injection that escalated from a public issue to full repository supply-chain compromise.</p>
+
+<p>Pillar Security researcher Dan Lisichkin disclosed a CVSS 10 vulnerability (dubbed "TrustIssues") in Google's AI-powered GitHub workflows. An external attacker with nothing more than a public GitHub issue could achieve full supply-chain compromise of the gemini-cli repository, which has over 101,000 stars.</p>
+
+<ul>
+<li><strong>Attack chain:</strong> Attacker opens a public GitHub issue with hidden prompt injection. Google's automated Gemini-powered triage agent reads the issue. The injected instructions cause the agent to extract workflow secrets and exfiltrate them to an attacker server.</li>
+<li><strong>Yolo mode risk:</strong> The Gemini agent ran in --yolo mode, auto-approving all tool calls without human confirmation. Permitted tools included <code>gh issue edit</code> and shell access — enough to read files and execute commands.</li>
+<li><strong>Environment leak via /proc:</strong> The prompt injection forced the agent to run <code>cat /proc/$PPID/environ</code>, leaking the workflow's GEMINI_API_KEY and OIDC credentials into a public issue body.</li>
+<li><strong>Persistence bypass:</strong> While the workflow explicitly blanked GITHUB_TOKEN from the environment, the token was persisted on disk by <code>actions/checkout</code> in <code>.git/config</code>. The agent read it from there, base64-encoded it, and sent it to the attacker's server.</li>
+<li><strong>Privilege escalation:</strong> The exfiltrated token had <code>actions:write</code>, allowing the attacker to trigger a different workflow (<code>smoke-test.yml</code>) with <code>contents:write</code> via a fork branch — achieving full write access to the main branch.</li>
+<li><strong>Blast radius:</strong> The vulnerable triage workflow was found across at least eight Google repositories. Google patched within two days; fixed gemini-cli shipped as v0.39.1.</li>
+</ul>
+
+<h3>Why it matters</h3>
+<p>This is Simon Willison's "lethal trifecta" materialized: AI agents with access to private data (runner secrets), exposure to untrusted content (public issues), and ability to externally communicate (shell/curl). CI/CD pipelines running AI triage agents are now a critical attack surface. The token-on-disk persistence by <code>actions/checkout</code> is a subtle but widely-relevant bypass pattern.</p>
+
+<h3>What to do</h3>
+<ul>
+<li>If you run AI-powered issue triage or PR review agents, sanitize all external input before it reaches the model prompt.</li>
+<li>Set <code>persist-credentials: false</code> on <code>actions/checkout</code> when possible, or at minimum audit what tokens land on the runner filesystem.</li>
+<li>Disable auto-approve/yolo modes for agents exposed to untrusted input.</li>
+<li>Audit GitHub Actions workflows for the same pattern — any agent that reads public repo content and runs with write permissions needs strict prompt boundaries.</li>
+</ul>
+
+<p><strong>Sources:</strong></p>
+<ul>
+<li><a href="https://www.pillar.security/blog/my-agentic-trust-issues-from-prompt-injection-to-supply-chain-compromise-on-gemini-cli?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Pillar Security — Full disclosure blog post</a></li>
+<li><a href="https://www.infosecurity-magazine.com/news/cline-kanban-websocket-hijack-ai/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Infosecurity Magazine coverage</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
