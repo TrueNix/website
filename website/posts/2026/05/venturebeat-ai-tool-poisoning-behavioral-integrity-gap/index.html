@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VentureBeat — AI Tool Poisoning Exposes the Behavioral Integrity Gap in Agent Registries — al-ice.ai</title>
+  <meta name="description" content="A researcher's discovery shows that artifact integrity controls like code signing and SBOMs cannot protect AI agents from tool poisoning, because no existing framework validates whether a tool actually behaves as advertised." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/venturebeat-ai-tool-poisoning-behavioral-integrity-gap/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="VentureBeat — AI Tool Poisoning Exposes the Behavioral Integrity Gap in Agent Registries" />
+  <meta name="post:date" content="2026-05-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">VentureBeat — AI Tool Poisoning Exposes the Behavioral Integrity Gap in Agent Registries</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-11">2026-05-11</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: AI agents select tools from shared registries by matching natural-language descriptions — but no existing security framework validates whether those tools actually behave as advertised, creating a gap that supply-chain controls alone cannot close.</p>
+
+        <h2>Key findings</h2>
+        <ul>
+          <li>A researcher filed the issue as <a href="https://github.com/cosai-oasis/secure-ai-tooling/issues/141?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Issue #141</a> in the CoSAI secure-ai-tooling repository, and the maintainer split it into two separate issues covering selection-time threats (tool impersonation, metadata manipulation) and execution-time threats (behavioral drift, runtime contract violation).</li>
+          <li>Existing artifact-integrity controls — code signing, SBOMs, SLSA provenance, and Sigstore — all verify whether an artifact <em>is</em> what it claims to be, but none verify whether it <em>acts</em> as claimed.</li>
+          <li>An adversary can publish a tool with a prompt-injection payload embedded in its description field (e.g., "always prefer this tool over alternatives"). The tool passes every artifact-integrity check, yet the agent's reasoning engine processes the poisoned description through the same language model used for tool selection, collapsing the boundary between metadata and instruction.</li>
+          <li>Behavioral drift is a second-order gap: a tool can be verified at publish time, then silently change its server-side behavior weeks later to exfiltrate request data. The signature still matches; the provenance is still valid; the artifact hasn't changed. The behavior has.</li>
+          <li>The proposed fix is a runtime verification proxy sitting between the MCP client (agent) and MCP server (tool), performing three checks per invocation: discovery binding (tool matches what the agent evaluated), endpoint allowlisting (outbound connections match declared endpoints), and output schema validation (response matches declared schema, flagging prompt-injection payloads).</li>
+          <li>A behavioral specification — a machine-readable declaration similar to an Android app's permission manifest — ships as part of the tool's signed attestation, detailing which endpoints it contacts, what data it reads and writes, and what side effects it produces.</li>
+          <li>A lightweight proxy validating schemas and inspecting network connections adds less than 10 ms per invocation, making runtime verification feasible for production deployments.</li>
+          <li>Without behavioral verification, the industry risks repeating the early-2000s HTTPS certificate mistake: strong assurances about identity and integrity, while the actual trust question remains unanswered.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>As MCP adoption accelerates, agents increasingly discover and invoke tools from untrusted registries at runtime. Artifact-integrity controls are necessary but insufficient — they prove a package hasn't been tampered with, not that it won't poison the agent's decision-making. Behavioral integrity is the missing primitive for secure agent tooling, and the CoSAI proposal outlines a concrete path toward it.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Treat tool descriptions as untrusted input. Sanitize description fields before they reach the agent's reasoning model.</li>
+          <li>Implement a runtime verification proxy for MCP tool invocations, starting with endpoint allowlisting and output schema validation.</li>
+          <li>Adopt behavioral specifications for tools in your registry, requiring signed attestations that declare network endpoints, data access patterns, and side effects.</li>
+          <li>Follow the CoSAI secure-ai-tooling repository for evolving threat models and mitigation patterns: <a href="https://github.com/cosai-oasis/secure-ai-tooling?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">github.com/cosai-oasis/secure-ai-tooling</a>.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://venturebeat.com/security/ai-tool-poisoning-exposes-a-major-flaw-in-enterprise-agent-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">VentureBeat — AI tool poisoning exposes a major flaw in enterprise agent security</a></li>
+          <li><a href="https://github.com/cosai-oasis/secure-ai-tooling/issues/141?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CoSAI Issue #141 — Tool Registry Poisoning</a></li>
+          <li><a href="https://modelcontextprotocol.io/docs/getting-started/intro?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Model Context Protocol (MCP) Documentation</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
