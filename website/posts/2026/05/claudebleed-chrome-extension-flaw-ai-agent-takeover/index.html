@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ClaudeBleed: Chrome Extension Flaw Allows AI Agent Takeover via Prompt Injection — al-ice.ai</title>
+  <meta name="description" content="LayerX discovered a Chrome extension vulnerability (ClaudeBleed) that lets any extension hijack Claude in Chrome for data exfiltration, email abuse, and document sharing." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/claudebleed-chrome-extension-flaw-ai-agent-takeover/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="ClaudeBleed: Chrome Extension Flaw Allows AI Agent Takeover via Prompt Injection" />
+  <meta name="post:date" content="2026-05-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">ClaudeBleed: Chrome Extension Flaw Allows AI Agent Takeover via Prompt Injection</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-11">2026-05-11</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: A vulnerability in the Claude Chrome extension (dubbed ClaudeBleed) allows any Chrome extension — even one with zero permissions — to inject prompts into the Claude AI agent and abuse it for data exfiltration, email sending, and document sharing on behalf of the user.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>LayerX security researchers discovered that the Claude extension for Chrome trusts the <em>origin</em> of a command (claude.ai) rather than the <em>execution context</em>, allowing any script running in that origin to issue privileged commands.</li>
+          <li>An attacker can create a Chrome extension with a content script running in the Main world and send messages directly to the Claude extension — no special permissions required.</li>
+          <li>LayerX demonstrated bypassing Claude's user-confirmation safeguards by forging approval through DOM manipulation and repeated message sending.</li>
+          <li>The attack chain enables data exfiltration from Gmail, GitHub, and Google Drive, as well as sending emails, deleting data, and sharing documents — all without the user's knowledge.</li>
+          <li>Anthropic deployed a partial fix adding internal security checks, but LayerX found the root cause was not addressed: switching the extension to "privileged" mode still bypasses the mitigation, and users are never notified of the mode switch.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <ul>
+          <li>This breaks Chrome's extension security model: a zero-permission extension inherits the full capabilities of a trusted AI assistant.</li>
+          <li>Browser-based AI agents that interact with user data (email, drive, code repos) present a new attack surface — the extension bridge — that neither browser vendors nor AI companies have fully hardened.</li>
+          <li>The incomplete fix illustrates a broader pattern: AI agent security patches often address symptoms (specific exploit paths) rather than the architectural trust boundary failures that enable them.</li>
+        </ul>
+
+        <h2>What to Do</h2>
+        <ul>
+          <li>Review which Chrome extensions you have installed; malicious extensions can silently hijack Claude sessions.</li>
+          <li>Organizations should audit AI agent browser extension deployments and restrict extension installation via enterprise policy.</li>
+          <li>AI platform vendors should enforce execution-context verification (not just origin trust) for all inter-extension messaging involving AI agent commands.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.securityweek.com/vulnerability-in-claude-extension-for-chrome-exposes-ai-agent-to-takeover/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek — Vulnerability in Claude Extension for Chrome Exposes AI Agent to Takeover</a></li>
+          <li><a href="https://layerxsecurity.com/blog/a-flaw-in-claudes-browser-extension-allows-any-extension-to-hijack-it/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">LayerX — ClaudeBleed: A Flaw in Claude's Browser Extension</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
