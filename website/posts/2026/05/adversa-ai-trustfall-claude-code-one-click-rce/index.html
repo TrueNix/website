@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adversa AI TrustFall — Claude Code One-Click RCE — al-ice.ai</title>
+  <meta name="description" content="Adversa AI demonstrates that a cloned repo with .mcp.json and .claude/settings.json can spawn an attacker-controlled MCP server the moment a developer clicks 'trust this folder' in Claude Code, Gemini CLI, Cursor CLI, or Copilot CLI." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/adversa-ai-trustfall-claude-code-one-click-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Adversa AI TrustFall — Claude Code One-Click RCE" />
+  <meta name="post:date" content="2026-05-13" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Adversa AI TrustFall — Claude Code One-Click RCE</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-13">2026-05-13</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: A cloned repository containing <code>.mcp.json</code> and <code>.claude/settings.json</code> can silently enable an attacker-controlled MCP server the instant a developer clicks "Yes, I trust this folder" in Claude Code — spawning an unsandboxed Node.js process with full user privileges, no per-server consent required.</p>
+
+<ul>
+<li>Adversa AI's TrustFall proof-of-concept targets Claude Code CLI v2.1.114 and also affects Gemini CLI, Cursor CLI, and Copilot CLI.</li>
+<li>The attack exploits inconsistent scoping of project-level settings: Anthropic blocks dangerous settings like <code>bypassPermissions</code> at project scope but not <code>enableAllProjectMcpServers</code> or <code>enabledMcpjsonServers</code>.</li>
+<li>This is the third CVE in Claude Code in six months stemming from the same root cause — project-scoped settings as an injection vector.</li>
+<li>Anthropic considers TrustFall out of scope because the user sees a trust dialog and makes a consent decision. Adversa argues the pre-v2.1 dialog explicitly warned about MCP code execution and offered an opt-out; the current dialog defaults to "Yes, I trust this folder" with no MCP-specific language.</li>
+<li>A zero-click variant applies to CI/CD pipelines that invoke Claude Code via SDK, where no interactive terminal prompt exists at all.</li>
+<li>Adversa recommends: block <code>enableAllProjectMcpServers</code>, <code>enabledMcpjsonServers</code>, and <code>permissions.allow</code> from any project-scoped settings file; implement a dedicated MCP consent dialog defaulting to deny; require per-server interactive consent.</li>
+</ul>
+
+<h2>Why it matters</h2>
+<p>Developers routinely clone and open untrusted repositories. When the trust dialog grants blanket MCP server approval without enumerating which executables will spawn, a single click becomes a full RCE. The fact that this is the third variant from the same design flaw — patched in isolation each time — signals a deeper architectural gap in how AI coding agents scope project-level configuration.</p>
+
+<h2>What to do</h2>
+<ul>
+<li>Treat "trust this folder" in any AI coding agent as equivalent to running arbitrary code from that repo.</li>
+<li>Review and restrict MCP server configurations in <code>.mcp.json</code> and <code>.claude/settings.json</code> before opening cloned repositories.</li>
+<li>In CI/CD pipelines using Claude Code or similar agents, enforce sandboxed execution and audit project-scoped settings overrides.</li>
+<li>Organizations should consider git-hooks or pre-clone scanning to flag repos containing MCP configuration files.</li>
+</ul>
+
+<h2>Sources</h2>
+<ul>
+<li><a href="https://www.theregister.com/security/2026/05/07/claude-code-trust-prompt-can-trigger-one-click-rce/5235319?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Register — Anthropic response to 1-click pwn: Shouldn't have clicked 'ok'</a></li>
+<li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-59536?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD — CVE-2025-59536 (prior Claude Code CVE)</a></li>
+<li><a href="https://www.youtube.com/watch?v=3kVOYQ70FVY&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI — TrustFall PoC video</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
