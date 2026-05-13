@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Shai-Hulud — Self-Spreading Supply Chain Worm Hits 169 npm Packages, Mistral AI and UiPath — al-ice.ai</title>
+  <meta name="description" content="The Mini Shai-Hulud supply-chain worm has escalated to 169 npm packages and 373 malicious versions across @tanstack, @mistralai, @uipath, and now PyPI, with autonomous self-propagation via stolen OIDC tokens." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/mini-shai-hulud-npm-escalation-mistral-uipath/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Mini Shai-Hulud — Self-Spreading Supply Chain Worm Hits 169 npm Packages, Mistral AI and UiPath" />
+  <meta name="post:date" content="2026-05-13" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Mini Shai-Hulud — Self-Spreading Supply Chain Worm Hits 169 npm Packages, Mistral AI and UiPath</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-13">2026-05-13</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Mini Shai-Hulud worm now compromises <code>@mistralai</code> and <code>@uipath</code> npm namespaces — packages used in billions of weekly AI/LLM API calls and enterprise RPA pipelines — with malware that executes on import and self-propagates via stolen CI/CD credentials.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>On May 11, 2026 at 19:20 UTC, attackers used a chained GitHub Actions attack (pull_request_target "Pwn Request" + cache poisoning + OIDC token extraction) to compromise the TanStack repository and publish 84 malicious versions across 42 <code>@tanstack/*</code> packages.</li>
+          <li>Within 8.5 hours, the campaign escalated to <strong>169 npm package names and 373 malicious package-version entries</strong>.</li>
+          <li>Compromised namespaces include <code>@tanstack</code> (83 versions), <code>@squawk</code> (87 versions), <code>@uipath</code> (66 versions), <code>@mistralai</code>, <code>@tallyui</code>, <code>@beproduct</code>, <code>@opensearch-project</code>, and unscoped packages including <code>cmux-agent-mcp</code> and <code>agentwork-cli</code>.</li>
+          <li>PyPI packages <code>guardrails-ai</code> and <code>mistralai</code> are now also compromised — executing malicious code on <code>import</code>, not on install.</li>
+        </ul>
+
+        <h2>The attack chain</h2>
+        <ul>
+          <li><strong>Stage 1 — OIDC token theft:</strong> A malicious GitHub Actions workflow step extracts the runner's OIDC token from memory/environment variables, bypassing the need for long-lived npm tokens. The attacker mints a new npm publish token directly.</li>
+          <li><strong>Stage 2 — Malicious delivery:</strong> Compromised packages ship a 2.3 MB heavily obfuscated <code>router_init.js</code> payload (javascript-obfuscator with string-array rotation and control-flow flattening) plus an optional dependency pointing to a GitHub-hosted <code>@tanstack/setup</code> with a <code>prepare</code> lifecycle script that auto-executes the payload.</li>
+          <li><strong>Stage 3 — Credential harvesting:</strong> The implant fingerprints the environment (GitHub Actions, AWS, Kubernetes, Vault), harvests GitHub tokens, npm tokens, AWS keys, Kubernetes service accounts, Vault tokens, SSH keys, and cloud config files. Exfiltration uses a P2P Session network (<code>filev2.getsession.org</code>).</li>
+          <li><strong>Stage 4 — Self-propagation:</strong> Using stolen npm OIDC tokens, the worm enumerates packages the victim can publish to, injects the malicious dependency, bumps the version, and republishes — autonomously, under the stolen identity.</li>
+        </ul>
+
+        <h2>Persistence hooks</h2>
+        <ul>
+          <li>Writes self-copies to <code>.claude/router_runtime.js</code> (Claude Code hooks).</li>
+          <li>Injects into <code>.vscode/tasks.json</code> for VS Code task auto-run.</li>
+          <li>Configures <code>settings.json</code> hooks to re-execute on future Claude Code events.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><code>@mistralai</code> packages are used in billions of weekly API calls for LLM inference, embeddings, and function calling. Any developer or CI environment importing these packages ingests the payload.</li>
+          <li><code>@uipath</code> packages run in enterprise RPA build systems with access to deployment secrets, Kubernetes service accounts, and cloud credentials.</li>
+          <li>PyPI <code>guardrails-ai</code> executes on <code>import</code> — no wheel build, no setup hook. The moment Python code imports guardrails, it downloads a remote <code>.pyz</code> file and runs it.</li>
+          <li>This is a self-spreading, autonomous supply-chain worm — not a targeted incident. It will continue replicating until credentials are revoked.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit all npm and PyPI dependencies for the affected packages and versions listed by <a href="https://lyrie.ai/research/research/2026-05-12-mini-shai-hulud-escalation?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Lyrie Research</a>.</li>
+          <li>Revoke all npm publish tokens, GitHub Actions OIDC tokens, and registry credentials for affected scopes.</li>
+          <li>Scan developer machines and CI runners for <code>.claude/router_runtime.js</code>, modified <code>.vscode/tasks.json</code>, and the obfuscated <code>router_init.js</code> payload.</li>
+          <li>Review GitHub Actions workflows for unauthorized <code>pull_request_target</code> triggers and cache poisoning.</li>
+          <li>Pin dependency versions and use lockfiles with integrity hashes — never float <code>@mistralai</code>, <code>@uipath</code>, or <code>guardrails-ai</code> without verification.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://lyrie.ai/research/research/2026-05-12-mini-shai-hulud-escalation?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Lyrie Research — Mini Shai-Hulud escalation report</a></li>
+          <li><a href="https://github.com/advisories/GHSA-6rmh-7xcm-cpxj?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitHub Advisory GHSA-6rmh-7xcm-cpxj (PraisonAI, related rapid-exploitation context)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
