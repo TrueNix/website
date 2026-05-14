@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>vm2 — Dozen Critical Sandbox Escape CVEs in Node.js Code Execution Library — al-ice.ai</title>
+  <meta name="description" content="Twelve sandbox escape vulnerabilities in the vm2 Node.js library (CVE-2026-24118 through CVE-2026-44009) threaten AI coding agents and code interpreters that rely on JS isolation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/vm2-twelve-sandbox-escape-cves-nodejs-code-execution/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="vm2 — Dozen Critical Sandbox Escape CVEs in Node.js Code Execution Library" />
+  <meta name="post:date" content="2026-05-14" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">vm2 — Dozen Critical Sandbox Escape CVEs in Node.js Code Execution Library</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-14">2026-05-14</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: vm2 is widely used by AI coding agents, code interpreters, and LLM-powered code execution platforms to sandbox untrusted JavaScript — every one of these twelve bypasses means an injected prompt can escape the sandbox and run arbitrary code on the host machine.</p>
+
+        <ul>
+          <li><strong>CVE-2026-24118</strong> (CVSS 9.8) — Sandbox escape via <code>__lookupGetter__</code> on proxied objects, allowing sandboxed code to reach host prototypes and execute arbitrary code.</li>
+          <li><strong>CVE-2026-24120</strong> (CVSS 9.8) — Prototype pollution through frozen object manipulation that breaks vm2's proxy-based isolation boundary.</li>
+          <li><strong>CVE-2026-24781</strong> (CVSS 9.8) — Host object reference leak via cross-realm object comparison, exposing native Node.js APIs to sandboxed code.</li>
+          <li><strong>CVE-2026-43999</strong> (CVSS 9.9) — NodeVM builtin allowlist bypass via <code>Module._load()</code>. The <code>module</code> builtin loads any module by name directly in the host context, completely bypassing vm2's builtin restriction and enabling access to blocked builtins like <code>child_process</code>.</li>
+          <li><strong>CVE-2026-43997</strong> — Host object access escape via direct host property traversal.</li>
+          <li><strong>CVE-2026-43998</strong> — Sandbox escape via symlink bypass in the virtual filesystem layer.</li>
+          <li><strong>CVE-2026-44005</strong> through <strong>CVE-2026-44009</strong> — Additional sandbox bypasses covering proxy handler manipulation, realm confusion, and constructor leakage.</li>
+          <li>Multiple researchers contributed findings: XmiliaH reported five flaws, with additional discoveries by 0x5t, c0rydoras, bugbunny-research, hongancalif, and Akshat Sinha.</li>
+          <li>Patches are available in vm2 3.11.2. Maintainer Patrik Simek has acknowledged that new bypasses will likely continue to be discovered as JavaScript and Node.js evolve.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>vm2 is the go-to JavaScript sandbox for AI code execution platforms. When LLM agents are given code interpreter tools, vm2 is often the isolation layer. Each of these twelve bypasses represents a path from "LLM generates malicious JS" to "host compromise." The recurring pattern — prototype pollution, proxy handler bugs, realm confusion — reflects a fundamental challenge: JavaScript's dynamic object model is inherently hostile to sandbox boundaries built on proxy interception.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Update to vm2 3.11.2 immediately if you use it for AI code execution or code interpreters.</li>
+          <li>Consider replacing vm2 with process-level isolation (Docker containers, firejail, or gVisor) for untrusted code execution — proxy-based JS sandboxes have proven fundamentally fragile.</li>
+          <li>Audit AI agent configurations: disable code execution tools unless strictly required, and restrict to read-only operations where possible.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://thehackernews.com/2026/05/vm2-nodejs-library-vulnerabilities.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">The Hacker News — vm2 Node.js Library Vulnerabilities Enable Sandbox Escape</a></li>
+          <li><a href="https://advisories.gitlab.com/npm/vm2/CVE-2026-43999/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">GitLab Advisory — CVE-2026-43999 (NodeVM allowlist bypass)</a></li>
+          <li><a href="https://github.com/patriksimek/vm2/security/advisories/GHSA-grj5-jjm8-h35p?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">GitHub Advisory — CVE-2026-24118</a></li>
+          <li><a href="https://github.com/patriksimek/vm2/releases/tag/v3.11.2?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">vm2 v3.11.2 Release</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
