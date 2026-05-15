@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Socket & StepSecurity — Malicious node-ipc npm Packages Steal Claude AI, Kiro IDE Credentials — al-ice.ai</title>
+  <meta name="description" content="Three malicious versions of the widely-used node-ipc npm package harvest 90 categories of developer and cloud credentials — including Claude AI and Kiro IDE settings — and exfiltrate via DNS TXT records to a fake Azure domain." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/node-ipc-npm-supply-chain-stealer-targets-ai-dev-tools/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Socket & StepSecurity — Malicious node-ipc npm Packages Steal Claude AI, Kiro IDE Credentials" />
+  <meta name="post:date" content="2026-05-15" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Socket & StepSecurity — Malicious node-ipc npm Packages Steal Claude AI, Kiro IDE Credentials</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-15">2026-05-15</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: The compromised node-ipc package specifically targets AI development environments, harvesting Claude AI and Kiro IDE settings alongside cloud and infrastructure credentials — directly threatening the toolchains used to build and deploy AI agent systems.</p>
+
+<p>Three versions of the widely-used <code>node-ipc</code> npm package (7M+ weekly downloads) have been confirmed as malicious, carrying an obfuscated credential stealer and backdoor that fires on every <code>require()</code> without relying on npm lifecycle hooks.</p>
+
+<ul>
+<li>Confirmed malicious versions: <code>node-ipc@9.1.6</code>, <code>9.2.3</code>, and <code>12.0.1</code>, published by an account named "atiertant" with no prior history on the package.</li>
+<li>The payload fingerprints the host environment, enumerates local files, compresses collected data, and exfiltrates to the C2 domain <code>sh.azurestaticprovider[.]net</code>.</li>
+<li>It targets 90 categories of credentials including AWS, GCP, Azure, SSH keys, Kubernetes tokens, GitHub CLI configs, <strong>Claude AI and Kiro IDE settings</strong>, Terraform state, database passwords, and shell history.</li>
+<li>Version 12.0.1 includes a SHA-256 fingerprint gate — it only activates on machines whose path matches a pre-computed hash, suggesting the attacker targeted a specific project or developer. The 9.x versions run unconditionally.</li>
+<li>Exfiltration uses a dual-channel approach: HTTPS POST and DNS TXT record queries with the resolver redirected to the C2 IP, bypassing corporate DNS logging entirely.</li>
+<li>The malware forks a detached background child process, so exfiltration continues even after the parent Node.js process terminates.</li>
+<li>The package had not been updated since August 2024 — a 21-month dormant period before the malicious versions appeared, consistent with maintainer account compromise or deliberate backdoor insertion.</li>
+<li>This is a separate campaign from the Mini Shai-Hulud attack that hit TanStack and Mistral packages earlier this month, though both target the same npm ecosystem with credential-theft payloads.</li>
+</ul>
+
+<h2>Why it matters</h2>
+<p>AI development toolchains concentrate high-value credentials in predictable locations — Claude API keys, Kiro IDE configs, vector DB connections, and model provider tokens. A single compromised dependency like node-ipc, which is pulled in transitively by many projects, can silently harvest the keys needed to access AI model APIs, agent orchestration frameworks, and production inference infrastructure.</p>
+
+<h2>What to do</h2>
+<ul>
+<li>Audit <code>package-lock.json</code> and <code>yarn.lock</code> for any of the three malicious versions and pin to the last known-good release.</li>
+<li>Rotate all credentials that could have been exposed on machines where the package was installed — especially cloud provider keys, Claude AI API tokens, and Kiro IDE settings.</li>
+<li>Check DNS logs for queries to <code>sh.azurestaticprovider[.]net</code> and monitor for unexpected DNS TXT record exfiltration traffic.</li>
+<li>Consider deploying npm supply chain integrity tools (Socket, Socket CI, or similar) to catch malicious package behavior before it reaches production.</li>
+</ul>
+
+<ul>
+<li><a href="https://socket.dev/blog/node-ipc-package-compromised?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — node-ipc package compromised</a></li>
+<li><a href="https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">StepSecurity — Active supply chain attack: Malicious node-ipc versions</a></li>
+<li><a href="https://socket.dev/supply-chain-attacks/node-ipc?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket — node-ipc supply chain attack detail page</a></li>
+<li><a href="https://thehackernews.com/2026/05/stealer-backdoor-found-in-3-node-ipc.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — Stealer backdoor in 3 node-ipc versions</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
