@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP — Shai-Hulud Worm Source Code Open-Sourced, BreachForums Contest Launched — al-ice.ai</title>
+  <meta name="description" content="TeamPCP released the Shai-Hulud supply-chain worm source code publicly and launched a $1K BreachForums bounty for new package compromises, dramatically lowering the barrier for copycat attacks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/teampcp-shai-hulud-open-source-contest/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP — Shai-Hulud Worm Source Code Open-Sourced, BreachForums Contest Launched" />
+  <meta name="post:date" content="2026-05-16" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP — Shai-Hulud Worm Source Code Open-Sourced, BreachForums Contest Launched</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-16">2026-05-16</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Shai-Hulud worm targeted AI-adjacent developer toolchains (npm, PyPI) and compromised packages used in AI/ML pipelines including TanStack, Mistral AI, and UiPath — its open-source release risks spawning a wave of copycat attacks against AI infrastructure supply chains.</p>
+
+        <h2>What happened</h2>
+
+        <p>TeamPCP, the threat group behind the Mini Shai-Hulud campaign that compromised 737 malicious package versions across 169 npm packages since April 29, 2026, has taken two escalatory steps:</p>
+
+        <ul>
+          <li><strong>Source code release:</strong> On May 12, TeamPCP published the full source code of the Shai-Hulud worm, a sophisticated supply-chain attack tool with JavaScript and Python execution paths that autonomously steals developer credentials, exfiltrates encrypted data to attacker-controlled GitHub repos, and self-propagates via stolen OIDC tokens and npm registry access.</li>
+          <li><strong>BreachForums contest:</strong> The group launched a $1,000 bounty on BreachForums, requiring participants to use the Shai-Hulud tool to compromise open-source packages and submit proof of access alongside their forum ID.</li>
+        </ul>
+
+        <h2>Technical details</h2>
+
+        <ul>
+          <li>The worm captures valid npm tokens, modifies registry files, injects malicious scripts (e.g., <code>setup.mjs</code>) into the <code>preinstall</code> phase, and publishes compromised packages.</li>
+          <li>Exfiltration channels include encrypted JSON commits to Dune-themed GitHub repositories and a dedicated C2 server using Session P2P messenger.</li>
+          <li>"Dead-drop" commits using phrases like "OhNoWhatsGoingOnWithGitHub:" serve as base64-encoded token storage.</li>
+          <li>Targets include npm tokens, GitHub credentials, AWS keys, Kubernetes secrets, Docker Hub tokens, and AI platform API keys.</li>
+          <li>The campaign previously hit SAP CAP packages, TanStack, Mistral AI (@mistralai), UiPath, and PyPI (PyTorch Lightning).</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li>Open-sourcing the worm dramatically lowers the barrier for less sophisticated threat actors to mount supply-chain attacks.</li>
+          <li>The BreachForums contest creates financial incentives for copycats, potentially triggering a sustained spike in package compromise activity.</li>
+          <li>AI development environments are particularly vulnerable — they routinely install packages from npm/PyPI, store cloud credentials locally, and run CI/CD pipelines with elevated permissions.</li>
+          <li>Security researchers warn that TeamPCP's own actions may become difficult to attribute as copycat campaigns emerge using the same tooling.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Audit package-lock.json, yarn.lock, poetry.lock, and requirements.txt for packages published after April 29, 2026.</li>
+          <li>Rotate all npm, PyPI, GitHub, AWS, and Kubernetes credentials on affected developer workstations.</li>
+          <li>Enable package signing verification (npm provenance, PyPI trusted publishers).</li>
+          <li>Monitor CI/CD pipelines for unauthorized package publish events or anomalous token usage.</li>
+          <li>Use tools such as Snyk, npm audit, or dependency scanners to check for known malicious versions (e.g., GHSA-g7cv-rxg3-hmpx, CVE-2026-45321).</li>
+        </ul>
+
+        <h2>Sources</h2>
+
+        <ul>
+          <li><a href="https://www.securityweek.com/teampcp-ups-the-game-releases-shai-hulud-worms-source-code/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek — TeamPCP Ups the Game, Releases Shai-Hulud Worm's Source Code</a></li>
+          <li><a href="https://news.risky.biz/risky-bulletin-shai-hulud-goes-open-source/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Risky Bulletin — Shai-Hulud Goes Open-Source</a></li>
+          <li><a href="https://devops.com/widespread-mini-shai-hulud-campaign-is-a-matter-of-trust/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">DevOps.com — Widespread Mini Shai-Hulud Campaign Is a Matter of Trust</a></li>
+          <li><a href="https://cyberpress.org/shai-hulud-steals-developer-secrets/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CyberPress — Shai-Hulud Worm Steals Developer Secrets Across npm, GitHub, AWS, and Kubernetes</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cyera — Four Chainable OpenClaw CVEs Expose 180K+ AI Agent Servers — al-ice.ai</title>
+  <meta name="description" content="Cyera disclosed four chainable vulnerabilities in OpenClaw (CVSS 7.7–9.6), including a critical sandbox escape and privilege escalation, affecting 245K publicly exposed AI agent deployments." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/cyera-openclaw-claw-chain-cves/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Cyera — Four Chainable OpenClaw CVEs Expose 180K+ AI Agent Servers" />
+  <meta name="post:date" content="2026-05-16" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Stack CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Cyera — Four Chainable OpenClaw CVEs Expose 180K+ AI Agent Servers</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-16">2026-05-16</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Autonomous AI agents are increasingly deployed with broad access to internal systems and credentials — Cyera's "Claw Chain" research shows how four chainable flaws in OpenClaw let an attacker use the agent itself to escalate from a sandbox foothold to full host control.</p>
+
+        <h2>What happened</h2>
+
+        <p>Cyera's research team disclosed four previously unknown vulnerabilities in OpenClaw, one of the most widely deployed open-source platforms for autonomous AI agents. All four were responsibly disclosed to maintainers in April 2026 and have since been patched.</p>
+
+        <ul>
+          <li><strong>CVE-2026-44112 (CVSS 9.6 — Critical):</strong> TOCTOU filesystem write escape in the OpenShell sandbox. A race condition lets attackers redirect writes outside the sandbox boundary, enabling configuration tampering and persistent backdoor placement on the host.</li>
+          <li><strong>CVE-2026-44115 (CVSS 8.8 — High):</strong> Execution allowlist gap. Environment variables including API keys and credentials leak through unquoted heredocs that appear safe at validation time but expand at shell execution.</li>
+          <li><strong>CVE-2026-44118 (CVSS 7.8 — High):</strong> MCP loopback privilege escalation. OpenClaw trusts a client-controlled <code>senderIsOwner</code> flag without validating it against the authenticated session, letting a local process elevate to owner-level privileges and control gateway configuration, cron scheduling, and execution environments.</li>
+          <li><strong>CVE-2026-44113 (CVSS 7.7 — High):</strong> TOCTOU filesystem read escape. The same race-condition pattern in read operations lets attackers swap a validated file path with a symbolic link pointing outside the allowed mount root, exposing system files and credentials.</li>
+        </ul>
+
+        <h2>The attack chain</h2>
+
+        <p>The individual vulnerabilities are serious, but the combined effect is the critical finding. From a single foothold — a malicious plugin, prompt injection, or compromised external input — an attacker can chain three of the flaws in parallel:</p>
+
+        <ol>
+          <li><strong>Foothold:</strong> Malicious code executes inside the OpenShell sandbox.</li>
+          <li><strong>Data exfiltration:</strong> TOCTOU read escape (CVE-2026-44113) and env-var disclosure (CVE-2026-44115) expose credentials and sensitive files beyond the agent's intended scope.</li>
+          <li><strong>Privilege escalation:</strong> MCP loopback flaw (CVE-2026-44118) elevates the process to owner-level control of the agent runtime.</li>
+          <li><strong>Persistence:</strong> TOCTOU write escape (CVE-2026-44112) plants backdoors and alters agent behavior.</li>
+        </ol>
+
+        <h2>Why it matters</h2>
+
+        <ul>
+          <li>Shodan and Zoomeye scans identified ~65K and ~180K publicly accessible OpenClaw servers respectively — ~245K total exposed instances as of May 2026.</li>
+          <li>Each step in the chain looks like normal agent behavior to traditional controls, making detection significantly harder.</li>
+          <li>OpenClaw agents typically operate with broad access to internal systems, SaaS data, and credentials — often with weaker governance than the systems they connect to.</li>
+          <li>The <code>senderIsOwner</code> design flaw demonstrates a broader pattern: AI agent platforms that trust client-provided identity signals without server-side validation create trivial privilege escalation paths.</li>
+        </ul>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Update OpenClaw to the latest patched version (post-April 23, 2026 patches).</li>
+          <li>Audit publicly exposed instances and restrict network access to trusted ranges.</li>
+          <li>Review agent permission scopes — apply the principle of least privilege to agent tool access.</li>
+          <li>Monitor for anomalous agent behavior: unexpected file writes outside sandbox boundaries, environment variable access patterns, or unauthorized configuration changes.</li>
+        </ul>
+
+        <h2>Sources</h2>
+
+        <ul>
+          <li><a href="https://www.cyera.com/blog/claw-chain-cyera-research-unveil-four-chainable-vulnerabilities-in-openclaw?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cyera Research — "Claw Chain" blog post</a></li>
+          <li><a href="https://thehackernews.com/2026/05/four-openclaw-flaws-enable-data-theft.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — Four OpenClaw Flaws Enable Data Theft, Privilege Escalation, and Persistence</a></li>
+          <li><a href="https://cybersecuritynews.com/openclaw-chain-vulnerabilities/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cybersecurity News — OpenClaw Chain Vulnerabilities Expose 245,000 Public AI Agent Servers</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
