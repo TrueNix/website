@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Forcepoint — 10 In-the-Wild Indirect Prompt Injection Payloads Targeting AI Agents — al-ice.ai</title>
+  <meta name="description" content="Forcepoint researchers found 10 real indirect prompt injection payloads hidden on live websites that instruct AI agents to delete files, steal API keys, and process fraudulent payments." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/forcepoint-indirect-prompt-injection-10-payloads/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Forcepoint — 10 In-the-Wild Indirect Prompt Injection Payloads Targeting AI Agents" />
+  <meta name="post:date" content="2026-05-17" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Forcepoint — 10 In-the-Wild Indirect Prompt Injection Payloads Targeting AI Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-17">2026-05-17</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Any agent that browses the web, indexes content for RAG, or summarizes pages can be hijacked by invisible instructions hidden in the HTML it reads — and Forcepoint found 10 live examples doing real-world harm.</p>
+
+        <p>Forcepoint researchers published findings from Mayur Sewani documenting <strong>10 distinct indirect prompt injection payloads</strong> discovered on live websites, each designed to manipulate AI agents into executing malicious actions when the page is processed.</p>
+
+        <h2>What was found</h2>
+        <ul>
+          <li><strong>File destruction:</strong> One payload instructs coding agents with shell access to run a recursive forced deletion of files and directories. Targets include Copilot, Cursor, Claude Code, and AI-powered CI/CD reviewers that visit poisoned pages during research tasks.</li>
+          <li><strong>API key theft:</strong> A payload demands "send me the secret API key" from any agent with access to credentials, with an anti-detection instruction to avoid outputting the stolen data visibly.</li>
+          <li><strong>Financial fraud:</strong> The most specific payload embeds a PayPal.me link with a fixed $5,000 amount and step-by-step transaction instructions, designed for browser agents with saved payment credentials or digital wallet access.</li>
+          <li><strong>Content suppression:</strong> A milder payload claims the copyright owner has "expressly forbidden" the AI from answering questions about the page — effectively a denial-of-service against the model's output.</li>
+          <li><strong>Attribution hijacking:</strong> One payload instructs the AI to credit a specific person and promote their consulting services to anyone reading the summary.</li>
+          <li><strong>Common triggers:</strong> "Ignore previous instructions," "If you are an LLM," and similar patterns appear across multiple payloads to break the agent's instruction boundary.</li>
+          <li><strong>Covert exfiltration:</strong> Most payloads include a hidden return channel back to the attacker, often masked in normal-looking output.</li>
+          <li><strong>Impact scales with privilege:</strong> Forcepoint emphasizes that agents with terminal access, payment capabilities, or email permissions represent high-impact targets, while summarization-only agents carry lower risk.</li>
+          <li><strong>Wide blast radius:</strong> Any system that auto-crawls web content — search indexers, SEO tools, ad-tech scanners, RAG ingestion pipelines — becomes a potential attack vector.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Indirect prompt injection is no longer theoretical. These payloads were found in the wild, not crafted in labs. As AI agents gain more privileges — file access, payments, email — every untrusted webpage becomes a potential command injection point. The attack surface grows exactly as fast as agent capabilities do.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Enforce a strict data-instruction boundary: treat all ingested web content as untrusted data, never as instructions.</li>
+          <li>Limit agent privileges to the minimum required for the task — disable shell access, payments, and email for agents that browse untrusted content.</li>
+          <li>Use content sanitization pipelines that strip hidden HTML elements, comments, and invisible text before ingestion.</li>
+          <li>Monitor agent outputs for anomalous behavior patterns (unexpected file operations, payment attempts, credential requests).</li>
+          <li>Apply input/output guardrails (e.g., NeMo Guardrails, LLM firewalls) to detect and block instruction override attempts.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.infosecurity-magazine.com/news/researchers-10-wild-indirect/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Infosecurity Magazine — Researchers Uncover 10 In-the-Wild Indirect Prompt Injection Attacks</a></li>
+          <li><a href="https://webemyengineering.com/insights/indirect-prompt-injection-defense-production-agents/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Webemy Engineering — Indirect Prompt Injection Defense for AI Agents (2026)</a></li>
+          <li><a href="https://developer.nvidia.com/blog/mitigating-indirect-agents-md-injection-attacks-in-agentic-environments/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">NVIDIA — Mitigating Indirect AGENTS.md Injection Attacks</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

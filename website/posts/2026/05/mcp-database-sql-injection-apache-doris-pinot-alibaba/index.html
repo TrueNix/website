@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MCP Database Flaws — Apache Doris, Pinot and Alibaba RDS Vulnerabilities — al-ice.ai</title>
+  <meta name="description" content="Security researcher Tomer Peled found three critical MCP server vulnerabilities affecting Apache Doris, Pinot, and Alibaba RDS — including SQL injection and metadata exfiltration — with one vendor declining to patch." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/mcp-database-sql-injection-apache-doris-pinot-alibaba/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="MCP Database Flaws — Apache Doris, Pinot and Alibaba RDS Vulnerabilities" />
+  <meta name="post:date" content="2026-05-17" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">MCP Database Flaws — Apache Doris, Pinot and Alibaba RDS Vulnerabilities</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-17">2026-05-17</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: MCP servers that sit between AI agents and production databases lack proper input validation, authentication, and query sanitization — turning agent tool calls into direct database attacks.</p>
+
+        <p>Akamai security analyst Tomer Peled discovered <strong>three critical vulnerabilities in MCP (Model Context Protocol) servers</strong> for popular database projects, revealing a systemic pattern of missing security validation between MCP servers and their back ends. Peled presented findings on May 13 and plans a full talk at x33fcon.</p>
+
+        <h2>Apache Doris MCP — CVE-2025-66335 (Patched)</h2>
+        <ul>
+          <li>SQL injection through the <code>db_name</code> parameter in the <code>exec_query</code> function, versions before 0.6.1.</li>
+          <li>The SQL validator only checks the first portion of the query; the injected payload bypasses it entirely.</li>
+          <li>Any client connected to the Doris MCP server can execute arbitrary commands on the database instance.</li>
+          <li>Doris serves 10,000+ mid- and large-enterprise users for analytics and search workloads.</li>
+          <li>Apache issued a patch in December; CVE assigned.</li>
+        </ul>
+
+        <h2>Apache Pinot MCP — Unauthenticated Access (Partially Mitigated)</h2>
+        <ul>
+          <li>StarTree's MCP integration for Pinot used HTTP transport with no authentication requirement before v2.0.0.</li>
+          <li>Externally reachable MCP endpoints allowed unauthenticated query execution, enabling full database takeover.</li>
+          <li>StarTree added OAuth as an authentication option, reducing exposure, but SQL injection remains in the code.</li>
+          <li>Affecting Pinot MCP v1.1.0 and earlier.</li>
+          <li>An open security issue exists in the MCP Pinot GitHub repository.</li>
+        </ul>
+
+        <h2>Alibaba RDS MCP — Information Disclosure (Unpatched)</h2>
+        <ul>
+          <li>The RDS MCP server does not authenticate clients before invoking the RAG tool.</li>
+          <li>Any endpoint reacher can issue requests and retrieve vector index contents, including table names, schema definitions, and sensitive metadata.</li>
+          <li>Alibaba declined to patch the vulnerability.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>MCP servers have become the standard bridge between AI agents and enterprise data stores. The pattern across all three findings is the same: <strong>MCP servers pass agent inputs directly to back-end databases without adequate validation</strong>. As Peled notes, "These gaps will become high-value targets for attackers and we expect more of these issues to surface." Every database project rushing to ship an MCP server is potentially replicating these mistakes.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update Apache Doris MCP</strong> to v0.6.1+ immediately if you run it.</li>
+          <li><strong>Require authentication</strong> on all MCP endpoints — never expose MCP servers to the internet without access controls.</li>
+          <li><strong>Validate and sanitize all parameters</strong> passed from MCP tool calls to back-end queries; parameterize SQL, not string concatenation.</li>
+          <li><strong>Audit MCP server code</strong> for the same pattern: does user-controlled input reach the database without validation?</li>
+          <li><strong>Network-isolate MCP-to-database connections</strong> — use internal networks, never public-facing endpoints for database back ends.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.theregister.com/security/2026/05/13/bug-hunter-tracks-down-three-serious-mcp-database-flaws-one-left-unpatched/5238916?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">The Register — Bug hunter tracks down three massive MCP database flaws</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-66335?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">NVD — CVE-2025-66335 (Apache Doris)</a></li>
+          <li><a href="https://startree.ai/resources/startree-mcp-server-for-apache-pinot/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">StarTree — MCP Server for Apache Pinot</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
