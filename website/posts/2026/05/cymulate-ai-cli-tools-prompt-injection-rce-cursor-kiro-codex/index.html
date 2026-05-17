@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cymulate — Prompt Injection Triggers Zero-Click RCE in AI CLI Tools (Cursor, Kiro, Codex, Gemini) — al-ice.ai</title>
+  <meta name="description" content="Cymulate researchers uncovered zero-click RCE chains across Cursor CLI, AWS Kiro, Codex Desktop, and Gemini CLI — where a single prompt injection can silently execute code via Windows PATH hijacking and config file poisoning." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/cymulate-ai-cli-tools-prompt-injection-rce-cursor-kiro-codex/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Cymulate — Prompt Injection Triggers Zero-Click RCE in AI CLI Tools (Cursor, Kiro, Codex, Gemini)" />
+  <meta name="post:date" content="2026-05-17" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Cymulate — Prompt Injection Triggers Zero-Click RCE in AI CLI Tools (Cursor, Kiro, Codex, Gemini)</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-17">2026-05-17</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Multiple widely-used AI CLI coding assistants — Cursor CLI, AWS Kiro, Codex Desktop, and Gemini CLI — can silently execute attacker-controlled code on a developer's machine through a single prompt injection, exploiting Windows PATH resolution and IDE config file poisoning without any user interaction beyond opening a project.</p>
+
+        <h2>Details</h2>
+
+        <ul>
+          <li>Cymulate Research Labs identified two attack classes that turn everyday AI tool usage into silent system compromise: <strong>arbitrary binary execution via untrusted resolution</strong> and <strong>arbitrary command execution via configuration poisoning</strong>.</li>
+          <li><strong>Binary execution via PATH hijacking</strong> — AI CLI tools on Windows rely on the default executable search order, which prioritizes the current working directory over trusted system paths. An attacker-controlled file placed in a workspace (via a cloned repository, extracted archive, or binary introduced through prompt injection) can be executed automatically without user approval, signature validation, or warning.</li>
+          <li><strong>Config file poisoning</strong> — If an LLM's file-write capability allows modification of execution-sensitive files such as <code>tasks.json</code> or <code>settings.json</code> without user approval, a single prompt injection can inject commands that execute at the OS level when the IDE reopens the workspace. No second request needed.</li>
+          <li>Affected products: <strong>Cursor CLI, AWS Kiro, Codex Desktop App, and Gemini CLI</strong>. The chain works end-to-end: prompt injection → file write → config poisoning → OS-level command execution on workspace reopen.</li>
+          <li>Vendor responses varied significantly. <strong>GitHub</strong> was the only vendor to properly triage and validate the report. One vendor issued a bounty but deprioritized remediation. Others closed reports without meaningful technical engagement — some shifting responsibility to users or dismissing the findings entirely.</li>
+          <li>The tools with the highest impact remain vulnerable, meaning routine actions like opening a project or interacting with AI-generated content can lead to silent code execution with no visible indicators.</li>
+          <li>Cymulate published the research as part of a two-part series, with Part 1 covering the broader problem of AI tools shipping with security left behind during rapid development cycles.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+
+        <p>This is not an isolated coding bug — it's a systemic failure in how AI agent tooling handles untrusted input from the agents it runs. The same deep integration that makes these tools productive is precisely what makes them dangerous: AI CLI tools inherit the trust level of the developer's shell and workspace, yet receive no equivalent scrutiny for the content they process. When an LLM can write files to the working directory, and the shell resolves binaries from that same directory, a prompt injection becomes equivalent to handing an attacker a remote shell.</p>
+
+        <h2>What to Do</h2>
+
+        <ul>
+          <li>Audit all AI CLI tools in your development environment for file-write and binary-resolution behavior on Windows and Unix hosts.</li>
+          <li>Enforce workspace isolation: treat every AI-assisted project directory as potentially hostile; never run AI CLI tools in directories containing sensitive credentials.</li>
+          <li>Configure PATH ordering to prioritize system directories over the current working directory for all development tooling.</li>
+          <li>Restrict LLM file-write permissions to read-only mode for config-sensitive files (<code>tasks.json</code>, <code>settings.json</code>, <code>.vscode/</code>) where possible.</li>
+        </ul>
+
+        <h2>Sources</h2>
+
+        <ul>
+          <li><a href="https://cymulate.com/blog/zero-click-rce-prompt-injection-ai-tools/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cymulate — When AI Tools Become the Backdoor: Zero-Click RCE via Prompt Injection</a></li>
+          <li><a href="https://cymulate.com/blog/the-race-to-ship-ai-tools-left-security-behind/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cymulate Part 1 — The Race to Ship AI Tools Left Security Behind</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
