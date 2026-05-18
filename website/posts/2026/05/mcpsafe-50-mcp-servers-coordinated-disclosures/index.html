@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MCPSafe — 7 Coordinated Disclosures After Scanning 50+ MCP Servers — al-ice.ai</title>
+  <meta name="description" content="MCPSafe scanned 50+ MCP server repositories and found indirect prompt injection, SSRF, and annotation mislabeling across official servers from Anthropic, GitHub, Atlassian, Microsoft, and more." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/mcpsafe-50-mcp-servers-coordinated-disclosures/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="MCPSafe — 7 Coordinated Disclosures After Scanning 50+ MCP Servers" />
+  <meta name="post:date" content="2026-05-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">MCPSafe — 7 Coordinated Disclosures After Scanning 50+ MCP Servers</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-18">2026-05-18</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: MCP servers are the tool-layer for agentic AI systems — vulnerabilities in servers from Atlassian, GitHub, Anthropic, Microsoft, and Cloudflare expose the bridge between LLM instructions and real-world actions.</p>
+
+        <p>MCPSafe, an automated security scanning platform for Model Context Protocol servers, released findings from three months of automated analysis across 50+ MCP repositories on GitHub, npm, and PyPI. The platform uses a five-model LLM judge panel with a custom AIVSS (AI Vulnerability Severity Score) rubric. The majority of scanned servers received a grade of D or lower.</p>
+
+        <h2>Key findings</h2>
+
+        <ul>
+          <li><strong>Indirect prompt injection is the most common critical.</strong> Official MCP servers from Atlassian, GitHub, and Cloudflare fetch Jira tickets, GitHub issues, Confluence pages, and web content verbatim — returning user-controlled data to the LLM without provenance delimiters. An attacker who can write to those content sources can inject instructions directly into the agent's context window.</li>
+          <li><strong>ReadOnlyHint mislabeling creates silent privilege escalation.</strong> GitHub's official <code>github-mcp-server</code> sets <code>readOnlyHint: true</code> on tools that can be combined in dynamic toolset mode to achieve write operations. Agents that trust this annotation may skip confirmation prompts, creating an uncontrolled escalation path.</li>
+          <li><strong>SSRF in HTTP-calling tools across multiple vendors.</strong> Microsoft's <code>playwright-mcp</code> navigate tool accepts arbitrary URLs without allowlist validation. An attacker controlling task content can force the MCP server to probe internal infrastructure or metadata endpoints.</li>
+          <li><strong>Supabase MCP received the highest severity score (AIVSS 8.8).</strong> IDOR combined with hidden prompt injection in the <code>search_docs</code> tool allows unauthorized document access through the agent layer.</li>
+        </ul>
+
+        <h2>The disclosures (D001–D007)</h2>
+
+        <ul>
+          <li><strong>D001 — Anthropic:</strong> Indirect prompt injection in MCP servers (AIVSS 6.0, Reported)</li>
+          <li><strong>D002 — Cloudflare:</strong> Tool poisoning chain via document retrieval (AIVSS 7.1, Reported)</li>
+          <li><strong>D003 — Supabase:</strong> IDOR + hidden prompt injection in search_docs (AIVSS 8.8, Reported)</li>
+          <li><strong>D004 — Microsoft:</strong> SSRF in playwright-mcp navigate tool (AIVSS 7.1, Reported)</li>
+          <li><strong>D005 — Obsidian:</strong> SSRF in obsidian-mcp-tools fetch tool (AIVSS 7.1, Reported)</li>
+          <li><strong>D006 — GitHub:</strong> ReadOnlyHint mislabeling in dynamic toolset mode (AIVSS 7.1, Reported)</li>
+          <li><strong>D007 — Atlassian:</strong> Indirect prompt injection + tool poisoning via remote endpoint (AIVSS 6.0/7.1, Reported)</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>These are not obscure community projects — these are official MCP servers from major vendors. Every MCP server that returns fetched content verbatim to the LLM without provenance delimiters is an indirect prompt injection vector. For enterprises deploying agent systems, this means any external data source (Jira, GitHub, Confluence, docs) becomes an attack surface that bypasses traditional network controls.</p>
+
+        <p>The ReadOnlyHint mislabeling finding is particularly concerning: it shows that MCP's advisory annotations are being trusted as enforcement boundaries, which they are not by design.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Wrap all fetched external content in provenance delimiters before returning to the LLM (e.g., <code>&lt;external_content trusted="false"&gt;</code>)</li>
+          <li>Audit <code>readOnlyHint</code> and <code>destructiveHint</code> annotations — only set <code>readOnlyHint: true</code> for tools with genuinely zero side effects</li>
+          <li>Validate all URL inputs against allowlists in HTTP-calling tools</li>
+          <li>Pin GitHub Actions to commit SHA, not <code>@v1</code> tags</li>
+          <li>Run MCP servers as non-root users in containerized deployments</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://dev.to/truong_bui_eaec3f963bbe21/we-scanned-50-mcp-servers-and-found-high-severity-bugs-in-atlassian-github-cloudflare-and-3a42?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCPSafe — 50+ MCP Server Scan Results (DEV Community)</a></li>
+          <li><a href="https://mcpsafe.io/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCPSafe Platform (mcpsafe.io)</a></li>
+          <li><a href="https://github.com/orgs/modelcontextprotocol/discussions/746?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCP GitHub Discussions — MCPSafe Feedback Thread</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
