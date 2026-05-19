@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lasso Security — Open-Source Claude Code Prompt Injection Defender — al-ice.ai</title>
+  <meta name="description" content="Lasso Security releases an open-source PostToolUse hook that detects indirect prompt injection attempts in Claude Code tool outputs at runtime, adding a missing security layer for autonomous coding agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/lasso-security-claude-code-prompt-injection-defender/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Lasso Security — Open-Source Claude Code Prompt Injection Defender" />
+  <meta name="post:date" content="2026-05-19" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Lasso Security — Open-Source Claude Code Prompt Injection Defender</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-19">2026-05-19</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Lasso Security releases an open-source PostToolUse hook for Claude Code that detects indirect prompt injection in tool outputs at runtime — a practical defense layer for the most dangerous attack surface in agentic coding tools.</p>
+
+        <ul>
+          <li>Lasso Security published <a href="https://github.com/lasso-security/claude-hooks?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">claude-hooks</a>, an open-source solution that adds runtime prompt injection detection to Claude Code via PostToolUse hooks.</li>
+          <li>The defender intercepts tool outputs (file reads, web fetches, MCP responses) before Claude Code processes them, scanning for known injection patterns.</li>
+          <li>Four injection categories are detected: instruction overrides ("ignore previous instructions"), role-playing/jailbreaks, encoding/obfuscation (Base64, leetspeak, zero-width characters), and context manipulation (fake admin messages, forged system prompts).</li>
+          <li>The research demonstrates indirect prompt injection attack vectors: poisoned README files in cloned repos, malicious web pages fetched during research, and trojan MCP server responses.</li>
+          <li>The fundamental problem identified: Claude Code processes untrusted content (web pages, code comments, API responses) with the same privileges as user instructions.</li>
+          <li>With <code>--dangerously-skip-permissions</code>, there is no human checkpoint to catch suspicious behavior — making runtime detection the only remaining defense layer.</li>
+          <li>Anthropic's built-in injection resistance is acknowledged as imperfect: novel techniques, volume attacks, and context-dependent payloads still slip through.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Claude Code's power — reading entire codebases, executing shell commands, fetching web pages — is also its greatest vulnerability. Every tool output is a potential injection vector. PostToolUse hooks provide a defense-in-depth layer that Anthropic's built-in safeguards alone cannot guarantee, especially for users running autonomous sessions with permissions bypassed.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Install Lasso's claude-hooks if you run Claude Code with <code>--dangerously-skip-permissions</code> or in any semi-autonomous mode.</li>
+          <li>Audit which MCP servers your agents connect to — each is a trust boundary and potential injection vector.</li>
+          <li>Treat cloned repositories as untrusted until scanned; injection payloads can hide in markdown files, code comments, or documentation pages.</li>
+          <li>Consider running injection detection hooks as a mandatory layer for any production agentic coding workflow, regardless of the model's claimed safety training.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.lasso.security/blog/the-hidden-backdoor-in-claude-coding-assistant?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Lasso Security — "The Hidden Backdoor in Claude Code"</a></li>
+          <li><a href="https://github.com/lasso-security/claude-hooks?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitHub — lasso-security/claude-hooks</a></li>
+          <li><a href="https://www.lasso-security/blog/prompt-injection-taxonomy-techniques?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Lasso Security — Prompt Injection Taxonomy &amp; Techniques</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
