@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wiz — TeamPCP Hits @antv npm Namespace, GitHub Actions, and VSCode — al-ice.ai</title>
+  <meta name="description" content="Wiz Research detects a fresh TeamPCP supply chain wave targeting @antv npm packages, GitHub Actions, and an Angular Console VSCode extension with credential-harvesting malware." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/wiz-teampcp-antv-npm-supply-chain-may19/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Wiz — TeamPCP Hits @antv npm Namespace, GitHub Actions, and VSCode" />
+  <meta name="post:date" content="2026-05-19" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Wiz — TeamPCP Hits @antv npm Namespace, GitHub Actions, and VSCode</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-19">2026-05-19</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: AI developer tooling and agent frameworks commonly depend on @antv visualization libraries and automated GitHub Actions — compromised packages give attackers a direct pipeline into AI development environments and CI/CD secrets.</p>
+
+        <p>Wiz Research published a report today documenting a fresh wave of the Mini Shai-Hulud supply chain campaign, hitting npm packages in the <code>@antv</code> namespace, the <code>actions-cool/issues-helper</code> GitHub Action, and the <code>nrwl.angular-console</code> VSCode extension (v18.95.0).</p>
+
+        <h2>Key details</h2>
+
+        <ul>
+          <li><strong>Multi-component infection:</strong> Malicious npm packages trigger a multi-stage chain that retrieves secondary payloads from orphaned GitHub commits — a detection-evasion technique designed to keep payloads off the main branch.</li>
+          <li><strong><code>bun</code> as execution vector:</strong> The malware uses <code>bun</code> to install and execute secondary payloads, a shift from pure Node.js execution that may evade some security tooling focused on <code>npm</code> behavior.</li>
+          <li><strong>Broad credential harvesting:</strong> Stolen artifacts include GitHub tokens, SSH keys, cloud credentials, and browser-stored secrets — the standard TeamPCP playbook for developer environment compromise.</li>
+          <li><strong>GitHub-based exfiltration:</strong> Data is exfiltrated through attacker-created public GitHub repositories generated from the victim environment, with repos created under the description "niagA oG eW ereH :duluH-iahS" (reverse-encoded "Shai-Hulud: Here We Go Again").</li>
+          <li><strong>Persistent Python backdoor:</strong> A Python backdoor is installed at <code>~/.local/share/kitty/cat.py</code>, polling <code>api.github.com/search/commits?q=firedalazer</code> every 5 minutes for signed C2 messages. When valid instructions arrive, it retrieves and executes remote Python code.</li>
+          <li><strong>Persistence mechanisms:</strong> macOS persistence via <code>~/Library/LaunchAgents/com.user.kitty-monitor.plist</code>; Linux via <code>~/.config/systemd/user/kitty-monitor.service</code>.</li>
+          <li><strong>Attribution:</strong> Wiz attributes the activity to TeamPCP based on infrastructure overlaps, malware functionality, and operational patterns matching previous Mini Shai-Hulud waves.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>This is the latest escalation in TeamPCP's ongoing campaign — the group has now compromised PyPI (LiteLLM), npm (@antv, TanStack, PyTorch Lightning, Node-IPC), GitHub Actions, and VSCode extensions in a coordinated multi-ecosystem assault. The use of orphaned commits for payload hosting and GitHub-based exfiltration represents sophisticated operational security. AI development teams are particularly exposed because they typically have broad access to cloud credentials, API keys, and model provider tokens on developer workstations.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Audit developer workstations and CI/CD runners for @antv package versions installed around May 19; check for the <code>~/.local/share/kitty/cat.py</code> backdoor file.</li>
+          <li>Search GitHub org repos for unauthorized repositories with the "niagA oG eW ereH :duluH-iahS" description pattern.</li>
+          <li>Block <code>m-kosche.com</code> (185.95.159.32) and monitor for <code>firedalazer</code> commit search queries in GitHub audit logs.</li>
+          <li>Rotate all GitHub tokens, SSH keys, and cloud credentials from any potentially affected developer environments.</li>
+          <li>Pin dependency versions in CI/CD pipelines and enable package allowlisting to prevent future supply chain injection.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.wiz.io/blog/mini-shai-hulud-teampcp-hits-antv-supply-chain?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Wiz — The Worm That Keeps on Digging: TeamPCP Hits @antv</a></li>
+          <li><a href="https://threats.wiz.io/all-actors/teampcp?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Wiz Threat Intelligence — TeamPCP actor profile</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
