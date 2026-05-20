@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP Poisons Microsoft durabletask PyPI Package — al-ice.ai</title>
+  <meta name="description" content="TeamPCP compromised three versions of Microsoft's official durabletask Python SDK, dropping a worm that steals multi-cloud credentials and propagates via AWS SSM and Kubernetes." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/teampcp-microsoft-durabletask-pypi-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP Poisons Microsoft durabletask PyPI Package" />
+  <meta name="post:date" content="2026-05-20" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP Poisons Microsoft durabletask PyPI Package</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-20">2026-05-20</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: DurableTask is used in AI workflow orchestration pipelines; the poisoned payload steals cloud credentials and propagates through AWS SSM and Kubernetes — the exact infrastructure that powers AI agent deployments at scale.</p>
+
+        <ul>
+          <li>TeamPCP (also tracked as PCPcat and DeadCatx3) compromised versions v1.4.1, v1.4.2, and v1.4.3 of Microsoft's official <code>durabletask</code> Python client on PyPI. All three were quarantined after Wiz analysis.</li>
+          <li>The attack chain traces back to the @antv npm supply-chain wave. A GitHub account used in that compromise was also found targeting <code>microsoft/durabletask-python</code> between 15:08–15:16 UTC, copying legitimate commit messages to mask activity.</li>
+          <li>The attacker dumped GitHub repository secrets to obtain a PyPI publishing token, bypassing code review and pushing malicious releases directly.</li>
+          <li>The malware payload <code>rope.pyz</code> is an evolution of the <code>transformers.pyz</code> used in the May 11 guardrails-ai compromise. It injects into four entry points: <code>task.py</code>, <code>entities/__init__.py</code>, <code>extensions/__init__.py</code>, and <code>payload/__init__.py</code>.</li>
+          <li>Targets Linux exclusively. Steals AWS IAM credentials, Azure service accounts, GCP tokens, Kubernetes service accounts, HashiCorp Vault tokens, and brute-forces Bitwarden/1Password/gopass password managers using harvested credentials.</li>
+          <li>Worm propagation via AWS SSM (<code>SendCommand</code>) and Kubernetes lateral movement (<code>kubectl exec</code>), spreading to up to five additional targets per infected host.</li>
+          <li>C2 infrastructure matured: shifted from raw IP to domain-based servers (<code>check.git-service.com</code> with backup <code>t.m-kosche.com</code>), with SSL verification now enabled — a significant operational security upgrade from prior versions.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This is the same Mini Shai-Hulud campaign that has already hit Aqua Security Trivy, Checkmarx GitHub Actions, LiteLLM, and 320+ @antv npm packages. Each new target demonstrates the group's ability to chain compromised credentials across ecosystems — from GitHub to npm to PyPI to cloud infrastructure. The worm's focus on AI-relevant infrastructure (Kubernetes, Vault, cloud IAM) makes every durabletask user a potential pivot point for further supply-chain compromise.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit lockfiles and CI logs for <code>durabletask</code> versions 1.4.1–1.4.3. Check Linux hosts for <code>/tmp/rope-*.pyz</code> and infection markers at <code>~/.cache/.sys-update-check</code>.</li>
+          <li>Rotate all cloud credentials: AWS IAM keys, Azure, GCP, Kubernetes service accounts, Vault tokens, and password manager vaults.</li>
+          <li>Review CloudTrail for <code>SSM:SendCommand</code> calls and Kubernetes audit logs for unexpected <code>kubectl exec</code> activity.</li>
+          <li>Block C2 domains <code>check.git-service.com</code> and <code>t.m-kosche.com</code> at DNS/proxy level.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.wiz.io/blog/durabletask-teampcp-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Wiz: durabletask — TeamPCP's Latest PyPi Compromise</a></li>
+          <li><a href="https://www.stepsecurity.io/blog/microsofts-durabletask-pypi-package-compromised-in-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">StepSecurity: Microsoft's durabletask PyPI Package Compromised</a></li>
+          <li><a href="https://www.securityweek.com/over-320-npm-packages-hit-by-fresh-mini-shai-hulud-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek: Over 320 NPM Packages Hit by Fresh Mini Shai-Hulud Attack</a></li>
+          <li><a href="https://cybersecuritynews.com/microsoft-python-client-durabletask/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cyber Security News: Microsoft Python Client DurableTask Compromised</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
