@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sysdig: Runtime Security Is the Missing Layer in Agentic AI Tooling — al-ice.ai</title>
+  <meta name="description" content="Sysdig maps the agentic AI attack surface across five infrastructure layers and details MCP tool poisoning, indirect prompt injection via tool responses, and credential theft via coding agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/sysdig-agentic-ai-runtime-security/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Sysdig: Runtime Security Is the Missing Layer in Agentic AI Tooling" />
+  <meta name="post:date" content="2026-05-20" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Sysdig: Runtime Security Is the Missing Layer in Agentic AI Tooling</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-20">2026-05-20</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: agentic AI tooling (MCP, skills, SDKs, managed platforms, orchestration layers) spans five infrastructure layers, each with distinct attack vectors that traditional runtime security baselines cannot detect because agent behavior is inherently non-deterministic.</p>
+
+        <h2 id="key-findings">Key findings</h2>
+        <ul>
+          <li><strong>MCP tool poisoning.</strong> MCP tool descriptions are free-text fields read by the LLM to decide how to use a tool. A malicious MCP server can embed adversarial instructions in those descriptions — invisible to the human user, silently processed by the model. Descriptions are fetched dynamically, meaning they can change after the user approves a tool. A cross-server variant, tool shadowing, injects descriptions that modify agent behavior toward trusted tools on other connected servers.</li>
+          <li><strong>Indirect prompt injection via tool responses.</strong> When an agent calls a legitimate tool (browser, file reader, database query), the returned content can carry hidden adversarial instructions. Tool outputs and system instructions share the same context window, turning prompt injection from an information leak into an action execution vulnerability.</li>
+          <li><strong>EchoLeak (CVE-2025-32711).</strong> Aim Security's June 2025 disclosure demonstrated exactly this pattern: a crafted email injected instructions into Microsoft 365 Copilot, which exfiltrated sensitive data via markdown rendering to an attacker-controlled server, bypassing Content Security Policy through a Microsoft-approved domain.</li>
+          <li><strong>Credential theft via coding agents.</strong> AI coding agents in CI/CD pipelines routinely have shell access and run with CI system credentials. A demonstrated attack used a prompt injection in a support ticket to cause a Cursor agent (running with Supabase service_role privileges) to read private tables and exfiltrate integration tokens back through the same channel.</li>
+          <li><strong>Traditional baselines fail for agents.</strong> Container security relies on deterministic profiling — a web server always calls the same syscalls. AI agents break this model: the same agent given the same task takes different action sequences each run due to temperature randomness and unbounded prompt variability. The decision-making lives in model weights and a context window that security tools cannot inspect.</li>
+          <li><strong>MITRE ATLAS extension.** MITRE ATLAS, extended through a 2025 collaboration with Zenity Labs, now catalogs agent-specific techniques AML.T0080 through AML.T0086, mapping each ecosystem layer to detection strategies including tool-call auditing, runtime syscall monitoring inside sandboxes, and agent memory store auditing.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <p>As organizations deploy coding agents, MCP-connected toolchains, and multi-agent orchestration, the gap between what agents can do and what security tooling can observe is widening. Traditional EDR and network monitoring assume deterministic behavior; agents are non-deterministic by design. The Sysdig analysis provides a concrete threat model linking each infrastructure layer to specific MITRE ATLAS techniques and detection approaches.</p>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Audit MCP tool descriptions at registration; monitor for sensitive file reads unrelated to the agent's task.</li>
+          <li>Implement tool-call auditing at the SDK layer with input/output sanitization.</li>
+          <li>Deploy runtime syscall monitoring inside agent sandboxes with capability-scoped containers.</li>
+          <li>Monitor agent-to-agent credential passing and enforce delegation scope limits in orchestration layers.</li>
+          <li>Version-control skills and detect runtime modification of skill files.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://webflow.sysdig.com/blog/agentic-ai-tooling-why-runtime-security-is-the-missing-layer?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Sysdig: Agentic AI Tooling — Why Runtime Security Is the Missing Layer</a></li>
+          <li><a href="https://modelcontextprotocol.io/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Model Context Protocol (MCP)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

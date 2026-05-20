@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arXiv Survey: Agentic AI in IT Ops Faces the Classic Confused-Deputy Problem — al-ice.ai</title>
+  <meta name="description" content="A new arXiv survey maps four attack categories targeting LLM-driven operations agents and proposes a propose-commit architectural split as the core defense." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/arxiv-agentic-ai-operations-confused-deputy/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="arXiv Survey: Agentic AI in IT Ops Faces the Classic Confused-Deputy Problem" />
+  <meta name="post:date" content="2026-05-20" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">arXiv Survey: Agentic AI in IT Ops Faces the Classic Confused-Deputy Problem</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-20">2026-05-20</time>
+          <a class="badge" href="/categories/RESEARCH/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: agentic AI systems used for IT operations and network management inherit the classic confused-deputy problem — they hold legitimate write access to production infrastructure while consuming untrusted text input from tickets, runbooks, and logs.</p>
+
+        <h2 id="key-findings">Key findings</h2>
+        <ul>
+          <li><strong>Confused-deputy substrate.</strong> LLM operations agents are granted direct access to change-management APIs, deployment pipelines, and network controllers. Their decisions are shaped by the same artifacts an attacker can influence — incident tickets, wiki pages, and chat transcripts. Compromising the tool is unnecessary when the text the agent reads before acting can be poisoned.</li>
+          <li><strong>Four attack categories cataloged.</strong> The survey identifies prompt injection through operational artifacts (malicious instructions in tickets), retrieval poisoning (corrupting runbooks to bias diagnoses), retrieval jamming (flooding knowledge bases with blocker documents that trigger refusal loops and stall incident response), and telemetry manipulation (influencing metrics/logs to steer mitigation decisions without touching the model).</li>
+          <li><strong>These attacks look like normal incidents going wrong.</strong> Unlike traditional exploits, adversarial influence on agentic operations agents produces behavior indistinguishable from a legitimate agent making a bad call — making detection and attribution significantly harder.</li>
+          <li><strong>Propose-commit split as architectural defense.</strong> The survey's core recommendation is that the language model should reason, retrieve evidence, and draft change proposals, but must never execute writes. A non-bypassable gate outside the model's authority performs policy-as-code checks, invariant verification, human approval for high-blast-radius changes, and rollback-ready staged deployment.</li>
+          <li><strong>Prompt-only defenses are brittle.</strong> Any system where the model's text generation can directly cause production changes has built its security perimeter inside the most unpredictable component in the stack. The OWASP excessive-agency pattern is, in practice, a failure to implement the propose-commit split cleanly.</li>
+          <li><strong>Missing evaluation evidence.</strong> The survey identifies what adversarial evaluations should report: tool-call traces, gate-violation rates, behavior under adversarial inputs, refusal-storm rates under jamming attacks, and rollback completeness. Most current benchmarks omit these entirely.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <p>Organizations are deploying agentic remediation and self-healing infrastructure at pace. Without a propose-commit split, every agent is a confused deputy waiting to be tricked by a poisoned ticket or tampered runbook. The survey's taxonomy gives security teams a concrete framework to evaluate whether a vendor's "autonomous remediation" is architecturally sound or a liability.</p>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Enforce a propose-commit architecture: agents draft diffs; separate gates apply them.</li>
+          <li>Require integrity-protected audit logs for post-incident forensics.</li>
+          <li>Request adversarial evaluation data (not just clean-workload benchmarks) before procuring agentic operations tools.</li>
+          <li>Scope agent privileges to read-only assistance or bounded execution with strong gates — avoid open-ended self-healing across large production environments.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/pdf/2605.12729?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">arXiv: Agentic AI in Network and IT Operations Survey (PDF)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/05/20/agentic-ai-security-llm-research/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Help Net Security: When your AI assistant has the keys to production</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/04/24/indirect-prompt-injection-in-the-wild/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Help Net Security: Indirect prompt injection in the wild</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
