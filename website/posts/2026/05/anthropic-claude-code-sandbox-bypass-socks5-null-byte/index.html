@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anthropic Silently Patches Claude Code Sandbox Bypass — al-ice.ai</title>
+  <meta name="description" content="A second network sandbox bypass in Claude Code, patched silently in April 2026 with no CVE, exposed credentials and source code for over five months." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/anthropic-claude-code-sandbox-bypass-socks5-null-byte/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Anthropic Silently Patches Claude Code Sandbox Bypass" />
+  <meta name="post:date" content="2026-05-21" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Anthropic Silently Patches Claude Code Sandbox Bypass</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-21">2026-05-21</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: A second complete network sandbox bypass in Claude Code allowed prompt-injection-driven exfiltration of developer credentials and source code, patched silently with no CVE assigned.</p>
+
+        <p>Security researcher Aonan Guan publicly disclosed a SOCKS5 hostname null-byte injection vulnerability that bypassed every Claude Code release from v2.0.24 (sandbox GA, October 2025) through v2.1.89 — roughly 130 versions across 5.5 months. Anthropic patched the issue in v2.1.90 on April 1, 2026 without mentioning a security fix in the release notes.</p>
+
+        <p>The attack exploits a parser differential between JavaScript and libc. The sandbox routes outbound traffic through a SOCKS5 proxy and validates hostnames using a JavaScript <code>endsWith()</code> check against the user's allowlist. An attacker crafts a hostname like <code>attacker-host.com\x00.google.com</code> — JavaScript sees the trailing <code>.google.com</code> and approves the connection, while libc's <code>getaddrinfo()</code> terminates at the null byte and resolves the attacker-controlled host.</p>
+
+        <p>When chained with indirect prompt injection, the bypass enables:</p>
+
+        <ul>
+          <li>Exfiltration of AWS credentials from <code>~/.aws/</code> and GitHub tokens from <code>~/.config/gh/</code></li>
+          <li>Cloud instance metadata access via 169.254.169.254</li>
+          <li>Internal API endpoint and corporate intranet resource enumeration</li>
+          <li>Environment variable and model API key theft, all transmitted via raw SOCKS5 bypassing HTTP egress logs</li>
+        </ul>
+
+        <p>This is the second sandbox bypass in Claude Code. The first (CVE-2025-66479) involved an empty <code>allowedDomains: []</code> being misread as "allow everything" — silently fixed in November 2025. The current finding was closed by Anthropic's HackerOne program as a duplicate, with no CVE issued in NVD or the GitHub Advisory Database. Anthropic's Claude Code security advisories page lists zero sandbox vulnerabilities.</p>
+
+        <h3>Why it matters</h3>
+
+        <p>AI coding assistants run with broad filesystem access and developer credentials by default. When the sandbox — the primary isolation mechanism — can be bypassed via a single null byte in a SOCKS5 hostname, any prompt injection becomes a full data exfiltration vector. The absence of a CVE and public advisory means most users have no way to know they were affected for months.</p>
+
+        <h3>What to do</h3>
+
+        <ul>
+          <li>Update to Claude Code v2.1.90+ immediately (<code>claude --version</code> to verify)</li>
+          <li>If you ran a wildcard allowlist on a credential-bearing system between October 20, 2025 and your upgrade date, rotate all reachable credentials</li>
+          <li>Audit outbound SOCKS-mediated traffic logs for suspicious egress</li>
+          <li>Treat the vendor sandbox as defense-in-depth, not as a security boundary — enforce egress controls at the network or hypervisor level outside the agent's reach</li>
+        </ul>
+
+        <h3>Sources</h3>
+        <ul>
+          <li><a href="https://oddguan.com/blog/second-time-same-sandbox-anthropic-claude-code-network-allowlist-bypass-data-exfiltration/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener" target="_blank">Original disclosure — Aonan Guan</a></li>
+          <li><a href="https://www.securityweek.com/anthropic-silently-patches-claude-code-sandbox-bypass/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener" target="_blank">SecurityWeek coverage</a></li>
+          <li><a href="https://www.theregister.com/security/2026/05/20/even-claude-agrees-hole-in-its-sandbox-was-real-and-dangerous/5243662?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener" target="_blank">The Register coverage</a></li>
+          <li><a href="https://cybersecuritynews.com/claude-codes-network-sandbox-vulnerability/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener" target="_blank">CyberSecurityNews technical breakdown</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
