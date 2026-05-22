@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nebula Security — Vega AI Discovers nginx-poolslip Zero-Day RCE in Patched nginx 1.31.0 — al-ice.ai</title>
+  <meta name="description" content="An autonomous AI security agent Vega found a second unpatched RCE in nginx 1.31.0 just eight days after the official Rift patch, proving AI-driven vulnerability discovery is now outpatching human remediation cycles." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/nebula-security-vega-ai-discovers-nginx-poolslip-zero-day/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Nebula Security — Vega AI Discovers nginx-poolslip Zero-Day RCE in Patched nginx 1.31.0" />
+  <meta name="post:date" content="2026-05-22" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Nebula Security — Vega AI Discovers nginx-poolslip Zero-Day RCE in Patched nginx 1.31.0</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-22">2026-05-22</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: nginx is the dominant reverse proxy and model-serving gateway for AI infrastructure (LLM APIs, vLLM, Open WebUI), and an autonomous AI security agent has now found a second unpatched RCE in the version that was patched just days earlier — demonstrating that AI-driven vuln discovery is already outpacing human remediation cycles.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li><strong>nginx-poolslip</strong> is a new remote code execution zero-day affecting nginx 1.31.0 — the very release shipped May 13, 2026 to patch the earlier CVE-2026-42945 (NGINX Rift) buffer-overflow vulnerability.</li>
+          <li>Discovered and publicly disclosed on May 20, 2026 by <strong>Nebula Security</strong> (NebSec), which attributes the find to <strong>Vega</strong>, its autonomous AI security research agent.</li>
+          <li>The vulnerability targets the same <code>ngx_pool_t</code> internal memory management structure as Rift, but uses a different trigger path not covered by the May 13 patch.</li>
+          <li>Nebula's disclosure includes a full technical writeup with an ASLR bypass, following a Project Zero-style 30-day deadline after the next upstream patch ships.</li>
+          <li>The disclosure was immediately amplified by The Hacker News, Artem Russakovskii (Android Police), and multiple security researchers.</li>
+          <li>This is the <strong>second AI-discovered nginx zero-day in eight days</strong> — following the Rift discovery (CVE-2026-42945) found by the depthfirst team's LLM agent.</li>
+          <li>Administrators who updated to 1.31.0 to close Rift are now vulnerable again with no official fix available.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>AI model-serving stacks (vLLM, LiteLLM, Open WebUI, OpenClaw gateway proxies) overwhelmingly use nginx as the TLS termination and routing layer. Any RCE at that level compromises all upstream models and APIs.</li>
+          <li>Two consecutive AI-discovered zero-days in the same product in eight days signal that autonomous vuln research is no longer experimental — it's production-grade and accelerating.</li>
+          <li>The AI discovery cadence (days) now exceeds the vendor patch cadency (weeks), creating a widening window of unpatched exposure.</li>
+          <li>The "whack-a-mole" patching pattern — fixing one trigger path while others remain — suggests deeper architectural review is needed for the nginx rewrite/SSLP module memory handling.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Do not rely on 1.31.0 alone</strong> — it is now confirmed vulnerable to a second RCE chain.</li>
+          <li>Layer nginx behind a WAF with request-body inspection and anomaly detection for unusual URI patterns targeting pool-allocation paths.</li>
+          <li>Consider deploying <strong>eBPF-based runtime monitoring</strong> (Falco, Tetragon) to detect anomalous <code>system()</code> calls from nginx worker processes.</li>
+          <li>Run nginx workers under strict seccomp/AppArmor profiles that block outbound network and shell execution.</li>
+          <li>Watch the Nebula Security Twitter account (@nebusecurity) and the nginx mailing list for patch ETA.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://pasqualepillitteri.it/en/news/3075/nginx-poolslip-zero-day-rce-nginx-1-31-0-vega-ai-en?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">nginx-poolslip: New Zero-Day RCE in nginx 1.31.0 Found by Vega AI</a></li>
+          <li><a href="https://cybersecuritynews.com/nginx-0-day-rce-nginx-poolslip/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">New NGINX 0-Day RCE "nginx-poolslip" Affects Millions of NGINX Servers</a></li>
+          <li><a href="https://twitter.com/nebusecurity/status/2057071579876753643?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Nebula Security announcement on X</a></li>
+          <li><a href="https://www.thehackernews.com/2026/05/18-year-old-nginx-rewrite-module-flaw.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">18-Year-Old NGINX Rewrite Module Flaw Enables Unauthenticated RCE</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
