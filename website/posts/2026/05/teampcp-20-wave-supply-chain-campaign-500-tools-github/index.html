@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP — 20-Wave Supply-Chain Campaign Hits 500+ Tools, GitHub — al-ice.ai</title>
+  <meta name="description" content="WIRED and Socket reveal the full scope of TeamPCP's 20-wave supply-chain campaign: 500+ poisoned tools, the Mini Shai-Hulud worm, and the GitHub breach as its latest escalation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/teampcp-20-wave-supply-chain-campaign-500-tools-github/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP — 20-Wave Supply-Chain Campaign Hits 500+ Tools, GitHub" />
+  <meta name="post:date" content="2026-05-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP — 20-Wave Supply-Chain Campaign Hits 500+ Tools, GitHub</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-23">2026-05-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: TeamPCP's campaign directly targeted AI ecosystem infrastructure — LiteLLM API gateway, MistralAI SDK, CheckMarx KICS scanner, and the Mini Shai-Hulud worm that infects AI developer toolchains — making it the largest AI supply-chain attack campaign documented to date.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>WIRED reporting and Socket research reveal that TeamPCP has executed <strong>20 distinct waves</strong> of supply-chain attacks over the past months, compromising <strong>500+ open-source tools</strong> (over 1,000 counting all versions) — the longest-running supply-chain attack spree ever documented.</li>
+          <li>The group's core tactic is a <strong>self-perpetuating flywheel</strong>: compromise one tool, steal credentials from infected developer machines, use those credentials to poison the next tool in the dependency chain. Wiz threat intelligence describes it as a "self-perpetuating supply chain worm cycle."</li>
+          <li>The campaign reached its highest-profile target on May 21: <strong>GitHub itself was breached</strong> when a developer installed a poisoned VS Code extension. TeamPCP claims access to ~4,000 internal repositories; GitHub confirmed at least 3,800 compromised repos containing its own source code.</li>
+          <li>TeamPCP has <strong>automated much of its operation</strong> via a self-spreading worm called <strong>Mini Shai-Hulud</strong>, which creates GitHub repositories containing encrypted credentials and the phrase "A Mini Shai-Hulud Has Appeared" — a deliberate reference to the original Shai-Hulud worm from September 2025.</li>
+          <li>Last week, TeamPCP <strong>open-sourced the Shai-Hulud worm code</strong> on GitHub and ran a public "attack challenge" on BreachForums, inviting other actors to use it. Copycat clones have already appeared on npm, including a DDoS botnet variant.</li>
+          <li>Confirmed victims span the AI/ML ecosystem: <strong>LiteLLM</strong> (AI API gateway), <strong>MistralAI SDK</strong>, <strong>CheckMarx KICS</strong> (IaC scanner), <strong>Trivy</strong> (Aqua's vulnerability scanner, the initial credential theft vector), <strong>AntV</strong> (data visualization), <strong>Microsoft durabletask</strong> Python SDK, the <strong>Telnyx SDK</strong>, <strong>TanStack</strong>, <strong>PyTorch Lightning</strong>, and <strong>Firescale</strong> malware toolkit.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>The attack has transitioned from targeted supply-chain compromise to <strong>automated, self-spreading worm propagation</strong> — a fundamentally different threat class for the AI/ML open-source ecosystem.</li>
+          <li>The GitHub breach means the platform that hosts the packages, CI/CD runners, and developer workflows for most open-source AI tooling is itself compromised. Trust in the entire npm/PyPI/GitHub triad is affected.</li>
+          <li>LiteLLM compromise alone exposed a single point of failure for organizations using it as a unified gateway to OpenAI, Anthropic, and Azure — meaning one poisoned package gave attackers access to credentials across <em>multiple</em> AI providers simultaneously.</li>
+          <li>The open-sourcing of Shai-Hulud lowers the barrier to entry: any actor can now fork the code, swap a C2 endpoint, and publish a typosquatted package. The cost of mounting a supply-chain worm attack has dropped from "nation-state capable" to "script kiddie with an npm account."</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit your dependency trees for all packages in TeamPCP's known compromise list — LiteLLM, MistralAI SDK, AntV, PyTorch Lightning, Microsoft durabletask, TanStack, Telnyx SDK, Trivy, KICS, and any packages with "mini-shai-hulud" references.</li>
+          <li>Search GitHub repositories and CI logs for the string <code>"A Mini Shai-Hulud Has Appeared"</code> or <code>"A Mini Sha1-Hulud has Appeared"</code> (both variants exist).</li>
+          <li>Rotate all API keys, credentials, and tokens on machines that may have installed affected packages — particularly AI provider keys (OpenAI, Anthropic, Azure OpenAI) and cloud credentials.</li>
+          <li>Pin dependency versions and use lockfiles with integrity hashes; consider deploying registry monitoring tools (Socket, OX Security, Mondoo) to detect new malicious package uploads in real time.</li>
+          <li>Review VS Code extension allowlists — the GitHub breach originated from a poisoned extension, not a package registry compromise.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.wired.com/story/teampcp-software-supply-chain-attack-spree-github/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">WIRED — A Hacker Group Is Poisoning Open Source Code at an Unprecedented Scale</a></li>
+          <li><a href="https://venturebeat.com/security/github-confirms-3800-repos-stolen-poisoned-vs-code-extension-supply-chain-worm-microsoft-python-sdk?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">VentureBeat — GitHub confirms 3,800 repos stolen through poisoned VS Code extension</a></li>
+          <li><a href="https://siliconangle.com/2026/05/18/forcepoint-details-teampcp-supply-chain-attack-turned-litellm-credential-stealer/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">SiliconANGLE — Forcepoint details TeamPCP supply chain attack that turned LiteLLM into a credential stealer</a></li>
+          <li><a href="https://mondoo.com/blog/shai-hulud-clones-arrive-when-worm-source-code-goes-open-source?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Mondoo — When Worm Source Code Goes Open Source: The Shai-Hulud Clones Arrive</a></li>
+          <li><a href="https://techcrunch.com/2026/05/19/hackers-have-compromised-dozens-of-popular-open-source-packages-in-an-ongoing-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">TechCrunch — Hackers have compromised dozens of popular open source packages in an ongoing supply-chain attack</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
