@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aikido Security — Laravel-Lang supply chain delivers cross-platform credential stealer — al-ice.ai</title>
+  <meta name="description" content="Over 233 malicious versions of popular Laravel-Lang PHP packages were injected with a credential-stealing backdoor via poisoned GitHub version tags targeting developer infrastructure." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/laravel-lang-supply-chain-credential-stealer/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Aikido Security — Laravel-Lang supply chain delivers cross-platform credential stealer" />
+  <meta name="post:date" content="2026-05-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Aikido Security — Laravel-Lang supply chain delivers cross-platform credential stealer</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-24">2026-05-24</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Supply-chain compromises of developer tooling directly threaten AI agent pipelines, CI/CD runners, and MCP server deployments that inherit poisoned environment credentials from infected workstations.</p>
+
+        <ul>
+          <li>Attackers published 233 malicious version tags across three widely used Laravel-Lang repositories (<code>laravel-lang/lang</code>, <code>laravel-lang/attributes</code>, <code>laravel-lang/http-statuses</code>) on May 22–23, 2026.</li>
+          <li>The malicious code was never committed to the official repos — attackers exploited GitHub's ability to create version tags pointing to commits in a fork they controlled, bypassing branch protection and code review.</li>
+          <li>Stage 1: A dropper in <code>src/helpers.php</code> self-executes on install, fingerprints the host, then fetches a ~5,900-line PHP credential stealer from <code>flipboxstudio[.]info/payload</code> using SSL-verified-disabled requests.</li>
+          <li>Stage 2: The stealer contains fifteen collector modules targeting AWS keys, GCP credentials, SSH keys, browser password stores, crypto wallets, and cloud API tokens from both environment files and live instance metadata endpoints.</li>
+          <li>Collected data is AES-256 encrypted and exfiltrated to <code>flipboxstudio[.]info/exfil</code>, then the payload deletes itself to limit forensic evidence.</li>
+          <li>Packagist took down the malicious versions and temporarily unlisted the affected packages; Aikido Security filed the initial report with maintainers.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Developer workstations and CI/CD runners are the credential roots for AI agent infrastructure — poisoned packages that steal AWS keys, SSH keys, and API tokens can silently compromise model-serving pipelines, MCP server configurations, and RAG backends. The fork-tag technique sidesteps traditional code review, making it harder for automated scanners to catch.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit composer install logs for any <code>laravel-lang/*</code> versions pulled on May 22–23; revoke any credentials that existed on affected machines.</li>
+          <li>Pin dependency versions and enable Composer lockfile verification in CI pipelines.</li>
+          <li>Review GitHub repository settings to restrict tag creation to trusted contributors.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Aikido Security — Supply Chain Attack Targets Laravel-Lang Packages</a></li>
+          <li><a href="https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — Laravel-Lang PHP Packages Compromised</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/laravel-lang-packages-hijacked-to-deploy-credential-stealing-malware/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">BleepingComputer — Laravel-Lang Packages Hijacked</a></li>
+          <li><a href="https://socket.dev/blog/laravel-lang-compromise?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Socket.dev — Laravel-Lang Compromise Analysis</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
