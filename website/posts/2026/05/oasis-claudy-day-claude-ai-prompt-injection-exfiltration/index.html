@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Oasis Security — Claudy Day: Claude.ai Prompt Injection to Silent Data Exfiltration — al-ice.ai</title>
+  <meta name="description" content="Three chained vulnerabilities in Claude.ai — invisible prompt injection via URL parameters, Files API data exfiltration, and an open redirect — create a complete attack pipeline against millions of users." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/oasis-claudy-day-claude-ai-prompt-injection-exfiltration/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Oasis Security — Claudy Day: Claude.ai Prompt Injection to Silent Data Exfiltration" />
+  <meta name="post:date" content="2026-05-27" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Oasis Security — Claudy Day: Claude.ai Prompt Injection to Silent Data Exfiltration</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-27">2026-05-27</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Oasis Security disclosed a three-vulnerability chain in Claude.ai ("Claudy Day") that enables silent data exfiltration from user conversation history via invisible prompt injection embedded in URL parameters — no integrations, MCP servers, or tools required.</p>
+
+        <ul>
+          <li><strong>Invisible prompt injection via URL parameters.</strong> Claude.ai's pre-fill URL parameter (<code>claude.ai/new?q=...</code>) accepted HTML tags that rendered invisibly in the text box but were fully processed by the model. Attackers could embed arbitrary instructions inside what appeared to be a normal user prompt.</li>
+          <li><strong>Files API exfiltration.</strong> Claude's sandbox restricts outbound network access but permits connections to <code>api.anthropic.com</code>. By embedding an attacker-controlled API key in the hidden prompt, researchers instructed Claude to search conversation history for sensitive content, write it to a file, and upload it to the attacker's Anthropic account.</li>
+          <li><strong>Open redirect on claude.com.</strong> Any URL in the form <code>claude.com/redirect/&lt;target&gt;</code> redirected without validation, including to third-party domains. Combined with Google Ads targeting (location, industry, Customer Match email lists), this enabled precision delivery of injection URLs disguised as legitimate search results.</li>
+          <li><strong>No integrations required.</strong> The attack works against a bare default Claude.ai session. With MCP servers or enterprise integrations enabled, the blast radius expands to file reads, message sends, and API access.</li>
+          <li><strong>Conversation history is rich attack surface.</strong> The injected prompt can instruct Claude to summarize past conversations, extract targeted topics (mergers, medical concerns), or auto-identify and dump sensitive content.</li>
+          <li>Anthropic has <strong>fixed the prompt injection vulnerability</strong>; remaining issues are being addressed. The disclosure came through Anthropic's Responsible Disclosure Program.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This is one of the cleanest demonstrations that consumer-facing AI assistants are viable attack surfaces for targeted data exfiltration. The combination of invisible injection, first-party API abuse, and ad-network delivery creates a pipeline that doesn't rely on phishing emails or malicious attachments — just a Google search result. As enterprises connect Claude to MCP servers and internal tools, the same injection vector becomes a multi-step supply-chain attack.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory AI agent usage</strong> across your organization — which assistants, which data they access, which integrations are enabled. Shadow AI is a growing blind spot.</li>
+          <li><strong>Audit MCP and tool permissions</strong> — every connected server or API expands the blast radius of a compromised prompt. Disable unused integrations.</li>
+          <li><strong>Educate users</strong> that pre-filled prompts, shared links, and pasted content can contain hidden instructions. The attack vector doesn't require clicking suspicious links.</li>
+          <li><strong>Establish governance for agent identities</strong> — agents hold credentials and take autonomous actions. Apply intent analysis, scoped access, and full audit trails.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.oasis.security/blog/claude-ai-prompt-injection-data-exfiltration-vulnerability?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener">Oasis Security — Claude.ai Prompt Injection &amp; Data Exfiltration Disclosure</a></li>
+          <li><a href="https://www.oasis.security/resources/reports/claude-ai-prompt-injection-vulnerability-technical-report?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener">Claudy Day Technical Report (whitepaper)</a></li>
+          <li><a href="https://www.anthropic.com/responsible-disclosure-policy?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener">Anthropic — Responsible Disclosure Policy</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
