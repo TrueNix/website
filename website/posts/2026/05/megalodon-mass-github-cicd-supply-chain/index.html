@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Megalodon — Mass GitHub CI/CD Supply Chain Attack Hits 5,561 Repos — al-ice.ai</title>
+  <meta name="description" content="SafeDep reveals 'Megalodon', a six-hour campaign injecting malicious GitHub Actions workflows into 5,561 repositories to exfiltrate CI secrets and cloud credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/megalodon-mass-github-cicd-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Megalodon — Mass GitHub CI/CD Supply Chain Attack Hits 5,561 Repos" />
+  <meta name="post:date" content="2026-05-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Megalodon — Mass GitHub CI/CD Supply Chain Attack Hits 5,561 Repos</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-28">2026-05-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: AI teams rely on the same CI/CD pipelines and npm packages targeted by this campaign — compromising a build pipeline is a fast route to poisoning model-serving infrastructure or exfiltrating LLM provider API keys.</p>
+
+        <h2>What Happened</h2>
+        <p>SafeDep disclosed "Megalodon", a coordinated supply-chain campaign that pushed 5,718 malicious commits to 5,561 GitHub repositories on May 18 in a six-hour window. The attacker used throwaway accounts with forged author identities (build-bot, auto-ci, ci-bot, pipeline-bot) and injected GitHub Actions workflows containing base64-encoded bash payloads.</p>
+
+        <h2>Key Findings</h2>
+        <ul>
+          <li>Two payload variants were observed: "SysDiag" (mass variant, triggers on every push/PR) and "Optimize-Build" (targeted, activates only on <code>workflow_dispatch</code>).</li>
+          <li>The malware harvests AWS credentials, GCP access tokens, Azure IMDS tokens, SSH private keys, Docker/Kubernetes configs, Vault tokens, Terraform credentials, shell history, and 30+ secret regex patterns.</li>
+          <li>Exfiltrated data is sent to a C2 server at 216.126.225.129:8443.</li>
+          <li>Confirmed affected package <code>@tiledesk/tiledesk-server</code> uses the targeted variant to compromise CI runners rather than end-user installs.</li>
+          <li>Hudson Rock traced the campaign's origin to information-stealer infections that harvested GitHub credentials before the attacker rotated through throwaway accounts.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>Megalodon demonstrates that CI/CD compromise is no longer targeted — it's industrialized. AI teams using npm, Python, or Go packages from GitHub are exposed by default. Once a malicious workflow is merged, it runs inside the victim's own CI environment with access to secrets that can include model-provider API keys, cloud infrastructure credentials, and deployment tokens. The attack chain — info-stealer → stolen GitHub PAT → mass malicious commits → secret exfiltration — is reproducible and already being replicated by other threat actors.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li>Audit your repositories for unexpected GitHub Actions workflow files, especially those added around May 18 with author names like build-bot, auto-ci, ci-bot, or pipeline-bot.</li>
+          <li>Rotate all CI/CD secrets, cloud credentials, and API keys for repos that received commits during the campaign window.</li>
+          <li>Require branch protection rules and CODEOWNERS review for any workflow file changes.</li>
+          <li>Block <code>workflow_dispatch</code> triggers on repos that don't explicitly need them.</li>
+          <li>Use Perplexity's newly open-sourced <a href="https://github.com/perplexityai/bumblebee?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Bumblebee</a> scanner to inventory developer endpoints for compromised packages.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">SafeDep — Megalodon Technical Report</a></li>
+          <li><a href="https://thehackernews.com/2026/05/megalodon-github-attack-targets-5561.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">The Hacker News — Megalodon Coverage</a></li>
+          <li><a href="https://www.ox.security/blog/megalodon-cicd-malware-github/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">OX Security — Megalodon CICD Malware Analysis</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
