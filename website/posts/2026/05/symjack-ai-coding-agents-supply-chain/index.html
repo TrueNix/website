@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adversa AI — SymJack symlink-to-RCE via AI coding agents — al-ice.ai</title>
+  <meta name="description" content="SymJack turns AI coding agents into supply-chain delivery systems: disguised symlinks inject malicious MCP servers that run unsandboxed on developer restart." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/symjack-ai-coding-agents-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Adversa AI — SymJack symlink-to-RCE via AI coding agents" />
+  <meta name="post:date" content="2026-05-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Adversa AI — SymJack symlink-to-RCE via AI coding agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-28">2026-05-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: SymJack exploits the inherent trust developers place in AI coding agents, turning them into automated supply-chain delivery systems that install malicious MCP servers and exfiltrate credentials without visible indicators.</p>
+
+        <h2>What happened</h2>
+        <p>Adversa AI published research demonstrating an attack — branded SymJack — that weaponizes AI coding assistants (Claude Code, Cursor, Gemini CLI, Copilot CLI, Grok Build) through malicious git repositories containing disguised symlinks.</p>
+        <ul>
+          <li>An attacker-controlled repo contains a project instruction file that instructs the AI coding agent to perform a benign-looking copy operation.</li>
+          <li>The symlink is renamed to appear innocuous but resolves to a hidden MCP server configuration dropped into the agent's own settings directory.</li>
+          <li>On next agent restart, the planted MCP server spawns unsandboxed, running arbitrary code as the developer user.</li>
+          <li>The attack can steal SSH keys, cloud tokens, browser sessions, or destroy production assets.</li>
+          <li>If the compromised repo is part of CI, the blast radius scales to the CI runner's secrets with no further user interaction.</li>
+          <li>The technique was validated against five major coding agents and worked across all of them.</li>
+          <li>Anthropic hardened Claude Code after initial rejection — it now resolves symlinks before approval prompts and shows the real destination path.</li>
+          <li>Google rejected the report (explicit user approval = intended behavior); Cursor declined (already aware); xAI and GitHub had not responded at time of writing.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>SymJack is not a software bug — it exploits the human tendency to approve automation quickly. As coding agents become standard developer tooling, the gap between what a user thinks they're approving and what actually executes widens. This is the same class of social-automation trust problem seen in OAuth consent phishing, but now weaponized through AI agent workflows.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Configure coding agents to resolve and display symlink destinations before presenting approval prompts.</li>
+          <li>Audit MCP server configurations in agent settings directories (~/.claude, .cursorrules, CLAUDE.md) for unexpected entries.</li>
+          <li>Review CI pipeline permissions — runners should use short-lived, least-privilege credentials.</li>
+          <li>Treat external repos used with AI coding agents as untrusted until the symlink resolution behavior is addressed vendor-wide.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.securityweek.com/symjack-attack-turns-ai-coding-agents-into-supply-chain-attack-delivery-systems/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">SecurityWeek — SymJack attack report</a></li>
+          <li><a href="https://adversa.ai/blog/the-approval-prompt-is-lying-to-you-symlink-rce-in-five-ai-coding-agents-claude-code-cursor-antigravity-copilot-grok-build?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">Adversa AI — Original SymJack research</a></li>
+          <li><a href="https://github.com/adversa-ai/research/tree/main/artifacts/symlink-to-rce?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow">SymJack proof-of-concept artifacts (GitHub)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
