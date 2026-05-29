@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UVCyber MCP Threat Advisory: 40+ CVEs, Tool Poisoning, and the Missing Auth Layer — al-ice.ai</title>
+  <meta name="description" content="UVCyber publishes a comprehensive MCP threat advisory covering 40+ CVEs, tool poisoning, rug pulls, and the architectural gap of missing built-in authentication in the Model Context Protocol." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/uvcyber-mcp-threat-advisory-tool-poisoning/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="UVCyber MCP Threat Advisory: 40+ CVEs, Tool Poisoning, and the Missing Auth Layer" />
+  <meta name="post:date" content="2026-05-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">UVCyber MCP Threat Advisory: 40+ CVEs, Tool Poisoning, and the Missing Auth Layer</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-29">2026-05-29</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: The Model Context Protocol is the standard interface for enterprise AI agents to access databases, APIs, and cloud services — but it ships without built-in authentication or authorization, creating a structural attack surface across hundreds of thousands of servers.</p>
+
+<p>UltraViolet Cyber published a comprehensive <a href="https://www.uvcyber.com/resources/reports/threat-advisory-mcp-threats?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCP Threat Advisory</a> on May 27, 2026, mapping the full attack surface of the Model Context Protocol. Key findings:</p>
+
+<ul>
+<li><strong>40+ CVEs against MCP implementations</strong> in Python, TypeScript, Java, and Rust SDKs between January and April 2026 — including both reference servers and third-party tools.</li>
+<li><strong>Microsoft patched a high-severity MCP flaw</strong> in its March 2026 security release that allowed attackers to manipulate how AI assistants interact with connected services.</li>
+<li><strong>April 2026 advisory identified 10 additional high/critical CVEs</strong>, with an estimated 200,000 vulnerable servers exposed globally.</li>
+<li><strong>The MCP specification has no built-in authentication or authorization</strong> — every server inherits whatever permissions it's granted, and every agent request flows without verification unless controls are added externally.</li>
+</ul>
+
+<h3>Three MCP-specific attack techniques</h3>
+
+<ul>
+<li><strong>Tool poisoning:</strong> A malicious MCP server presents tools that appear normal, but responses contain hidden instructions injected into the LLM's context window. Demonstrated attacks silently exfiltrate entire chat histories including credentials and intellectual property.</li>
+<li><strong>Rug pulls:</strong> A tool's description or behavior is silently altered after user approval, turning a previously benign tool potentially malicious without triggering a new approval flow.</li>
+<li><strong>Tool shadowing:</strong> Exploits the trust gap between initial tool approval and runtime behavior to hijack agent actions or establish covert command-and-control channels.</li>
+</ul>
+
+<h3>Why it matters</h3>
+
+<p>MCP now underpins the productivity workflows of a significant majority of Fortune 500 companies, yet adoption has far outpaced security maturity. The volume and severity of disclosed vulnerabilities confirm that MCP infrastructure is being actively scrutinized by both researchers and adversaries, and many production deployments remain unpatched or misconfigured.</p>
+
+<h3>What to do</h3>
+
+<ul>
+<li><strong>Full inventory of all MCP servers</strong> — classify as local or remote, remove or isolate any unvetted or unused instances.</li>
+<li><strong>Implement tool description fingerprinting at the proxy layer</strong> — detect and block any changes to tool definitions after initial registration.</li>
+<li><strong>Disable auto-approval of tool invocations</strong> in all production deployments and enforce OAuth 2.1 authentication, least-privilege scoping, and structured audit logging on every MCP server connection.</li>
+<li><strong>Establish a formal MCP governance program</strong> aligned to the OWASP MCP Top 10 framework — version pinning, signed tool definitions, continuous dependency monitoring, and quarterly red-team exercises targeting agentic AI workflows.</li>
+</ul>
+
+<p><a href="https://www.uvcyber.com/resources/reports/threat-advisory-mcp-threats?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">UVCyber: Threat Advisory — MCP Threats</a></p>
+<p><a href="https://www.uvcyber.com/hubfs/ThreatAdvisory-MCP-Threats-27MAY26.pdf?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Full PDF report</a></p>
+<p><a href="https://www.practical-devsecops.com/top-mcp-security-tools/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Top MCP Security Tools in 2026</a></p>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
