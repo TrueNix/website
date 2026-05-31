@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OWASP — Agent Memory Guard, a Runtime Defense Against Memory Poisoning — al-ice.ai</title>
+  <meta name="description" content="OWASP releases Agent Memory Guard, a drop-in middleware framework that wraps LangChain, LlamaIndex, and CrewAI memory APIs to defend against the ASI06 memory poisoning threat class." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/owasp-agent-memory-guard-defense-against-memory-poisoning/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="OWASP — Agent Memory Guard, a Runtime Defense Against Memory Poisoning" />
+  <meta name="post:date" content="2026-05-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">OWASP — Agent Memory Guard, a Runtime Defense Against Memory Poisoning</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-31">2026-05-31</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: OWASP's new Agent Memory Guard middleware directly protects production LLM agents against the ASI06 memory poisoning threat — where malicious instructions written to long-term semantic memory fire weeks later as "trusted" historical context.</p>
+
+<h2 id="the-problem">The Problem: Memory Poisoning Beats Prompt-Injection Defenses</h2>
+
+<p>Prompt injection is stateless: when the session ends, the attack ends. Memory poisoning changes the game. An attacker plants a malicious instruction through any external data source the agent processes — a compromised PDF, a poisoned knowledge-base article, a manipulated inbound email. That instruction gets written to the agent's long-term retrieval store, where it blends into the agent's learned identity. Days or weeks later, at retrieval time, the poisoned memory triggers data exfiltration, unauthorized tool calls, or behavioral drift — with the credibility of memory itself.</p>
+
+<p>Input sanitization happens upstream of the memory write. Output validation happens downstream of retrieval. Memory poisoning bypasses both by writing past the prompt layer entirely.</p>
+
+<h2 id="the-defense">Agent Memory Guard: Four-Layer Defense</h2>
+
+<p>OWASP's Agent Memory Guard ships as a drop-in integration for LangChain, LlamaIndex, and CrewAI. It wraps the host framework's memory read/write API so application code doesn't change — but every access passes through four defense layers:</p>
+
+<ul>
+  <li><strong>Cryptographic baselines:</strong> SHA-256 hashes of memory blobs at rest, continuously validated to detect tampering between writes.</li>
+  <li><strong>Real-time anomaly detection:</strong> Monitors for rapid state changes, unauthorized modifications of protected operational keys, and unusual size expansions in JSON/YAML memory blobs — classic injection payload signatures.</li>
+  <li><strong>Composite trust scoring with temporal decay:</strong> Older and unverified entries receive lower weight at retrieval, so uncertain memory doesn't dominate current decisions. Formalized by arXiv <a href="https://arxiv.org/abs/2601.05504?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">2601.05504</a>.</li>
+  <li><strong>Forensic state snapshots:</strong> Automatic capture of pre-poisoning state, enabling rollback to a known-good cognitive state the moment infection is detected.</li>
+</ul>
+
+<h2 id="why-it-matters">Why It Matters</h2>
+
+<ul>
+  <li>OWASP classified ASI06 (Memory Poisoning) in its Top 10 for Agentic Applications in early 2026 — this is the first production-grade defense substrate targeting that threat class at the middleware layer.</li>
+  <li>No single layer is individually sufficient. SHA-256 catches tampering between snapshots but not adversarial writes through legitimate channels. Anomaly detection catches injection signatures but misses subtle poisoning mimicking normal patterns. Trust scoring catches old unverified entries but lets recent cleverly-authenticated injections through. The combination covers the attack surface.</li>
+  <li>In multi-agent environments using shared memory orchestration, a single poisoned peer can infect the entire network via routine message passing — behaving, as researchers documented, "explicitly viral" and network-worm-shaped.</li>
+  <li>The transition from academic research (arXiv 2601.05504) to production middleware took roughly four months — fast even by AI-security standards.</li>
+</ul>
+
+<h2 id="what-to-do">What to Do</h2>
+
+<ul>
+  <li>If you run production agents with persistent memory (LangChain, LlamaIndex, CrewAI), evaluate Agent Memory Guard as a drop-in defense layer.</li>
+  <li>Audit your agent's memory read/write boundaries — ensure no external data source can write directly to long-term storage without a validation gate.</li>
+  <li>Implement temporal decay for memory entries: older, unverified knowledge should carry less weight in retrieval decisions.</li>
+  <li>Set up forensic snapshots so you can rollback agent memory to a known-good state if poisoning is detected.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li><a href="https://owasp.org/www-project-agent-memory-guard/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">OWASP Agent Memory Guard project</a></li>
+  <li><a href="https://arxiv.org/abs/2601.05504?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv 2601.05504 — Memory Poisoning Attack and Defense on Memory-Based LLM-Agents</a></li>
+  <li><a href="https://llms3.com/blog/when-memory-became-the-attack-surface-may-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">LLMS3 — When Memory Became the Attack Surface (May 2026)</a></li>
+  <li><a href="https://christian-schneider.net/blog/persistent-memory-poisoning-in-ai-agents/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Christian Schneider — Persistent Memory Poisoning in AI Agents</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

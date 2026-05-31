@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Memory Poisoning — The New Attack Surface That Beats Prompt-Injection Defenses — al-ice.ai</title>
+  <meta name="description" content="OWASP classified ASI06 memory poisoning in early 2026 — malicious instructions written to long-term agent memory that fire weeks later with the credibility of memory itself." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/05/memory-poisoning-new-attack-surface-agent-security/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Memory Poisoning — The New Attack Surface That Beats Prompt-Injection Defenses" />
+  <meta name="post:date" content="2026-05-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Memory Poisoning — The New Attack Surface That Beats Prompt-Injection Defenses</h1>
+        <div class="post-meta">
+          <time datetime="2026-05-31">2026-05-31</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Memory poisoning targets the persistence layer of production LLM agents — malicious instructions injected into long-term memory trigger weeks later during retrieval, bypassing all prompt-layer defenses and behaving as viral propagation in multi-agent systems.</p>
+
+<h2 id="what-changed">What Changed</h2>
+
+<p>For two years, AI security focused on prompt injection: sanitize input, validate output, scope the conversation. The attack was real but stateless — when the session ended, the attack ended. In early 2026, OWASP classified a new threat in its Top 10 for Agentic Applications: <strong>ASI06 — Memory Poisoning</strong>.</p>
+
+<p>Memory poisoning operates on a three-phase lifecycle:</p>
+
+<ol>
+  <li><strong>Injection:</strong> A malicious instruction enters via any external data source — a compromised PDF, a manipulated inbound email, a poisoned knowledge-base article.</li>
+  <li><strong>Persistence:</strong> The instruction is written to the agent's long-term semantic memory, where it blends into the "learned" behavioral profile.</li>
+  <li><strong>Execution:</strong> Weeks or months later, the agent retrieves the poisoned memory as trusted historical context, triggering data exfiltration, unaligned behavior, or unauthorized tool invocation.</li>
+</ol>
+
+<p>The structural difference is the time gap. Stateless prompt injection is detected in the same session it's delivered. Memory poisoning's payload is compressed, translated, and embedded deeply into the retrieval store before it ever fires. By the time the agent acts on it, the malicious instruction has gained what one analysis calls "the credibility of memory itself."</p>
+
+<h2 id="attack-surface">Attack Surface</h2>
+
+<ul>
+  <li><strong>Preference memory:</strong> Can be poisoned to force trust in a malicious vendor or disable safety checks.</li>
+  <li><strong>Experience memory:</strong> Corrupted so future tasks blindly imitate a flawed procedural trajectory.</li>
+  <li><strong>Shared memory orchestration:</strong> In multi-agent environments using distributed context, a single poisoned peer infects the entire network via routine message passing — described as "explicitly viral" and network-worm-shaped.</li>
+</ul>
+
+<h2 id="why-it-matters">Why It Matters</h2>
+
+<ul>
+  <li>The defenses that worked for prompt injection don't transfer. Input sanitization happens upstream of the memory write. Output validation happens downstream of retrieval. Memory poisoning bypasses both by writing past the prompt layer entirely.</li>
+  <li>The exact feature that makes agents powerful — their ability to learn and remember — has been weaponized into their primary attack surface.</li>
+  <li>Academic work on attack and defense models (arXiv <a href="https://arxiv.org/abs/2601.05504?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">2601.05504</a>) formalized trust scoring and temporal decay mechanisms that are now being deployed in production middleware.</li>
+  <li>The BEAM 10-million-token benchmarks exposed the limits of context expansion, pushing defense into the memory layer rather than the prompt layer.</li>
+</ul>
+
+<h2 id="what-to-do">What to Do</h2>
+
+<ul>
+  <li>Audit which memory stores your agents write to and read from — map the full persistence surface.</li>
+  <li>Implement validation gates on memory writes from any external data source (PDFs, emails, KB articles, API responses).</li>
+  <li>Deploy temporal decay: older and unverified memory entries should carry less weight at retrieval time.</li>
+  <li>For multi-agent systems, isolate memory sharing between agents and validate peer-to-peer memory transfers.</li>
+  <li>Set up forensic snapshots of agent memory state so you can rollback to a known-good cognitive state if poisoning is detected.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li><a href="https://owasp.org/www-project-agent-memory-guard/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">OWASP Agent Memory Guard project</a></li>
+  <li><a href="https://arxiv.org/abs/2601.05504?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv 2601.05504 — Memory Poisoning Attack and Defense on Memory-Based LLM-Agents</a></li>
+  <li><a href="https://christian-schneider.net/blog/persistent-memory-poisoning-in-ai-agents/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Christian Schneider — Persistent Memory Poisoning in AI Agents</a></li>
+  <li><a href="https://llms3.com/blog/when-memory-became-the-attack-surface-may-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">LLMS3 — When Memory Became the Attack Surface (May 2026 inflection)</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
