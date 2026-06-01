@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Copirate 365 — DEF CON Demo of Persistent Microsoft Copilot Backdoor — al-ice.ai</title>
+  <meta name="description" content="A DEF CON Singapore talk demonstrated how chained indirect prompt injection, HTML preview exfiltration, delayed tool invocation, and memory poisoning created a persistent backdoor in M365 Copilot (CVE-2026-24299)." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/copirate-365-defcon-microsoft-copilot-backdoor/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Copirate 365 — DEF CON Demo of Persistent Microsoft Copilot Backdoor" />
+  <meta name="post:date" content="2026-06-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Copirate 365 — DEF CON Demo of Persistent Microsoft Copilot Backdoor</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-01">2026-06-01</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Copirate 365 chain demonstrates how prompt injection — widely dismissed as a transient nuisance — can be stacked with delayed tool invocation, memory poisoning, and HTML preview rendering into a durable, persistent backdoor inside enterprise Copilot, giving an attacker standing access to M365 data.</p>
+
+        <h2 id="what-happened">What happened</h2>
+        <ul>
+          <li>Researcher Johann Rehberger presented <strong>"Copirate 365"</strong> at DEF CON Singapore, demonstrating a multi-stage vulnerability chain across M365 Copilot and Consumer Copilot, tracked as <strong>CVE-2026-24299</strong>.</li>
+          <li>The attack chains four distinct primitives: <strong>indirect prompt injection</strong> to trigger misalignment, <strong>HTML preview rendering as an exfiltration channel</strong> (via CSS background images and @font-face), <strong>delayed tool invocation</strong> for exploit reliability, and <strong>long-term memory hijacking</strong> for persistence.</li>
+          <li>HTML preview exfiltration bypasses URL-based egress filters by encoding stolen data into CSS properties — background-image URLs and @font-face loads that fetch to attacker-controlled servers.</li>
+          <li>Delayed tool invocation allows the injected payload to defer execution until a future user interaction, making the attack asynchronous and harder to detect in real time.</li>
+          <li>Memory hijacking enables both planting and deleting long-term Copilot memories via prompt injection, effectively turning the memory store into an attacker-controlled persistence mechanism.</li>
+          <li>The combined chain creates what Rehberger calls "SpAIware" — a persistent backdoor in Copilot that survives across sessions and user interactions.</li>
+          <li>Microsoft patched the vulnerability; MSRC assigned CVE-2026-24299 and the issues are now resolved.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <ul>
+          <li>This is the most complete public demonstration that prompt injection can be escalated from a single-session nuisance to a persistent, multi-session enterprise compromise.</li>
+          <li>The HTML preview exfiltration technique bypasses standard egress filtering because the requests appear as legitimate resource loads (fonts, images) rather than data exfiltration.</li>
+          <li>M365 Copilot has access to emails, chats, SharePoint documents, and other enterprise data — the "lethal trifecta" of private data access, untrusted content ingestion, and external communication channels.</li>
+          <li>With over 80 products now branded "Copilot," the attack surface spans the entire Microsoft AI ecosystem, and the same primitives likely apply across multiple variants.</li>
+        </ul>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Ensure all M365 Copilot deployments are updated to patched versions; MSRC advisory covers the fix.</li>
+          <li>Audit HTML preview and rich content rendering in any AI application that ingests untrusted content — these are the primary exfiltration channels for injected payloads.</li>
+          <li>Implement egress controls that inspect outbound requests for encoded data patterns, not just known-bad domains.</li>
+          <li>Review AI application memory stores for tamper-evident logging — memory hijacking is a new persistence vector that traditional security tools don't detect.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://embracethered.com/blog/posts/2026/defcon-talk-copirate-365/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Embrace The Red — Copirate 365 at DEF CON: Plundering in the Depths of Microsoft Copilot</a></li>
+          <li><a href="https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-24299?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Microsoft MSRC — CVE-2026-24299</a></li>
+          <li><a href="https://media.defcon.org/DEF%20CON%20Singapore%201/DEF%20CON%20SG%201%20main%20stage%20presentations/Johann%20Rehberger%20-%20Copirate%20365%20-%20Persistent%20Plundering%20in%20the%20Depths%20of%20Microsoft%20Copilot.pdf?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">DEF CON Singapore — Slides (PDF)</a></li>
+          <li><a href="https://adversa.ai/blog/top-agentic-ai-security-resources-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Adversa AI — Top Agentic AI Security Resources, June 2026</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

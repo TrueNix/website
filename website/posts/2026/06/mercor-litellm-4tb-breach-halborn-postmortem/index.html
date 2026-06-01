@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Halborn — Mercor Lost 4 TB via LiteLLM Supply-Chain Breach — al-ice.ai</title>
+  <meta name="description" content="Mercor confirmed a cascading supply-chain attack through compromised LiteLLM packages, resulting in 4 TB of internal data exfiltration including Slack archives, source code, and contractor PII." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/mercor-litellm-4tb-breach-halborn-postmortem/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Halborn — Mercor Lost 4 TB via LiteLLM Supply-Chain Breach" />
+  <meta name="post:date" content="2026-06-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Halborn — Mercor Lost 4 TB via LiteLLM Supply-Chain Breach</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-01">2026-06-01</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Mercor's AI talent platform connects experts who train frontier models for OpenAI, Anthropic, Meta, and Google — a cascading supply-chain compromise through poisoned LiteLLM packages turned a routine dependency into an ecosystem-level data breach.</p>
+
+        <h2 id="what-happened">What happened</h2>
+        <ul>
+          <li>On March 31, 2026, Mercor confirmed it had been hit by a supply-chain attack traced to the compromise of <strong>LiteLLM</strong>, an open-source AI gateway library downloaded roughly 95 million times per month.</li>
+          <li>Security firm <strong>Halborn</strong> published a post-mortem describing a multi-stage chain: the attacker first compromised <strong>Trivy</strong>, an open-source vulnerability scanner in DevSecOps pipelines, then leveraged that foothold to inject malicious code into a LiteLLM package on PyPI.</li>
+          <li>The poisoned package was pulled within hours, but with 95 million monthly downloads, that window was long enough to propagate into build pipelines, CI runners, and runtime containers of "thousands of companies."</li>
+          <li>Mercor lost approximately <strong>4 TB of internal data</strong>, including Slack archives, source code, ticketing logs, contractor passport scans, Social Security numbers, and interview recordings.</li>
+          <li>The attacker — identified as <strong>TeamPCP</strong> with subsequent claims by the <strong>Lapsus$</strong> extortion group — reused credentials stolen from a prior vulnerability scanner breach to access PyPI.</li>
+          <li>The Halborn write-up describes credential exfiltration from downstream environments, lateral movement into Mercor's infrastructure, and data staging to external servers.</li>
+          <li>Mercor told TechCrunch it was "one of thousands of companies" affected by the same compromise, making this one of the widest-impact AI supply-chain incidents of 2026.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <ul>
+          <li>LiteLLM sits at the core hub of AI infrastructure — it routes authentication, billing, and model calls across hundreds of LLM providers. Compromising it grants downstream credential harvesting at scale.</li>
+          <li>The attack demonstrates how a single compromised open-source dependency in the AI tooling layer can cascade through CI/CD pipelines into runtime environments without the organization's awareness.</li>
+          <li>TeamPCP has now been linked to compromised Trivy, KICS, LiteLLM, DurableTask, and dozens of npm packages — showing sustained, cross-ecosystem supply-chain targeting.</li>
+          <li>Mercor's position as a recruiting hub for frontier model trainers means the stolen data touches almost every major AI lab on Earth, raising the stakes well beyond a single breach.</li>
+        </ul>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Audit every system that depends on LiteLLM, including transitive dependencies. Pin versions and verify checksums against known-good releases.</li>
+          <li>Rotate all PyPI tokens, CI/CD secrets, and cloud credentials that were accessible from any environment where LiteLLM or Trivy was installed.</li>
+          <li>Enable PyPI trusted publishing and artifact signing (e.g., Sigstore) for all AI infrastructure packages in your supply chain.</li>
+          <li>Monitor CI/CD runner memory for credential extraction — TeamPCP's malware extracted PYPI_PUBLISH tokens directly from runner memory.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://techcrunch.com/2026/03/31/mercor-says-it-was-hit-by-cyberattack-tied-to-compromise-of-open-source-litellm-project/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">TechCrunch — Mercor says it was hit by cyberattack tied to compromise of open-source LiteLLM project</a></li>
+          <li><a href="https://tech-insider.org/mercor-litellm-supply-chain-attack-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Tech Insider — Mercor Hit: 4TB Stolen via LiteLLM</a></li>
+          <li><a href="https://www.esecurityplanet.com/threats/teampcp-compromised-litellm-in-ai-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">eSecurity Planet — TeamPCP Compromised LiteLLM in AI Supply Chain Attack</a></li>
+          <li><a href="https://starlabs.sg/blog/2026/05-race-against-the-patch-the-evolution-of-four-exploit-chains-in-litellm/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">STAR Labs — Race Against The Patch: Four Exploit Chains in LiteLLM</a></li>
+          <li><a href="https://therecord.media/mercor-confirms-security-incident-tied-to-litellm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Record — Mercor confirms security incident tied to LiteLLM</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
