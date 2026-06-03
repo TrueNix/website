@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arXiv — Trojan Backdoors in Agentic Workspaces Reach 95.5% ASR — al-ice.ai</title>
+  <meta name="description" content="New arXiv paper introduces ClawTrojan, a benchmark showing multi-step trojan injections in local agentic harnesses achieve 95.5% attack success on GPT-5.4, and proposes DASGuard as a dynamic defense." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/arxiv-clawtrojan-trojan-backdoors-agentic-workspaces/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="arXiv — Trojan Backdoors in Agentic Workspaces Reach 95.5% ASR" />
+  <meta name="post:date" content="2026-06-03" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">arXiv — Trojan Backdoors in Agentic Workspaces Reach 95.5% ASR</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-03">2026-06-03</time>
+          <a class="badge" href="/categories/RESEARCH/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Researchers from Renmin University of China demonstrate that multi-step trojan injections embedded in workspace files can achieve a 95.5% attack success rate against GPT-5.4 in a simulated agentic harness — far outpacing single-turn prompt injection attacks that register near-zero on the same model.</p>
+
+        <h2>Key findings</h2>
+
+        <ul>
+          <li><strong>ClawTrojan benchmark</strong> — Designed to expose multi-step trojan attacks in local agentic harnesses where an LLM reads, writes, and reuses workspace files across sessions (e.g., coding agents, personal automation agents).</li>
+          <li><strong>Multi-step persistence</strong> — Unlike traditional prompt injection that targets a single conversation turn, the attack writes hidden instructions into files (config files, project notes) that the agent re-reads later, turning transient text into durable control content.</li>
+          <li><strong>95.5% ASR on GPT-5.4</strong> — In an OpenClaw-style simulated workspace, ClawTrojan achieved a 95.5% attack success rate with GPT-5.4, while existing single-turn prompt-injection attacks produce near-zero ASR on the same model.</li>
+          <li><strong>Harmless-looking individual steps</strong> — Each step of the trojan chain appears benign on its own (e.g., a project note defining a release-report format, a config file referencing a private file), but together they can produce irreversible data exfiltration or privilege abuse.</li>
+          <li><strong>Single-step defenses fail</strong> — Existing prompt-injection detectors inspect each step in isolation, blocking overtly harmful actions but missing the earlier write operation that plants the backdoor.</li>
+        </ul>
+
+        <h2>DASGuard: proposed defense</h2>
+
+        <ul>
+          <li>Scans control-like text in sensitive local workspace files.</li>
+          <li>Traces the provenance of each instruction back to its source.</li>
+          <li>Removes control content that does not originate from a trusted source.</li>
+          <li>Combines runtime attack blocking with sanitized workspace commits.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This work formalizes a class of attacks unique to agentic harnesses — systems where LLMs have persistent local filesystems, tool access, and cross-session state. Once an injection becomes a workspace file, it survives conversation resets and traditional injection filters. As more AI coding and automation agents adopt persistent workspaces (Claude Code, Codex, OpenClaw), this attack surface grows.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Treat workspace files written by agents as untrusted until provenance is verified.</li>
+          <li>Implement file-level provenance tracking for agent-generated content (origin tags, git attribution).</li>
+          <li>Scan sensitive workspace files (config, system prompts, project docs) for control-like instructions before reuse.</li>
+          <li>Consider workspace sandboxing: separate agent-writable directories from agent-readable control content.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2605.31042?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">arXiv: From Prompt Injection to Persistent Control (2605.31042)</a></li>
+          <li><a href="https://github.com/RUC-NLPIR/ClawTrojan?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">ClawTrojan benchmark — GitHub repository</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
