@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Exposed MCP Servers Triple to 1,467; Trend Micro Finds Cloud Command-Injection Flaws — al-ice.ai</title>
+  <meta name="description" content="Three independent scans in June 2026 show ~40% of remote MCP servers run without authentication, while Trend Micro found CVSS 9.8 command-injection flaws in unofficial cloud MCP implementations." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/mcp-server-exposure-measurements-triple/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Exposed MCP Servers Triple to 1,467; Trend Micro Finds Cloud Command-Injection Flaws" />
+  <meta name="post:date" content="2026-06-05" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Exposed MCP Servers Triple to 1,467; Trend Micro Finds Cloud Command-Injection Flaws</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-05">2026-06-05</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: every exposed MCP server gives an unauthenticated caller direct access to the tools, databases, and cloud APIs that AI agents rely on — turning a misconfigured dev endpoint into a production-grade backdoor.</p>
+
+        <ul>
+          <li>Trend Micro's follow-up scan counts <strong>1,467 exposed MCP servers</strong> on the public internet, nearly triple the 492 found in their July 2025 baseline.</li>
+          <li>Of those, <strong>1,227 still use the legacy SSE transport</strong> — a long-deprecated MCP protocol variant — indicating widespread failure to upgrade to more secure Streamable HTTP.</li>
+          <li>A separate academic measurement study found that <strong>roughly 40% of remote MCP servers expose their tools with no authentication at all</strong>, and surfaced nine CVEs traced back to broken OAuth flows.</li>
+          <li>Trend Micro discovered <strong>CVSS 9.8 command-injection flaws in unofficial AWS and Azure MCP servers</strong>, disclosed through ZDI (ZDI-CAN-28042 and ZDI-CAN-28043).</li>
+          <li>The "execute_sql" tool was found on <strong>70 exposed hosts</strong>, meaning anyone can run arbitrary SQL queries against connected databases without authentication.</li>
+          <li><strong>70 hosts</strong> with direct database access, <strong>39 hosts</strong> running Graphiti Agent Memory (prime target for memory exfiltration), and at least <strong>three servers</strong> using "progress_note" features to access patient medical records.</li>
+          <li>Censys independently counted <strong>12,520 Internet-accessible MCP services</strong>, most unauthenticated, many exposing database-query and command-execution capabilities.</li>
+          <li>The exposure has shifted from local dev machines to cloud infrastructure — attackers can now pivot from a single exposed MCP server to full cloud compromise.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>MCP servers act as the bridge between AI agents and real systems. When 40% run without authentication and 1,200+ still use deprecated transports, the attack surface for AI tool chains is growing faster than defenders can audit. The presence of "execute_sql" on 70 unauthenticated hosts means database compromise is a single HTTP request away.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit all MCP servers for public exposure — any server reachable from the internet must require authentication.</li>
+          <li>Migrate from SSE to Streamable HTTP and implement OAuth 2.1 for remote MCP connections.</li>
+          <li>Remove "execute_sql" and similar high-privilege tools from any MCP server that faces untrusted networks.</li>
+          <li>Treat MCP servers as cloud infrastructure subject to the same hardening standards as databases and API gateways.</li>
+        </ul>
+
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://www.trendmicro.com/vinfo/us/security/news/vulnerabilities-and-exploits/update-on-exposed-mcp-servers-the-threat-widens-to-the-cloud?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Trend Micro: Update on Exposed MCP Servers</a></li>
+          <li><a href="https://arxiv.org/abs/2605.22333?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv 2605.22333 — Authentication Security in Real-World Remote MCP Servers</a></li>
+          <li><a href="https://censys.com/blog/mcp-servers-on-the-internet/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Censys: MCP Servers on the Internet</a></li>
+          <li><a href="https://adversa.ai/blog/top-mcp-security-resources-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI: MCP Security Resources June 2026</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
