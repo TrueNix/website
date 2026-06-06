@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adversa AI — Coding Agent RCE Roundup: SymJack, TrustFall, Copirate 365 — al-ice.ai</title>
+  <meta name="description" content="A cluster of recent disclosures reveals widespread RCE vulnerabilities across AI coding agents: SymJack affects six tools via symlink hijacking, TrustFall enables one-click RCE through regressed trust dialogs, and Copirate 365 demonstrates persistent Copilot backdoors at DEF CON." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/adversa-ai-coding-agent-rce-roundup-symjack-trustfall-copirate365/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Adversa AI — Coding Agent RCE Roundup: SymJack, TrustFall, Copirate 365" />
+  <meta name="post:date" content="2026-06-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Adversa AI — Coding Agent RCE Roundup: SymJack, TrustFall, Copirate 365</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-06">2026-06-06</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: An agentic coding gold rush has produced a cluster of high-impact RCE disclosures across major coding agents — SymJack (symlink-hijack across six tools), TrustFall (one-click RCE through regressed trust dialogs), and Copirate 365 (persistent Copilot backdoor presented at DEF CON) — demonstrating that AI coding agents remain a critical attack surface where trust boundaries are routinely violated.</p>
+
+        <h2>Key disclosures</h2>
+        <ul>
+          <li><strong>SymJack — symlink-hijack RCE in six coding agents.</strong> Adversa AI demonstrated that a symlink-disguised file copy tricks AI coding assistants into remote code execution while the approval prompt misrepresents what is actually being approved. Six major tools were tested and all were vulnerable: Claude Code, Cursor, Antigravity, GitHub Copilot, Grok Build, and Codex.</li>
+          <li><strong>TrustFall — one-click RCE via regressed trust dialog.</strong> A second Adversa AI disclosure traces a regression in the Claude Code trust dialog combined with a settings-scope inconsistency that let a cloned repo run unsandboxed code with one keypress — and with no prompts at all on CI runners. These trust-dialog bugs keep resurfacing across the ecosystem.</li>
+          <li><strong>Copirate 365 at DEF CON — persistent Copilot backdoor.</strong> This DEF CON talk chains indirect prompt injection, render-based data exfiltration, delayed tool invocation, and memory poisoning into a persistent Microsoft Copilot backdoor (CVE-2026-24299). It is a textbook example of stacking small primitives into durable, long-term access.</li>
+          <li><strong>Microsoft Semantic Kernel RCE.</strong> Microsoft detailed two Semantic Kernel flaws where prompt injection reaches host-level remote code execution through a model-invokable function feeding a code/eval sink — "when prompts become shells."</li>
+          <li><strong>Gemini CLI supply-chain compromise.</strong> A walkthrough demonstrates escalation from an indirect prompt injection against the gemini-cli coding agent into a full supply-chain compromise of the developer environment, showing how one poisoned input can ripple into the build pipeline.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>These are not isolated edge cases — they represent a systemic pattern across the entire coding agent ecosystem. SymJack proves that the approval UI itself is untrustworthy across every major vendor. TrustFall shows that even when vendors patch trust dialogs, regressions reintroduce the same class of vulnerability. Copirate 365 demonstrates that attackers are no longer looking for single exploits; they are chaining multiple primitives into persistent, hard-to-detect backdoors. The common thread: AI coding agents have been granted deep system access (filesystem, shell, CI pipelines) without correspondingly mature security boundaries.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat the approval prompt as untrusted.</strong> SymJack proves the UI can misrepresent the actual operation being approved. Validate file operations at the filesystem level, not just the UI level.</li>
+          <li><strong>Enforce strict sandboxing for CI runners.</strong> TrustFall showed that CI runners can be exploited with zero prompts. Isolate CI environments and require explicit allowlists for code execution.</li>
+          <li><strong>Audit trust dialog regressions.</strong> Add automated regression tests specifically for trust/sandbox dialogs in coding agent updates — these have been repeatedly broken by feature changes.</li>
+          <li><strong>Monitor for chained primitives.</strong> Copirate 365-style attacks combine individually low-severity issues. Look for unusual sequences of indirect injections, delayed tool invocations, and memory modifications.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://adversa.ai/blog/top-agentic-ai-security-resources-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI — Top Agentic AI Security Resources (June 2026)</a></li>
+          <li><a href="https://adversa.ai/blog/the-approval-prompt-is-lying-to-you-symlink-rce-in-five-ai-coding-agents-claude-code-cursor-antigravity-copilot-grok-build/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI — SymJack: The Approval Prompt Is Lying to You</a></li>
+          <li><a href="https://adversa.ai/blog/trustfall-coding-agent-security-flaw-rce-claude-cursor-gemini-cli-copilot/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI — TrustFall: One-Click RCE in Claude Code, Cursor, Gemini CLI, Copilot</a></li>
+          <li><a href="https://embracethered.com/blog/posts/2026/defcon-talk-copirate-365/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Embrace The Red — Copirate 365 at DEF CON: Plundering in the Depths of Microsoft Copilot</a></li>
+          <li><a href="https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Microsoft — When Prompts Become Shells: RCE in AI Agent Frameworks</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

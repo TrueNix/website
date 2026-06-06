@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CloudSEK AIVigil — Unauthenticated MCP Server Led to SSRF and AWS Credential Theft — al-ice.ai</title>
+  <meta name="description" content="CloudSEK's AIVigil discovered a real-world case where an unauthenticated MCP server chained into SSRF, local file inclusion, and live AWS IAM credential exfiltration." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/cloudsek-aivigil-unauthenticated-mcp-ssrf-aws-credential-theft/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="CloudSEK AIVigil — Unauthenticated MCP Server Led to SSRF and AWS Credential Theft" />
+  <meta name="post:date" content="2026-06-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">CloudSEK AIVigil — Unauthenticated MCP Server Led to SSRF and AWS Credential Theft</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-06">2026-06-06</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: CloudSEK's AIVigil monitoring platform discovered a real-world instance where an unauthenticated Model Context Protocol (MCP) server — deployed as part of a Spring Boot AI-augmented communications platform — chained into SSRF, local file inclusion, and exfiltration of live AWS IAM credentials and database secrets, demonstrating how rapid MCP adoption has outpaced security maturity in production AI stacks.</p>
+
+        <h2>What was found</h2>
+        <ul>
+          <li><strong>No authentication at the protocol layer.</strong> The MCP server registered tools for voice call management, SMS dispatch, audio content processing, and call callback handling — but lacked any authentication middleware, OAuth scoping, or rate limiting. Anyone who discovered the endpoint could enumerate and invoke all registered tools.</li>
+          <li><strong>SSRF via unrestricted proxy tool.</strong> An audio download utility designed for AI-driven media processing pipelines accepted arbitrary URLs, enabling server-side request forgery against internal infrastructure including the EC2 instance metadata service.</li>
+          <li><strong>Local file inclusion to credential exfiltration.</strong> The same tool could be coerced into reading arbitrary local files, allowing an attacker to pull database credentials, environment variables, and other secrets from the host filesystem.</li>
+          <li><strong>Live AWS IAM credential theft.</strong> By chaining the SSRF to IMDS with the LFI capability, an attacker could retrieve live AWS IAM credentials, enabling cloud-pivot attacks across messaging, storage, and compute services.</li>
+          <li><strong>Broad MCP exposure context.</strong> CloudSEK's findings arrive alongside independent measurements showing 8,000+ MCP servers exposed to the public internet, with an analysis of 2,614 implementations finding 82% prone to path traversal (CWE-22), 67% related to code injection (CWE-94), and 34% susceptible to command injection (CWE-78). Over 30 CVEs targeting MCP servers were filed in January–February 2026 alone.</li>
+          <li><strong>Nation-state operationalization.</strong> Google Threat Intelligence Group confirmed that adversaries from China, Iran, and North Korea have already operationalized LLMs and MCP infrastructure for reconnaissance, initial access, and credential theft.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>MCP is no longer experimental — it is the connective tissue of enterprise AI, integrating LLM agents with databases, version control, cloud infrastructure, and business-logic tools. Yet the same authentication discipline applied to traditional API endpoints is routinely missing from MCP deployments. Developer teams integrate MCP tooling to accelerate AI capabilities, often without applying the security middleware that protects their existing APIs. The vulnerability chain here (unauthenticated MCP → unrestricted proxy → SSRF to IMDS → LFI → credential exfiltration) is not a sophisticated zero-day; it is a straightforward exploitation of basic misconfiguration in infrastructure that most security programs have not yet caught up with.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Enforce authentication on all MCP endpoints at the protocol layer — no exceptions for internal or staging deployments.</li>
+          <li>Restrict proxy tool inputs to an explicit allowlist of permitted domains and block all internal IP ranges.</li>
+          <li>Require IMDSv2 on all EC2 instances to block SSRF-to-IMDS attacks.</li>
+          <li>Rotate any IAM credentials and environment-variable secrets that may have been accessible during the exposure window.</li>
+          <li>Implement continuous AI attack surface monitoring to detect new MCP exposures as your environment changes.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.cloudsek.com/blog/aivigil-mcp-security-case-study?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CloudSEK — How an Unauthenticated MCP Server Led to SSRF, LFI, and AWS Credential Theft</a></li>
+          <li><a href="https://adversa.ai/blog/top-mcp-security-resources-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Adversa AI — Top MCP Security Resources &amp; CVEs (June 2026)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
