@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HTTP/2 Bomb — OpenAI Codex Chains Decade-Old DoS Into Web Server Crash — al-ice.ai</title>
+  <meta name="description" content="OpenAI's Codex agent helped discover HTTP/2 Bomb, a combined HPACK compression bomb and Slowloris attack that crashes major web servers in seconds — to be presented at Real World AI Security conference." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/http2-bomb-codex-ai-agent-webserver-dos/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="HTTP/2 Bomb — OpenAI Codex Chains Decade-Old DoS Into Web Server Crash" />
+  <meta name="post:date" content="2026-06-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">HTTP/2 Bomb — OpenAI Codex Chains Decade-Old DoS Into Web Server Crash</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-06">2026-06-06</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: OpenAI's Codex coding agent autonomously chained two known HTTP/2 denial-of-service techniques into a novel attack — demonstrating how AI agents can accelerate vulnerability discovery and weaponize old bugs in ways that require rethinking web server hardening for AI-facing infrastructure.</p>
+
+        <h2>Key findings</h2>
+
+        <ul>
+          <li>Researcher Quang Luong (Calif) used OpenAI's Codex agent to chain an HPACK compression bomb (CVE-2016-6581) with a Slowloris-style connection hold into a combined exploit named "HTTP/2 Bomb."</li>
+          <li>Against Apache httpd and Envoy, a single client on a 100 Mbps connection can consume and hold 32 GB of server memory in roughly 20 seconds.</li>
+          <li>A home computer on a 100 Mbps connection can render a vulnerable server inaccessible within seconds.</li>
+          <li>Shodan estimates roughly 880,000 websites running vulnerable HTTP/2 servers may be affected.</li>
+          <li>nginx patched the issue within one day of disclosure (v1.29.8, importing the <code>max_headers</code> directive from freenginx).</li>
+          <li>Apache issued mod_http2 v2.0.41 the same day as the report and assigned CVE-2026-49975.</li>
+          <li>As of the latest reports, Microsoft IIS and Cloudflare Pingora remain unpatched — though Cloudflare says its DDoS mitigations already protect customers.</li>
+          <li>The fix commits are public; the Calif team notes that "any capable AI model can turn those diffs into a working exploit" — which is exactly how they found IIS, Envoy, and Pingora were also vulnerable.</li>
+          <li>Envoy has published patches that appear to mitigate the attack; validation is ongoing.</li>
+          <li>Full technical details will be presented at the Real World AI Security conference at Stanford later this month.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>This is a notable case of an AI coding agent not just assisting in security research, but autonomously chaining known techniques into a novel exploit — then using publicly available fix diffs to find the same vulnerability across additional vendors. The implication for AI-facing infrastructure is direct: AI model serving stacks (vLLM, Triton, API gateways) that expose HTTP/2 endpoints without header limits are vulnerable to the same attack. The discovery pipeline itself — agent finds exploit → agent reads patch → agent finds same pattern elsewhere — raises questions about how AI-assisted vulnerability research changes the timeline between disclosure and weaponization.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li>Update nginx to 1.29.8+ and Apache mod_http2 to 2.0.41+.</li>
+          <li>For Microsoft IIS and Cloudflare Pingora, disable HTTP/2 where possible or enforce a cap on the number of HTTP headers a client can send per request.</li>
+          <li>Audit AI model serving infrastructure (vLLM, Triton Inference Server, API gateways) for HTTP/2 header limits.</li>
+          <li>Monitor for Envoy patch validation updates.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.theregister.com/security/2026/06/04/openais-codex-chains-decade-old-dos-techniques-into-http/2-bomb/5251377?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Register — OpenAI's Codex Chains Decade-Old DoS Techniques Into HTTP/2 Bomb</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/new-http-2-bomb-dos-attack-crashes-web-servers-in-under-a-minute/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">BleepingComputer — New 'HTTP/2 Bomb' DoS Attack Crashes Web Servers in Under a Minute</a></li>
+          <li><a href="https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Calif Blog — Codex Discovered a Hidden HTTP/2 Bomb</a></li>
+          <li><a href="https://github.com/califio/publications/tree/main/MADBugs/http2-bomb?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Calif HTTP/2 Bomb PoC on GitHub</a></li>
+          <li><a href="https://seclab.stanford.edu/RealWorldAIsec/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Real World AI Security Conference (Stanford)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
