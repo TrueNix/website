@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Miasma Worm Targets AI Coding Agents via GitHub Repo Config Injection — al-ice.ai</title>
+  <meta name="description" content="A parallel arm of the Miasma worm campaign pushes malicious commits to 120+ GitHub repos, exploiting Claude Code, Cursor, and VS Code auto-run features to detonate a credential harvester on folder open." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/miasma-github-repo-ai-coding-agent-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Miasma Worm Targets AI Coding Agents via GitHub Repo Config Injection" />
+  <meta name="post:date" content="2026-06-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Miasma Worm Targets AI Coding Agents via GitHub Repo Config Injection</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-06">2026-06-06</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Miasma worm's GitHub repo persistence arm weaponizes auto-run configuration files in Claude Code, Gemini CLI, Cursor, and VS Code — turning every clone-and-open action into a credential-harvesting event for developers who use AI coding agents on infected repos.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>Alongside the 57-package <strong>Phantom Gyp</strong> npm registry wave (June 3), the Miasma worm executed a <strong>parallel attack directly on GitHub source repositories</strong>, documented by SafeDep and The Hacker News.</li>
+          <li>The attacker pushed commits titled <code>chore: update dependencies [skip ci]</code> to <strong>120+ repos across multiple accounts</strong>, adding no dependencies but planting a 4.3 MB credential-harvester dropper.</li>
+          <li>The attack wire-triggers execution through <strong>five separate developer-tool auto-run surfaces</strong>, all pointing at the same payload (<code>.github/setup.js</code>):</li>
+          <li><strong>Claude Code &amp; Gemini CLI:</strong> A <code>SessionStart</code> hook in <code>.claude/settings.json</code> and <code>.gemini/settings.json</code> runs <code>node .github/setup.js</code> on every agent session open.</li>
+          <li><strong>Cursor:</strong> A project rule in <code>.cursor/rules/setup.mdc</code> with <code>alwaysApply: true</code> instructs the agent to execute the dropper — social-engineering the assistant into running it.</li>
+          <li><strong>VS Code:</strong> A <code>runOn: "folderOpen"</code> task in <code>.vscode/tasks.json</code> triggers the payload when the developer opens the folder, requiring no agent at all.</li>
+          <li><strong>npm test:</strong> The <code>package.json</code> test script is replaced with the dropper, so CI pipelines and any developer running tests also detonate it.</li>
+          <li>Cloning is safe; <strong>opening the folder in a tool is the detonation trigger</strong>.</li>
+        </ul>
+
+        <h2>AI coding agent attack surface</h2>
+        <ul>
+          <li>Targets include <strong>Microsoft Azure's durabletask</strong> repo (1,718 stars), where the attacker used a stolen PAT from a real Microsoft contributor and backdated the commit to 2020 to hide in a dormant branch.</li>
+          <li>The <code>icflorescu/mantine-datatable</code> maintainer's account was suspended; his wife disclosed the incident on his behalf.</li>
+          <li>The dropper uses a <strong>Caesar-shift-obfuscated character-code array</strong> (shift of 4) that AES-128-GCM decrypts to the Bun-based credential harvester.</li>
+          <li>The harvester targets AWS, GCP, Azure, HashiCorp Vault, Docker, Kubernetes, GitHub Actions, npm, RubyGems, PyPI, SSH, password managers, and AI assistants.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li>AI coding agents trust project-level config files (Claude Code <code>hooks</code>, Cursor rules, Gemini settings) — this attack <strong>abuses that trust model to achieve zero-click execution</strong>.</li>
+          <li>The five-trigger approach ensures detonation whether the developer uses AI agents or plain VS Code — <strong>maximizing blast radius</strong>.</li>
+          <li>GitHub is becoming a persistence layer for supply-chain worms, bypassing npm registry detection entirely.</li>
+          <li>Backdated, unsigned commits from stolen identities make detection and attribution significantly harder.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Audit recent commits</strong> across repos you clone, looking for additions of <code>.claude/settings.json</code>, <code>.cursor/rules/</code>, <code>.gemini/settings.json</code>, or <code>.vscode/tasks.json</code> with <code>runOn: folderOpen</code>.</li>
+          <li><strong>Disable auto-run hooks</strong> in AI coding agents until you've reviewed the project. Claude Code and Cursor both allow session-level confirmation before executing hooks.</li>
+          <li><strong>Check <code>package.json</code> test scripts</strong> for unexpected file execution before running tests on unfamiliar repos.</li>
+          <li><strong>Rotate any credentials</strong> that may have been exposed if you opened an infected repo.</li>
+          <li>Monitor <code>github.com</code> for suspicious commits authored as <code>github-actions[bot]</code> or <code>claude@users.noreply.github.com</code>.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://safedep.io/miasma-worm-ai-coding-agent-config-injection/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SafeDep — Miasma Worm Targets AI Coding Agents via GitHub Repos</a></li>
+          <li><a href="https://thehackernews.com/2026/06/ironworm-and-new-miasma-worm-variant.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — IronWorm and New Miasma Worm Variant Hit npm</a></li>
+          <li><a href="https://thehackernews.com/2026/06/miasma-worm-hits-73-microsoft-github.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — Miasma Worm Hits 73 Microsoft GitHub Repositories</a></li>
+          <li><a href="https://github.com/icflorescu/mantine-datatable/discussions/813?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">mantine-datatable maintainer disclosure (GitHub Discussions)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
