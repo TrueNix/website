@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microsoft — Framework CVEs: Prompt Injection to RCE Across Semantic Kernel, CrewAI, LangChain — al-ice.ai</title>
+  <meta name="description" content="Microsoft's 'When Prompts Become Shells' research catalogs critical CVEs where prompt injection in agent frameworks escalates to full remote code execution — including eval() abuse, arbitrary file writes, and sandbox bypasses." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/microsoft-when-prompts-become-shells-framework-cves/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Microsoft — Framework CVEs: Prompt Injection to RCE Across Semantic Kernel, CrewAI, LangChain" />
+  <meta name="post:date" content="2026-06-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Microsoft — Framework CVEs: Prompt Injection to RCE Across Semantic Kernel, CrewAI, LangChain</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-07">2026-06-07</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>AI relevance: Microsoft's "When Prompts Become Shells" research maps a systemic class of vulnerabilities where prompt injection in AI agent frameworks escalates directly to remote code execution — proving that connected LLMs transform content-security bugs into host-compromise paths.</p>
+
+<ul>
+<li>Research published May 7, 2026 by Microsoft's security team synthesizes a pattern across the agentic AI ecosystem: when an LLM connects to tools, poisoned content becomes executable code.</li>
+<li><strong>Microsoft Semantic Kernel:</strong> CVE-2026-26030 (Critical) — <code>eval()</code> used to execute lambda expressions in vector store filter functions without sanitization. A simple data lookup becomes an executable payload. Fix: Python ≥ 1.39.4, .NET ≥ 1.71.0.</li>
+<li><strong>Microsoft Semantic Kernel:</strong> CVE-2026-25592 (Critical) — <code>DownloadFileAsync</code> function exposed to AI models via <code>[KernelFunction]</code> attribute, enabling arbitrary file writes to the host filesystem from a single malicious prompt.</li>
+<li><strong>CrewAI:</strong> Sandbox bypass — when Docker is unavailable, framework defaults to SandboxPython which fails to block <code>ctypes</code> calls; attackers invoke <code>ctypes.CDLL("libc.so.6").system()</code> for arbitrary command execution.</li>
+<li><strong>CrewAI:</strong> No continuous Docker availability check — if Docker goes offline mid-session, the system silently degrades to insecure sandbox mode without alerting operators.</li>
+<li><strong>LangChain:</strong> CVE-2026-34070 (CVSS 7.5) — path traversal in prompt loading. LangGraph also affected via deserialization vulnerability (CVSS 9.3) leaking API keys.</li>
+<li><strong>LangFlow:</strong> CVE-2026-33017 (CVSS 9.8) — unauthenticated RCE via HTTP endpoint.</li>
+<li>Attack vector is consistent: attacker embeds malicious instructions in documents, emails, web pages, or database records that the agent later retrieves; the agent treats poisoned content as legitimate context and executes it via tool access.</li>
+<li>Only two of CrewAI's four identified vulnerabilities have received official vendor statements; tens of thousands of production deployments may remain vulnerable.</li>
+</ul>
+
+<h2>Why it matters</h2>
+<p>This is the clearest articulation yet that prompt injection in agent frameworks is not a content-quality problem — it's a host-compromise problem. When frameworks expose tool-calling functions directly to LLMs, a poisoned retrieval context bypasses the traditional boundary between "what the AI thinks" and "what code runs." The Microsoft research shows this pattern is systemic across the ecosystem, not isolated to one vendor. For teams running agent frameworks in production, the threat model is identical to traditional injection (SQL, command injection): untrusted input reaching an execution context.</p>
+
+<h2>What to do</h2>
+<ul>
+<li>Audit your agent framework version against the listed CVEs and patch immediately if affected.</li>
+<li>Review which functions your LLM can invoke — any function with file, network, or system access should be treated as callable from untrusted input.</li>
+<li>For CrewAI users: ensure Docker availability is continuously monitored, not just checked at startup.</li>
+<li>Apply defense-in-depth: isolate agent execution in containers with minimal privileges, restrict network egress, and log all tool invocations for anomaly detection.</li>
+<li>Treat retrieved content (documents, web pages, database records) as untrusted — the same standard you'd apply to user input in traditional applications.</li>
+</ul>
+
+<h3>Sources</h3>
+<ul>
+<li><a href="https://zenvanriel.com/ai-engineer-blog/ai-agent-framework-rce-vulnerabilities-prompts-become-shells/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Zen Van Riel — AI Agent Framework RCE Vulnerabilities</a></li>
+<li><a href="https://www.microsoft.com/en-us/security/blog/2026/06/05/securing-ci-cd-in-agentic-world-claude-code-github-action-case/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Microsoft Security Blog — Securing CI/CD in an Agentic World</a></li>
+<li><a href="https://adversa.ai/blog/top-agentic-ai-security-resources-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="nofollow noopener" target="_blank">Adversa AI — Top Agentic AI Security Resources June 2026</a></li>
+</ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
