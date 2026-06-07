@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Miasma npm Worm Hits 57 Packages via binding.gyp — al-ice.ai</title>
+  <meta name="description" content="A self-replicating npm worm named Miasma compromised 57 packages across 286 malicious versions, using binding.gyp to execute at install time and steal multi-cloud credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/miasma-npm-worm-binding-gyp-ai-coding-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Miasma npm Worm Hits 57 Packages via binding.gyp" />
+  <meta name="post:date" content="2026-06-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Miasma npm Worm Hits 57 Packages via binding.gyp</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-07">2026-06-07</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Miasma worm specifically targeted AI-coding-adjacent packages including ai-sdk-ollama (120K monthly downloads) and autotel-mcp, using compromised maintainer accounts to spread through developer and agent tooling supply chains.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>On June 3–4, 2026, attackers published 286 malicious versions across 57 npm packages in a self-replicating supply-chain campaign dubbed "Miasma" by Endor Labs and StepSecurity.</li>
+          <li>The worm uses a novel install-time execution technique via <code>binding.gyp</code> files — npm runs <code>node-gyp rebuild</code> automatically when a package ships a binding.gyp, with no lifecycle script declared, bypassing standard "no postinstall" security checks.</li>
+          <li>The trigger file abuses gyp command substitution to run <code>node index.js</code> during install, executing before any application code imports the package.</li>
+          <li>The payload uses layered obfuscation: a 4.5MB root <code>index.js</code> with <code>eval(ROT-n(...))</code> decode-then-execute wrapper that unpacks a self-decrypting AES-128-GCM stage. ROT keys rotated between versions (shift 15 vs shift 18) published in the same minute.</li>
+          <li>The final stage downloads a standalone Bun runtime to execute outside Node, then harvests AWS, GCP, Azure, Vault, and Kubernetes credentials, GitHub Actions OIDC tokens, and npm, GitHub, and RubyGems registry tokens.</li>
+          <li>The malware republishes packages owned by the compromised maintainer using forged provenance metadata, enabling self-propagation across trusted package ecosystems.</li>
+          <li>Targeted packages included ai-sdk-ollama (Ollama-to-Vercel AI SDK bridge, 120K+ monthly downloads), @vapi-ai/server-sdk (408K+ monthly downloads), and the entire autotel ecosystem of agent tooling packages.</li>
+          <li>This campaign follows an earlier Miasma wave targeting @redhat-cloud-services packages on June 1, 2026, confirming the same attacker infrastructure and worm mechanics.</li>
+          <li>SafeDep confirmed the worm also targets AI coding agent configuration files, injecting malicious settings to expand its reach.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>binding.gyp has become an install-time execution surface that most AppSec teams do not monitor. The Miasma worm proves that an npm package can execute malicious code even when package.json shows no lifecycle scripts. For AI agent deployments that auto-install packages or rely on npm ecosystems for tooling, this is a direct supply-chain risk: the worm steals exactly the credentials (cloud, registry, OIDC) that agent systems depend on.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit all npm dependencies for binding.gyp files — treat them as equivalent to postinstall scripts.</li>
+          <li>Pin dependencies with lockfiles and verify package integrity hashes before deploying to production.</li>
+          <li>Rotate all cloud and registry credentials if any affected package was installed in your CI/CD or agent environments.</li>
+          <li>Monitor npm for new versions of packages in the autotel, awaitly, executable-stories, and node-env-resolver namespaces.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.endorlabs.com/learn/malicious-payload-in-ai-sdk-ollama-npm-package?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Endor Labs — ai-sdk-ollama analysis</a></li>
+          <li><a href="https://corgea.com/research/miasma-phantom-gyp-npm-worm-vapi-ai-sdk-ollama-june-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Corgea — Phantom Gyp coverage</a></li>
+          <li><a href="https://thehackernews.com/2026/06/ironworm-and-new-miasma-worm-variant.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — IronWorm and Miasma variant</a></li>
+          <li><a href="https://safedep.io/miasma-worm-ai-coding-agent-config-injection/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SafeDep — AI coding agent config injection</a></li>
+          <li><a href="https://www.chainguard.dev/unchained/chainguard-artifacts-safe-from-miasma-phantom-gyp-npm-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Chainguard — 57 packages, 286 versions</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
