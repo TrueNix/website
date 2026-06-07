@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nx Console VS Code Extension — Poisoned Extension Breaches 3,800 GitHub Internal Repos — al-ice.ai</title>
+  <meta name="description" content="A poisoned Nx Console VS Code extension (CVE-2026-48027) exfiltrated developer credentials and led to the theft of 3,800 internal GitHub repositories by TeamPCP." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/nx-console-vs-code-extension-github-3800-repo-breach/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Nx Console VS Code Extension — Poisoned Extension Breaches 3,800 GitHub Internal Repos" />
+  <meta name="post:date" content="2026-06-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Nx Console VS Code Extension — Poisoned Extension Breaches 3,800 GitHub Internal Repos</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-07">2026-06-07</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: AI coding agents (Claude Code, Cursor, Copilot) run inside the same VS Code extension environment that TeamPCP poisoned, meaning the same credential-harvesting payload could silently exfiltrate tokens from any developer or agent that auto-installs compromised extensions.</p>
+
+        <ul>
+          <li>TeamPCP, the threat group behind the Mini Shai-Hulud npm supply chain campaign, published a malicious version of Nx Console (v18.95.0) to both the Visual Studio Marketplace and Open VSX on May 18.</li>
+          <li>The attacker posed as a legitimate Nx maintainer and uploaded the poisoned package without any manual approval from Nx administrators.</li>
+          <li>The compromised extension fetched an obfuscated payload that harvested credentials from: Vault tokens, Kubernetes and AWS IAM auth, .npmrc/OIDC tokens, AWS IMDS/ECS metadata, GitHub tokens (ghp_/gho_/ghs_), 1Password op CLI vaults, private keys, and Docker credentials.</li>
+          <li>The malicious extension was available for roughly 18 minutes before being unpublished and removed by Microsoft.</li>
+          <li>GitHub confirmed that the breach resulted in exfiltration of ~3,800 internal repositories — directionally consistent with TeamPCP's public claims.</li>
+          <li>The attack chain traces back to the TanStack npm supply chain compromise, which gave the attacker GitHub credentials of a legitimate Nx developer (CVE-2026-48027).</li>
+          <li>Nx CEO Jeff Cross acknowledged the role their software played and announced publishing-pipeline hardening requiring two-admin approval going forward.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>AI coding agents and developer tooling share the same VS Code extension trust surface. A poisoned extension doesn't just affect humans — any agent with workspace access that loads compromised tooling inherits the same credential-harvesting risk. The Mini Shai-Hulud campaign already demonstrated cascading supply chain compromise across Trivy, KICS, LiteLLM, TanStack, Red Hat Cloud Services, and 500+ npm packages. VS Code extensions are the next logical frontier.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit all installed VS Code extensions for unexpected version changes or publisher impersonation.</li>
+          <li>Review workflow run logs for Nx Console and other extensions for signs of compromise.</li>
+          <li>Rotate any tokens or credentials that may have been accessible from developer workstations during the exposure window.</li>
+          <li>Enforce publisher-approval gates for extension updates in team environments.</li>
+          <li>Consider pinning extension versions in your team's dotfiles or workspace configuration.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.infosecurity-magazine.com/news/github-breach-nx-console-vs-code/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Infosecurity Magazine — GitHub Breach Traced to Malicious Nx Console Extension</a></li>
+          <li><a href="https://github.com/nrwl/nx-console/security/advisories/GHSA-c9j4-9m59-847w?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Nx Console Security Advisory (GHSA-c9j4-9m59-847w)</a></li>
+          <li><a href="https://www.xda-developers.com/poisoned-vs-code-extension-github-breach-microsoft-owns-every-link/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">XDA — Poisoned VS Code Extension Led to GitHub Breach</a></li>
+          <li><a href="https://ramimac.me/teampcp/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">TeamPCP Incident Timeline — Mini Shai-Hulud Campaign</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
