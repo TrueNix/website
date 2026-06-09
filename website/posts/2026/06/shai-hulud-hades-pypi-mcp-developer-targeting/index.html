@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shai-Hulud — Hades Branch Poisons 23 PyPI Packages Targeting MCP Developers — al-ice.ai</title>
+  <meta name="description" content="A new Hades-family wave of the Shai-Hulud supply chain campaign compromises 23 PyPI packages with MCP-themed typosquats and a novel LLM anti-analysis technique." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/shai-hulud-hades-pypi-mcp-developer-targeting/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Shai-Hulud — Hades Branch Poisons 23 PyPI Packages Targeting MCP Developers" />
+  <meta name="post:date" content="2026-06-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Shai-Hulud — Hades Branch Poisons 23 PyPI Packages Targeting MCP Developers</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-09">2026-06-09</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Shai-Hulud supply chain campaign now includes MCP-themed PyPI typosquats and a payload that hides a fake system-instruction block inside JavaScript comments to poison LLM-assisted security triage — directly targeting the AI agent tool ecosystem.</p>
+
+        <ul>
+          <li><strong>Three delivery branches.</strong> The Hades family now operates via (a) <code>.pth</code> startup hooks that download and execute the Bun runtime at Python startup, (b) compiled <code>.abi3.so</code> extensions with embedded <code>_index.js</code> that fire on <code>dlopen()</code>, bypassing source-only review, and (c) a <code>langchain-core-mcp</code> loader variant that scans <code>sys.path</code> for payloads elsewhere in the environment — a split-staging architecture that defeats co-location detection rules.</li>
+          <li><strong>23 new malicious PyPI artifacts.</strong> The wave spans three thematic clusters: bioinformatics packages (trojanized legitimate research tools like <code>ensmallen</code> and <code>phenopacket-store-toolkit</code>), MCP/AI-themed packages (<code>langchain-core-mcp</code>, <code>openai-mcp</code>, <code>instructor-mcp</code>, <code>tiktoken-mcp</code>, <code>ray-mcp-server</code>), and typosquats (<code>rsquests</code> for <code>requests</code>, <code>tlask</code> for <code>flask</code>).</li>
+          <li><strong>LLM anti-analysis technique.</strong> The <code>_index.js</code> payload embeds a large fake system-instruction block inside a non-executing JavaScript comment at the top of the file. The comment is skipped at runtime by Bun but is designed to trigger safety refusals and context pollution in AI-assisted code review pipelines. The actual malicious code lives after the comment, wrapped in <code>try{eval(...)}</code> with a ROT-style character-code substitution cipher.</li>
+          <li><strong>Credential harvesting at scale.</strong> Once executed, the payload harvests GitHub, npm, PyPI, RubyGems, and JFrog tokens; AWS, Azure, and GCP credentials; Kubernetes service accounts; SSH keys, Docker configs, shell histories, and <code>.env</code> files — the full AI developer workstation attack surface.</li>
+          <li><strong>Campaign totals now at 471 artifacts.</strong> The broader Shai-Hulud operation (Mini Shai-Hulud, Miasma, Hades clusters) now spans 411 npm artifacts across 106 packages and 60 PyPI artifacts across 37 packages, per Socket Threat Research.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <p>The MCP-themed package names (<code>langchain-core-mcp</code>, <code>openai-mcp</code>, <code>tiktoken-mcp</code>) show attackers are deliberately targeting developers building Model Context Protocol integrations — the same developers who will be wiring these packages into agents with access to APIs, databases, and cloud infrastructure. The split-staging <code>sys.path</code> loader and LLM-comment anti-analysis technique demonstrate rapid evolution beyond simple typosquatting.</p>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Block or remove all 23 identified malicious PyPI artifacts (see IOCs below).</li>
+          <li>Audit <code>requirements.txt</code>, <code>pyproject.toml</code>, and lock files for any <code>mcp</code>-themed packages installed recently — verify against PyPI package registries.</li>
+          <li>Rotate any tokens or credentials found on machines that may have installed these packages.</li>
+          <li>Pin package versions and use dependency verification (hashes, provenance) rather than bare version ranges.</li>
+          <li>Scan agent skills and MCP server dependencies with a tool like <a href="https://github.com/nvidia/skillspector?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVIDIA SkillSpector</a> before installation.</li>
+        </ul>
+
+        <h2 id="iocs">IOCs — malicious PyPI artifacts</h2>
+        <p><code>dreamgen</code> 1.8.1 · <code>embiggen</code> 0.11.97 · <code>ensmallen</code> 0.8.101 · <code>gpsea</code> 0.9.14 · <code>instructor-mcp</code> 1.15.2–1.15.3 · <code>langchain-core-mcp</code> 1.4.2–1.4.3 · <code>mem8</code> 6.0.1 · <code>mflux-streamlit</code> 0.0.3–0.0.4 · <code>openai-mcp</code> 2.41.1–2.41.2 · <code>orchestr8-platform</code> 3.3.2 · <code>phenopacket-store-toolkit</code> 0.1.7 · <code>ppkt2synergy</code> 0.1.1 · <code>pyphetools</code> 0.9.120 · <code>ray-mcp-server</code> 0.2.1 · <code>rlask</code> 3.1.7 · <code>rsquests</code> 2.34.3 · <code>tiktoken-mcp</code> 0.13.1–0.13.2 · <code>tlask</code> 3.1.4</p>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://socket.dev/blog/mini-shai-hulud-miasma-and-hades-worms-target-bioinformatics-and-mcp-developers-via-malicious?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Socket Threat Research — Mini Shai-Hulud, Miasma and Hades worms</a></li>
+          <li><a href="https://thehackernews.com/2026/06/hades-pypi-attack-19-packages-poisoned.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News — Hades PyPI attack</a></li>
+          <li><a href="https://dev.to/coridev/the-miasma-worm-how-ai-coding-agents-became-a-supply-chain-attack-surface-5af?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">DEV — Miasma worm supply chain analysis</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
