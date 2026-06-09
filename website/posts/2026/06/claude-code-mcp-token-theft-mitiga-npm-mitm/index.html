@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Claude Code MCP Token Theft — npm Package MITM — al-ice.ai</title>
+  <meta name="description" content="Mitiga researchers demonstrated a stealthy attack chain that redirects Claude Code's MCP OAuth traffic through attacker infrastructure via a malicious npm package, intercepting long-lived bearer tokens." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/claude-code-mcp-token-theft-mitiga-npm-mitm/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Claude Code MCP Token Theft — npm Package MITM" />
+  <meta name="post:date" content="2026-06-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Claude Code MCP Token Theft — npm Package MITM</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-09">2026-06-09</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p class="lead">AI relevance: A malicious npm package can silently redirect Claude Code's Model Context Protocol OAuth tokens to attacker-controlled infrastructure, giving long-lived access to Jira, GitHub, Confluence and any other connected SaaS — with no patch available.</p>
+
+        <h2>The attack chain</h2>
+        <ul>
+          <li><strong>Entry point:</strong> A malicious npm package with a post-install hook runs during <code>npm install</code>, before the developer sees any output.</li>
+          <li><strong>Configuration rewrite:</strong> The hook modifies <code>~/.claude.json</code>, the control file that routes Claude Code's MCP traffic. A single config change points authenticated MCP requests to attacker-controlled servers.</li>
+          <li><strong>Token interception:</strong> OAuth bearer tokens stored in the same config file are sent to the attacker's infrastructure in transit. These are long-lived tokens for every connected SaaS platform — Jira, Confluence, GitHub, internal APIs.</li>
+          <li><strong>Stealth:</strong> Provider-side audit logs show Anthropic's egress IP, a real user, and a valid session. As Mitiga notes: nothing in the log row is wrong, but nothing is right either — the user didn't make those queries.</li>
+        </ul>
+
+        <h2>Prior context</h2>
+        <ul>
+          <li>In February 2026, Check Point Research disclosed <a href="https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">two Claude Code vulnerabilities</a>: CVE-2025-59536 (RCE via repo hooks) and CVE-2026-21852 (API key exfil via environment variable override). Both triggered on cloning an untrusted repo.</li>
+          <li>Anthropic patched those, but the architectural pattern remains: configuration files that look like passive metadata are actually active execution paths.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Mitiga reported this to Anthropic on April 10. Anthropic responded on April 12 that the issue was out of scope because the attack requires prior code execution via a package the user "consented" to install. As of this writing, no patch exists and the attack chain is live. This is a structural problem — any AI coding tool that stores OAuth tokens in a writable local config file is vulnerable to the same pattern.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit npm packages installed in developer workflows, especially wrapper utilities that appear in dependency trees unexpectedly.</li>
+          <li>Monitor <code>~/.claude.json</code> for unauthorized modifications with file integrity tooling or endpoint detection.</li>
+          <li>Review SaaS provider audit logs for queries originating from Anthropic egress ranges that don't match known developer activity.</li>
+          <li>Consider token rotation policies for OAuth-connected MCP integrations, particularly for high-privilege connections.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.csoonline.com/article/4181230/claude-code-has-an-mcp-security-problem-and-your-developers-are-already-using-it.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CSO Online: Claude Code MCP security problem</a></li>
+          <li><a href="https://www.mitiga.io/blog/claude-code-mcp-token-theft-mitm?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Mitiga Labs: Claude Code MCP Token Theft via MITM</a></li>
+          <li><a href="https://www.securityweek.com/claude-code-oauth-tokens-can-be-stolen-through-stealthy-mcp-hijacking/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek: Claude Code OAuth tokens can be stolen</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
