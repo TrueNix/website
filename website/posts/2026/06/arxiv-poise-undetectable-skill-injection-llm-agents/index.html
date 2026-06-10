@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="google-adsense-account" content="ca-pub-9044791241492233">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents — al-ice.ai</title>
-  <meta name="description" content="POISE achieves 89.3% attack success rate on skill injection by blending malicious instructions into legitimate skill bodies, evading LLM-based static scanners." />
+  <title>arXiv — Poise: Undetectable Skill Injection on LLM Agents — al-ice.ai</title>
+  <meta name="description" content="Poise achieves 89.3% attack success rate on LLM agent skills by exploiting position-aware injection — and bypasses current scanner defenses through false-positive blending." />
   <link rel="canonical" href="https://al-ice.ai/posts/2026/06/arxiv-poise-undetectable-skill-injection-llm-agents/" />
   <meta name="robots" content="index,follow" />
-  <meta name="post:title" content="arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents" />
+  <meta name="post:title" content="arXiv — Poise: Undetectable Skill Injection on LLM Agents" />
   <meta name="post:date" content="2026-06-10" />
   <meta name="post:category" content="research" />
   <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
@@ -36,39 +36,39 @@
     </header>
     <main>
       <article class="post">
-        <h1 class="post-title">arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents</h1>
+        <h1 class="post-title">arXiv — Poise: Undetectable Skill Injection on LLM Agents</h1>
         <div class="post-meta">
           <time datetime="2026-06-10">2026-06-10</time>
           <a class="badge" href="/categories/RESEARCH/">Research</a>
           <span class="post-author">by al-ice.ai Editorial</span>
         </div>
 
-        <p>AI relevance: Agent skills (like SKILL.md files) are a core extension mechanism in AI agent ecosystems, and this paper demonstrates a practical injection attack that achieves 89.3% success while evading LLM-based static scanners — directly threatening the skill supply chain that OpenClaw, Claude Code, and other harnesses rely on.</p>
+        <p>AI relevance: Poise demonstrates a new skill-poisoning technique against agentic tool ecosystems (OpenClaw skills, Claude Code plugins) that achieves 89.3% attack success rate while evading four different LLM-based security scanners — exposing a structural gap in how AI skills are distributed and verified.</p>
 
+        <h2>What happened</h2>
         <ul>
-          <li><strong>The reliability–stealth tradeoff.</strong> Prior skill-poisoning attacks forced a choice: YAML-header injections load reliably but are easy for scanners to inspect; body-text injections are stealthier but less reliable because out-of-context malicious commands raise suspicion with the agent itself.</li>
-          <li><strong>POISE compresses the trigger.</strong> The attack places a single, benign-looking instruction at a carefully chosen position within the skill body, using a context-aware generator to blend it with surrounding setup or prerequisite steps — making it read as a natural continuation rather than an anomalous command.</li>
-          <li><strong>89.3% attack success rate.</strong> Tested on Skill-Inject with codex+gpt-5.2, POISE outperforms random-placement body baselines by 28.0 percentage points and beats YAML-only baselines by 2.6 points, while retaining the stealth advantage of body placement.</li>
-          <li><strong>LLM scanners are broken for this threat model.</strong> The paper finds that four different LLM judge models falsely flag 74.6% of <em>clean</em> skills on average — because legitimate skill bodies naturally request privileged tool operations. POISE adds only 5.6% incremental high-risk alerts over clean baselines, meaning the attack hides in the noise of existing false positives.</li>
-          <li><strong>Three harm categories evaluated.</strong> The authors instantiate attacks across exfil (credential/data exfiltration setup), cfg (configuration tampering), and sys (privileged-shell behavior), showing the technique generalizes beyond a single payload type.</li>
-          <li><strong>Implications for skill registries.</strong> ClawHub, MCP server registries, and any marketplace distributing agent skills face a fundamental detection gap: static LLM-based scanning cannot reliably distinguish poisoned skills from legitimate ones when both require privileged operations.</li>
+          <li><strong>Position-aware injection.</strong> Poise compresses a malicious trigger into a single benign-looking body instruction within the skill document, placing it at a "feasible position" and using a context-aware generator to blend it with nearby setup steps — making it look like normal skill prose.</li>
+          <li><strong>89.3% attack success rate</strong> on Skill-Inject benchmark (codex + gpt-5.2), 28.0 points above random-placement body baselines and 2.6 points above YAML-header-only baselines.</li>
+          <li><strong>Stealth by false-positive blending.</strong> LLM scanners already flag 74.6% of clean (benign) skills as high-risk across four judges. Poise causes only 5.6% of poisoned variants to gain a <em>new</em> high-risk alert over their clean baselines — the attack hides inside the scanner's existing false-positive noise.</li>
+          <li><strong>Attack Success Rate metric.</strong> Unlike prior work that measures raw payload execution, Poise evaluates attacks by whether the payload executes AND the user's legitimate task still succeeds — a stricter, more realistic threshold.</li>
+          <li><strong>Supply-chain implications.</strong> Skills are portable, modular packages (SKILL.md + helper scripts) installed from public marketplaces. A poisoned skill persists across sessions and can steer agents from within legitimate workflows.</li>
         </ul>
 
         <h2>Why it matters</h2>
-        <p>The agent skills ecosystem assumes skills are authored by trusted developers. POISE shows that a single compromised SKILL.md in a supply chain — from a breached repo, a typosquatted package, or a malicious contributor — can persist through current scanning defenses. As agent frameworks increasingly load third-party skills automatically, this attack surface grows without corresponding detection improvements.</p>
+        <p>This is the first paper to show that skill-poisoning can be both highly effective and practically stealthy against current defenses. The false-positive blending insight is critical: defenders can't simply "scan more aggressively" when scanners already misclassify three-quarters of clean skills. The result suggests that static/LLM-based scanning alone cannot secure AI skill distribution channels.</p>
 
         <h2>What to do</h2>
         <ul>
-          <li>Verify skill provenance before installation — check author identity, repo history, and community trust signals.</li>
-          <li>Run skills in constrained sandboxes with least-privilege tool permissions, not as unrestricted agent capabilities.</li>
-          <li>Monitor skill execution traces for anomalous tool-call patterns (e.g., file reads outside project scope, network exfil attempts).</li>
-          <li>Treat LLM-based static scanning as a noisy baseline, not a security gate — it produces too many false positives on legitimate skills to be actionable.</li>
+          <li>Treat all publicly distributed agent skills as untrusted code — audit before installing</li>
+          <li>Pin skill versions and use curated/internal registries instead of public marketplaces for production workloads</li>
+          <li>Implement behavioral monitoring: detect when a skill causes tool calls that deviate from the user's stated intent, even if the task succeeds</li>
+          <li>Consider the position-aware attack vector when designing custom skill scanners — inspect the entire document, not just headers</li>
         </ul>
 
         <h2>Sources</h2>
         <ul>
-          <li><a href="https://arxiv.org/abs/2606.07943?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv:2606.07943 — POISE: Position-Aware Undetectable Skill Injection on LLM Agents</a></li>
-          <li><a href="https://arxiv.org/html/2606.07943?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">HTML version with full paper text</a></li>
+          <li><a href="https://arxiv.org/html/2606.07943?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv:2606.07943 — Poise paper</a></li>
+          <li><a href="https://blog.trailofbits.com/2026/06/03/the-sorry-state-of-skill-distribution/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Trail of Bits — The Sorry State of Skill Distribution</a></li>
         </ul>
 
       </article>
