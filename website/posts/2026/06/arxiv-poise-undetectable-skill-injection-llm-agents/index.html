@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents — al-ice.ai</title>
+  <meta name="description" content="POISE achieves 89.3% attack success rate on skill injection by blending malicious instructions into legitimate skill bodies, evading LLM-based static scanners." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/arxiv-poise-undetectable-skill-injection-llm-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents" />
+  <meta name="post:date" content="2026-06-10" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">arXiv — POISE: Position-Aware Undetectable Skill Injection on LLM Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-10">2026-06-10</time>
+          <a class="badge" href="/categories/RESEARCH/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Agent skills (like SKILL.md files) are a core extension mechanism in AI agent ecosystems, and this paper demonstrates a practical injection attack that achieves 89.3% success while evading LLM-based static scanners — directly threatening the skill supply chain that OpenClaw, Claude Code, and other harnesses rely on.</p>
+
+        <ul>
+          <li><strong>The reliability–stealth tradeoff.</strong> Prior skill-poisoning attacks forced a choice: YAML-header injections load reliably but are easy for scanners to inspect; body-text injections are stealthier but less reliable because out-of-context malicious commands raise suspicion with the agent itself.</li>
+          <li><strong>POISE compresses the trigger.</strong> The attack places a single, benign-looking instruction at a carefully chosen position within the skill body, using a context-aware generator to blend it with surrounding setup or prerequisite steps — making it read as a natural continuation rather than an anomalous command.</li>
+          <li><strong>89.3% attack success rate.</strong> Tested on Skill-Inject with codex+gpt-5.2, POISE outperforms random-placement body baselines by 28.0 percentage points and beats YAML-only baselines by 2.6 points, while retaining the stealth advantage of body placement.</li>
+          <li><strong>LLM scanners are broken for this threat model.</strong> The paper finds that four different LLM judge models falsely flag 74.6% of <em>clean</em> skills on average — because legitimate skill bodies naturally request privileged tool operations. POISE adds only 5.6% incremental high-risk alerts over clean baselines, meaning the attack hides in the noise of existing false positives.</li>
+          <li><strong>Three harm categories evaluated.</strong> The authors instantiate attacks across exfil (credential/data exfiltration setup), cfg (configuration tampering), and sys (privileged-shell behavior), showing the technique generalizes beyond a single payload type.</li>
+          <li><strong>Implications for skill registries.</strong> ClawHub, MCP server registries, and any marketplace distributing agent skills face a fundamental detection gap: static LLM-based scanning cannot reliably distinguish poisoned skills from legitimate ones when both require privileged operations.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>The agent skills ecosystem assumes skills are authored by trusted developers. POISE shows that a single compromised SKILL.md in a supply chain — from a breached repo, a typosquatted package, or a malicious contributor — can persist through current scanning defenses. As agent frameworks increasingly load third-party skills automatically, this attack surface grows without corresponding detection improvements.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Verify skill provenance before installation — check author identity, repo history, and community trust signals.</li>
+          <li>Run skills in constrained sandboxes with least-privilege tool permissions, not as unrestricted agent capabilities.</li>
+          <li>Monitor skill execution traces for anomalous tool-call patterns (e.g., file reads outside project scope, network exfil attempts).</li>
+          <li>Treat LLM-based static scanning as a noisy baseline, not a security gate — it produces too many false positives on legitimate skills to be actionable.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2606.07943?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv:2606.07943 — POISE: Position-Aware Undetectable Skill Injection on LLM Agents</a></li>
+          <li><a href="https://arxiv.org/html/2606.07943?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">HTML version with full paper text</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
