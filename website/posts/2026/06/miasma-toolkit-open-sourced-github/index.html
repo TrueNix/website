@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Register — Miasma Supply-Chain Attack Toolkit Open-Sourced on GitHub — al-ice.ai</title>
+  <meta name="description" content="The Miasma worm's full attack toolkit was open-sourced on GitHub on June 8, 2026 — evolving from Mini Shai-Hulud into a modular supply-chain weapon targeting PyPI, npm, GitHub Actions, and AI coding agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/miasma-toolkit-open-sourced-github/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Register — Miasma Supply-Chain Attack Toolkit Open-Sourced on GitHub" />
+  <meta name="post:date" content="2026-06-10" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Miasma — Self-Replicating Supply-Chain Attack Toolkit Open-Sourced via Compromised Accounts</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-10">2026-06-10</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: The Miasma toolkit is a modular supply-chain weapon that specifically targets AI coding agents and package registries — its public release lowers the barrier for any threat actor to weaponize AI developer tooling against the open-source ecosystem, and its self-replicating design ensures exponential spread through developer workflows.</p>
+
+        <h2>What happened</h2>
+
+        <ul>
+          <li><strong>June 8, 2026</strong> — Four previously compromised GitHub accounts published repositories named "Miasma-Open-Source-Release," releasing the full source code of the Miasma self-replicating supply-chain attack toolkit, reported by The Register and SafeDep.</li>
+          <li>SafeDep analyzed the toolkit and found it is <strong>far more than a worm</strong> — it's a modular attack platform targeting PyPI, npm, RubyGems, JFrog Artifactory, GitHub repositories, GitHub Actions, AI coding tool configuration, and SSH-based lateral movement.</li>
+          <li>Miasma is an evolved variant of <strong>Mini Shai-Hulud</strong>, whose source code was previously open-sourced by TeamPCP in mid-May 2026, sparking copycat campaigns across the npm ecosystem.</li>
+          <li>The toolkit's self-replicating loop is critical: each compromised account leaks fresh credentials into public commits, which are then harvested to infect the next victim — meaning <strong>infection scale grows with the developer ecosystem, not attacker effort</strong>.</li>
+          <li>Both Mini Shai-Hulud and Miasma run entirely through GitHub — <strong>no custom C2 infrastructure required</strong> — using stolen Personal Access Tokens routed across three distinct command channels, making traditional network-based detection ineffective.</li>
+          <li>Wiz threat researcher Rami McCarthy noted that while the open-source release hasn't yet triggered opportunistic adoption, the pattern mirrors what happened after Mini Shai-Hulud was published: attackers eventually develop private forks, creating clear payload progression chains to track.</li>
+          <li>Socket has tracked <strong>473 affected package artifacts</strong> across the Miasma campaign to date, including high-profile victims like Vapi.ai SDK (408K monthly downloads) and Red Hat Cloud Services.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>The public release of Miasma represents a dangerous inflection point in AI supply-chain security. Unlike traditional malware that requires dedicated operator infrastructure, Miasma's self-spreading design means it can operate autonomously once seeded. The toolkit's explicit targeting of AI coding agents (Claude Code, Cursor, VS Code auto-run hooks) means every developer who uses AI tooling is now on the attack surface. The fact that the worm hides its C2 communications within normal GitHub API traffic means existing network security tools provide no protection. For organizations running AI coding agents at scale, this is a supply-chain risk that operates entirely within trusted developer workflows.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Audit GitHub Personal Access Tokens</strong> — rotate any tokens with write access to public repositories, especially those held by CI/CD service accounts.</li>
+          <li><strong>Disable auto-run hooks</strong> in AI coding agents (Claude Code SessionStart hooks, Cursor alwaysApply rules, VS Code folderOpen tasks) on unfamiliar repos until reviewed.</li>
+          <li><strong>Enable package registry provenance checks</strong> — use PyPI's provenance verification, npm's Sigstore integration, or private registries with integrity validation.</li>
+          <li><strong>Monitor for suspicious commit patterns</strong> — backdated commits, commits from service accounts, and commits titled "chore: update dependencies" with large binary payloads.</li>
+          <li><strong>Segment AI coding agent credentials</strong> — don't use the same tokens for AI agent workflows that also have access to package publishing or infrastructure deployment.</li>
+        </ul>
+
+        <h2>Sources</h2>
+
+        <ul>
+          <li><a href="https://www.theregister.com/cyber-crime/2026/06/09/miasma-supply-chain-attack-toolkit-goes-public-on-github/5253074?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">The Register — Miasma Supply-Chain Attack Toolkit Goes Public on GitHub</a></li>
+          <li><a href="https://safedep.io/inside-the-miasma-supply-chain-attack-toolkit/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">SafeDep — Inside the Miasma Supply-Chain Attack Toolkit</a></li>
+          <li><a href="https://www.stepsecurity.io/blog/miasma-worm-hits-microsoft-again-azure-functions-action-and-72-other-repositories-disabled-after-supply-chain-attack-targeting-ai-coding-agents?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">StepSecurity — Miasma Hits Microsoft Again</a></li>
+          <li><a href="https://socket.dev/supply-chain-attacks/miasma-mini-shai-hulud-supply-chain-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Socket — Miasma Affected Package Artifacts Tracker</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
