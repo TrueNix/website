@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Socket — Shai-Hulud Wave 2 Targets MCP and Bioinformatics PyPI Developers — al-ice.ai</title>
+  <meta name="description" content="Socket researchers discovered 23 new malicious PyPI artifacts from the Shai-Hulud campaign, featuring split-staging loaders, native extension payloads, and LLM anti-analysis tricks targeting MCP developers." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/shai-hulud-wave-2-mcp-pypi-anti-analysis/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Socket — Shai-Hulud Wave 2 Targets MCP and Bioinformatics PyPI Developers" />
+  <meta name="post:date" content="2026-06-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Socket — Shai-Hulud Wave 2 Targets MCP and Bioinformatics PyPI Developers</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-12">2026-06-12</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> The Shai-Hulud campaign now publishes packages explicitly themed around MCP (langchain-core-mcp, openai-mcp, tiktoken-mcp, ray-mcp-server) to directly target developers building Model Context Protocol integrations and AI agent toolchains.</p>
+
+        <p>Socket Threat Research has identified a second wave of the Shai-Hulud supply chain operation, adding 23 new malicious PyPI artifacts to an already extensive campaign. The total now spans 471 artifacts across npm and PyPI — 411 npm artifacts in 106 packages and 60 PyPI artifacts in 37 packages.</p>
+
+        <h2>New delivery techniques</h2>
+        <p>This wave introduces three distinct PyPI delivery branches that escalate detection evasion:</p>
+        <ul>
+          <li><strong>.pth startup-hook pattern:</strong> A malicious wheel bundles a *-setup.pth file alongside _index.js. The hook fires during Python startup, silently downloads the Bun JavaScript runtime, and executes the obfuscated stealer payload.</li>
+          <li><strong>Native extension import trigger:</strong> Malicious code is embedded directly inside compiled .abi3.so extensions. The Python source appears clean, but the extension executes _index.js the moment Python loads the module via dlopen() — bypassing source-only review pipelines entirely.</li>
+          <li><strong>langchain-core-mcp loader variant:</strong> The most novel technique. The wheel installs a .pth loader but ships without _index.js. Instead, it scans every entry in sys.path and one directory below each entry, searching for the payload elsewhere in the Python environment — creating a split-staging architecture that evades detection rules expecting loader and payload to coexist in the same wheel.</li>
+        </ul>
+
+        <h2>LLM anti-analysis</h2>
+        <p>The _index.js payload embeds a large fake system-instruction block inside a non-executing JavaScript comment at the top of the file. The comment is skipped at runtime by Bun but is designed to trigger safety refusals, context pollution, and premature classification in AI-assisted triage pipelines. This is a novel technique specifically designed to poison automated security analysis tools powered by LLMs.</p>
+
+        <h2>Targeted package categories</h2>
+        <ul>
+          <li><strong>MCP/AI-themed:</strong> langchain-core-mcp, openai-mcp, instructor-mcp, tiktoken-mcp, ray-mcp-server — explicitly targeting MCP developers.</li>
+          <li><strong>Bioinformatics trojans:</strong> embiggen, ensmallen, gpsea, phenopacket-store-toolkit — trojanized legitimate research tools with malicious code hidden in compiled native extensions.</li>
+          <li><strong>Typosquats:</strong> rsquests (requests), tlask/rlask (Flask) — designed to capture developer installs via common typos.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>The campaign operates continuously since June 1, pivoting delivery mechanisms every 48 to 72 hours. No CVEs exist for any artifact because these are supply chain attacks, not software vulnerabilities. The split-staging architecture (loader without payload in the same package) and native extension obfuscation represent a significant step up in sophistication for PyPI malware. The LLM anti-analysis technique is the first documented case of malware specifically designed to deceive automated AI security tools.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Block or remove all 23 newly identified PyPI artifacts (see IOCs in source).</li>
+          <li>Audit Python environments for .pth files referencing unknown *-setup.pth loaders.</li>
+          <li>Scan for unexpected .abi3.so native extensions in pure-Python packages.</li>
+          <li>Use package integrity verification tools (Socket, osv-scanner) that inspect actual wheel contents, not just source.</li>
+          <li>Be skeptical of AI-assisted security analysis results — the campaign now includes countermeasures against them.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://socket.dev/blog/mini-shai-hulud-miasma-and-hades-worms-target-bioinformatics-and-mcp-developers-via-malicious?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Socket — Shai-Hulud Wave 2 research (primary)</a></li>
+          <li><a href="https://cybersecuritynews.com/23-pypi-packages-compromised/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Cybersecurity News — coverage with full IOC list</a></li>
+          <li><a href="https://phoenix.security/miasma-azure-hades-pypi-supply-chain-worm-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Phoenix Security — Miasma/Hades campaign overview</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tenet Security — Agentjacking Attacks Hijack AI Coding Agents via MCP — al-ice.ai</title>
+  <meta name="description" content="Tenet Security demonstrates Agentjacking: injected Sentry error events hijack AI coding agents via MCP, achieving 85% execution rate across Claude Code, Cursor, and Codex." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/agentjacking-tenet-sentry-mcp-coding-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Tenet Security — Agentjacking Attacks Hijack AI Coding Agents via MCP" />
+  <meta name="post:date" content="2026-06-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Tenet Security — Agentjacking Attacks Hijack AI Coding Agents via MCP</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-12">2026-06-12</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> AI coding agents connected to observability tools via MCP trust tool responses as authoritative — an architectural flaw that lets attackers turn any public DSN into remote code execution on developer machines.</p>
+
+        <p>Tenet Security's Threat Labs revealed "Agentjacking," a new attack class that exploits the intersection of Sentry's public DSN ingestion and the Sentry MCP server. The result: arbitrary code execution on developer machines with no prior breach required.</p>
+
+        <h2>How it works</h2>
+        <ul>
+          <li>Sentry DSNs are intentionally public credentials embedded in frontend JavaScript — Sentry documents this as safe because they are write-only.</li>
+          <li>An attacker POSTs a crafted error event to Sentry's ingest endpoint using only the DSN. No authentication beyond that is needed.</li>
+          <li>The injected event contains carefully formatted markdown in the message field and context keys, visually indistinguishable from Sentry's own remediation guidance.</li>
+          <li>When a developer asks their AI coding agent to "fix unresolved Sentry issues," the agent queries Sentry via MCP and receives the malicious event as trusted system output.</li>
+          <li>The agent cannot differentiate injected instructions from legitimate guidance and executes attacker-controlled code with the developer's full privileges.</li>
+          <li>The researchers confirmed 85% execution success rate across Claude Code, Cursor, and Codex in controlled testing.</li>
+          <li>They identified at least 2,388 organizations with exposed, injectable DSNs.</li>
+          <li>The attack bypasses EDR and web application firewalls because there is no traditional malicious payload to detect — the agent itself runs the code.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This is an architectural problem, not a configuration mistake. AI coding agents connected to external tools via MCP treat every tool response as trusted data. When those tools ingest untrusted input from public endpoints (like Sentry DSNs), the agent becomes a vehicle for indirect prompt injection that results in remote code execution. Every MCP-connected observability, monitoring, or ticketing tool with public-facing write endpoints faces the same risk.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit which MCP-connected tools in your AI agent workflows accept data from public or untrusted endpoints.</li>
+          <li>Restrict Sentry DSN exposure where possible — embed only where necessary, monitor for DSNs in public repos.</li>
+          <li>Implement input validation at the agent runtime layer: treat MCP tool responses as untrusted data, not instructions.</li>
+          <li>Review agent tool allowlists and permission boundaries — apply the principle of least privilege to agent tool access.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://tenetsecurity.ai/blog/agentjacking-coding-agents-with-fake-sentry-errors/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Tenet Security — Agentjacking research (primary)</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/agentjacking-attacks-hijack-ai/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Infosecurity Magazine — coverage</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/06/11/owasp-prompt-injection-ai-security-failures/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener noreferrer">Help Net Security — OWASP prompt injection analysis (context)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
