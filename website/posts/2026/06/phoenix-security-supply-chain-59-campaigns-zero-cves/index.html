@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Phoenix Security — 59 supply-chain campaigns, zero CVEs, AI tooling as new attack surface — al-ice.ai</title>
+  <meta name="description" content="Phoenix Security's MPI corpus documents 59 supply chain campaigns across npm, PyPI, VS Code, and AI agent tooling — with zero CVEs assigned during active exploitation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/phoenix-security-supply-chain-59-campaigns-zero-cves/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Phoenix Security — 59 supply-chain campaigns, zero CVEs, AI tooling as new attack surface" />
+  <meta name="post:date" content="2026-06-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Phoenix Security — 59 supply-chain campaigns, zero CVEs, AI tooling as new attack surface</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-12">2026-06-12</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: At least 14 of 59 documented supply chain campaigns now use AI agent configuration files (.cursorrules, CLAUDE.md, MCP server manifests) as persistence mechanisms — meaning AI coding assistants that load poisoned projects execute attacker instructions autonomously during normal workspace activity.</p>
+
+        <h2>What happened</h2>
+        <ul>
+          <li>Phoenix Security published a comprehensive analysis of <strong>59 supply chain attack campaigns</strong> spanning June 2024 through June 2026, indexing <strong>657 individual malicious package versions</strong> as scanner-ready IOCs.</li>
+          <li>The corpus reveals a dramatic acceleration: 2026 H1 alone produced <strong>37 campaigns and 497 packages</strong> — 2.6× the campaign count and 4.5× the package volume of all of 2025.</li>
+          <li><strong>May 2026 was the single busiest month on record</strong>: 14 campaigns, 346 indexed packages. A self-propagating worm event (Miasma lineage) generated 226 of those 346 packages alone.</li>
+          <li>npm carries <strong>79.3% of all malicious IOCs</strong>; ReversingLabs reports npm malware more than doubled in 2025 and now represents nearly 90% of all detected open-source malware.</li>
+          <li><strong>Zero CVEs</strong> were assigned across the entire 59-campaign corpus during active exploitation — CVE-feed scanners are blind to 100% of documented campaigns.</li>
+          <li>The VS Code Marketplace went from near-zero malicious activity to <strong>7 documented campaigns in 18 months</strong>, with detections nearly quadrupling (27 in 2024 → 105 in the first 10 months of 2025).</li>
+        </ul>
+
+        <h2>AI agent tooling as the newest frontier</h2>
+        <ul>
+          <li>At least 14 campaigns use AI agent configuration as a delivery mechanism: <code>.cursorrules</code> poisoning, <code>CLAUDE.md</code> hidden instructions, MCP server injection, and AI coding assistant SessionStart hooks.</li>
+          <li>The attack model is consistent: a developer opens a project or runs <code>npm install</code>, the AI assistant loads a poisoned skill or MCP server containing hidden instructions, and the assistant executes those instructions autonomously — exfiltrating credentials, modifying code, or establishing persistence.</li>
+          <li>The attack surface is a <strong>trust assumption, not a code defect</strong> — no patch exists for a workflow design that grants agents implicit execution authority over developer environments.</li>
+          <li>Threat actors include TeamPCP (UNC6780, 19 campaigns), the Shai-Hulud lineage (14 campaigns), DPRK clusters (9 campaigns), and the newly identified IronWorm (June 2026).</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Supply chain attacks have industrialized. The combination of self-propagating worms (converting one stolen token into hundreds of poisoned packages) and AI agent configs (providing autonomous execution without user interaction) creates a compounding risk: every new poisoned package is also a potential agent hijacking vector. The zero-CVE pattern means traditional vulnerability scanners provide no protection — detection requires IOC-based package scanning, lockfile auditing, and agent configuration monitoring.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Audit lockfiles</strong> against current IOC sets from Phoenix Security MPI and SafeDep threat intelligence.</li>
+          <li><strong>Rotate all credentials</strong> from any potentially affected install or CI run.</li>
+          <li><strong>Check AI agent configs</strong>: inspect <code>.vscode/tasks.json</code>, <code>~/.claude/settings.json</code>, <code>.cursorrules</code>, <code>CLAUDE.md</code>, and <code>.github/workflows/</code> for injected entries.</li>
+          <li><strong>Pin GitHub Actions</strong> to commit SHAs, not mutable tags.</li>
+          <li><strong>Scan for known patterns</strong>: <code>grep -rn "binding.gyp"</code> and <code>grep -rn "Miasma: The Spreading Blight"</code> across your repositories.</li>
+          <li><strong>Treat AI agent tooling as a supply chain surface</strong>: scan MCP server source, skill manifests, and agent config files with tools like NVIDIA SkillSpector or Trail of Bits' AI skill scanner.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://phoenix.security/accelerating-supply-chain-attacks-npm-pypi-vsx-ai-enabled-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Phoenix Security — Supply chain acceleration report (59 campaigns, zero CVEs)</a></li>
+          <li><a href="https://safedep.io/inside-the-miasma-supply-chain-attack-toolkit/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SafeDep — Inside the Miasma toolkit analysis</a></li>
+          <li><a href="https://www.rescana.com/post/miasma-worm-supply-chain-attack-73-microsoft-github-repositories-compromised-via-ai-coding-tools?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Rescana — Miasma worm and 73 disabled Microsoft repos</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
