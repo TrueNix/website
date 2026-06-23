@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SpecterOps — SQL Server 2025 AI Features Weaponized for Data Exfiltration and C2 — al-ice.ai</title>
+  <meta name="description" content="SpecterOps demonstrates how SQL Server 2025 native AI features — sp_invoke_external_rest_endpoint, CREATE EXTERNAL MODEL, AI_GENERATE_EMBEDDINGS — can be abused for stealthy data exfiltration and covert C2 channels." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/specterops-sql-server-2025-ai-weaponization/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="SpecterOps — SQL Server 2025 AI Features Weaponized for Data Exfiltration and C2" />
+  <meta name="post:date" content="2026-06-23" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">SpecterOps — SQL Server 2025 AI Features Weaponized for Data Exfiltration and C2</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-23">2026-06-23</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Native AI/RAG features in SQL Server 2025 create a new class of in-database exfiltration and C2 primitives that disguise malicious traffic as legitimate AI model telemetry — directly threatening organizations deploying AI pipelines on top of existing database infrastructure.</p>
+
+        <h2 id="what-happened">What happened</h2>
+        <ul>
+          <li>SpecterOps researcher Justin Kalnasy published a detailed proof-of-concept showing how Microsoft SQL Server 2025's new AI-oriented features can be weaponized for <strong>data exfiltration and covert command-and-control</strong> entirely within the database engine.</li>
+          <li>SQL Server 2025 (released November 2025) introduced three native AI features designed for RAG pipelines: <code>sp_invoke_external_rest_endpoint</code> (HTTPS calls to arbitrary endpoints with payloads up to 100 MB), <code>CREATE EXTERNAL MODEL</code> (register external AI embedding models), and <code>AI_GENERATE_EMBEDDINGS</code> (send data to a model endpoint and receive vector arrays).</li>
+          <li>The researcher demonstrated <strong>three distinct exfiltration methods</strong>: dumping credential tables via <code>FOR JSON AUTO</code> payloads, filesystem access via <code>OPENROWSET(BULK ...)</code> for arbitrary file theft, and a persistent database TRIGGER that auto-posts new credentials to an attacker server on each table insert.</li>
+          <li>A full <strong>T-SQL + .NET CLR C2 implant</strong> was constructed that routes beacon traffic through <code>AI_GENERATE_EMBEDDINGS</code> — commands are XOR-encrypted, encoded as synthetic vector arrays mimicking legitimate embedding model traffic, and decoded server-side.</li>
+          <li>The implant uses <code>context connection=true</code> to reuse the in-process SQL session, avoiding new network connections from the agent process. The resulting traffic is <strong>visually indistinguishable from authentic AI model telemetry</strong> to an untrained analyst.</li>
+          <li>The <code>CREATE EXTERNAL MODEL</code> feature also supports ONNX models via UNC paths, enabling <strong>NTLM SMB authentication coercion</strong> for hash capture or relay attacks against domain infrastructure.</li>
+          <li>Reported to Microsoft on April 20, 2026. On May 12, 2026, Microsoft determined the behavior <strong>did not meet the bar for security servicing</strong> — meaning all primitives remain exploitable in current deployments.</li>
+        </ul>
+
+        <h2 id="why-it-matters">Why it matters</h2>
+        <ul>
+          <li>Organizations deploying AI/RAG features on existing SQL Server infrastructure now have a new, stealthy attack surface that blends into normal AI operations — security teams cannot simply flag outbound HTTPS from the database as anomalous when AI features legitimately require it.</li>
+          <li>The 100 MB payload ceiling on <code>sp_invoke_external_rest_endpoint</code> allows serialization and exfiltration of entire database tables in a single HTTPS POST — far more efficient than legacy <code>xp_cmdshell</code> or PowerShell-based methods.</li>
+          <li>The C2 channel's ability to masquerade as embedding model traffic undermines traditional network monitoring that treats database web traffic as automatically suspicious.</li>
+          <li>Microsoft's decision not to patch means this is a design-level risk, not a bug — defenders must implement compensating controls rather than waiting for a vendor fix.</li>
+        </ul>
+
+        <h2 id="what-to-do">What to do</h2>
+        <ul>
+          <li>Audit all SQL Server database logins and remove unnecessary <code>sysadmin</code> privileges from application service accounts — over-privileged accounts remain the most common initial access vector.</li>
+          <li>Configure alerting for <code>CREATE EXTERNAL MODEL</code> statements, <code>sp_invoke_external_rest_endpoint</code> enablement, and CLR assembly deployment using SQL Audit or Extended Events.</li>
+          <li>Block internet-bound HTTPS egress from SQL Server hosts at the firewall or proxy level — this stops most exfiltration attempts, especially for organizations hosting AI models internally.</li>
+          <li>Baseline legitimate embedding model traffic patterns and train analysts to detect anomalies in AI-normalized egress flows.</li>
+        </ul>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://specterops.io/blog/2026/06/10/oops-i-weaponized-the-database-abusing-ai-features-in-mssql-2025/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SpecterOps — Oops, I Weaponized the Database: Abusing AI Features in SQL Server 2025</a></li>
+          <li><a href="https://cybersecuritynews.com/hackers-leverage-sql-server-2025-ai-features/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">CyberSecurityNews — Hackers Can Leverage SQL Server 2025 AI Features to Exfiltrate Sensitive Data</a></li>
+          <li><a href="https://gbhackers.com/hackers-could-abuse-sql-server-2025/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GBHackers — Hackers Could Abuse SQL Server 2025 AI Features to Steal Sensitive Data</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
