@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cordyceps CI/CD Flaw Exposes Google AI Agent Kit, Microsoft, Apache Repos — al-ice.ai</title>
+  <meta name="description" content="Systemic GitHub Actions vulnerability class lets anonymous attackers hijack pipelines at Microsoft, Google AI Agent Development Kit, Apache, Cloudflare, and Python Software Foundation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/cordyceps-ci-cd-supply-chain-google-ai-agent-kit/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Cordyceps CI/CD Flaw Exposes Google AI Agent Kit, Microsoft, Apache Repos" />
+  <meta name="post:date" content="2026-06-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Cordyceps CI/CD Flaw Exposes Google AI Agent Kit, Microsoft, Apache Repos</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-24">2026-06-24</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Google's AI Agent Development Kit (adk-samples) was among the confirmed vulnerable repositories, where a single malicious PR could grant full GCP owner permissions — directly threatening AI agent supply chains.</p>
+
+        <ul>
+          <li><strong>Systemic flaw, not a single bug:</strong> "Cordyceps" is a class of CI/CD workflow composition vulnerabilities in GitHub Actions YAML files, not a specific CVE in one tool. The pattern enables command injection, artifact poisoning, and cross-workflow privilege escalation through multi-step exploit chains.</li>
+          <li><strong>Anonymous exploitation:</strong> Attackers need only a free GitHub account — no organization privileges required. A malicious PR comment or branch name can trigger code execution in low-privilege workflows that then escalate to high-privilege credential theft.</li>
+          <li><strong>Scale of exposure:</strong> Novee security researchers scanned ~30,000 high-impact repositories and flagged 654 instances, with 300+ fully exploitable chains validated end-to-end. The pattern potentially affects millions of repositories using similar workflow compositions.</li>
+          <li><strong>Google AI Agent Development Kit hit:</strong> The adk-samples repository contained a path where a single pull request could authenticate to the associated Google Cloud project with <code>roles/owner</code> permissions — complete control over the GCP environment where AI agents would be deployed and tested.</li>
+          <li><strong>Microsoft Azure Sentinel compromised:</strong> A PR comment could execute attacker code and steal a non-expiring GitHub App key, granting persistent write access to security content deployed via Azure Marketplace into customer Sentinel workspaces — directly impacting security monitoring for organizations running AI-driven detection.</li>
+          <li><strong>Apache Doris, Cloudflare Workers SDK, Python Black affected:</strong> Apache's analytics database yielded two zero-click attack paths for CI credential exfiltration. Cloudflare's Wrangler CLI allowed PR branch names to trigger arbitrary commands on runners. Python Software Foundation's Black (130M+ downloads/month) showed how a malicious PR could steal automation tokens and approve PRs as the project bot, enabling tainted releases.</li>
+          <li><strong>AI coding agents amplify the risk:</strong> Researchers note that AI coding agents generate CI/CD configurations rapidly, propagating insecure structural patterns across projects. The result is an "agentic infection model" where small, repeated mistakes become exponential risk across the open-source ecosystem.</li>
+          <li><strong>Traditional scanners miss it:</strong> Static and dynamic application security testing tools operate at single-file or single-process granularity. They validate YAML syntax and flag obvious misconfigurations but cannot reason about cross-workflow data flows or validate whether untrusted input can traverse multiple workflows to reach high-privilege credentials.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>CI/CD pipelines are the trust boundary between code and production. When those pipelines hold cloud credentials, package registry tokens, and deployment keys — as they do for AI agent frameworks, model serving infrastructure, and LLM-powered applications — a compromise becomes a full supply-chain takeover. The Cordyceps pattern demonstrates that workflows are often treated as "configuration" rather than code, escaping the security scrutiny applied to application logic. For AI infrastructure teams, this means the pipelines building your agent tooling, model serving containers, and RAG pipeline deployments may be one anonymous PR away from credential theft and artifact poisoning.</p>
+
+        <h2>What to Do</h2>
+        <ul>
+          <li><strong>Treat workflows as code:</strong> Apply the same security review, version control, and testing rigor to <code>.github/workflows/*.yml</code> files as you do to application code. Enforce least-privilege for all tokens and secrets.</li>
+          <li><strong>Isolate untrusted inputs:</strong> Ensure workflows triggered by PRs, PR comments, or branch names cannot access high-privilege credentials or write to protected artifacts. Use <code>pull_request_target</code> with extreme caution and explicit approval gates.</li>
+          <li><strong>Sanitize all user-controlled data:</strong> Never interpolate <code>${{ github.event.* }}</code> fields directly into shell commands or script inputs. Validate and sanitize before use.</li>
+          <li><strong>Audit cross-workflow flows:</strong> Map data flows between workflows. Verify that outputs from low-privilege triggers cannot reach high-privilege credential access or deployment steps.</li>
+          <li><strong>Review Novee's disclosures:</strong> Check if your repositories are among the 654 flagged instances. Apply vendor-confirmed fixes from Microsoft, Google, Apache, Cloudflare, and Python Software Foundation.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://novee.security/blog/cordyceps/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Novee Security — Cordyceps Research Blog</a></li>
+          <li><a href="https://gbhackers.com/cordyceps-supply-chain-vulnerability/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GBHackers — Cordyceps Supply Chain Vulnerability Coverage</a></li>
+          <li><a href="https://hackread.com/cordyceps-ci-cd-flaw-microsoft-google-apache-repos-hijack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Hackread — Cordyceps CI/CD Flaw Exposes Major Repos</a></li>
+          <li><a href="https://www.darkreading.com/application-security/cordyceps-malicious-pull-requests-developer-workflows?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Dark Reading — 'Cordyceps' Malicious Pull Requests Threaten Developer Workflows</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
