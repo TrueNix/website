@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arXiv — 'Agent-Phishing' Attack Achieves 97.8% RCE Across 12 Agentic Red-Team Tools — al-ice.ai</title>
+  <meta name="description" content="First systematic security analysis of agentic offensive security platforms reveals a novel 'agent-phishing' technique that achieves remote code execution in nearly all test runs across 12 tools and 6 LLMs." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/arxiv-agent-phishing-agentic-red-team-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="arXiv — 'Agent-Phishing' Attack Achieves 97.8% RCE Across 12 Agentic Red-Team Tools" />
+  <meta name="post:date" content="2026-06-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">arXiv — 'Agent-Phishing' Attack Achieves 97.8% RCE Across 12 Agentic Red-Team Tools</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-25">2026-06-25</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> The first systematic security analysis of agentic offensive AI platforms reveals that the targets these autonomous red-team agents test can reverse-attack the agents themselves — achieving remote code execution inside worker environments in 97.8% of completed runs, then escalating to full host compromise.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>A new arXiv paper (2606.24496) presents the first in-depth security audit of 12 widely-used agentic red-team platforms — autonomous AI systems designed to run offensive security operations with minimal human oversight.</li>
+          <li>Researchers introduce <strong>"agent-phishing"</strong> — a manipulation technique distinct from prompt injection that exploits the agent's own tool-use behavior rather than its language processing.</li>
+          <li>The attack stages realistic but benign-looking artifacts on a honeypot target: a password vault utility ("pwcrypt"), a database restore helper, or a config unpacker — tools the agent believes it needs to complete its penetration test.</li>
+          <li>When the agentic red-team tool discovers these artifacts, it downloads them to its own infrastructure, inspects them, and <em>executes them</em> — believing this is the correct path to progress the engagement.</li>
+          <li>The payloads embed carefully engineered vulnerabilities. In the pwcrypt example, a crafted vault file triggers an out-of-bounds write that overwrites a function pointer table, leading to <code>system()</code> being called with attacker-controlled arguments — all as a silent side effect of normal parsing.</li>
+          <li>Across 10 agentic red-team tools and 6 advanced LLMs (including Claude Opus 4.8, GPT-5.5, and Gemini 3.1 Pro), agent-phishing achieved RCE inside the worker environment in 97.8% of completed runs.</li>
+          <li>Failures occurred only when model-level safety mechanisms refused to perform penetration testing at all. Once a test began, the agent almost always found, downloaded, and executed the staged payload.</li>
+        </ul>
+
+        <h2>The Kill Chain</h2>
+        <ul>
+          <li><strong>Stage 1 — Worker compromise:</strong> Agent-phishing achieves RCE inside the worker (Kali Linux container).</li>
+          <li><strong>Stage 2 — Worker-to-orchestrator escalation:</strong> Shared writable volumes, weak network isolation, or unauthenticated internal APIs let the attacker reach the orchestrator that stores LLM API keys and cross-session logs.</li>
+          <li><strong>Stage 3 — Persistence:</strong> "Hard" methods (trojanizing source code that survives container resets) or "soft" methods (poisoning the agent's skills and episodic memory to reinfect future sessions).</li>
+          <li><strong>Stage 4 — Sandbox escape:</strong> Overly permissive container capabilities (<code>--privileged</code>, <code>CAP_NET_RAW</code>, mounted Docker sockets) enable breakout.</li>
+          <li><strong>Stage 5 — Full host compromise.</strong></li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>Existing guardrails are enforced at the orchestrator level (e.g., blocking Nmap traffic to .gov domains) but do <em>not</em> monitor the workers' actual OS-level behavior. An attacker with a shell on a worker can generate arbitrary network traffic and execute commands outside the guardrails' visibility. The tools built to autonomously test your security are themselves a systemic attack surface — and the targets can weaponize them against their operators.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li>Treat LLM-controlled workers as untrusted. Maintain strict worker-orchestrator filesystem and network separation.</li>
+          <li>Keep secrets (LLM API keys, credentials) out of worker environments entirely.</li>
+          <li>Enforce OS-level guardrails via an external egress proxy — do not rely on orchestrator-level policy alone.</li>
+          <li>Run high-capability tools through narrow, hardened APIs with least-privileged, scoped workers.</li>
+          <li>Avoid running tool execution on the orchestrator node.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2606.24496?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv 2606.24496 — Security Analysis of Agentic Red-Team Tools</a></li>
+          <li><a href="https://gbhackers.com/agentic-red-team-tools-flaws/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GBHackers — Agentic Red-Team Tools Flaws</a></li>
+          <li><a href="https://cyberpress.org/agentic-red-team-tools-expose/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CyberPress — Agentic Red-Team Tools Expose API Keys, Sandbox Escape Risks</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
