@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LangGraph SQL Injection to RCE — Checkpointer Chain Exposes Agent State — al-ice.ai</title>
+  <meta name="description" content="Check Point Research chains SQL injection in LangGraph's SQLite checkpointer with unsafe msgpack deserialization to achieve remote code execution in AI agent servers." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/langgraph-sqli-msgpack-rce-checkpoint-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="LangGraph SQL Injection to RCE — Checkpointer Chain Exposes Agent State" />
+  <meta name="post:date" content="2026-06-25" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">LangGraph SQL Injection to RCE — Checkpointer Chain Exposes Agent State</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-25">2026-06-25</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: LangGraph's agent memory layer — the checkpointer that persists execution state — contains a SQL injection that chains with unsafe deserialization to give attackers remote code execution on the agent server.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>Check Point Research disclosed three vulnerabilities in LangGraph's persistence layer (checkpointers) that chain to full remote code execution.</li>
+          <li><strong>CVE-2025-67644 (CVSS 7.3)</strong> — SQL injection in the SQLite checkpointer. The <code>get_state_history()</code> function builds WHERE clauses by concatenating user-controlled filter keys directly into SQL with no parameterization or escaping.</li>
+          <li><strong>CVE-2026-28277 (CVSS 6.8)</strong> — Unsafe deserialization in LangGraph's msgpack checkpoint decoder. The decoder rebuilds Python objects from stored data and can import modules + call functions with attacker-supplied arguments.</li>
+          <li><strong>CVE-2026-27022 (CVSS 6.5)</strong> — Same deserialization flaw, but reachable through the Redis checkpointer instead of SQLite.</li>
+          <li>The chain: SQL injection writes a fabricated checkpoint row → LangGraph loads the forged row as legitimate → msgpack decoder executes the specified function (e.g., <code>os.system</code>) → code runs under the agent server's identity.</li>
+          <li>LangGraph has exceeded 50 million monthly downloads. The SQLite checkpointer is the default persistence layer for self-hosted deployments.</li>
+          <li>Exposure condition: self-hosted LangGraph on SQLite or Redis checkpointer with untrusted input reaching <code>get_state_history()</code> or similar history endpoints. LangSmith's managed PostgreSQL backend is not affected.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>LangGraph is the memory layer for production AI agents. The checkpointer stores execution state — including tool calls, intermediate reasoning, and sometimes credentials passed through agent context. An attacker who gains RCE on the agent server inherits access to everything the agent can see: API keys, database connections, CRM tokens, and the ability to issue further tool calls. The attack requires no authentication on the checkpointer itself. The SQL injection is the only prerequisite. This is not a theoretical chain — Check Point published a working proof-of-concept. The exploit is ordinary AppSec (SQL injection + unsafe deserialization) living inside new AI infrastructure that security teams have not yet scoped as a trust boundary.</p>
+
+        <h2>What to Do</h2>
+        <ul>
+          <li><strong>Upgrade immediately:</strong> langgraph-checkpoint-sqlite to ≥ 3.0.1, langgraph to ≥ 1.0.10, langgraph-checkpoint-redis to ≥ 1.0.2.</li>
+          <li><strong>Audit exposure:</strong> Identify any LangGraph deployment where untrusted input can reach checkpoint history endpoints. If you self-host on SQLite or Redis, you are in scope.</li>
+          <li><strong>Restrict checkpoint access:</strong> Put checkpoint endpoints behind authentication. Do not expose them to the internet without auth.</li>
+          <li><strong>Review agent secrets:</strong> If your agent passes API keys, database credentials, or tokens through checkpoint state, rotate them — especially if you discover evidence of unauthorized checkpoint writes.</li>
+          <li><strong>Monitor checkpoint writes:</strong> Log all <code>put()</code> operations on the checkpointer. Alert on unexpected filter keys or malformed checkpoint data.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://research.checkpoint.com/2026/from-sqli-to-rce-exploiting-langgraphs-checkpointer/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Check Point Research — From SQLi to RCE: Exploiting LangGraph's Checkpointer</a></li>
+          <li><a href="https://advisories.gitlab.com/pypi/langgraph-checkpoint-sqlite/CVE-2025-67644/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitLab Advisory — CVE-2025-67644</a></li>
+          <li><a href="https://advisories.gitlab.com/pypi/langgraph/CVE-2026-28277/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GitLab Advisory — CVE-2026-28277</a></li>
+          <li><a href="https://venturebeat.com/security/7000-langflow-servers-under-attack-langgraph-langchain-same-holes?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">VentureBeat — AI Agent Framework Flaws Hit 7,000 Servers</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
