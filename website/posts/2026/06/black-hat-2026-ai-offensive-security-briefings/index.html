@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Black Hat 2026 — First Copilot Sandbox Escape, AI Agent Exploitation &amp; Offensive Models — al-ice.ai</title>
+  <meta name="description" content="Black Hat USA 2026 briefings reveal the first Copilot sandbox escape, trust-handoff failures across major AI vendors, and a 30B open-source model that outperforms frontier LLMs at agent exploitation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/black-hat-2026-ai-offensive-security-briefings/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Black Hat 2026 — First Copilot Sandbox Escape, AI Agent Exploitation &amp; Offensive Models" />
+  <meta name="post:date" content="2026-06-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+      </nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Black Hat 2026 — First Copilot Sandbox Escape, AI Agent Exploitation &amp; Offensive Models</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-28">2026-06-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> The briefings expose how AI agents deployed as trusted automation — Copilot assistants, shopping agents, coding tools — become the primary attack surface, with sandbox escapes, trust-handoff failures, and purpose-trained offensive models that beat frontier LLMs at agent exploitation at 70–125× lower cost.</p>
+
+        <h2>Key Briefings</h2>
+        <ul>
+          <li><strong>ChatMate: Remote Prompt Execution via Copilot Sandbox Escape</strong> — Rubrik Zero Labs researcher Ori Lahav demonstrates the first escape from the Microsoft Copilot sandbox to the host underneath. Uploading a single document triggers a full session takeover with blast radius across multiple Azure services. The attack class, "Remote Prompt Execution," gives attackers arbitrary prompt execution inside a victim's AI chat session — analogous to RCE but at the model layer.</li>
+          <li><strong>Trusted Enough to Run: Breaking AI Agents in Official Workflows</strong> — Novee Security founding researcher Elad Meged dissects trust-handoff failures across Anthropic, Google, and OpenAI agent workflows. The core flaw: one pipeline stage marks state as "safe," but a downstream stage interprets that state more powerfully than the original check accounted for. Every major vendor's unattended automation is affected.</li>
+          <li><strong>Cost-Effective, Private, Frontier-Grade: AI Agent Exploitation with a Fine-Tuned OSS Model</strong> — NVIDIA's Bar Lanyado and Eliya Cohen show that a fine-tuned 30B open-source model achieved a 56% exploit success rate against AI agents — edging out much larger frontier models while costing 70–125× less to run. A direct rebuttal to the assumption that offensive AI requires frontier-scale infrastructure.</li>
+          <li><strong>Bye Bye AI: Hacking a Top-3 US Retailer's AI Shopping Assistant</strong> — Rein Security's Netanel Rubin and Netanel Avraham compromised an AI shopping assistant built on Google Vertex AI Search, sitting behind an LLM gateway designed to enforce intent-classification guardrails. The gateway's prompt-and-response monitoring missed the execution layer entirely — the agent's actual tool calls were ungoverned.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>These four briefings share a common thread: AI agents are deployed faster than they are tested, and the security controls wrapped around them — sandboxing, LLM gateways, intent classifiers — fail at the boundaries that matter. Copilot's sandbox was supposed to isolate document analysis. LLM gateways were supposed to filter malicious intent. Trust checks were supposed to propagate safely through pipeline stages. None of them held under real attack conditions.</p>
+        <p>The NVIDIA offensive-model result is a strategic signal: purpose-trained small models can outperform frontier LLMs at agent exploitation, making offensive AI accessible to any adversary who can fine-tune on a single GPU cluster. The barrier to entry for AI-powered agent attacks is dropping fast.</p>
+
+        <h2>What to Do</h2>
+        <ul>
+          <li><strong>Audit agent tool-call chains</strong> — LLM gateways that only inspect prompts and responses miss the execution layer. Map every tool your agents can invoke and verify that each call is governed independently of the model's intent classification.</li>
+          <li><strong>Treat sandbox boundaries as adversarial</strong> — Copilot's sandbox escape demonstrates that document-upload surfaces are attack surfaces. Apply defense-in-depth: restrict host filesystem access, enforce egress controls, and monitor for cross-service lateral movement from AI sessions.</li>
+          <li><strong>Test trust propagation in agent pipelines</strong> — If one stage sanitizes input and a downstream stage re-interprets it, you have a trust-handoff gap. Red-team your agent workflows with inputs that are "safe" at stage N but become dangerous at stage N+1.</li>
+          <li><strong>Prepare for small-model offensive AI</strong> — A 30B model beating frontier LLMs at agent exploitation means defenders cannot assume attackers need expensive infrastructure. Calibrate threat models accordingly.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://novee.security/blog/black-hat-2026-briefings-ai-offensive-security/">Novee Security — Top 8 Black Hat 2026 Briefings for AI Offensive Security Leaders</a></li>
+          <li><a href="https://blackhat.com/us-26/briefings/schedule/">Black Hat USA 2026 Briefings Schedule</a></li>
+          <li><a href="https://novee.security/blog/why-small-purpose-trained-ai-models-beat-frontier-llms-at-offensive-security/">Novee Security — Why Small Purpose-Trained AI Models Beat Frontier LLMs at Offensive Security</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){var btn=document.getElementById('themeToggle');if(!btn)return;function isRetro(){return document.documentElement.getAttribute('data-theme')==='retro';}function crtIcon(){return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';}function flatIcon(){return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';}function render(){if(isRetro()){btn.classList.add('is-retro');btn.innerHTML='<span class="theme-screen">'+flatIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';btn.setAttribute('title','Switch to modern');btn.setAttribute('aria-label','Switch to modern');}else{btn.classList.remove('is-retro');btn.innerHTML='<span class="theme-screen">'+crtIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';btn.setAttribute('title','Toggle CRT (80/90s) vibe');btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');}}function pulse(anim){try{btn.classList.remove('anim-connect','anim-disconnect');void btn.offsetWidth;btn.classList.add(anim);window.setTimeout(function(){btn.classList.remove(anim);},700);}catch(e){}}function setRetro(on){if(on){pulse('anim-connect');document.documentElement.setAttribute('data-theme','retro');try{localStorage.setItem('theme','retro');}catch(e){}}else{pulse('anim-disconnect');document.documentElement.removeAttribute('data-theme');try{localStorage.removeItem('theme');}catch(e){}}render();}render();btn.addEventListener('click',function(){setRetro(!isRetro());});})();</script>
+</body>
+</html>
