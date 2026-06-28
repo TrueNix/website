@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microsoft — The state of MCP security in 2026: OAuth, supply chain, and shadow servers</title>
+  <meta name="description" content="Microsoft's annual MCP security checkpoint maps the current risk landscape: OAuth 2.1 hardening, supply-chain rug pulls, shadow server sprawl, and the new MCP Apps sandbox." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/microsoft-state-of-mcp-security-2026-oauth-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Microsoft — The state of MCP security in 2026: OAuth, supply chain, and shadow servers" />
+  <meta name="post:date" content="2026-06-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Microsoft — The state of MCP security in 2026: OAuth, supply chain, and shadow servers</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-28">2026-06-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> As MCP becomes the de facto protocol for agent-to-tool communication, Microsoft's security team lays out the seven risk categories every enterprise running agentic AI must now govern — from tool poisoning to shadow MCP servers no one registered.</p>
+
+        <h2>What happened</h2>
+        <p>Microsoft published its second annual <strong>State of MCP Security</strong> assessment, a comprehensive mapping of the attack surface that has emerged around the Model Context Protocol as it moved from experiment to production infrastructure across enterprises. The post coincides with the MCP specification's latest <strong>release candidate</strong>, which raises the security baseline with per-request identity, OAuth 2.1 with PKCE, and a new <em>MCP Apps</em> capability that lets servers ship interactive UI rendered inside a host sandbox.</p>
+
+        <h2>The seven risk categories</h2>
+        <ul>
+          <li><strong>1. Tool poisoning (indirect prompt injection via tool descriptions).</strong> An agent treats tool schemas and outputs as trustworthy. An attacker who can plant instructions in a tool description or parameter schema steers the agent — exfiltrating data, invoking the wrong tool, or triggering unapproved actions. Control: treat tool descriptions as untrusted input; require human approval for tool lists; show full tool calls, not friendly summaries.</li>
+          <li><strong>2. Confused deputy / authorization bypass.</strong> The biggest expansion since last year. MCP servers are now OAuth 2.0 resource servers with guidance hardened around OAuth 2.1, PKCE, and audience-bound tokens. A server acting with its own broad privileges on behalf of an underprivileged user is the core confused-deputy pattern. Control: audience-bound tokens so a token minted for one server cannot be replayed against another; identity-aware gateway in front of every server.</li>
+          <li><strong>3. Excessive scope / credential concentration.</strong> A single MCP server often holds credentials for several systems at once — full mailbox access where read-only would do. One leaked token becomes a breach of every system it touches. Control: least-privilege per resource, short-lived tokens, and agent identity via Microsoft Entra Agent ID for class-level policy.</li>
+          <li><strong>4. Supply chain / rug pull.</strong> A typosquatted package, a compromised dependency, or a change of ownership behind the same URL turns a trusted server hostile. The server you approved is not the server you are running. Control: design-time catalog with known-good tool definitions, pin and alert on drift, route everything through a gateway that re-checks identity on every call.</li>
+          <li><strong>5. Shadow MCP servers.</strong> Shadow AI for the agent era: a developer stands up a server for a demo, a team wires an agent to whatever endpoint is handy, nobody registers it. You cannot govern, patch, or revoke what you cannot see. Control: design-time registry plus runtime gateway; use the GSA AI Gateway to surface unregistered servers.</li>
+          <li><strong>6. Command injection via STDIO servers.</strong> Many MCP servers run locally over STDIO, spawning subprocesses and touching the filesystem. Unsanitized input into a shell or file path is command injection or path traversal — one of the largest MCP vulnerability classes this year. Control: input sanitization, seccomp/AppArmor profiles, read-only filesystems.</li>
+          <li><strong>7. Unregistered server sprawl across environments.</strong> MCP servers proliferate faster than security teams can inventory them. Dev, staging, and production each accumulate servers with different security postures. Control: central registry, environment-scoped policies, and continuous reconciliation between design-time catalog and runtime gateway.</li>
+        </ul>
+
+        <h2>What changed in the latest release candidate</h2>
+        <ul>
+          <li><strong>Per-request identity.</strong> Requests now carry what they need so a gateway can inspect and enforce on every call instead of trusting a hidden session.</li>
+          <li><strong>Tighter client-server identity checks.</strong> Mutual authentication between MCP clients and servers is more rigorously specified.</li>
+          <li><strong>MCP Apps sandbox.</strong> A new capability lets a server ship interactive UI that the host renders inside a sandbox — reducing the risk of server-side HTML injection into agent front-ends.</li>
+          <li><strong>OAuth 2.1 + PKCE as the recommended auth model.</strong> Strict redirect-URI matching and audience-bound tokens are now the documented baseline.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>MCP is infrastructure now, not a prototype.</strong> The protocol has crossed the line from "interesting standard" to "the way agents connect to tools in production." Security posture must match.</li>
+          <li><strong>The protocol does not enforce security for you.</strong> Microsoft's central thesis: MCP defines how clients and servers talk; the locks are yours to fit. "We reviewed MCP last year" is out of date — revisit assumptions with each release.</li>
+          <li><strong>Agent identity is the missing primitive.</strong> Entra Agent ID signals that treating agents as first-class identities (not just service accounts) is becoming table stakes for governance and kill-switch capability.</li>
+          <li><strong>Supply chain is the new perimeter.</strong> Rug-pull and shadow-server risks mean that continuous verification — not one-time approval — is the only viable control posture.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Adopt OAuth 2.1 with PKCE now.</strong> Migrate every MCP server to audience-bound tokens with strict redirect-URI matching. Put an identity-aware gateway (Azure API Management or equivalent) in front of every server.</li>
+          <li><strong>Register every MCP server in a design-time catalog.</strong> Pin tool definitions and alert on drift. Use Azure API Center or equivalent to maintain a known-good baseline.</li>
+          <li><strong>Deploy a runtime gateway.</strong> All MCP traffic should route through a gateway that re-checks identity and policy on every call — no implicit trust for "internal" servers.</li>
+          <li><strong>Give every agent an identity.</strong> Evaluate Microsoft Entra Agent ID or equivalent so you can apply policy to agent classes and execute kill-switches in one operation.</li>
+          <li><strong>Scan for shadow servers.</strong> Use the GSA AI Gateway or network-level discovery to find MCP servers your team didn't register. Ungoverned servers are where supply-chain problems hide.</li>
+          <li><strong>Map to OWASP MCP Top 10.</strong> Microsoft's <a href="https://microsoft.github.io/mcp-azure-security-guide/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCP Azure Security Guide</a> maps the risks to existing Azure controls — use it as a checklist.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://techcommunity.microsoft.com/blog/microsoft-security-blog/the-state-of-mcp-security-in-2026/4531327?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Microsoft Tech Community — The state of MCP security in 2026</a></li>
+          <li><a href="https://microsoft.github.io/mcp-azure-security-guide/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">OWASP MCP Top 10 mapped to Azure controls</a></li>
+          <li><a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">MCP Release Candidate — per-request identity, OAuth 2.1, MCP Apps</a></li>
+          <li><a href="https://learn.microsoft.com/entra/agent-id/what-is-microsoft-entra-agent-id?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Microsoft Entra Agent ID</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microsoft — AutoJack RCE chain hijacks AutoGen Studio agents via MCP WebSocket</title>
+  <meta name="description" content="AutoJack is a three-bug chain in Microsoft AutoGen Studio where a malicious webpage hijacks a browsing AI agent into executing arbitrary commands on the developer host through an unauthenticated local MCP WebSocket." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/autojack-autogen-studio-mcp-websocket-rce-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Microsoft — AutoJack RCE chain hijacks AutoGen Studio agents via MCP WebSocket" />
+  <meta name="post:date" content="2026-06-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Microsoft — AutoJack RCE chain hijacks AutoGen Studio agents via MCP WebSocket</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-28">2026-06-28</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> AutoJack turns a browsing AI agent into a remote shell — a concrete example of how localhost MCP surfaces collapse the trust boundary between untrusted web content and developer machines running agentic frameworks.</p>
+
+        <h2>What happened</h2>
+        <p>Microsoft disclosed <strong>AutoJack</strong>, a three-vulnerability exploit chain in <strong>AutoGen Studio</strong> (the graphical front-end to Microsoft Research's AutoGen multi-agent framework, 59k+ GitHub stars) that lets a single malicious webpage hijack a developer's AI agent into executing arbitrary commands on the host. The chain was found and hardened before any PyPI release, but developers who built AutoGen Studio from the <code>main</code> branch during a narrow window were exposed.</p>
+
+        <h2>The three-bug chain</h2>
+        <ul>
+          <li><strong>Origin bypass via the agent.</strong> AutoGen Studio's MCP WebSocket trusts any connection from localhost. A browsing agent rendering an attacker-controlled page loads JavaScript that opens a WebSocket to the local MCP endpoint — the browser's same-origin policy is satisfied because the endpoint appears as a trusted local service.</li>
+          <li><strong>Authentication gap on /api/mcp/*.</strong> The authentication middleware explicitly excludes MCP API routes, and the WebSocket endpoint itself implements no auth. Any page the agent visits can talk to the MCP control plane unauthenticated.</li>
+          <li><strong>Command injection via base64 server_params.</strong> The MCP WebSocket accepts a base64-encoded <code>server_params</code> value from the URL and hands it directly to the process-launching code. An attacker specifies arbitrary PowerShell, Bash, or executable invocations — the agent's host runs them with the developer's privileges.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <ul>
+          <li><strong>Agent-as-attack-surface is real.</strong> The agent is no longer a victim of prompt injection; it is the <em>delivery mechanism</em>. No jailbreak, no config change, no user interaction beyond visiting a page the agent is asked to triage.</li>
+          <li><strong>Localhost is not a trust boundary.</strong> MCP's design assumes local STDIO/WebSocket endpoints are safe. AutoJack shows that once an agent browses the open web, "local" is attacker-reachable.</li>
+          <li><strong>Third AI framework compromise in one week.</strong> AutoJack lands days after the Mastra framework supply-chain hit (DPRK Lazarus) and the LiteLLM CVE-2026-42271 addition to CISA KEV. The pattern — implicit trust in LLM output, weak sandboxing, exposed management interfaces — is systemic across the agentic stack.</li>
+          <li><strong>Blast radius includes internal LLM APIs.</strong> AutoGen instances typically hold keys for Azure OpenAI, Anthropic, or Vertex, plus vector DB credentials. Host-level RCE pivots directly into the enterprise model plane.</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade.</strong> AutoGen Studio 0.4.8 ships gVisor-based sandboxing, seccomp profiles, capability dropping, read-only rootfs, and network egress filtering for agent containers. <code>pip install --upgrade autogenstudio==0.4.8</code> or pull the hardened Docker image with <code>--runtime=runsc</code>.</li>
+          <li><strong>Isolate the dev profile.</strong> Run AutoGen Studio under a low-privilege account in a sandboxed user profile or container — never on a daily-driver host with live cloud credentials.</li>
+          <li><strong>Audit the branch-build window.</strong> If anyone on your team built AutoGen Studio from <code>main</code> between the MCP plugin landing and <a href="https://github.com/microsoft/autogen/commit/b0477309d2a0baf489aa256646e41e513ab3bfe8?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">commit b047730</a>, rotate every API key and service token reachable from that host.</li>
+          <li><strong>Separate browsing agents from code-execution agents.</strong> Any agent that renders untrusted web content should not share a process namespace with agents that execute code or hold production credentials.</li>
+          <li><strong>Firewall port 8081.</strong> AutoGen Studio's web UI has no auth by default. Shodan/Censys scans show ~4,200 publicly exposed instances; firewall yours today.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.bleepingcomputer.com/news/security/microsoft-fixes-autogen-studio-flaw-that-enabled-code-execution/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">BleepingComputer — Microsoft fixes AutoGen Studio flaw that enabled code execution</a></li>
+          <li><a href="https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Microsoft Security Blog — AutoJack</a></li>
+          <li><a href="https://threat-modeling.com/microsoft-autogen-studio-code-execution-june-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Threat-Modeling.com — AutoGen Studio code execution analysis</a></li>
+          <li><a href="https://www.penligent.ai/hackinglabs/autojack-ai-agent-rce/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Penligent — AutoJack: localhost is not a trust boundary</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
