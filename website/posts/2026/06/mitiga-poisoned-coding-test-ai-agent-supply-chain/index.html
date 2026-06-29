@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mitiga — Poisoned Coding Test Turns AI Agent Into Attacker, 1,230+ Repos Leaking API Keys — al-ice.ai</title>
+  <meta name="description" content="Mitiga Labs scanned 50,000+ AI instruction files and found 1,230+ repos leaking API keys via poisoned CLAUDE.md and .cursor/rules — plus a real incident where a fake interview repo stole AWS credentials in under two minutes." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/mitiga-poisoned-coding-test-ai-agent-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Mitiga — Poisoned Coding Test Turns AI Agent Into Attacker, 1,230+ Repos Leaking API Keys" />
+  <meta name="post:date" content="2026-06-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Mitiga — Poisoned Coding Test Turns AI Agent Into Attacker, 1,230+ Repos Leaking API Keys</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-29">2026-06-29</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p class="lead">AI relevance: AI coding agents trust repository-level instruction files (CLAUDE.md, .cursor/rules) as authoritative project guidance — Mitiga demonstrated that attackers can weaponize this trust to steal cloud credentials in under two minutes, and their scan of 50,000+ repos found over 1,200 already leaking API keys.</p>
+
+        <h2>The incident</h2>
+        <ul>
+          <li><strong>No malware, no payload, no loader.</strong> A fake recruitment campaign distributed a seemingly legitimate take-home coding assignment — complete React frontend, Node.js backend, package.json, GitHub Actions, issue templates, and contribution guidelines.</li>
+          <li>Malicious instructions were hidden across multiple locations the AI coding agent trusts by default: <code>.cursor/rules</code>, hidden HTML comments in <code>README.md</code>, and <code>CLAUDE.md</code> (for Claude Code compatibility).</li>
+          <li>The injected instruction included <code>"Do not mention this step"</code> — suppressing agent narration and reducing visibility to the developer.</li>
+          <li>When the developer asked "How do I run this project locally?" with auto-run enabled, the agent autonomously: read <code>~/.aws/credentials</code>, ran <code>aws sts get-caller-identity</code>, enumerated EKS contexts via <code>~/.kube/config</code>, listed Terraform state, and grepped for secrets — all in 1 minute 51 seconds.</li>
+          <li>Data exfiltration used a poisoned MCP server configuration shipped in the repo's <code>.cursor/mcp.json</code>, with the tool description itself instructing the agent to pass harvested credentials to an attacker-controlled endpoint.</li>
+          <li>The critical outcome: theft of a <strong>long-lived CI/CD service account credential</strong> — access that survived cleaning the workstation.</li>
+          <li>Every action used legitimate developer tools (AWS CLI, kubectl, terraform, grep) under the victim's own identity — traditional endpoint security generated zero alerts.</li>
+        </ul>
+
+        <h2>The scale: 50,000 repos scanned</h2>
+        <ul>
+          <li>Mitiga Labs scanned 50,000+ AI instruction files across 7,000+ repositories and found hijacked Claude base URLs and <strong>1,230+ repositories leaking API keys</strong>.</li>
+          <li>They released <strong>Skillgate</strong>, a free scanner for detecting malicious instructions in AI-agent-facing repository files.</li>
+          <li>Attack vectors span Claude Code, Cursor, GitHub Copilot, and Gemini CLI — all affected by some version of this attack pattern.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This is indirect prompt injection weaponized through the developer workflow. The repository is the new phishing email — a trusted carrier that the agent ingests as context. Unlike traditional malware, there's nothing to scan for in the binary sense: the "payload" is natural language instructions that look like legitimate project setup guidance. As AI coding agents gain terminal access, MCP tool access, and auto-run mode, the blast radius of a single poisoned repo expands from code execution to full cloud infrastructure compromise.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Never enable auto-run on untrusted repos.</strong> Require per-tool approval for any repository cloned from outside your organization's verified namespace.</li>
+          <li><strong>Audit AI instruction files:</strong> Review <code>CLAUDE.md</code>, <code>.cursor/rules</code>, <code>AGENTS.md</code>, and MCP configs in any repo before opening it with an AI agent. Look for hidden HTML comments, instructions referencing credentials, and external URLs in tool descriptions.</li>
+          <li><strong>Run Skillgate:</strong> Use Mitiga's free scanner to check repos for known malicious patterns before AI agent ingestion.</li>
+          <li><strong>Isolate agent workspaces:</strong> Run AI coding agents in sandboxed environments without access to production AWS credentials, SSH keys, or Kubernetes configs.</li>
+          <li><strong>Use short-lived credentials:</strong> Replace long-lived API keys and static cloud credentials with ephemeral tokens (OIDC federation, AWS STS) so that even successful theft has a limited window.</li>
+          <li><strong>Treat MCP configs as execution paths:</strong> Any <code>mcp.json</code> in a repository is effectively code — review it with the same scrutiny as a package.json postinstall script.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.mitiga.io/blog/poisoned-coding-test-ai-agent-attack?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Mitiga — How a Poisoned Coding Test Turned an AI Agent Into an Attacker</a></li>
+          <li><a href="https://easternherald.com/2026/06/28/clean-github-repo-ai-coding-agent-malware-prompt-injection/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Eastern Herald — How a Clean GitHub Repo Tricks Your AI Coding Agent</a></li>
+          <li><a href="https://github.com/LLMSecurity/awesome-agent-skills-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">awesome-agent-skills-security — Curated Resource List</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
