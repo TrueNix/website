@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mozilla 0DIN — Clean GitHub Repo Delivers Reverse Shell via AI Coding Agents — al-ice.ai</title>
+  <meta name="description" content="Mozilla's 0DIN team demonstrated how a repository with zero malicious code can deliver a reverse shell through Claude Code's error-recovery behavior." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/mozilla-0din-clean-repo-ai-coding-agent-reverse-shell/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Mozilla 0DIN — Clean GitHub Repo Delivers Reverse Shell via AI Coding Agents" />
+  <meta name="post:date" content="2026-06-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Mozilla 0DIN — Clean GitHub Repo Delivers Reverse Shell via AI Coding Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-29">2026-06-29</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> AI coding agents (Claude Code, Cursor, Copilot, Gemini CLI) process project configuration files and error messages as trusted context — making every unfamiliar repository a potential attack surface for prompt injection-to-RCE chains.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>Mozilla's Zero Day Investigative Network (0DIN) published a proof-of-concept this week showing a GitHub repository with <em>zero malicious code</em> delivering a full reverse shell through Claude Code.</li>
+          <li>The attack chain: a Python package fails on initialization with a plausible error → Claude Code suggests running <code>python3 -m axiom init</code> to fix it → that command invokes an attacker-controlled shell script → the script queries a DNS TXT record → reverse shell established with the developer's full privileges.</li>
+          <li>The repository itself contains nothing detectable as malware. The payload is three indirection steps away from anything the AI model directly evaluates.</li>
+          <li>"Claude Code never decided to open a shell," 0DIN noted. "It decided to fix an error."</li>
+          <li>The same attack surface exists in Cursor, GitHub Copilot, Gemini CLI, and any agent that reads project-specific config files (CLAUDE.md, .cursorrules, AGENTS.md) at session initialization.</li>
+          <li>A parallel attack vector uses hidden Unicode characters in .cursorrules files or natural-language directives in README files to instruct the agent to exfiltrate environment variables, SSH keys, and API tokens via grep and curl — tools that leave no unusual signatures in system logs.</li>
+          <li>Johns Hopkins researchers confirmed in April that the same "Comment and Control" technique works via GitHub PR titles, issue descriptions, and comment threads against Claude Code, Gemini CLI, and Copilot Agent.</li>
+          <li>The theoretical attack became real on June 3: the Miasma supply chain worm disabled 73 Microsoft/Azure repositories in 105 seconds by deploying 57 malicious npm packages designed to detonate when developers cloned repos and opened them with AI coding agents.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>This is not a bug in any AI model or a vulnerability in GitHub. It is an exploitation of the feature that makes AI coding agents useful: they read instructions and act on them. Every developer who uses one of these tools to explore an unfamiliar repository is now a potential target. The attack surface is the entire ecosystem of open-source code, and the payload is invisible to traditional malware scanners because there is no malware in the repository itself.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li>Treat AI coding agent sessions as privileged environments. Do not use them to explore untrusted repositories without sandboxing.</li>
+          <li>Review project-specific config files (CLAUDE.md, .cursorrules, AGENTS.md, README) before opening a repo in an AI agent. Look for natural-language directives, hidden Unicode, or suspicious initialization instructions.</li>
+          <li>Disable automatic error-recovery commands in agent settings where possible. Require explicit approval before the agent runs shell commands.</li>
+          <li>Monitor DNS TXT queries and outbound shell connections from developer workstations. The Miasma worm showed that automated response is necessary — manual detection is too slow.</li>
+          <li>Apply vendor patches: Anthropic patched ~50 Claude Code permission bypasses (CVSS 7.8); Microsoft issued three Copilot injection CVEs (worst CVSS 9.6); Cursor patched five high-severity RCEs since July 2025.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.bleepingcomputer.com/news/security/clean-github-repo-tricks-ai-coding-agents-into-running-malware/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">BleepingComputer — Clean GitHub repo tricks AI coding agents into running malware</a></li>
+          <li><a href="https://www.tomshardware.com/tech-industry/cyber-security/ai-coding-agents-can-be-tricked-into-installing-malware-via-clean-github-repositories-mozillas-0din-team-shows-how-claude-code-can-be-exploited-by-its-own-helpfulness?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Tom's Hardware — Mozilla 0DIN demonstrates Claude Code exploit</a></li>
+          <li><a href="https://easternherald.com/2026/06/28/clean-github-repo-ai-coding-agent-malware-prompt-injection/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Eastern Herald — Full attack chain analysis</a></li>
+          <li><a href="https://phoenix.security/miasma-azure-hades-pypi-supply-chain-worm-2026/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Phoenix Security — Miasma worm analysis</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
