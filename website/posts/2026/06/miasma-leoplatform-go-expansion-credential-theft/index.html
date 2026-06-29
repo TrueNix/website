@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Miasma — LeoPlatform Supply Chain Attack Expands to Go, Targets AI Coding Assistants</title>
+  <meta name="description" content="Miasma malware compromises 23 LeoPlatform npm packages and expands to Go ecosystem, targeting AI coding assistant persistence and GitHub Actions credential theft." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/06/miasma-leoplatform-go-expansion-credential-theft/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Miasma — LeoPlatform Supply Chain Attack Expands to Go, Targets AI Coding Assistants" />
+  <meta name="post:date" content="2026-06-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Miasma — LeoPlatform Supply Chain Attack Expands to Go, Targets AI Coding Assistants</h1>
+        <div class="post-meta">
+          <time datetime="2026-06-29">2026-06-29</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Miasma injects itself into AI coding assistant SessionStart hooks (Claude Code, Copilot, Gemini CLI), establishing persistence that survives across agent sessions and steals credentials from CI/CD runners.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>On June 24, 2026, attackers compromised the npm maintainer account "czirker" associated with LeoPlatform</li>
+          <li>Within a 6-second window, 23 trojanized npm packages were published: leo-sdk, leo-auth, leo-aws, leo-cli, and 19 others</li>
+          <li>The malware uses binding.gyp files to execute arbitrary code during npm install, bypassing typical lifecycle hook detection</li>
+          <li>A JavaScript loader downloads and installs the Bun runtime if not present, then deploys an AES-GCM encrypted stealer payload</li>
+          <li>The stealer harvests npm tokens, AWS credentials, GitHub Actions secrets, and AI API keys from environment variables</li>
+          <li>Miasma drops a malicious GitHub Actions workflow named "Run Copilot" that captures CI/CD secrets from runner memory</li>
+          <li>Stolen credentials are exfiltrated to public GitHub repositories with the description "Alright Lets See If This Works" — 559 matching repos found</li>
+          <li>The campaign has expanded beyond npm to the Go ecosystem, compromising verana-labs/verana-blockchain@v0.10.1-dev.20</li>
+          <li>Miasma establishes persistence in AI coding assistant SessionStart hooks for Claude Code, GitHub Copilot, and Gemini CLI</li>
+          <li>The malware includes a Russian locale killswitch and checks for endpoint security software before executing</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>This is the third major wave of the Mini Shai-Hulud/Miasma/Hades supply chain campaign in June 2026. Unlike earlier waves that targeted PyPI and MCP developers, this iteration focuses on enterprise AI infrastructure (LeoPlatform is used for serverless AWS deployments) and establishes persistence in AI agent tooling.</p>
+        
+        <p>The SessionStart hook persistence is particularly dangerous: it survives across agent sessions, meaning a compromised developer machine will continue to leak credentials every time they start a new Claude Code or Copilot session. The GitHub Actions theft workflow demonstrates that AI coding agents are now first-class targets for credential harvesting in CI/CD pipelines.</p>
+
+        <h2>What to Do</h2>
+        <ul>
+          <li><strong>Audit LeoPlatform dependencies:</strong> Check package.json for any leo-* packages. If found, rotate all npm tokens, AWS credentials, and AI API keys immediately</li>
+          <li><strong>Scan for Miasma artifacts:</strong> Look for binding.gyp files in node_modules, Bun runtime installations in unexpected locations, and GitHub Actions workflows named "Run Copilot"</li>
+          <li><strong>Check AI assistant hooks:</strong> Inspect SessionStart configurations in Claude Code, Copilot, and Gemini CLI for unauthorized persistence</li>
+          <li><strong>Monitor GitHub:</strong> Search for repositories with the description "Alright Lets See If This Works" — these may contain your exfiltrated credentials</li>
+          <li><strong>Lock down npm accounts:</strong> Enable 2FA on all npm maintainer accounts. Rotate tokens for any accounts that shared credentials with compromised maintainers</li>
+          <li><strong>Pin dependencies:</strong> Use lockfiles and dependency verification (npm audit, Socket, Snyk) before installing packages with native code execution (binding.gyp)</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://thehackernews.com/2026/06/miasma-malware-targets-npm-packages-and.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Hacker News — Miasma Malware Targets npm Packages and GitHub Actions</a></li>
+          <li><a href="https://socket.dev/blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">Socket — Miasma Mini Shai-Hulud Hits LeoPlatform npm Packages</a></li>
+          <li><a href="https://www.theregister.com/security/2026/06/26/miasma-campaign-poisons-20-plus-npm-packages-hunts-for-developer-secrets/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">The Register — Miasma campaign poisons 20-plus npm packages</a></li>
+          <li><a href="https://safedep.io/miasma-worm-hits-leoplatform-20-npm-packages/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" target="_blank" rel="noopener">SafeDep — Miasma Worm Hits LeoPlatform</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
