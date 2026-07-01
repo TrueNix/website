@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adversa AI — GuardFall: Decades-Old Bash Tricks Bypass Shell Guards in 10 of 11 AI Coding Agents — al-ice.ai</title>
+  <meta name="description" content="Adversa AI discovers GuardFall, a class of shell injection bypasses where decades-old Bash quoting tricks defeat pattern-based guards in popular open-source AI coding agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/adversa-guardfall-bash-injection-ai-coding-agents/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Adversa AI — GuardFall: Decades-Old Bash Tricks Bypass Shell Guards in 10 of 11 AI Coding Agents" />
+  <meta name="post:date" content="2026-07-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Adversa AI — GuardFall: Decades-Old Bash Tricks Bypass Shell Guards in 10 of 11 AI Coding Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-01">2026-07-01</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> AI coding agents run shell commands with full developer authority — SSH keys, cloud credentials, everything in $HOME. When pattern-based shell guards fail against 30-year-old Bash quoting tricks, poisoned READMEs and Makefiles become weaponized supply-chain attack vectors.</p>
+
+        <ul>
+          <li>Adversa AI discovered a structural security flaw across multiple open-source AI coding agents: pattern-based shell guards that inspect raw command text cannot model Bash's expansion behavior, so they provide confidence without protection.</li>
+          <li>The research, dubbed GuardFall, documents how decades-old shell bypasses — quote removal, $IFS spacing, command substitution, base64-to-sh, and destructive argv flags — systematically defeat the guards of 10 out of 11 popular open-source agents tested, including Hermes, OpenCode, Roo-code, and Goose.</li>
+          <li>The trigger: a guard inspects raw text, but Bash expands, unquotes, and rewrites text before execution. When an agent processes untrusted content (a poisoned README, Makefile, or MCP server output), injected commands pass all execution filters because the guard sees different text than what Bash actually runs.</li>
+          <li>Class E bypasses — alternative argv shapes for the same destructive effect — survive even the strongest tokenized guards because per-flag reasoning requires knowing which flag combinations flip a binary from benign to destructive for each specific command.</li>
+          <li>Only Continue defended against the structural majority of bypass cases: "Of 21 bypass cases submitted to the evaluator, 0 reach allowedWithoutPermission, and all 12 canonical-destructive cases are correctly downgraded."</li>
+          <li>The attack chain: an engineer uses a vulnerable agent to read a poisoned README or Makefile from a malicious repository → the agent is tricked into silently executing commands that exfiltrate AWS credentials or wipe dev environments → especially dangerous in CI pipelines where auto-yes modes are default.</li>
+          <li>While direct malicious prompts are often refused by frontier models, an agent ingesting operational context (like a poisoned README) can trick models into emitting injected commands as routine tasks. The researchers used Claude Sonnet 4.6 in live runs.</li>
+          <li>The core problem: false confidence from string-matching guards leads teams to disable human-in-the-loop checks and enable auto-mode, creating the exact conditions for supply-chain compromise.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This isn't a novel exploit technique — it's a 30-year-old class of shell bypasses being applied to a new attack surface. The fact that 10 of 11 agents fail suggests the industry is shipping pattern-matching guards that create an illusion of safety while leaving the structural vulnerability wide open. With AI coding agents running in developer environments with full credential access, the blast radius of a single poisoned dependency is catastrophic.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>If you're running AI coding agents in production, audit whether your guard is pattern-based (string matching) or tokenized. Pattern-based guards are definitively broken against this class.</li>
+          <li>Disable auto-execute mode for any agent processing untrusted content. Human-in-the-loop approval is the only reliable defense until agents implement proper shell expansion modeling.</li>
+          <li>Consider Continue's architecture as a reference design — it's the only agent that closed the structural majority of bypass surface in default IDE mode.</li>
+          <li>For CI/CD pipelines: treat AI agent execution with the same caution as arbitrary code execution from untrusted sources. Sandbox aggressively, rotate credentials frequently, and never run agents with production credentials in disposable environments.</li>
+          <li>Monitor for Class E bypass attempts specifically — alternative argv shapes that survive even tokenized guards require per-binary flag reasoning that most agents don't implement.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://adversa.ai/blog/opensource-ai-coding-agents-shell-injection-vulnerability?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Adversa AI — GuardFall: Shell Injection Vulnerability in Open-Source AI Coding Agents</a></li>
+          <li><a href="https://www.securityweek.com/decades-old-bash-tricks-expose-ai-coding-agents-to-supply-chain-attacks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SecurityWeek — Decades-Old Bash Tricks Expose AI Coding Agents to Supply Chain Attacks</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
