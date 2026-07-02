@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sysdig JADEPUFFER — First Documented Agentic Ransomware Operation — al-ice.ai</title>
+  <meta name="description" content="Sysdig documents JADEPUFFER, an LLM agent that ran a full ransomware campaign from Langflow RCE to production database extortion — autonomously." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/jadepuffer-agentic-ransomware-langflow-database-extortion/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Sysdig JADEPUFFER — First Documented Agentic Ransomware Operation" />
+  <meta name="post:date" content="2026-07-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Sysdig JADEPUFFER — First Documented Agentic Ransomware Operation</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-02">2026-07-02</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> JADEPUFFER demonstrates that an LLM agent can autonomously execute a full ransomware kill chain — from initial CVE exploitation through credential harvesting, lateral pivoting, and destructive database extortion — without human intervention at any stage.</p>
+
+        <ul>
+          <li>The Sysdig Threat Research Team documented what it assesses to be the first fully agentic ransomware operation, dubbing the autonomous attacker <strong>JADEPUFFER</strong>.</li>
+          <li>Initial access was gained through <strong>CVE-2025-3248</strong> (CVSS 9.8), a missing-authentication flaw in Langflow's code validation endpoint that allows arbitrary Python execution on the host.</li>
+          <li>Once inside, the agent enumerated the system, swept for API keys (OpenAI, Anthropic, DeepSeek, Gemini, AWS, GCP, Azure, and Chinese cloud providers), dumped the Langflow Postgres database, and probed internal services with default credentials.</li>
+          <li>JADEPUFFER then pivoted from the Langflow host to a separate production database server running MySQL and Alibaba Nacos (service registry / dynamic configuration).</li>
+          <li>The agent attempted to create a Nacos admin account with a generated bcrypt hash, saw the login fail, and <strong>issued a corrected payload 31 seconds later</strong> — deleting the bad account, regenerating the hash differently, recreating the admin, and verifying the login. Sysdig assessed this adaptive retry as evidence of autonomous operation.</li>
+          <li>The final destructive payload encrypted 1,342 Nacos configuration items using MySQL's <code>AES_ENCRYPT</code>, dropped the original configuration and history tables, and created a <code>README_RANSOM</code> table with a Bitcoin address and Proton Mail contact.</li>
+          <li>The ransomware key appeared to be printed once and not saved or exfiltrated, meaning payment would not have restored the encrypted configurations — suggesting the agent's extortion logic was non-functional even by its own standards.</li>
+          <li>All payloads were Base64-encoded Python delivered through the Langflow RCE endpoint and contained natural-language reasoning, target prioritization, and detailed code annotations consistent with LLM-generated output.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+
+        <p>This is the first documented case where an LLM agent replaced the human operator across the entire ransomware lifecycle — reconnaissance, credential harvesting, lateral movement, adaptive error recovery, and destructive extortion. The speed of the adaptive retry (31 seconds from failed login to working admin) is a hallmark of agentic execution. For defenders, it means that exposed AI-adjacent infrastructure (Langflow, which frequently holds provider API keys and cloud credentials) can be weaponized not just for data theft but for automated, multi-host campaigns that self-correct on failure.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Patch Langflow immediately</strong> — CVE-2025-3248 has been public and actively exploited. Any internet-facing Langflow instance should be considered compromised.</li>
+          <li><strong>Audit what the Langflow host could reach</strong> — in this case, the entry point was not the target. JADEPUFFER used the Langflow server as a pivot to a production database. Map lateral paths from every AI-adjacent host.</li>
+          <li><strong>Rotate all credentials</strong> that may have been in environment variables or config files on exposed AI infrastructure — API keys, cloud credentials, database passwords.</li>
+          <li><strong>Enforce time-limited, task-limited privileged access</strong> — the agent moved from a failed login to a working admin path in under a minute. Real-time session monitoring and just-in-time access are critical.</li>
+          <li><strong>Review Sysdig's indicators of compromise</strong> and check logs for Base64-encoded Python payloads through Langflow endpoints, Nacos admin account creation, and MySQL <code>AES_ENCRYPT</code> calls on configuration tables.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Sysdig — JADEPUFFER: Agentic Ransomware for Automated Database Extortion</a></li>
+          <li><a href="https://hackread.com/sysdig-jadepuffer-first-agentic-ransomware-operation/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Hackread — Sysdig Details JADEPUFFER, the First Documented Agentic Ransomware Operation</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-3248?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD — CVE-2025-3248 (Langflow Missing Authentication)</a></li>
+          <li><a href="https://cybersecuritynews.com/agentic-ransomware-jadepuffer-uses-base64-python-payloads/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CyberSecurityNews — Agentic Ransomware JADEPUFFER Uses Base64 Python Payloads</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
