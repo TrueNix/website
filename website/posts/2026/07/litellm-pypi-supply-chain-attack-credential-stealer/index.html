@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LiteLLM PyPI Supply Chain Attack — Credential Stealer in Versions 1.82.7–1.82.8 — al-ice.ai</title>
+  <meta name="description" content="LiteLLM PyPI package compromised — malicious versions 1.82.7 and 1.82.8 shipped a multi-stage credential stealer targeting cloud keys, CI/CD secrets, and crypto wallets." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/litellm-pypi-supply-chain-attack-credential-stealer/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="LiteLLM PyPI Supply Chain Attack — Credential Stealer in Versions 1.82.7–1.82.8" />
+  <meta name="post:date" content="2026-07-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">LiteLLM PyPI Supply Chain Attack — Credential Stealer in Versions 1.82.7–1.82.8</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-03">2026-07-03</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> LiteLLM is a widely adopted unified API wrapper for LLM providers (OpenAI, Anthropic, Azure, etc.) with millions of daily downloads — the compromised versions were present in roughly 36% of cloud environments, either directly or as a transitive dependency, making this one of the largest blast radii in recent AI infrastructure supply chain history.</p>
+
+        <ul>
+          <li>In March 2026, attackers gained access to the LiteLLM maintainer's PyPI account and published malicious versions 1.82.7 and 1.82.8 containing a multi-stage credential stealer.</li>
+          <li>The malicious package was live for approximately two hours before removal, but the damage window was enough for significant impact across cloud environments, CI/CD pipelines, and developer machines.</li>
+          <li>The payload was discovered by FutureSearch engineers testing a Cursor MCP plugin that pulled LiteLLM as a transitive dependency — the machine became unresponsive due to RAM exhaustion, leading to investigation.</li>
+          <li>A <code>litellm_init.pth</code> file (34,628 bytes, double base64-encoded) was found in <code>site-packages/</code>, executing code that hooked into the Python runtime at startup.</li>
+          <li>The malware aggressively harvested environment variables (API keys, tokens), cloud credentials (AWS, GCP, Azure), Kubernetes configs, SSH keys, Docker configs, CI/CD secrets, database credentials, and crypto wallets.</li>
+          <li>The attack was linked to the broader TeamPCP group and a previous breach involving Trivy and other tools — a coordinated supply chain campaign, not an isolated incident.</li>
+          <li>LiteLLM maintainers posted updates on HackerNews after their GitHub account was also compromised.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>LiteLLM sits in the middle of AI infrastructure — it abstracts away provider differences so developers can plug AI into apps without juggling SDKs. That convenience means massive adoption, and massive adoption means a single compromised release has a catastrophic blast radius. Unlike typical malware targeting consumer machines, this payload specifically targeted the high-value secrets that AI infrastructure environments hold: LLM API keys, cloud provider credentials, and CI/CD tokens. No phishing or social engineering was needed — just <code>pip install litellm</code>.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Check versions immediately</strong> — if you have LiteLLM 1.82.7 or 1.82.8 installed, uninstall and upgrade to a known clean version.</li>
+          <li><strong>Rotate all credentials</strong> — assume everything is compromised: API keys, cloud credentials, SSH keys, CI/CD tokens. PyPI explicitly recommends this.</li>
+          <li><strong>Audit your environment</strong> — check for the <code>litellm_init.pth</code> file in <code>site-packages/</code>, review access logs, monitor for unusual outbound traffic.</li>
+          <li><strong>Rebuild from clean state</strong> — for high-risk environments, rebuild containers and reprovision infrastructure.</li>
+          <li><strong>Pin dependencies</strong> — always pin exact versions, use virtual environments, and limit credential exposure to what each service actually needs.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.herodevs.com/blog-posts/the-litellm-supply-chain-attack-what-happened-why-it-matters-and-what-to-do-next?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">HeroDevs — The LiteLLM Supply Chain Attack: What Happened, Why It Matters, and What to Do Next</a></li>
+          <li><a href="https://github.com/BerriAI/litellm/issues/24512?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GitHub — LiteLLM Supply Chain Incident Thread</a></li>
+          <li><a href="https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">FutureSearch — LiteLLM PyPI Supply Chain Attack Discovery</a></li>
+          <li><a href="https://threats.wiz.io/all-actors/teampcp?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Wiz — TeamPCP Threat Actor Profile</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
