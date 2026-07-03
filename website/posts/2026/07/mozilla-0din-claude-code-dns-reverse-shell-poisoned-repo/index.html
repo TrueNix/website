@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mozilla 0DIN — Claude Code DNS Reverse Shell Attack via Poisoned Repository</title>
+  <meta name="description" content="Mozilla's 0DIN team demonstrates how a clean-looking GitHub repo can trick Claude Code into opening a reverse shell via DNS-based payload delivery." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/mozilla-0din-claude-code-dns-reverse-shell-poisoned-repo/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Mozilla 0DIN — Claude Code DNS Reverse Shell Attack via Poisoned Repository" />
+  <meta name="post:date" content="2026-07-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Mozilla 0DIN — Claude Code DNS Reverse Shell Attack via Poisoned Repository</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-03">2026-07-03</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> Agentic coding tools like Claude Code have full access to developer environments—API keys, cloud credentials, and local secrets—while autonomously executing setup flows from untrusted repositories, creating a critical attack surface for indirect prompt injection.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>Mozilla's Zero Day Investigative Network (0DIN) published a proof-of-concept attack on June 25, 2026, demonstrating how a completely clean-looking GitHub repository can trick Claude Code into opening a reverse shell on a developer's machine.</li>
+          <li>The attack uses <strong>indirect prompt injection</strong>—malicious instructions embedded in external content the AI agent processes, not in direct user input or visible code.</li>
+          <li>The payload is delivered via <strong>DNS TXT records</strong>, making it invisible to static code analysis, human reviewers, and the AI agent itself. The malicious command never appears in the repository.</li>
+          <li>The attack chains three innocent-looking components: a normal README with setup instructions, a Python package that fails with a helpful error message, and a setup script that fetches its "config" from DNS and pipes it to bash.</li>
+          <li>When the developer asks Claude Code to get the project running, the agent autonomously reads the error, runs the documented fix (<code>python3 -m axiom init</code>), which executes the DNS-fetched reverse shell payload.</li>
+          <li>The attacker gains a fully interactive shell running as the developer's user, with access to every secret: <code>ANTHROPIC_API_KEY</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>GITHUB_TOKEN</code>, and environment variables.</li>
+          <li>The DNS payload is base64-encoded, so reverse shell signatures never appear in plaintext on disk or wire. The payload can be swapped at any time by editing one DNS record—no git commit, no diff for tools to catch.</li>
+          <li>This attack surface affects <strong>any agentic coding tool</strong> that autonomously follows setup flows, including Cursor and Gemini CLI, not just Claude Code.</li>
+          <li>The technique resembles <strong>CVE-2025-55284</strong>, a high-severity Claude Code vulnerability patched in June 2025, where prompt injection exfiltrated API keys via DNS subdomain encoding.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>The attack exploits a fundamental architectural gap: agentic coding tools have authorized access to everything an attacker needs (private environment variables, credentials, API keys, local configuration files) while simultaneously consuming untrusted content from repositories, documentation, and error messages. The attack splits its components across three systems that are never examined together: the repository, DNS infrastructure, and the developer's trust in their AI agent. Static analysis sees a DNS lookup. Network monitoring sees name resolution. The agent sees a pre-authorized setup step. None of the three looks malicious in isolation.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li><strong>Surface runtime execution chains:</strong> Agents must show what a setup command will actually run, including the contents of any script it invokes and anything fetched at runtime—not just the command itself.</li>
+          <li><strong>Treat setup scripts as untrusted:</strong> Developers should treat setup instructions and scripts in unfamiliar repositories as untrusted code, regardless of what their AI tool recommends.</li>
+          <li><strong>Sandbox unfamiliar code:</strong> Use sandbox-first workflows for unfamiliar repositories. Run initial setup in isolated environments without access to production credentials.</li>
+          <li><strong>Audit DNS-fetch-and-execute patterns:</strong> Scan for <code>dig ... | bash</code> or similar patterns that fetch and execute remote content. Block or flag these in CI/CD pipelines.</li>
+          <li><strong>Rotate credentials after exposure:</strong> If you've opened unfamiliar repositories with agentic coding tools, assume credentials may be compromised and rotate them immediately.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://0din.ai/blog/clone-this-repo-and-i-own-your-machine?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Mozilla 0DIN — "Clone This Repo and I Own Your Machine"</a></li>
+          <li><a href="https://cybersecuritynews.com/new-claude-code-attack/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Cyber Security News — "New Claude Code Attack Allows Attackers to Take Full Control"</a></li>
+          <li><a href="https://www.securityweek.com/new-attack-abuses-claude-code-and-harmless-looking-repositories-to-hijack-developer-machines/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">SecurityWeek — "New Attack Abuses Claude Code and Harmless-Looking Repositories"</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-55284?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD — CVE-2025-55284 (prior Claude Code prompt injection vulnerability)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
