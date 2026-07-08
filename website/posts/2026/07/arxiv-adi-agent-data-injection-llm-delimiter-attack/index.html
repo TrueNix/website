@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>arXiv — Agent Data Injection (ADI): New IPI Category Bypasses All Defenses</title>
+  <meta name="description" content="Seoul National University and UIUC researchers introduce Agent Data Injection, a new class of indirect prompt injection that exploits lack of trusted/untrusted data isolation in LLM agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/arxiv-adi-agent-data-injection-llm-delimiter-attack/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="arXiv — Agent Data Injection (ADI): New IPI Category Bypasses All Defenses" />
+  <meta name="post:date" content="2026-07-08" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">arXiv — Agent Data Injection (ADI): New IPI Category Bypasses All Defenses</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-08">2026-07-08</time>
+          <a class="badge" href="/categories/RESEARCH/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <ul>
+          <li>Researchers from Seoul National University and UIUC introduce Agent Data Injection (ADI), a new category of indirect prompt injection (IPI) that exploits a fundamental security gap: current AI agents do not isolate trusted data from untrusted data</li>
+          <li>Unlike instruction injection (where untrusted data is misinterpreted as an instruction), ADI causes untrusted data to be misinterpreted as <em>trusted data</em> — such as security-critical metadata (resource identifiers, data origins) or agent context data (tool call and response formats)</li>
+          <li>The core attack technique is "probabilistic delimiter injection": by injecting delimiters of the data format (e.g., <code>{}</code> for JSON) into untrusted fields, attackers corrupt the LLM's interpretation of data structure, causing it to perceive attacker-controlled values as trusted metadata</li>
+          <li>While classic injection attacks (SQL injection, XSS) require exact delimiter syntax to succeed against deterministic parsers, LLMs interpret data probabilistically — even inexact delimiters (e.g., escaped characters) are probabilistically misinterpreted as structural delimiters</li>
+          <li>The paper demonstrates ADI through three attacks against real-world agents: arbitrary click attacks on web agents (Claude in Chrome, Antigravity, Nanobrowser), and remote code execution and supply-chain attacks on coding agents (Claude Code, Codex, Gemini CLI)</li>
+          <li>For web agents, a fake UI element causes the agent to click attacker-specified elements, effectively making any website with user-generated content vulnerable to XSS-like attacks</li>
+          <li>For coding agents, ADI enables remote code execution by injecting malicious tool call responses that the agent trusts and executes</li>
+          <li>ADI bypasses existing IPI defenses (model hardening, input guardrails, dual-LLM architectures) because these defenses focus on separating instructions from data, not on separating trusted data from untrusted data</li>
+          <li>The researchers evaluated ADI across off-the-shelf models and AI agents, finding it effective in both standalone LLMs and agent settings</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>This research exposes a critical blind spot in AI agent security. The industry has focused heavily on preventing instruction injection (where attacker data becomes commands), but ADI reveals that even when instructions are properly isolated, agents still fail to distinguish between trusted metadata (like "who wrote this comment" or "what tool returned this result") and attacker-controlled data. The probabilistic delimiter injection technique is particularly insidious because it exploits the fundamental way LLMs parse structured data — it's not a bug in a specific model, it's a structural vulnerability in how LLMs interpret context. The fact that ADI works against production agents (Claude Code, Codex, Gemini CLI) and bypasses all existing defenses means the entire AI agent ecosystem needs to rethink its security model.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Audit your AI agent deployments for trusted/untrusted data isolation — if your agent processes user-generated content or external data, assume it's vulnerable to ADI</li>
+          <li>Implement explicit data provenance tracking: tag all data with its source and enforce strict separation between trusted metadata and untrusted content</li>
+          <li>For web agents: treat all UI elements from user-generated content as untrusted, even if they appear to be legitimate metadata</li>
+          <li>For coding agents: validate tool call responses against expected schemas and reject responses that contain unexpected delimiters or structural elements</li>
+          <li>Monitor for anomalous agent behavior: arbitrary clicks on unexpected elements, tool calls with unusual parameters, or code execution from untrusted sources</li>
+          <li>Follow the research team's recommendations for defense-in-depth: combine input validation, output filtering, and runtime monitoring</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2607.05120?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">arXiv:2607.05120 — Agent Data Injection Attacks are Realistic Threats to AI Agents</a></li>
+          <li><a href="https://arxiv.org/html/2607.05120v1?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Full paper (HTML)</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
