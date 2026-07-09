@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044792233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fiddler AI — AI Coding Agent Threat Models and Controls — al-ice.ai</title>
+  <meta name="description" content="Fiddler AI maps the full coding-agent attack surface — prompt injection, supply-chain poisoning, credential leaks, MCP spoofing — and proposes runtime guardrails." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Fiddler AI — AI Coding Agent Threat Models and Controls" />
+  <meta name="post:date" content="2026-07-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Fiddler AI — AI Coding Agent Threat Models and Controls</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-09">2026-07-09</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: Coding agents (Claude Code, Codex, Copilot) now operate with repo-write, shell, and cloud-API access — Fiddler AI's analysis maps the combined LLM + code-execution attack surface and proposes runtime guardrails that traditional SAST tools cannot cover.</p>
+
+        <h2>Key Findings</h2>
+        <ul>
+          <li>A 2025 study of 7,700+ AI-generated GitHub files found <strong>4,241 CWE instances across 77 vulnerability types</strong> — Python files hit 16–18% vulnerability rates. These are not novel patterns; they are decade-old mistakes that SAST tools miss because they were calibrated for human-written code.</li>
+          <li>Coding agents combine two risk categories: <strong>LLM-native vulnerabilities</strong> (prompt injection, hallucination, memory poisoning) and <strong>code-execution vulnerabilities</strong> (RCE, privilege escalation, sandbox escape). Traditional AppSec tooling addresses neither combination.</li>
+          <li><strong>Indirect prompt injection</strong> is the highest-severity vector: a poisoned GitHub issue comment can instruct an agent to add a backdoor during a routine bug fix. The agent reads the comment as legitimate context and follows the hidden instruction.</li>
+          <li><strong>Supply-chain poisoning via agents</strong>: autonomous tools pull packages from public registries, enabling typosquatting and dependency confusion at machine speed — an agent might import <code>requests-toolkit</code> instead of <code>requests</code> without human review.</li>
+          <li><strong>MCP server spoofing</strong> introduces a new tool-abuse path: agents connect to external services via Model Context Protocol, and malicious or compromised MCP servers can present legitimate-looking tools that perform unauthorized actions including data exfiltration.</li>
+          <li><strong>Memory poisoning</strong> is unique to agents with persistent context: an attacker poisons session memory in step one, then exploits the corrupted context in step ten — a vector that stateless assistants do not expose.</li>
+          <li><strong>Credential exposure</strong> compounds across sessions: agents may embed API keys in generated code, log secrets in error messages, or commit plaintext passwords to public repos where automated scrapers collect them within minutes.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>Development teams are adopting coding agents faster than security teams can assess them. The autonomy-without-oversight model means a single poisoned input can cascade through an entire CI/CD pipeline before a human reviews anything. Traditional SAST scanners were optimized for human code patterns — they systematically miss agent-generated vulnerabilities because the structural fingerprints differ.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li>Treat all agent-generated code as <strong>untrusted input</strong> requiring specialized validation, not developer-equivalent output passing through standard review gates.</li>
+          <li>Implement <strong>runtime guardrails</strong>: sandbox agent shell access, enforce allowlists for package registries, and monitor for credential patterns in agent output before it reaches production.</li>
+          <li>Extend <strong>lineage tracking</strong> to cover the model, the agent session, and the MCP tools it invokes — not just the final artifact.</li>
+          <li>Deploy <strong>agent-specific SAST rules</strong> calibrated for AI-generated code patterns, or use LLM-as-judge security scanners that understand agent output semantics.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.fiddler.ai/blog/ai-coding-agent-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Fiddler AI — AI Coding Agent Security: Threat Models and Controls</a></li>
+          <li><a href="https://arxiv.org/html/2510.26103v1?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">AI-Generated Code Vulnerability Study (arXiv 2510.26103)</a></li>
+          <li><a href="https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Simon Willison — The Lethal Triptych of Prompt Injection</a></li>
+          <li><a href="https://www.anthropic.com/research/trustworthy-agents?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anthropic — Trustworthy Agents</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
