@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamPCP — Supply Chain Compromise of Trivy, LiteLLM, and KICS Feeds VECT Ransomware Credential Archive — al-ice.ai</title>
+  <meta name="description" content="TeamPCP poisoned Trivy, Checkmarx KICS, LiteLLM, and Telnyx SDK to harvest 500K+ CI/CD credentials — VECT ransomware then selected victims from the archive." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="TeamPCP — Supply Chain Compromise of Trivy, LiteLLM, and KICS Feeds VECT Ransomware Credential Archive" />
+  <meta name="post:date" content="2026-07-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">TeamPCP — Supply Chain Compromise of Trivy, LiteLLM, and KICS Feeds VECT Ransomware Credential Archive</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-09">2026-07-09</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> LiteLLM is a core proxy layer in AI inference pipelines — its compromise gave attackers persistent code execution on every machine running the package, harvesting cloud keys and CI/CD tokens that protect downstream model serving infrastructure.</p>
+
+        <h2>What Happened</h2>
+        <ul>
+          <li>TeamPCP — the threat actor behind the Shai-Hulud supply-chain worm — compromised four widely used open-source packages between February and March 2026: <strong>Trivy</strong> (container scanner), <strong>Checkmarx KICS</strong> (IaC scanner), <strong>LiteLLM</strong> (AI model proxy, ~95M monthly downloads), and the <strong>Telnyx Python SDK</strong>.</li>
+          <li>Trivy's automated workflow was hit via CVE-2026-33634: a stolen maintainer credential let TeamPCP overwrite 76 of 77 published versions with malicious workflow code.</li>
+          <li>Checkmarx KICS had 35 workflow tags overwritten. TeamPCP also used each victim organization's own automation credentials to create hidden <code>docs-tpcp</code> repositories inside victim GitHub accounts — making intrusion activity appear as legitimate automation in audit logs.</li>
+          <li>LiteLLM v1.82.8 received a <code>litellm_init.pth</code> file — Python automatically reads and executes <code>.pth</code> files on every startup, giving TeamPCP persistent code execution on any machine that installed the package, including CI runners and developer workstations.</li>
+          <li>Telnyx SDK versions 4.87.1 and 4.87.2 shipped a three-stage remote access trojan.</li>
+          <li>By March 2026, TeamPCP had amassed <strong>500,000+ stolen credentials from 10,000+ CI/CD pipelines</strong> — AWS, Azure, GCP tokens, Kubernetes secrets, container registry credentials, GitHub/GitLab access tokens.</li>
+          <li>VECT ransomware operators then selected victims from that credential archive. Target selection happened <em>after</em> access, not before — reversing the conventional ransomware kill chain.</li>
+          <li>The partnership was publicly announced on BreachForums on April 16, 2026. Sophos CTU confirmed at least one VECT deployment using TeamPCP-sourced credentials.</li>
+          <li>FBI IC3 FLASH-20260702-01 (published July 2, 2026) warns these credentials "will be weaponized long after the initial compromise."</li>
+          <li>Check Point Research's technical analysis (CPR-2026-0428) found VECT 2.0's encryption is broken for files >128 KB — the first three-quarters of large files become permanently scrambled. Paying the ransom does not restore them.</li>
+        </ul>
+
+        <h2>Why It Matters</h2>
+        <p>This is the first confirmed ransomware operation where the access broker phase was conducted entirely through open-source supply chain compromise of <em>security tooling itself</em> (Trivy, KICS). Organizations that installed these packages to <em>improve</em> their security posture inadvertently gave attackers persistent access to their CI/CD pipelines. The fragmented-log problem — package install logs, workflow execution logs, and cloud audit logs each show legitimate events attributed to known service accounts — makes holistic detection nearly impossible without pipeline-centric correlation.</p>
+
+        <h2>What To Do</h2>
+        <ul>
+          <li><strong>Check affected versions immediately:</strong> Trivy GitHub Action pinned to 0.76.x or 0.77.x tags, Checkmarx KICS affected tags, LiteLLM v1.82.8, Telnyx SDK 4.87.1/4.87.2 — all between February–April 2026.</li>
+          <li><strong>Search for artifacts:</strong> <code>litellm_init.pth</code> on developer and CI runners; <code>docs-tpcp</code> repositories in GitHub organizations; anomalous Trivy/KICS workflow runs.</li>
+          <li><strong>Rotate all CI/CD and cloud credentials</strong> issued before April 2026 in affected environments. Revoke compromised service tokens.</li>
+          <li><strong>Audit pipeline-run API calls</strong> in AWS CloudTrail, Azure Monitor, and GCP Cloud Audit Logs for anomalous activity from pipeline service accounts.</li>
+          <li><strong>Pin dependencies by hash</strong>, not tag — and require signed commits for workflow changes in critical security tooling repos.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://gbhackers.com/teampcp-supply-chain-attacks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">GBHackers — TeamPCP Supply Chain Attacks Feed VECT Ransomware</a></li>
+          <li><a href="https://www.vectra.ai/blog/vect-and-teampcp-the-ransomware-kill-chain-reversed?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Vectra AI — VECT and TeamPCP: The Ransomware Kill Chain, Reversed</a></li>
+          <li><a href="https://www.sophos.com/en-us/blog/vect-and-teampcp-partner-for-ransomware-campaigns?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Sophos — VECT and TeamPCP Partner for Ransomware Campaigns</a></li>
+          <li><a href="https://research.checkpoint.com/2026/vect-ransomware-by-design-wiper-by-accident/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Check Point Research — VECT Ransomware: By Design, Wiper by Accident (CPR-2026-0428)</a></li>
+          <li><a href="https://www.ic3.gov/CSA/2026/260702.pdf?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">FBI IC3 FLASH-20260702-01</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
