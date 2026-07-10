@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Unit 42 — Pickle in the Middle: Cross-Tenant RCE in Google Vertex AI</title>
+  <meta name="description" content="Palo Alto Networks Unit 42 disclosed a critical vulnerability in Google Cloud Vertex AI SDK that allowed cross-tenant model poisoning and remote code execution via bucket squatting." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/unit42-vertex-ai-pickle-middle-cross-tenant-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Unit 42 — Pickle in the Middle: Cross-Tenant RCE in Google Vertex AI" />
+  <meta name="post:date" content="2026-07-10" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+      </nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Unit 42 — Pickle in the Middle: Cross-Tenant RCE in Google Vertex AI</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-10">2026-07-10</time>
+          <a class="badge" href="/categories/AI-CVES/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>AI relevance:</strong> This vulnerability directly affected enterprises deploying custom ML models on Google Cloud's AI platform, allowing attackers to achieve code execution within Vertex AI serving infrastructure from an entirely separate GCP project.</p>
+
+        <ul>
+          <li>Palo Alto Networks Unit 42 disclosed a critical vulnerability in the Google Cloud Vertex AI SDK for Python affecting versions 1.139.0 and 1.140.0</li>
+          <li>The flaw enabled "bucket squatting" attacks where an attacker could predict and preemptively create GCS buckets with deterministic names based on victim project IDs</li>
+          <li>When victims uploaded models without specifying custom staging buckets, the SDK silently uploaded artifacts to attacker-controlled buckets</li>
+          <li>Attackers could then replace legitimate models with malicious payloads containing pickle deserialization exploits</li>
+          <li>Successful exploitation led to remote code execution within Google's Vertex AI serving infrastructure with zero initial access to the victim's project</li>
+          <li>The attack exploited a missing ownership check in the SDK's staging logic combined with predictable default bucket naming patterns</li>
+          <li>Google fixed the vulnerability in SDK version 1.148.0 released April 15, 2026 through their Vulnerability Rewards Program</li>
+          <li>The vulnerability highlights risks in multi-tenant AI serving platforms where resource naming follows deterministic patterns</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>Vertex AI is a core ML platform for enterprises training and deploying production models. This vulnerability demonstrated that an attacker operating entirely from their own GCP project could hijack model uploads and poison artifacts before deployment. The "Pickle in the Middle" attack name references the man-in-the-middle positioning combined with Python's pickle deserialization module used for payload execution. Organizations using Vertex AI for custom model deployment faced potential data exfiltration, lateral movement, and full cloud environment compromise if they hadn't upgraded to patched SDK versions.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Upgrade google-cloud-aiplatform SDK to version 1.148.0 or later immediately</li>
+          <li>Audit existing Vertex AI deployments for signs of bucket squatting or unauthorized model artifact access</li>
+          <li>Always specify custom staging buckets with explicit ownership controls rather than relying on SDK defaults</li>
+          <li>Implement GCS bucket monitoring for unexpected access patterns or cross-project bucket creation</li>
+          <li>Review Vertex AI model deployment logs for anomalies in artifact loading or serving container initialization</li>
+          <li>Consider network isolation and service account restrictions to limit blast radius of compromised model serving infrastructure</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/" rel="noopener">Unit 42 — Pickle in the Middle Research</a></li>
+          <li><a href="https://cloud.google.com/vertex-ai/docs" rel="noopener">Google Cloud Vertex AI Documentation</a></li>
+          <li><a href="https://cve.tools" rel="noopener">CVE Tools Database</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){var btn=document.getElementById('themeToggle');if(!btn)return;function isRetro(){return document.documentElement.getAttribute('data-theme')==='retro';}function crtIcon(){return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';}function flatIcon(){return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';}function render(){if(isRetro()){btn.classList.add('is-retro');btn.innerHTML='<span class="theme-screen">'+flatIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';btn.setAttribute('title','Switch to modern');btn.setAttribute('aria-label','Switch to modern');}else{btn.classList.remove('is-retro');btn.innerHTML='<span class="theme-screen">'+crtIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';btn.setAttribute('title','Toggle CRT (80/90s) vibe');btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');}}function pulse(anim){try{btn.classList.remove('anim-connect','anim-disconnect');void btn.offsetWidth;btn.classList.add(anim);window.setTimeout(function(){btn.classList.remove(anim);},700);}catch(e){}}function setRetro(on){if(on){pulse('anim-connect');document.documentElement.setAttribute('data-theme','retro');try{localStorage.setItem('theme','retro');}catch(e){}}else{pulse('anim-disconnect');document.documentElement.removeAttribute('data-theme');try{localStorage.removeItem('theme');}catch(e){}}render();}render();btn.addEventListener('click',function(){setRetro(!isRetro());});})();</script>
+</body>
+</html>
