@@ -316,6 +316,51 @@ ${topGrid}
     });
   }
 
+  const STOP_WORDS = new Set(['about','after','agent','agents','against','from','into','over','that','the','their','this','with','security','report','research','index','using','via']);
+  const escapeHtml = value => String(value || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  const terms = post => new Set(`${post.title} ${post.description}`.toLowerCase().match(/[a-z0-9][a-z0-9.+-]{2,}/g)?.filter(word => !STOP_WORDS.has(word)) || []);
+  const cves = post => new Set(`${post.title} ${post.description}`.toUpperCase().match(/CVE-\d{4}-\d{4,7}/g) || []);
+
+  function relatedPosts(current, limit=3){
+    const currentTerms = terms(current);
+    const currentCves = cves(current);
+    return posts.filter(candidate => candidate.urlPath !== current.urlPath).map(candidate => {
+      const overlap = [...terms(candidate)].filter(term => currentTerms.has(term)).length;
+      const sharedCves = [...cves(candidate)].filter(cve => currentCves.has(cve)).length;
+      return { candidate, score: sharedCves * 20 + overlap * 2 + (candidate.category === current.category ? 4 : 0) };
+    }).sort((a,b) => b.score - a.score || b.candidate.date.localeCompare(a.candidate.date) || a.candidate.title.localeCompare(b.candidate.title))
+      .slice(0, limit).map(item => item.candidate);
+  }
+
+  function storyTimeline(current){
+    const currentCves = cves(current);
+    if (!currentCves.size) return [];
+    return posts.filter(candidate => [...cves(candidate)].some(cve => currentCves.has(cve)))
+      .sort((a,b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+  }
+
+  function editorialNavigation(current){
+    const related = relatedPosts(current);
+    const timeline = storyTimeline(current);
+    const timelineHtml = timeline.length > 1 ? `<aside class="story-timeline" data-story-timeline aria-labelledby="story-timeline-title">
+      <div class="eyebrow">Developing story</div><h2 id="story-timeline-title">Follow the timeline</h2>
+      <ol>${timeline.map(post => `<li class="${post.urlPath === current.urlPath ? 'current' : ''}"><time datetime="${post.date}">${post.date}</time><a href="${post.urlPath}"${post.urlPath === current.urlPath ? ' aria-current="page"' : ''}>${escapeHtml(post.title)}</a></li>`).join('')}</ol>
+    </aside>` : '';
+    const relatedHtml = related.length ? `<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/${current.category}/">View category →</a></div>
+      <div class="related-grid">${related.map(post => `<article class="related-card"><div class="post-meta"><time datetime="${post.date}">${post.date}</time><span class="badge">${escapeHtml(post.categoryLabel)}</span></div><h3><a href="${post.urlPath}">${escapeHtml(post.title)}</a></h3>${post.description ? `<p>${escapeHtml(post.description)}</p>` : ''}<a class="text-link" href="${post.urlPath}">Read briefing →</a></article>`).join('')}</div>
+    </aside>` : '';
+    return timelineHtml + relatedHtml;
+  }
+
+  function injectEditorialNavigation(html, current){
+    html = html.replace(/\s*<aside[^>]+data-story-timeline[\s\S]*?<\/aside>/g, '').replace(/\s*<aside[^>]+data-related-intelligence[\s\S]*?<\/aside>/g, '');
+    const block = editorialNavigation(current);
+    if (!block) return html;
+    const articleEnd = html.lastIndexOf('</article>');
+    return articleEnd >= 0 ? `${html.slice(0, articleEnd + 10)}\n${block}${html.slice(articleEnd + 10)}` : html.replace('</main>', `${block}</main>`);
+  }
+
   // Ensure theme toggle + persistence on *all* pages (including individual post pages created by the publisher).
   function themeInitScript(){
     // Default: Modern. If visitor opted into CRT/retro, remember it.
@@ -440,6 +485,9 @@ ${topGrid}
     const original = html;
     html = stripWorkflows(html);
     html = addUtmToExternalLinks(html);
+    const rel = file.replace(/^website\//,'').replace(/index\.html$/,'');
+    const current = posts.find(post => post.urlPath === '/' + rel.replace(/\\/g,'/'));
+    if (current) html = injectEditorialNavigation(html, current);
 
     // --- Theme init script (in <head>, after CSS link) ---
     if (html.includes('/assets/css/site.css')){
