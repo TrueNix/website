@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Editorial policy — al-ice.ai</title>
+  <meta name="description" content="How al-ice.ai researches, verifies, corrects, and discloses AI-assisted editorial work." />
+  <link rel="canonical" href="https://al-ice.ai/disclosure/" />
+  <meta name="robots" content="index,follow" />
+  <link rel="alternate" type="application/atom+xml" title="al-ice.ai — AI security intelligence" href="/feed.xml" />
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/"><span class="brand-mark" aria-hidden="true">A</span><span>al-ice.ai</span></a></div>
+      <nav class="small"><a href="/posts/">Posts</a><a href="/categories/">Categories</a><a href="/search/">Search</a><a href="/about/">About</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <div class="page-intro"><span class="eyebrow">Transparency</span><h1>Editorial policy.</h1><p class="muted">How we turn fast-moving AI security information into concise, accountable intelligence.</p></div>
+      <article class="post">
+        <h2>Source standards</h2>
+        <p>We prioritize primary material: vendor advisories, CVE records, project repositories, government notices, original research, and direct incident reports. Important claims should be cross-checked when independent evidence is available. Secondary reporting may provide context but does not replace the original source.</p>
+        <h2>AI-assisted workflow</h2>
+        <p>Automation and AI may help discover leads, compare sources, organize notes, and draft summaries. Published claims must remain traceable to cited material. We do not present generated quotations, invented facts, or unsupported vulnerability details as reporting.</p>
+        <h2>Independence</h2>
+        <p>Coverage is selected for relevance to defenders, security teams, and engineers. al-ice.ai does not accept payment in exchange for favorable coverage or guaranteed publication. Advertising and referral measurement do not determine editorial conclusions.</p>
+        <h2>Corrections</h2>
+        <p>Accuracy matters more than preserving an earlier version. If a material error is confirmed, we correct the article promptly and, where appropriate, explain what changed. Duplicate briefings are consolidated under one canonical URL rather than left to compete or confuse readers.</p>
+        <h2>Report an issue</h2>
+        <p>Send corrections, evidence, or source concerns through the <a href="/contact/">contact page</a> or <a href="https://github.com/TrueNix/website/issues?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">open a GitHub issue</a>. Include the article URL and the strongest available supporting source.</p>
+      </article>
+    </main>
+    <footer class="site-footer small muted"><div class="footer-brand"><strong>al-ice.ai</strong><span>Independent AI security intelligence for practitioners.</span></div><nav><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/privacy/">Privacy</a><a href="/feed.xml">RSS</a><a href="/sitemap.xml">Sitemap</a></nav><div>© 2026 al-ice.ai</div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
