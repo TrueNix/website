@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microsoft — Claude Code GitHub Action Exposes CI/CD Secrets via /proc/self/environ — al-ice.ai</title>
+  <meta name="description" content="Microsoft researchers demonstrated how Claude Code's GitHub Action could be tricked into leaking ANTHROPIC_API_KEY via /proc/self/environ — no shell execution required." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/microsoft-claude-code-action-proc-environ-api-key-leak/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Microsoft — Claude Code GitHub Action Exposes CI/CD Secrets via /proc/self/environ" />
+  <meta name="post:date" content="2026-07-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-ZX0TZSMV99');
+  </script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Microsoft — Claude Code GitHub Action Exposes CI/CD Secrets via /proc/self/environ</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-11">2026-07-11</time>
+          <a class="badge" href="/categories/SECURITY/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AI relevance: CI/CD agents that read untrusted GitHub content while holding privileged access create systemic secret-exfiltration risk — a single crafted PR comment can leak API keys to attackers.</p>
+
+        <ul>
+          <li>Microsoft Threat Intelligence researchers demonstrated that Claude Code's GitHub Action (pre-v2.1.128) could be manipulated into <strong>leaking its ANTHROPIC_API_KEY via a crafted pull request comment</strong>.</li>
+          <li>The attack exploits indirect prompt injection: PR titles, issue bodies, and comments are attacker-controlled text that lands in the model's context window as if they were legitimate instructions.</li>
+          <li>Claude Code Action ships with robust Bash sandboxing (Bubblewrap namespace isolation, scrubbed environment variables) — but the <strong>Read tool was not held to the same standard</strong>.</li>
+          <li>Researchers got the agent to read <code>/proc/self/environ</code>, the file that exposes a running process's full environment including secrets wired in by the CI runner.</li>
+          <li>One file read, no shell execution required — the sandbox built to stop command injection simply did not apply to the tool that performed the leak.</li>
+          <li>Anthropic shipped a fix in Claude Code 2.1.128 (released May 5, 2026) that blocks access to sensitive <code>/proc</code> files, closing this specific hole.</li>
+          <li>The vulnerability mirrors the same architectural pattern that enabled the Mexican government breach: an agent holding untrusted input and privileged access in the same breath.</li>
+          <li>Any CI/CD agent wired to read untrusted GitHub content while sitting next to real credentials is the same trap with a different lock — the pattern persists across vendors.</li>
+        </ul>
+
+        <h2>Why it matters</h2>
+        <p>GitHub Actions and similar CI/CD pipelines are increasingly delegating code review, issue triage, and PR analysis to AI agents. These agents operate with elevated privileges (API keys, deployment tokens, cloud credentials) while ingesting attacker-controlled content from public repositories. The Claude Code Action vulnerability demonstrates that sandboxing shell execution is insufficient — file-read capabilities can bypass perimeter defenses and exfiltrate secrets directly.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li>Update Claude Code to v2.1.128 or later immediately if you use the GitHub Action in repositories accepting outside contributions.</li>
+          <li>Audit any CI/CD agent that reads untrusted content (PRs, issues, comments) and ensure file-read tools are sandboxed with the same rigor as shell execution.</li>
+          <li>Block access to <code>/proc/self/environ</code> and other sensitive procfs paths in agent execution environments.</li>
+          <li>Rotate API keys and secrets exposed to CI/CD agents regularly, and assume compromise if untrusted content was processed before patching.</li>
+          <li>Consider using ephemeral credentials or short-lived tokens for CI/CD agent workflows to limit blast radius.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.toxsec.com/p/agentic-ai-breaches-2026-3-postmortems?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">ToxSec — Agentic AI Breaches 2026: 3 Postmortems, No Spin</a></li>
+          <li><a href="https://thehackernews.com/2026/06/threatsday-bulletin-worm-code-leaked-ai.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — ThreatsDay Bulletin: Claude Code GitHub Action Vulnerability</a></li>
+          <li><a href="https://www.rescana.com/post/threatsday-bulletin-june-2026-miasma-supply-chain-worm-leak-claude-code-github-action-vulnerability-ai-agent-phishing-to?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Rescana — Claude Code GitHub Action Exposes CI/CD Secrets</a></li>
+          <li><a href="https://letsdatascience.com/news/claude-code-github-action-exposes-cicd-secrets-effb1d6a?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Let's Data Science — Claude Code GitHub Action Exposes CI/CD Secrets</a></li>
+        </ul>
+
+      </article>
+    </main>
+    <footer class="small muted">
+      <div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div>
+    </footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
