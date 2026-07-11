@@ -5,6 +5,39 @@ import { execSync } from 'node:child_process';
 const BASE = 'https://al-ice.ai';
 const SITE_DIR = 'website';
 
+// Confirmed duplicate briefings. Keep the stronger/newer URL and redirect the overlap.
+const DUPLICATE_REDIRECTS = new Map([
+  ['/posts/2026/07/zscaler-ipi-crypto-payment-ai-agents/', '/posts/2026/07/zscaler-indirect-prompt-injection-crypto-payment-ai-agents/'],
+  ['/posts/2026/07/trendai-mcp-server-security-audit-4982-flaws-2259-servers/', '/posts/2026/07/trendai-mcp-server-security-audit-4982-flaws/']
+]);
+
+const CATEGORY_META = {
+  'ai-cves': {
+    label: 'AI Vulnerabilities & CVEs',
+    description: 'Actionable vulnerability disclosures affecting AI frameworks, agents, model infrastructure, and developer tooling.',
+    accent: 'critical'
+  },
+  research: {
+    label: 'AI Security Research',
+    description: 'New papers, attack techniques, evaluations, and defensive research for AI and agentic systems.',
+    accent: 'research'
+  },
+  security: {
+    label: 'Agent & Supply Chain Security',
+    description: 'Incidents, threat intelligence, prompt injection, identity, cloud, and software supply-chain risk.',
+    accent: 'security'
+  },
+  comparisons: {
+    label: 'Tools & Comparisons',
+    description: 'Practical evaluations of security tools, AI platforms, and engineering workflows.',
+    accent: 'tools'
+  }
+};
+
+function categoryMeta(slug, fallback='Security'){
+  return CATEGORY_META[slug] || { label: fallback, description: `Latest ${fallback} coverage.`, accent: 'default' };
+}
+
 function getGitLastMod(filePath){
   try{
     const out = execSync(`git log -1 --format=%cI -- ${filePath}`, { stdio: ['ignore','pipe','ignore']}).toString().trim();
@@ -29,7 +62,7 @@ async function walk(dir){
   return out;
 }
 
-function pageShell({title, canonical, description, body}){
+function pageShell({title, canonical, description, body, schema=''}){
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -40,6 +73,14 @@ function pageShell({title, canonical, description, body}){
   ${description ? `<meta name="description" content="${description.replaceAll('"','&quot;')}" />` : ''}
   <link rel="canonical" href="${canonical}" />
   <meta name="robots" content="index,follow" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="al-ice.ai" />
+  <meta property="og:title" content="${title.replaceAll('"','&quot;')}" />
+  <meta property="og:description" content="${(description || '').replaceAll('"','&quot;')}" />
+  <meta property="og:url" content="${canonical}" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="alternate" type="application/atom+xml" title="al-ice.ai — AI security intelligence" href="/feed.xml" />
+  ${schema}
 
   <!-- Favicons -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -71,17 +112,20 @@ function pageShell({title, canonical, description, body}){
 <body>
   <div class="wrap">
     <header class="site">
-      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <div class="brand"><a href="/"><span class="brand-mark" aria-hidden="true">A</span><span>al-ice.ai</span></a></div>
       <nav class="small">
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
+        <a href="/about/">About</a>
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch site style">Style: 80/90s</button>
       </nav>
     </header>
     ${body}
-    <footer class="small muted">
-      <div>© ${new Date().getFullYear()} al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
+    <footer class="site-footer small muted">
+      <div class="footer-brand"><strong>al-ice.ai</strong><span>Independent AI security intelligence for practitioners.</span></div>
+      <nav aria-label="Footer"><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/disclosure/">Editorial policy</a><a href="/privacy/">Privacy</a><a href="/feed.xml">RSS</a><a href="/sitemap.xml">Sitemap</a></nav>
+      <div>© ${new Date().getFullYear()} al-ice.ai</div>
     </footer>
   </div>
 
@@ -108,7 +152,7 @@ function pageShell({title, canonical, description, body}){
     })();
   </script>
 </body>
-</html>`;
+</html>`.replace(/[ \t]+\n/g, '\n');
 }
 
 async function main(){
@@ -121,7 +165,8 @@ async function main(){
     const title = meta(html,'post:title');
     const date = meta(html,'post:date');
     const category = meta(html,'post:category') || 'security';
-    const categoryLabel = meta(html,'post:categoryLabel') || (category[0].toUpperCase()+category.slice(1));
+    const categoryLabel = categoryMeta(category, meta(html,'post:categoryLabel') || (category[0].toUpperCase()+category.slice(1))).label;
+    const description = meta(html, 'description') || '';
 
     if (!title || !date) continue;
 
@@ -131,7 +176,8 @@ async function main(){
 
     const lastmod = getGitLastMod(file) || date;
 
-    posts.push({ title, date, category, categoryLabel, urlPath, lastmod });
+    if (DUPLICATE_REDIRECTS.has(urlPath)) continue;
+    posts.push({ title, date, category, categoryLabel, description, urlPath, lastmod });
   }
 
   posts.sort((a,b) => (b.date).localeCompare(a.date));
@@ -139,7 +185,7 @@ async function main(){
   // categories (for filters + category pages)
   const byCat = new Map();
   for (const p of posts){
-    if (!byCat.has(p.category)) byCat.set(p.category, { label: p.categoryLabel, posts: [] });
+    if (!byCat.has(p.category)) byCat.set(p.category, { ...categoryMeta(p.category, p.categoryLabel), posts: [] });
     byCat.get(p.category).posts.push(p);
   }
 
@@ -193,7 +239,9 @@ async function main(){
 
     const cards = slice.map(p => `
 <article class="post-card card">
+  <span class="signal-line" aria-hidden="true"></span>
   <h2 class="post-title"><a href="${p.urlPath}">${p.title}</a></h2>
+  ${p.description ? `<p class="post-deck">${p.description}</p>` : ''}
   <div class="post-meta">
     <time datetime="${p.date}">${p.date}</time>
     <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
@@ -219,10 +267,14 @@ ${renderPagination(pageNum)}
   function renderHomePage(){
     // Homepage default: newest posts first (already sorted by date desc).
     const latest = posts.slice(0, PER_PAGE);
+    const featured = latest[0];
+    const remaining = latest.slice(1);
 
-    const latestCards = latest.map(p => `
+    const latestCards = remaining.map(p => `
 <article class="post-card card">
+  <span class="signal-line" aria-hidden="true"></span>
   <h3 class="post-title"><a href="${p.urlPath}">${p.title}</a></h3>
+  ${p.description ? `<p class="post-deck">${p.description}</p>` : ''}
   <div class="post-meta">
     <time datetime="${p.date}">${p.date}</time>
     <a class="badge" href="/categories/${p.category}/">${p.categoryLabel}</a>
@@ -230,6 +282,13 @@ ${renderPagination(pageNum)}
 </article>`).join('');
 
     const topGrid = `<div class="posts-grid latest-grid">${latestCards || '<div class="card muted">No posts yet.</div>'}</div>`;
+    const featuredCard = featured ? `<article class="featured-story card">
+      <div class="eyebrow"><span class="live-dot"></span> Lead intelligence</div>
+      <h2><a href="${featured.urlPath}">${featured.title}</a></h2>
+      ${featured.description ? `<p>${featured.description}</p>` : ''}
+      <div class="post-meta"><time datetime="${featured.date}">${featured.date}</time><a class="badge" href="/categories/${featured.category}/">${featured.categoryLabel}</a></div>
+      <a class="text-link" href="${featured.urlPath}">Read the briefing <span aria-hidden="true">→</span></a>
+    </article>` : '';
 
     return pageShell({
       title: 'al-ice.ai — latest AI signal',
@@ -237,17 +296,20 @@ ${renderPagination(pageNum)}
       description: 'Latest high-signal AI security, infrastructure, and research updates—short summaries with primary sources.',
       body: `<main>
 <section class="hero">
-  <h1>Latest AI signal</h1>
-  <p class="muted">High-signal AI security, infrastructure, and research — short notes with primary sources.</p>
+  <div class="eyebrow"><span class="live-dot"></span> Continuously monitored • Primary-source led</div>
+  <h1>Intelligence for the<br><span>agentic attack surface.</span></h1>
+  <p class="hero-copy">Independent reporting on AI vulnerabilities, agent security, prompt injection, and the software supply chain — distilled for defenders and engineering teams.</p>
   <div class="hero-cta">
     <a class="btn" href="/posts/">Browse all posts</a>
-    <a class="btn secondary" href="/categories/">Browse categories</a>
+    <a class="btn secondary" href="/about/">How we report</a>
   </div>
 </section>
 
+<div class="trust-strip" aria-label="Editorial principles"><span>Primary sources</span><span>Actionable analysis</span><span>No pay-to-play coverage</span></div>
+${featuredCard}
 ${filterPills('/')}
 
-<h2 class="section-title">Latest</h2>
+<div class="section-heading"><div><span class="eyebrow">Latest coverage</span><h2 class="section-title">The security signal</h2></div><a href="/posts/">View all intelligence →</a></div>
 ${topGrid}
 <p class="muted small"><a href="/posts/">See full feed →</a></p>
 </main>`
@@ -324,10 +386,19 @@ ${topGrid}
   }
 
   function stripWorkflows(html){
-    // Remove any Workflows nav link
-    html = html.replace(/\s*<a\s+href="\/workflows\/">Workflows<\/a>\s*/g, '');
-    // Remove any category link pointing to /categories/workflows/
-    html = html.replace(/<a\s+href="\/categories\/workflows\/">Workflows<\/a>/g, '<span class="muted">Workflows</span>');
+    // Normalize legacy internal routes left by earlier publishers.
+    const routeMap = new Map([
+      ['/categories/SECURITY/', '/categories/security/'],
+      ['/categories/AI-CVES/', '/categories/ai-cves/'],
+      ['/categories/RESEARCH/', '/categories/research/'],
+      ['/category/security/', '/categories/security/'],
+      ['/category/security', '/categories/security/'],
+      ['/category/research', '/categories/research/'],
+      ['/workflows/', '/posts/'],
+      ['/news/', '/news/log/'],
+      ['/services/', '/about/']
+    ]);
+    for (const [from, to] of routeMap) html = html.replaceAll(`href="${from}"`, `href="${to}"`);
     return html;
   }
 
@@ -452,6 +523,13 @@ ${topGrid}
     await ensureThemeOnHtmlFile(f);
   }
 
+  // Replace confirmed duplicate pages with client redirects (GitHub Pages has no redirect rules).
+  for (const [from, to] of DUPLICATE_REDIRECTS){
+    const out = join(SITE_DIR, from, 'index.html');
+    const target = `${BASE}${to}`;
+    await writeFile(out, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,follow"><link rel="canonical" href="${target}"><meta http-equiv="refresh" content="0;url=${to}"><title>Briefing moved — al-ice.ai</title></head><body><p>This briefing was consolidated. <a href="${to}">Read the canonical report</a>.</p></body></html>`);
+  }
+
   // patch theme toggle into other static pages (search/about/legal/etc)
   const extraPages = [
     join(SITE_DIR,'search','index.html'),
@@ -460,6 +538,7 @@ ${topGrid}
     join(SITE_DIR,'privacy','index.html'),
     join(SITE_DIR,'terms','index.html'),
     join(SITE_DIR,'disclosure','index.html'),
+    join(SITE_DIR,'news','log','index.html'),
     join(SITE_DIR,'404.html'),
   ];
   for (const p of extraPages){
@@ -468,14 +547,19 @@ ${topGrid}
 
   // categories index
   const catList = [...byCat.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([slug,v]) => `
-<li><a href="/categories/${slug}/">${v.label}</a> <span class="muted">(${v.posts.length})</span></li>`).join('');
+<article class="category-card card category-${v.accent}">
+  <div class="category-top"><span class="eyebrow">${String(v.posts.length).padStart(2,'0')} briefings</span><span aria-hidden="true">↗</span></div>
+  <h2><a href="/categories/${slug}/">${v.label}</a></h2>
+  <p>${v.description}</p>
+  <a class="text-link" href="/categories/${slug}/">Explore coverage →</a>
+</article>`).join('');
   const categoriesIndex = pageShell({
     title: 'Categories — al-ice.ai',
     canonical: `${BASE}/categories/`,
     description: 'Browse posts by category.',
     body: `<main>
-<h1>Categories</h1>
-<div class="card"><ul>${catList || '<li class="muted">No categories yet.</li>'}</ul></div>
+<div class="page-intro"><span class="eyebrow">Coverage map</span><h1>Explore the attack surface.</h1><p class="muted">Focused intelligence organized around the risks security and engineering teams need to track.</p></div>
+<div class="category-grid">${catList || '<div class="card muted">No categories yet.</div>'}</div>
 </main>`
   });
   await mkdir(join(SITE_DIR,'categories'), { recursive:true });
@@ -491,8 +575,8 @@ ${topGrid}
       canonical: `${BASE}/categories/${slug}/`,
       description: `Posts tagged ${v.label}.`,
       body: `<main>
-<h1>${v.label}</h1>
-<div class="card"><ul>${items}</ul></div>
+<div class="page-intro"><span class="eyebrow">Intelligence category</span><h1>${v.label}</h1><p class="muted">${v.description}</p></div>
+<div class="card feed-list"><ul>${items}</ul></div>
 </main>`
     });
     await mkdir(join(SITE_DIR,'categories',slug), { recursive:true });
@@ -507,6 +591,7 @@ ${topGrid}
     date: p.date,
     category: p.category,
     categoryLabel: p.categoryLabel,
+    description: p.description,
     urlPath: p.urlPath,
   }));
   await mkdir(join(SITE_DIR,'assets'), { recursive:true });
@@ -533,6 +618,11 @@ ${topGrid}
     ).join('\n') +
     `\n</urlset>\n`;
   await writeFile(join(SITE_DIR,'sitemap.xml'), sitemap);
+
+  // Atom feed for readers, SOC tooling, and aggregators.
+  const feedEntries = posts.slice(0, 50).map(p => `  <entry>\n    <title>${p.title.replaceAll('&','&amp;').replaceAll('<','&lt;')}</title>\n    <link href="${BASE}${p.urlPath}"/>\n    <id>${BASE}${p.urlPath}</id>\n    <updated>${p.date}T00:00:00Z</updated>\n    <category term="${p.categoryLabel.replaceAll('&','&amp;')}"/>\n    <summary>${(p.description || p.title).replaceAll('&','&amp;').replaceAll('<','&lt;')}</summary>\n  </entry>`).join('\n');
+  const feed = `<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom">\n  <title>al-ice.ai — AI security intelligence</title>\n  <link href="${BASE}/feed.xml" rel="self"/>\n  <link href="${BASE}/"/>\n  <id>${BASE}/</id>\n  <updated>${posts[0]?.date || new Date().toISOString().slice(0,10)}T00:00:00Z</updated>\n  <subtitle>Primary-source-led intelligence on AI vulnerabilities, agents, and the software supply chain.</subtitle>\n${feedEntries}\n</feed>\n`;
+  await writeFile(join(SITE_DIR,'feed.xml'), feed);
 
   console.log(`Built indexes: ${posts.length} posts, ${byCat.size} categories`);
 }

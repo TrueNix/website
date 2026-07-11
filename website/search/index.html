@@ -53,32 +53,40 @@
       <nav class="small"><a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
+        <a href="/about/">About</a>
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
 </nav>
     </header>
 
     <main>
-      <h1>Search</h1>
-      <p class="muted">Client-side search across post titles (fast, no tracking queries server-side).</p>
+      <div class="page-intro">
+        <span class="eyebrow">Intelligence archive</span>
+        <h1>Search the signal.</h1>
+        <p class="muted">Search headlines, summaries, categories, companies, products, and CVE identifiers. Queries stay in your browser.</p>
+      </div>
 
       <div class="card">
         <div class="search-row">
-          <input id="q" class="search-input" type="search" placeholder="Search titles (e.g., MCP, CVE-2026, prompt injection…)" autocomplete="off" />
+          <input id="q" class="search-input" type="search" aria-label="Search the intelligence archive" placeholder="Try MCP, CVE-2026, prompt injection, supply chain…" autocomplete="off" />
           <span class="muted small" id="count"></span>
         </div>
-        <ul class="search-results" id="results"></ul>
+        <div id="searchHint" class="search-hint muted"><strong>Popular topics:</strong> MCP security · prompt injection · agent sandboxing · supply chain · CVEs</div>
+        <ul class="search-results" id="results" aria-live="polite"></ul>
       </div>
     </main>
 
-    <footer class="small muted">
-      <div>© 2026 al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
-</footer>
+    <footer class="site-footer small muted">
+      <div class="footer-brand"><strong>al-ice.ai</strong><span>Independent AI security intelligence for practitioners.</span></div>
+      <nav aria-label="Footer"><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/disclosure/">Editorial policy</a><a href="/privacy/">Privacy</a><a href="/feed.xml">RSS</a><a href="/sitemap.xml">Sitemap</a></nav>
+      <div>© 2026 al-ice.ai</div>
+    </footer>
   </div>
 
   <script>
   const $q = document.getElementById('q');
   const $results = document.getElementById('results');
   const $count = document.getElementById('count');
+  const $hint = document.getElementById('searchHint');
 
   function norm(s){ return (s||'').toLowerCase().trim(); }
 
@@ -96,10 +104,16 @@
 
     function run(){
       const q = norm($q.value);
-      if (!q){ render(all.slice(0, 50)); return; }
+      if (!q){
+        $results.innerHTML = '';
+        $count.textContent = `${all.length} briefings indexed`;
+        $hint.hidden = false;
+        return;
+      }
+      $hint.hidden = true;
       const terms = q.split(/\s+/).filter(Boolean);
       const filtered = all.filter(p => {
-        const t = norm(p.title);
+        const t = norm([p.title, p.description, p.categoryLabel, p.category].join(' '));
         return terms.every(term => t.includes(term));
       }).slice(0, 100);
       render(filtered);
