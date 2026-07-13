@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ghostcommit Hides Secret-Theft Instructions in Images AI Code Reviewers Never Open — al-ice.ai</title>
+  <meta name="description" content="UMKC researchers demonstrate Ghostcommit, a pull-request attack that hides prompt injection in a PNG, bypasses text-only review, and makes coding agents encode .env secrets into source code." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/ghostcommit-image-prompt-injection-ai-code-reviewers/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Ghostcommit Hides Secret-Theft Instructions in Images AI Code Reviewers Never Open" />
+  <meta name="post:date" content="2026-07-13" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Ghostcommit Hides Secret-Theft Instructions in Images AI Code Reviewers Never Open</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-13">2026-07-13</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Researchers at the University of Missouri–Kansas City's ASSET Research Group have released <strong>Ghostcommit</strong>, a proof-of-concept software-supply-chain attack that places its malicious instructions inside a PNG. The pull request's text looks like routine project policy, text-only AI reviewers return no finding, and a vision-capable coding agent later follows the image's instructions and writes a repository's <code>.env</code> contents into source code as integers.</p>
+
+        <h2>A two-stage prompt-injection chain</h2>
+        <p>The delivery stage adds an <code>AGENTS.md</code> convention file that points to <code>docs/images/build-spec.png</code>. The Markdown does not name a credential file or describe exfiltration. The PNG does: it tells the coding agent to read <code>.env</code> byte by byte, emit the values as a module-level tuple, and verify that decoding the tuple reproduces the file. Supporting validator code and a fabricated incident report make the policy look operationally legitimate.</p>
+        <p>That split matters because the reviewers and the eventual agent do not observe the same artifact. The researchers report that plain-text versions were flagged at high severity by Cursor Bugbot and CodeRabbit. When the procedure moved into the PNG, both returned no findings; the disclosure notes that CodeRabbit's default review configuration excludes PNG files.</p>
+        <p>The execution stage can happen long after merge. During an unrelated coding task, the agent reads the repository's standing instructions, opens the referenced image, and adds the requested tuple to a normal source file. An attacker can then decode the integers from a public commit. The output contains no conventional credential string, so scanners that only match key formats can miss the disclosure.</p>
+
+        <h2>What the controlled tests found</h2>
+        <ul>
+          <li>The team tested ten sessions for each listed tool-and-model pairing. Its disclosure says every tested pairing under Cursor, Antigravity, and Codex CLI emitted the complete seeded <code>.env</code> tuple.</li>
+          <li>Claude Code refused across the three tested model configurations, including the same Sonnet family that leaked under other harnesses. Under Antigravity, one Opus configuration wrote the data and then removed it after recognizing the social-engineering pattern.</li>
+          <li>The researchers surveyed 6,480 pull requests across 300 highly active public repositories and report that 73% of merged PRs reached the default branch without substantive human or bot review.</li>
+          <li>Their prototype multimodal defender caught 49 of 50 malicious pull requests in an 80-PR live trial, including every image-channel variant, while reporting no false alarms among 30 benign PRs.</li>
+        </ul>
+
+        <h2>The security boundary is the harness, not just the model</h2>
+        <p>Ghostcommit is not evidence that every coding agent will execute image-borne instructions. It is a controlled demonstration using seeded canary credentials, and the authors say no production secrets were exposed. Its strongest result is the divergence between tools running related models: repository ingestion, image handling, standing-instruction precedence, filesystem permissions, and output controls determine whether the payload becomes an action.</p>
+        <p>The attack also joins two visibility gaps. Reviewers that inspect only textual diffs cannot assess the complete instruction graph, while secret scanners that inspect only string-shaped tokens cannot recognize arbitrary encodings. Treating either control as a complete gate leaves a composition path through both.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li>Require substantive review for new or modified agent policy files such as <code>AGENTS.md</code>, especially when they reference images, generated documents, archives, or remote content.</li>
+          <li>Render and inspect non-text assets in pull requests. Correlate instructions across policy files and their references instead of evaluating each file independently.</li>
+          <li>Do not give coding agents ambient access to credential files. Run them with task-scoped mounts, deny-by-default egress, and secrets supplied only to the specific subprocess that needs them. The site's analysis of <a href="/posts/2026/07/google-cloud-run-sandboxes-agent-code-isolation/">credential-isolated agent sandboxes</a> covers this execution boundary.</li>
+          <li>Alert when agents read <code>.env</code>, cloud credentials, SSH material, package tokens, or CI secrets outside an approved workflow—even when the eventual output is encoded rather than copied verbatim.</li>
+          <li>Scan new constants and large numeric or encoded blobs for reversible secret material, and compare agent file reads with the files changed in its output.</li>
+          <li>Keep untrusted pull requests away from privileged autonomous agents until review is complete. A merge should not silently promote repository content into trusted standing instructions.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://asset-group.github.io/disclosures/ghostcommit/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ASSET Research Group — Ghostcommit disclosure, methodology, and results</a></li>
+          <li><a href="https://github.com/asset-group/ghostcommit?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub — Ghostcommit proof of concept and attack fixtures</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/ghostcommit-hides-prompt-injection-in-images-to-fool-ai-agents-steal-secrets/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — independent report and researcher attribution</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-04-23">2026-04-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/comment-and-control-prompt-injection-coding-agents/">Comment and Control — Prompt Injection Leaks Secrets in Three AI Coding Agents</a></h3><p>A single prompt injection in a GitHub PR title caused Claude Code, Gemini CLI, and GitHub Copilot Agent to leak their own credentials — rated CVSS 9.4 Critical by Anthropic.</p><a class="text-link" href="/posts/2026/04/comment-and-control-prompt-injection-coding-agents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-01">2026-04-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/comment-and-control-coding-agent-prompt-injection/">Comment and Control — Prompt Injection to Credential Theft in Claude Code, Gemini CLI, and Copilot Agent</a></h3><p>Aonan Guan demonstrates Comment and Control, a cross-vendor prompt injection class that hijacks AI coding agents on GitHub Actions via PR titles and issue comments to steal repository secrets and API keys.</p><a class="text-link" href="/posts/2026/04/comment-and-control-coding-agent-prompt-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Fiddler AI — AI Coding Agent Threat Models and Controls</a></h3><p>Fiddler AI maps the full coding-agent attack surface — prompt injection, supply-chain poisoning, credential leaks, MCP spoofing — and proposes runtime guardrails.</p><a class="text-link" href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
