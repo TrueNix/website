@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prismata Cuts Web-Agent Prompt-Injection Success from 85.5% to 0.7% — al-ice.ai</title>
+  <meta name="description" content="UC Berkeley researchers propose Prismata, a DOM-aware least-privilege layer that confines web agents and sharply reduces cross-site prompt-injection success in WebArena tests." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/prismata-cross-site-prompt-injection-web-agent-confinement/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Prismata Cuts Web-Agent Prompt-Injection Success from 85.5% to 0.7%" />
+  <meta name="post:date" content="2026-07-13" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Prismata Cuts Web-Agent Prompt-Injection Success from 85.5% to 0.7%</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-13">2026-07-13</time>
+          <a class="badge" href="/categories/research/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>UC Berkeley researchers have proposed <strong>Prismata</strong>, a transparent security layer for browser agents that applies contextual least privilege to both page observations and browser actions. In WebArena experiments reported in the July 9 preprint, average attack success across three cross-site prompt-injection templates fell from <strong>85.5% without Prismata to 0.7% with it</strong>.</p>
+
+        <h2>From prompt filtering to capability confinement</h2>
+        <p>The paper calls the browser-agent analogue of cross-site scripting <strong>cross-site prompting</strong>: an attacker places natural-language instructions in a review, comment, or other third-party region of a legitimate site, then tries to make the agent misuse the site's own features. Prismata does not attempt to determine whether every sentence is malicious. Instead, it derives which origins and page regions the user's task requires, assigns read or write capabilities to DOM elements, and mechanically enforces those decisions.</p>
+        <p>The defense sits between BrowserGym and the agent. It filters the accessibility-tree observation before the model sees it, removes or downgrades out-of-policy elements, and checks each element-targeting action before Playwright executes it. A separate policy model receives the task but not page content, reducing the opportunity for attacker-controlled text to influence the top-level authorization decision.</p>
+
+        <h2>What the evaluation shows</h2>
+        <ul>
+          <li>Across Shortcut, Completion, and Ignore attack templates, mean attack success dropped by 84.8 percentage points, from 85.5% to 0.7%.</li>
+          <li>Task success while under attack increased from 4.5% to 23.0%, suggesting confinement prevented malicious detours rather than merely stopping the agent.</li>
+          <li>On benign tasks, task success changed from 29.9% to 26.6%—a 3.3-point utility cost in the tested setup.</li>
+          <li>The experiments used WebArena and a BrowserGym action interface, ran each experiment three times, and selected GPT-5.4-mini as the base web agent after a model comparison.</li>
+          <li>A 20-observation human validation study covered GitLab, Maps, Reddit, Shopping, and Shopping Admin pages; the authors report allowed-element precision above 93% for every evaluated labeling model.</li>
+        </ul>
+
+        <h2>Security engineering implications</h2>
+        <p>Prismata's strongest idea is architectural: authorization should not be left inside the same model context that contains hostile web content. Agent builders can adopt that principle even without this implementation. Derive task permissions from trusted intent, expose only the minimum page regions needed, map browser operations to explicit capabilities, and enforce the final decision in deterministic code outside the model.</p>
+        <p>This complements—not replaces—isolated execution. Sandboxes constrain what compromised generated code can reach; contextual browser permissions constrain what a manipulated agent can see and click. Systems that browse while holding authenticated sessions need both boundaries, particularly when workflows cross user-generated content and privileged account controls. The site's recent analysis of <a href="/posts/2026/07/google-cloud-run-sandboxes-agent-code-isolation/">deny-by-default agent-code sandboxes</a> covers the execution side of that split.</p>
+
+        <h2>Important limits</h2>
+        <p>The result is a preprint evaluation, not evidence of universal protection on the open web. Prismata's labels are model-generated and can be wrong; its guarantees are scoped to BrowserGym's finite action interface and the paper's threat model. It does not stop manipulation that falls within the legitimate privilege of the task—for example, a fake review influencing a purchase when reading reviews is required. The evaluated system is text-based and does not cover visual or audio prompt injection. Its DOM-snapshot boundary also inherits the observation-to-action drift present in browser agents.</p>
+        <p>Defenders should therefore read the 0.7% figure as a benchmark result under specified attacks, not a residual-risk promise. The practical contribution is the separation of untrusted content, policy derivation, and mechanical enforcement—a design that gives prompt-injection defenses a boundary stronger than asking the model to ignore hostile instructions.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2607.08147?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv — Prismata: Confining Cross-Site Prompt Injection in Web Agents</a></li>
+          <li><a href="https://arxiv.org/html/2607.08147v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Full paper in HTML — implementation, evaluation, and limitations</a></li>
+          <li><a href="https://github.com/ServiceNow/BrowserGym?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BrowserGym — browser-agent evaluation framework used by Prismata</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-22">2026-05-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-intent-to-execution-integrity-llm-agent-security-2605-16976/">arXiv — Securing LLM Agents Needs Intent-to-Execution Integrity (2605.16976)</a></h3><p>NUS/UCLA/Berkeley researchers propose intent-to-execution integrity as a correctness property for LLM agent security, analyzing defense gaps in systems like OpenClaw, NemoClaw, and SeClaw.</p><a class="text-link" href="/posts/2026/05/arxiv-intent-to-execution-integrity-llm-agent-security-2605-16976/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-12">2026-05-12</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/adversa-ai-iicl-attack-bypasses-gpt-5-4-safety-60-percent/">Adversa AI — IICL Attack Bypasses GPT-5.4 Safety at 60% Success Rate</a></h3><p>Adversa AI researchers demonstrate Involuntary In-Context Learning (IICL), a novel technique that bypasses GPT-5.4 safety guardrails with 60% success rate using just 10 examples and 2 words.</p><a class="text-link" href="/posts/2026/05/adversa-ai-iicl-attack-bypasses-gpt-5-4-safety-60-percent/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-02-27">2026-02-27</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/02/openreview-jailbreaking-matrix-nullspace-steering/">OpenReview — Jailbreaking the Matrix with Nullspace Steering</a></h3><p>Researchers propose a circuit-level jailbreak method (HMNS) that suppresses attention heads and injects nullspace perturbations to bypass safety defenses with fewer queries.</p><a class="text-link" href="/posts/2026/02/openreview-jailbreaking-matrix-nullspace-steering/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -38,11 +38,10 @@ function pageShell({title, canonical, description, body}){
     <header class="site">
       <div class="brand"><a href="/">al-ice.ai</a></div>
       <nav class="small">
-        <a href="/workflows/">Workflows</a>
         <a href="/posts/">Posts</a>
         <a href="/categories/">Categories</a>
-        <a href="/news/">News</a>
-        <a href="/services/">Services</a>
+        <a href="/search/">Search</a>
+        <a href="/about/">About</a>
       </nav>
     </header>
     ${body}
