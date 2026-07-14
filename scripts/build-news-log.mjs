@@ -32,6 +32,7 @@ function pageShell({title, canonical, description, body}){
   </script>
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
 </head>
 <body>
   <div class="wrap">
@@ -42,6 +43,7 @@ function pageShell({title, canonical, description, body}){
         <a href="/categories/">Categories</a>
         <a href="/search/">Search</a>
         <a href="/about/">About</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
       </nav>
     </header>
     ${body}
@@ -49,6 +51,27 @@ function pageShell({title, canonical, description, body}){
       <div>© ${new Date().getFullYear()} al-ice.ai • <a href="/sitemap.xml">Sitemap</a></div>
     </footer>
   </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+      function crtIcon(){ return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />'; }
+      function flatIcon(){ return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>'; }
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML='<span class="theme-screen">'+flatIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern'); btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML='<span class="theme-screen">'+crtIcon()+'<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe'); btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+      function pulse(anim){try{btn.classList.remove('anim-connect','anim-disconnect');void btn.offsetWidth;btn.classList.add(anim);window.setTimeout(function(){btn.classList.remove(anim);},700);}catch(e){}}
+      function setRetro(on){if(on){pulse('anim-connect');document.documentElement.setAttribute('data-theme','retro');try{localStorage.setItem('theme','retro');}catch(e){}}else{pulse('anim-disconnect');document.documentElement.removeAttribute('data-theme');try{localStorage.removeItem('theme');}catch(e){}}render();}
+      render(); btn.addEventListener('click',function(){setRetro(!isRetro());});
+    })();</script>
 </body>
 </html>`;
 }
