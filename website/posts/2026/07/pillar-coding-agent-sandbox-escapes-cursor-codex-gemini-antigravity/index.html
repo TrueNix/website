@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Seven Coding-Agent Escapes Show the Sandbox Ends Where Host Trust Begins — al-ice.ai</title>
+  <meta name="description" content="Pillar Security disclosed seven boundary failures across Cursor, Codex CLI, Gemini CLI, and Antigravity, exposing workspace files, trusted helpers, safe-command rules, and Docker as agent escape paths." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/pillar-coding-agent-sandbox-escapes-cursor-codex-gemini-antigravity/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Seven Coding-Agent Escapes Show the Sandbox Ends Where Host Trust Begins" />
+  <meta name="post:date" content="2026-07-22" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Seven Coding-Agent Escapes Show the Sandbox Ends Where Host Trust Begins</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-22">2026-07-22</time>
+          <a class="badge" href="/categories/research/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A seven-part disclosure from Pillar Security maps sandbox escapes and boundary bypasses across Cursor, OpenAI Codex CLI, Google Gemini CLI, and Antigravity. The individual mechanisms differ, but the repeated failure is architectural: the agent does not always have to break its own process sandbox. It can write a file, configure a tool, or reach a daemon that a more privileged host component later trusts.</p>
+        <p>The July 20 research includes two newly published high-severity Cursor advisories, <strong>GHSA-p9g2-cr55-cw9mc</strong> and <strong>GHSA-v4xv-rqh3-w9mc</strong>, plus the previously disclosed <strong>CVE-2026-48124</strong>. It also documents a Codex CLI safe-command bypass patched in <strong>v0.95.0</strong>, a separate Cursor Git-directory route patched in <strong>3.0.0</strong>, and two Antigravity findings that Google accepted as valid security issues but downgraded based on their exploitation preconditions.</p>
+        <p>These are not seven interchangeable CVEs, and the vendors did not agree on every security boundary. The practical value of the series is broader than its identifiers: it supplies a concrete threat model for any coding agent that combines untrusted repository content, autonomous workspace writes, automatic host-side discovery, and developer credentials on the same endpoint.</p>
+
+        <h2>The workspace is not inert data</h2>
+        <p>Traditional sandbox policy often treats writes inside the selected project as low risk. Agentic development breaks that assumption because a modern workspace contains executable control planes: Git configuration, editor tasks, lifecycle hooks, language environments, build files, and tool-specific settings.</p>
+        <p>One Cursor chain let an agent alter a Python virtual environment inside the workspace. Cursor’s bundled Python extension then ran the apparent interpreter during automatic discovery from the unsandboxed extension host. The Cursor advisory says the malicious wrapper could execute host commands with the user’s privileges, modify files beyond the workspace, and launch applications. <strong>Cursor versions before 3.1.2 are affected</strong> according to GHSA-p9g2-cr55-cw9c.</p>
+        <p>A second Cursor route used Git’s ability to keep repository metadata somewhere other than a literal <code>.git</code> directory. Path rules guarded the familiar <code>.git/config</code>, but an alternate Git directory could hold an <code>fsmonitor</code> helper. When the editor’s Git integration detected and inspected the repository, Git executed that helper outside the agent sandbox. Pillar says Cursor patched this path in 3.0.0; a CVE was still pending at publication.</p>
+        <p>The already assigned CVE-2026-48124 follows the same handoff. Cursor 2.4.37 could consume a workspace-defined <code>.claude/settings.local.json</code> hook and run its command at the end of an agent turn without a dedicated approval. Cursor’s advisory rates the issue High and lists 3.0.0 as the patched version. The fix brings workspace hook commands under the approval and execution-policy controls applied to other agent shell commands.</p>
+
+        <h2>A “safe” command became an unsandboxed write primitive</h2>
+        <p>The Codex CLI finding targeted an approval optimization rather than the filesystem sandbox itself. Codex treated <code>git show</code> as safe enough to execute without approval, but Git’s argument surface allows that subcommand to write formatted output to a chosen path. Pillar used those options to place attacker-controlled Git configuration in the repository and arrange code execution when a later Git operation consumed it.</p>
+        <p>This matters because the allowlist was a deterministic bypass around the deterministic controls. If a model followed an injected instruction, neither a refusal policy nor a sandbox prompt remained in the path. Pillar reports that OpenAI rated the issue at CVSS 8.6 during private handling, patched it in Codex CLI v0.95.0, and had not assigned a CVE when the research was published. The corresponding <code>rust-v0.95.0</code> tag is present in OpenAI’s public Codex repository.</p>
+        <p>Command names are too coarse a security unit for utilities such as Git, <code>tar</code>, <code>rsync</code>, and package managers. Their flags can change a read operation into a write, load configuration, invoke helpers, or trigger hooks. An agent approval policy has to evaluate the full invocation and its possible effects—not merely the first two words.</p>
+
+        <h2>Docker Desktop moved execution outside three sandboxes</h2>
+        <p>Pillar reproduced another chain in Cursor, Codex CLI, and Gemini CLI on macOS systems with Docker Desktop available. A sandboxed agent that could reach Docker could ask the privileged daemon to create a container, then use Docker Desktop’s VirtioFS host-sharing mechanism from that separate execution environment. The daemon, not the restricted agent process, performed the consequential host access.</p>
+        <p>Cursor published GHSA-v4xv-rqh3-w9mc, rates its variant High, and describes Auto-Run Sandbox mode combined with Docker Desktop and the Dev Containers CLI. The advisory lists Cursor before 3.0.0 as vulnerable. Pillar says Cursor changed the behavior so the Docker socket no longer reproduced as an in-sandbox path.</p>
+        <p>The same report records different outcomes elsewhere. OpenAI considered the Codex route environment- and configuration-dependent because Unix-socket access is denied unless allowed in the active network profile; it paid the report but classified it as informational and declined a CVE. The Gemini CLI team pointed to documentation of Docker sandbox risk rather than treating the condition as a product vulnerability. Operators should preserve that distinction: the research demonstrates a reachable trust bridge under stated configurations, not a universal default escape in every installation.</p>
+
+        <h2>Antigravity exposed both policy and delayed-execution gaps</h2>
+        <p>The first Antigravity finding examined build 1.15.8 on macOS. Its Seatbelt profile began from <code>allow default</code> and subtracted disallowed operations. Pillar combined an omitted mount restriction with Launch Services behavior to start a fresh process outside the profile. The reported preconditions included Secure Mode being off, terminal sandboxing being on, and command auto-execution set to “Always Proceed.”</p>
+        <p>The second did not require a classic process breakout. The agent wrote a VS Code task configuration while sandboxed; later, a host-side watcher launched the task outside that sandbox. That is delayed execution across a trust boundary—the same class of problem visible in hooks, interpreter discovery, and Git helpers.</p>
+        <p>Pillar’s master report says Google accepted both as valid security findings, praised the report quality, and categorized them as “Other valid security vulnerabilities,” while downgrading them because exploitation depended on social engineering or trusting a repository carrying indirect prompt injection. The public research does not identify a patched Antigravity version, so defenders should not invent one from the disclosure alone.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li><strong>Patch the confirmed product issues.</strong> Move Cursor to at least 3.1.2 to cover the virtual-environment advisory as well as fixes shipped in 3.0.0. Move Codex CLI to v0.95.0 or later for the reported <code>git show</code> allowlist flaw.</li>
+          <li><strong>Do not grant Docker access by convenience.</strong> Treat the Docker socket and equivalent local daemon APIs as privileged host control. Deny agent access unless the workflow explicitly needs it; isolate required build daemons from the developer’s home directory and credentials.</li>
+          <li><strong>Put host readers under the same trust policy as agent writers.</strong> Interpreter discovery, Git scanning, task runners, hooks, language servers, and build watchers should not automatically execute artifacts created or modified during an agent session.</li>
+          <li><strong>Review executable workspace state.</strong> Alert on agent-originated changes to <code>.vscode</code>, <code>.claude</code>, Git configuration or alternate Git directories, virtual-environment executables, hooks, task files, and package-manager scripts.</li>
+          <li><strong>Model invocations, not binaries.</strong> Approval bypasses should account for flags, paths, configuration sources, current directory, environment, and side effects. A binary with a read-oriented subcommand is not inherently read-only.</li>
+          <li><strong>Prefer deny-by-default containment.</strong> A blocklist profile must anticipate every useful operating-system primitive. Keep the process policy narrow, remove unnecessary network and socket access, and use stronger VM or container boundaries for untrusted autonomous work.</li>
+          <li><strong>Separate secrets from agent endpoints.</strong> Keep publishing tokens, cloud credentials, SSH keys, browser sessions, and production access out of the environment whenever the agent processes untrusted repositories or web content.</li>
+          <li><strong>Preserve provenance and telemetry.</strong> Record which files an agent wrote and which unsandboxed components later read or executed them. Process-only monitoring misses the decisive handoff in several of these chains.</li>
+        </ul>
+
+        <p>The core lesson is not that sandboxes are useless. It is that the advertised boundary has to include every system that acts on agent-controlled output. A sandbox can correctly deny a direct write to a home directory while an extension, hook engine, Git helper, task watcher, or Docker daemon completes the same operation outside it. Security testing for coding agents must therefore follow trust across time and process boundaries—from untrusted input, to model action, to workspace artifact, to the host component that consumes it.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.pillar.security/blog/the-week-of-sandbox-escapes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillar Security — The Week of Sandbox Escapes master report</a></li>
+          <li><a href="https://github.com/cursor/cursor/security/advisories/GHSA-p9g2-cr55-cw9c?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cursor advisory — sandbox escape through tampered Python virtual environments</a></li>
+          <li><a href="https://github.com/cursor/cursor/security/advisories/GHSA-v4xv-rqh3-w9mc?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cursor advisory — sandbox escape through privileged containers</a></li>
+          <li><a href="https://github.com/cursor/cursor/security/advisories/GHSA-pc9j-3qc2-95wv?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cursor advisory — CVE-2026-48124 workspace hook execution</a></li>
+          <li><a href="https://www.pillar.security/blog/gitpwned-allowlist-to-rce?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillar Security — Codex CLI safe-command allowlist analysis and disclosure timeline</a></li>
+          <li><a href="https://www.pillar.security/blog/one-docker-socket-to-rule-them-all-escaping-codex-cursor-and-gemini-clis-sandboxes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillar Security — Docker Desktop boundary analysis across Codex, Cursor, and Gemini CLI</a></li>
+          <li><a href="https://github.com/openai/codex/releases/tag/rust-v0.95.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenAI Codex repository — v0.95.0 release tag</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-17">2026-05-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/cymulate-ai-cli-tools-prompt-injection-rce-cursor-kiro-codex/">Cymulate — Prompt Injection Triggers Zero-Click RCE in AI CLI Tools (Cursor, Kiro, Codex, Gemini)</a></h3><p>Cymulate researchers uncovered zero-click RCE chains across Cursor CLI, AWS Kiro, Codex Desktop, and Gemini CLI — where a single prompt injection can silently execute code via Windows PATH hijacking and config file poisoning.</p><a class="text-link" href="/posts/2026/05/cymulate-ai-cli-tools-prompt-injection-rce-cursor-kiro-codex/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-24">2026-05-24</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-overeager-coding-agents-out-of-scope-actions/">arXiv OverEager — coding agents exceed authorized scope on benign tasks</a></h3><p>New arXiv paper quantifies overeager actions in coding agents like Claude Code, Codex CLI, and Gemini CLI on harmless tasks.</p><a class="text-link" href="/posts/2026/05/arxiv-overeager-coding-agents-out-of-scope-actions/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-11">2026-07-11</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/openclaw-whatsapp-rce-agent-sandbox-bypass/">OpenClaw AI Agent — WhatsApp Message to Host RCE via Sandbox Bypass</a></h3><p>Three high-severity vulnerabilities in OpenClaw let attackers chain environment variable injection, git transport abuse, and Docker sandbox escape to achieve host-level code execution via WhatsApp messages.</p><a class="text-link" href="/posts/2026/07/openclaw-whatsapp-rce-agent-sandbox-bypass/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
