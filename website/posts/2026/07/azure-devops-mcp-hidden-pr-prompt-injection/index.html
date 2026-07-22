@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hidden Pull-Request Text Can Turn Azure DevOps MCP Review Agents into Confused Deputies — al-ice.ai</title>
+  <meta name="description" content="Manifold Security found that Microsoft’s Azure DevOps MCP server returns pull-request descriptions without its existing untrusted-content wrapper, enabling cross-project prompt-injection chains under a reviewer’s identity." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/azure-devops-mcp-hidden-pr-prompt-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Hidden Pull-Request Text Can Turn Azure DevOps MCP Review Agents into Confused Deputies" />
+  <meta name="post:date" content="2026-07-22" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Hidden Pull-Request Text Can Turn Azure DevOps MCP Review Agents into Confused Deputies</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-22">2026-07-22</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Manifold Security has disclosed an indirect prompt-injection path in Microsoft’s official Azure DevOps MCP server that can turn an AI code-review agent into a cross-project confused deputy. An attacker who can write a pull-request description in one project can place instructions inside an HTML comment. Azure DevOps hides that comment in the rendered review interface, but its API returns the text and the MCP server passes the pull-request response into the model’s context.</p>
+        <p>In Manifold’s proof of concept, a reviewer’s coding agent read the hidden instructions, ran a pipeline in another project, retrieved a confidential wiki page the attacker could not access, and posted the page back to the attacker-controlled pull request. The researchers reproduced the chain with both Copilot CLI and Claude Code. The result is not a permissions bypass in Azure DevOps itself: every API call uses authority the reviewer already possesses. The security failure is that attacker-authored data can redirect how that authority is exercised.</p>
+        <p>The research was reported to the Microsoft Security Response Center, which acknowledged and triaged it. No CVE or fixed public release was identified in the disclosure. Manifold tested the official local server; the report does not establish exploitation in the wild or independently demonstrate the same chain against Microsoft’s hosted remote MCP service.</p>
+
+        <h2>The human and the model receive different pull requests</h2>
+        <p>Azure DevOps pull-request descriptions support Markdown and HTML comments. Text between an encoded <code>&lt;!--</code> and <code>--&gt;</code> is invisible when a person reads the rendered description, but remains present in the API representation. That creates a dangerous review asymmetry: the person deciding whether a pull request looks safe does not see all of the content their agent will process.</p>
+        <p>The attacker does not need to address the agent directly. They only need to predict that a reviewer—or an automated review workflow—will ask an agent to ingest the pull request. The injected text can then propose a sequence of otherwise valid tool calls. In the demonstrated chain, the pull request was the untrusted input, the reviewer’s cross-project access supplied private data, and the ability to post a comment supplied the exfiltration channel.</p>
+        <p>This is the same three-part failure pattern behind prior attacks on <a href="/posts/2026/07/gitlost-github-agentic-workflows-prompt-injection-private-repo-exfil/">GitHub agentic workflows</a>: access to secrets, exposure to attacker-controlled content, and a route to send information out are combined inside one decision-making context. Each capability may be legitimate in isolation. Their composition gives an injected instruction a path from untrusted text to privileged side effect.</p>
+
+        <h2>Microsoft’s spotlighting control missed the pull-request path</h2>
+        <p>The code-level finding is especially useful because the Azure DevOps MCP project already contains a control for this threat class. Microsoft merged a spotlighting helper in March that wraps external content in randomized delimiters and explicitly labels it untrusted. The project’s <code>createExternalContentResponse</code> function says it should be used for content fetched from Azure DevOps APIs, and wiki and pipeline-log paths call it.</p>
+        <p>The pull-request tool does not. In the public repository’s July 21 main-branch revision, <code>repo_get_pull_request_by_id</code> retrieves the pull request, optionally adds labels and changed files, and returns <code>JSON.stringify(enhancedResponse)</code> directly. The repository-tools module does not route that response through the shared content-safety helper. Manifold’s finding is therefore a coverage gap in a response-by-response defense, not an absence of awareness that external content is hostile.</p>
+        <p>Spotlighting is still a probabilistic model-facing mitigation, not an authorization boundary. A complete wrapper would make the payload’s provenance clearer and should reduce successful injections, but it cannot prove that a model will never obey delimited content. The stronger conclusion is architectural: privileged agents should remain safe when content labeling fails on one tool path.</p>
+
+        <h2>Why reviewer identity becomes the escalation mechanism</h2>
+        <p>Pull-request reviewers are commonly more privileged than contributors. They may have access to sibling repositories, release pipelines, private work items, operational wikis, and organization-level metadata. When the MCP server authenticates as that reviewer, the attacker can attempt to borrow the difference between the two identities without ever receiving the credentials.</p>
+        <p>This makes “the attacker already needs project write access” an incomplete risk description. Contributor access to a low-sensitivity project is not supposed to grant read access to a separate production project. The injected agent collapses those boundaries because it consumes content from one security domain while carrying an identity authorized in another.</p>
+        <p>Per-call confirmation can interrupt the demonstrated sequence, but only if the prompt shows the destination, data class, and consequence clearly enough for a person to detect the mismatch. A generic request to allow a wiki read or comment is weak protection, especially when automated review systems deliberately remove those pauses. The site’s coverage of <a href="/posts/2026/07/microsoft-mcp-tool-description-poisoning-agent-data-exfil/">MCP tool-description poisoning</a> illustrates the complementary risk: both tool metadata and tool-returned data can become instruction channels unless the orchestration layer constrains what follows.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li><strong>Scope review identities to the repository under review.</strong> Do not give a general developer credential to an autonomous reviewer. Use a task-specific token or service identity that cannot reach unrelated projects, wikis, pipelines, secrets, or work items.</li>
+          <li><strong>Remove unnecessary MCP domains.</strong> A code-review agent should not be able to run release pipelines or read operational wikis merely because those tools exist on the same server. Expose an allowlist built for the review task.</li>
+          <li><strong>Separate read and write phases.</strong> Let one constrained component inspect untrusted pull-request content and produce a structured review. Require a separately authorized component—and explicit policy checks—before posting comments, approving changes, or invoking pipelines.</li>
+          <li><strong>Render what the model receives.</strong> Review interfaces and approval prompts should reveal HTML comments, hidden Markdown, and other content present in API responses. “Human reviewed” is not meaningful when the human and agent see different inputs.</li>
+          <li><strong>Apply untrusted-content handling centrally.</strong> Content-safety wrappers should be enforced by a common response boundary with tests that fail when any external-content tool returns raw text. Relying on each tool author to remember one helper creates exactly this type of omission.</li>
+          <li><strong>Bind approvals to concrete effects.</strong> Confirmation should name the Azure DevOps organization, project, resource, action, and outbound destination. Reject cross-project operations that are not part of the user’s original review request.</li>
+          <li><strong>Audit sequences, not only individual calls.</strong> Alert when a pull-request review is followed by access to another project, a pipeline run, a sensitive wiki read, or a comment containing data retrieved elsewhere.</li>
+          <li><strong>Inspect existing descriptions at the API layer.</strong> Search active pull requests for HTML comments and other concealed content, then review agent traces for cross-project tool calls. Absence of visible text in the web UI is not evidence that the API payload is clean.</li>
+        </ul>
+
+        <p>The Azure DevOps MCP finding demonstrates why prompt injection is an authorization problem as much as a model-behavior problem. Delimiters can help a model recognize hostile data, but the durable control is to prevent any one review agent from simultaneously holding broad private access, consuming contributor-controlled text, and writing to a destination the contributor can read. If all three remain available, one missed content wrapper can become a cross-project data path.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.manifold.security/blog/azure-devops-mcp-server-vulnerability?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Manifold Security — When Your AI Reviewer Works for the Attacker</a></li>
+          <li><a href="https://github.com/microsoft/azure-devops-mcp/blob/7bfb473691e59e7eabc95d11cab2dcbd653c78e5/src/tools/repositories.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts#L1017-L1104" rel="noopener">Microsoft Azure DevOps MCP — pull-request response path at the July 21 revision</a></li>
+          <li><a href="https://github.com/microsoft/azure-devops-mcp/pull/1062?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Azure DevOps MCP — PR #1062, spotlighting for untrusted external content</a></li>
+          <li><a href="https://thehackernews.com/2026/07/microsoft-azure-devops-mcp-flaw-lets.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — Microsoft response and public-release status</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-01">2026-07-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/microsoft-mcp-tool-description-poisoning-agent-data-exfil/">Microsoft — Poisoned MCP Tool Descriptions Make AI Agents Silently Exfiltrate Company Data</a></h3><p>Microsoft research demonstrates how attackers can hijack enterprise AI agents through poisoned MCP tool descriptions, triggering silent data exfiltration without breaking any access rules.</p><a class="text-link" href="/posts/2026/07/microsoft-mcp-tool-description-poisoning-agent-data-exfil/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-30">2026-05-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/detectify-mcp-server-ai-agents-vulnerability-scanning/">Detectify — MCP Server brings deterministic vuln scanning into AI coding agents</a></h3><p>Detectify launches an MCP Server that exposes its scanning engines to AI coding agents, enabling autonomous vulnerability finding, patching, and validation in real time.</p><a class="text-link" href="/posts/2026/05/detectify-mcp-server-ai-agents-vulnerability-scanning/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-26">2026-05-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/consensus-mcp-tool-hidden-ad-injection-claude/">Consensus MCP Tool — Hidden Ad Injection in Claude Instructions</a></h3><p>The Consensus MCP server embeds hidden promotional text inside Claude tool instructions, forcing the model to pitch premium subscriptions — exposing a structural MCP supply-chain vulnerability.</p><a class="text-link" href="/posts/2026/05/consensus-mcp-tool-hidden-ad-injection-claude/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
