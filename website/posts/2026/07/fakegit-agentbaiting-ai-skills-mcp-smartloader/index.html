@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FakeGit Turns AI Capability Discovery Into a Malware Delivery Channel — al-ice.ai</title>
+  <meta name="description" content="Island traced roughly 7,600 malicious GitHub repositories, including more than 800 fake AI Skills and MCP servers, and showed agents can surface the lures during ordinary capability searches." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/fakegit-agentbaiting-ai-skills-mcp-smartloader/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="FakeGit Turns AI Capability Discovery Into a Malware Delivery Channel" />
+  <meta name="post:date" content="2026-07-22" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">FakeGit Turns AI Capability Discovery Into a Malware Delivery Channel</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-22">2026-07-22</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Island Security has mapped a large malware operation that treats AI capability discovery as a supply-chain entry point. Its researchers identified roughly 7,600 malicious GitHub repositories associated with about 6,600 profiles. More than 1,400 repositories were tied to AI tools, agents, or workflows, including over 800 that posed specifically as AI Skills or Model Context Protocol servers.</p>
+        <p>The repositories did not exploit an MCP protocol flaw. They used a more ordinary—and immediately actionable—path: copied projects, lookalike maintainers, plausible documentation, and downloadable Windows archives that installed SmartLoader. Island says the wider FakeGit operation recorded more than 14 million GitHub Release asset downloads across about 200 campaign repositories as of July 2026. That counter is a measure of asset downloads, not a verified count of infected people or endpoints.</p>
+        <p>The agent-security consequence is discovery automation. In Island’s tests, Claude Code, Gemini, and ChatGPT independently surfaced campaign repositories while answering ordinary requests for Skills or MCP servers. The company calls the technique “AgentBaiting”: attacker-controlled documentation is optimized not only to persuade a person, but also to become the source an agent selects and converts into installation guidance.</p>
+
+        <h2>The README is both the lure and the agent instruction channel</h2>
+        <p>FakeGit builds trust in layers. Campaign operators copied popular project names, created usernames differing by a character from established developers, added modest numbers of stars and forks, and wrote READMEs that framed execution as normal setup. One fake Skill collection imitated a legitimate repository with tens of thousands of stars; a separate lookalike developer profile published a bogus spaceship MCP server.</p>
+        <p>The malicious packages also fail a basic provenance test. Island examined a purported Databricks MCP server whose ZIP contained no server manifest or Databricks integration. It held a command launcher, a renamed LuaJIT-style runtime, and an obfuscated Lua payload disguised as a text file. The launcher simply passed that payload to the runtime.</p>
+        <p>Earlier reverse engineering by Derp.ca connects this package pattern to a longer-running FakeGit operation. Its March analysis found LuaJIT loaders resolving current command infrastructure through a value in a Polygon smart contract, establishing persistence with scheduled tasks, retrieving encrypted stages from GitHub, and ultimately delivering the StealC information stealer. StealC targets browser credentials, cookies, active sessions, extension data, remote-access credentials, screenshots, and host information.</p>
+
+        <h2>Registries amplified repository credibility</h2>
+        <p>Island found more than 600 listings for campaign-linked Skills and MCP servers across LobeHub, Glama, MCP.so, and MCP Market. The researchers could not determine whether every listing was submitted deliberately or indexed automatically. In some cases, however, a registry reproduced the repository’s README—including its download link and installation instructions—giving the same attacker-controlled text a second distribution surface.</p>
+        <p>This matters because agents and users can treat a catalog appearance as independent validation when it may be only a republished claim. A repository, a registry page, and an agent recommendation can look like three trust signals while all three derive from one hostile README.</p>
+        <p>The campaign also matched lures to real enterprise work. Island reports that 62% of the malicious Skill and MCP repositories were positioned for enterprise or internal-developer use, with themes including Databricks, Jenkins, Docker, Gmail, cloud services, databases, source code, and security tooling. The promised integration did not need the production access it advertised: executing the package compromised the workstation first, where browser sessions, developer tokens, cloud credentials, and source access could already be present.</p>
+
+        <h2>Agent recommendations are discovery results, not attestations</h2>
+        <p>Island asked Claude Code to find a free cinematic-prompt Skill. Claude reached both a legitimate project and a malicious alternative, then repeated the hostile repository’s instructions to download an executable and bypass a Windows warning. In other runs it inspected the contents more closely and refused. That inconsistency is the risk: successful rejection in one trace does not make autonomous open-web discovery a dependable software-verification control.</p>
+        <p>For a request seeking a free Walmart MCP server, Island says Gemini returned a confirmed campaign repository as its first recommendation. ChatGPT surfaced the same repository and identified it as the best starting point among three options. These tests demonstrate recommendation exposure, not automatic compromise by the models themselves; execution still depended on the package being downloaded and run.</p>
+        <p>The operational lesson extends beyond FakeGit. Agents are becoming package-discovery intermediaries, but generated rankings and summaries do not establish maintainer identity, artifact integrity, build provenance, or registry review. An agent that finds software should be treated like an untrusted search client unless a separate policy system verifies the result before installation.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li><strong>Replace open discovery with an approved capability catalog.</strong> Pin reviewed Skills, MCP servers, plugins, source repositories, commits, versions, and artifact hashes. Agents should resolve capabilities from that inventory rather than choose arbitrary public results.</li>
+          <li><strong>Separate discovery from execution.</strong> Do not let the same agent search the web, accept a README’s claims, download a binary, and run it. Require deterministic checks and a separately authorized approval step before installation.</li>
+          <li><strong>Reject executable-only “Skills” and “MCP servers.”</strong> A Windows ZIP containing a launcher, runtime, and obfuscated payload is not a credible substitute for inspectable source, a manifest, reproducible build information, and documented dependencies.</li>
+          <li><strong>Verify publisher continuity.</strong> Compare account spelling, history, signing keys, organization membership, prior releases, and links from the vendor’s official domain. Stars, forks, profile age, and registry presence are weak signals and can be manufactured or inherited from a compromised account.</li>
+          <li><strong>Quarantine first execution.</strong> Evaluate new capabilities in a disposable environment without browser profiles, SSH keys, cloud credentials, source repositories, production data, or unrestricted egress. Capture file, process, registry, scheduled-task, and network activity.</li>
+          <li><strong>Monitor agent-originated software changes.</strong> Alert on agent-initiated downloads, clones, changes to Skill directories or MCP configuration, execution from extracted archives, and instructions to bypass operating-system reputation warnings.</li>
+          <li><strong>Hunt with the published artifacts.</strong> Island released representative repository names and SHA-256 hashes in a public research-artifacts repository. Match them against endpoint, proxy, source-control, and download telemetry while recognizing that individual accounts and filenames may change.</li>
+          <li><strong>Respond as session theft, not only password theft.</strong> If SmartLoader or StealC execution is suspected, isolate the endpoint and revoke browser sessions, OAuth grants, API tokens, cloud credentials, and developer keys. Password resets alone do not invalidate every stolen session.</li>
+        </ul>
+
+        <p>FakeGit shows that the AI software supply chain begins before a package manager or protocol handshake. It begins when an agent decides which project deserves trust. Registries can multiply attacker-written metadata, and models can turn that metadata into concise setup steps. The durable defense is to make discovery non-authoritative: only verified publishers and pinned artifacts should cross from an agent’s research context into an executable environment.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.island.io/blog/agentbaiting-how-800-fake-ai-skills-and-mcp-servers-delivered-malware?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Island Security Research — AgentBaiting: How 800+ Fake AI Skills and MCP Servers Delivered Malware</a></li>
+          <li><a href="https://github.com/island-io/island-security-research-artifacts/tree/main/agentbaiting?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Island Security Research Artifacts — representative FakeGit repositories and hashes</a></li>
+          <li><a href="https://www.derp.ca/research/fakegit-luajit-github-campaign/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Derp.ca — FakeGit: LuaJIT malware distributed via GitHub at scale</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/07/21/github-repos-malware-campaign-fakegit-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security — independent report on campaign scale and agent discovery</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-02-20">2026-02-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/02/praetorian-mcp-server-attack-surface/">Praetorian — MCP server attack surface research</a></h3><p>Praetorian details how malicious MCP servers can chain trusted tools to exfiltrate data, execute code, and manipulate AI assistants.</p><a class="text-link" href="/posts/2026/02/praetorian-mcp-server-attack-surface/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/symjack-ai-coding-agents-supply-chain/">Adversa AI — SymJack symlink-to-RCE via AI coding agents</a></h3><p>SymJack turns AI coding agents into supply-chain delivery systems: disguised symlinks inject malicious MCP servers that run unsandboxed on developer restart.</p><a class="text-link" href="/posts/2026/05/symjack-ai-coding-agents-supply-chain/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-18">2026-05-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/mcpsafe-50-mcp-servers-coordinated-disclosures/">MCPSafe — 7 Coordinated Disclosures After Scanning 50+ MCP Servers</a></h3><p>MCPSafe scanned 50+ MCP server repositories and found indirect prompt injection, SSRF, and annotation mislabeling across official servers from Anthropic, GitHub, Atlassian, Microsoft, and more.</p><a class="text-link" href="/posts/2026/05/mcpsafe-50-mcp-servers-coordinated-disclosures/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
