@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AgentForger Let One ChatGPT Link Build a Persistent Workspace Insider — al-ice.ai</title>
+  <meta name="description" content="Zenity found a patched ChatGPT Workspace Agents flaw that let one crafted link create, authorize, publish, and schedule an agent inside a victim’s connected work accounts." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/openai-chatgpt-agentforger-workspace-agent-csrf/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="AgentForger Let One ChatGPT Link Build a Persistent Workspace Insider" />
+  <meta name="post:date" content="2026-07-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">AgentForger Let One ChatGPT Link Build a Persistent Workspace Insider</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-24">2026-07-24</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A vulnerability in OpenAI’s ChatGPT Workspace Agents builder allowed a crafted ChatGPT link to create and deploy an attacker-directed agent in a victim’s authenticated workspace, according to research published by Zenity Labs on July 23. The proof of concept did more than trigger a single unwanted action: it attached previously authorized connectors, changed approval settings, published the agent, and scheduled recurring runs that could continue after the victim closed the page.</p>
+        <p>Zenity calls the issue <strong>AgentForger</strong> and describes it as cross-site agent forgery, an agentic extension of cross-site request forgery. The company reported the flaw through OpenAI’s Bugcrowd program on June 4. Its disclosure timeline says OpenAI accepted the report on June 5 and fixed the issue on June 8 by removing the URL behavior that enabled the chain. The public research does not assign a CVE, identify an affected product version, or present evidence of exploitation outside the researchers’ demonstration.</p>
+        <p>The prerequisites materially constrain the result. The victim had to be logged in, belong to a workspace with Workspace Agents enabled, have permission to create agents, and have at least one connector already authorized. Organization-level policy still bounded which apps and actions were available. Within those boundaries, however, one click could convert the victim’s existing authority into a new autonomous identity without another deliberate approval from the user.</p>
+
+        <h2>Executable builder state arrived through the URL</h2>
+        <p>Zenity traced the initial weakness to two parameters accepted by the Workspace Agents builder: one selected a starter template, while <code>initial_assistant_prompt</code> supplied instructions. The dangerous behavior was not merely that attacker text appeared in the builder. When the page loaded, ChatGPT automatically submitted the prompt and began acting on it inside the victim’s authenticated session.</p>
+        <p>The researchers’ prompt instructed the builder to create an agent, attach all previously connected services, set available connector actions to “Never ask,” publish the result, create staggered schedules, and run it in Preview Mode. Zenity says Preview was an execution path rather than a dry-run display, so the newly configured agent immediately operated against connected accounts after approval prompts had been disabled.</p>
+        <p>This chain separates AgentForger from ordinary prompt injection. The untrusted instruction entered through a first-party URL and targeted the system that defines an agent’s tools, permissions, schedule, and lifecycle. The builder was therefore both an interpreter and a security control plane. Allowing the same natural-language command to create the principal and weaken its approval policy collapsed setup, authorization, and execution into one operation.</p>
+
+        <h2>Existing OAuth grants supplied the blast radius</h2>
+        <p>The attack did not need to steal a password, session cookie, or fresh OAuth token. It reused connectors the employee had legitimately authorized for normal work, including services such as Outlook, Gmail, Slack, Teams, Google Drive, and SharePoint. Because consent already existed, the proof of concept did not encounter a new provider authorization screen.</p>
+        <p>That distinction is important for incident response. Traditional identity monitoring may see actions performed by the correct user through an approved SaaS application. The malicious object is the newly created agent and its policy, not necessarily the underlying token. Connector authorization answers whether ChatGPT may reach a service; it does not establish that the user intended this particular agent, instruction set, schedule, or action.</p>
+        <p>The result resembles the confused-deputy pattern behind the recent <a href="/posts/2026/07/azure-devops-mcp-hidden-pr-prompt-injection/">Azure DevOps MCP prompt-injection flaw</a>, but AgentForger moved the trust failure earlier in the lifecycle. Instead of poisoning content consumed by an established review agent, the crafted content caused the platform to manufacture the agent that would later consume commands.</p>
+
+        <h2>Email became a durable command channel</h2>
+        <p>Zenity’s demonstration configured multiple hourly schedules offset by five minutes. On each run, the forged agent checked the victim’s mailbox for messages from an attacker-controlled address with a designated subject prefix, executed the message through connected apps, and emailed results back. The original phishing link installed the operator; ordinary email delivered subsequent tasks.</p>
+        <p>In the lab, the researchers used that loop to map people and projects across mail, chat, calendars, and file stores; search Drive, SharePoint, Outlook, and Slack for sensitive material; impersonate the victim in internal messages; and prepare phishing and business-email-compromise lures. These are proof-of-concept impacts reported by Zenity, not claims of a real customer intrusion. They nevertheless demonstrate why cross-connector aggregation matters: an agent can correlate context across services and act through the employee’s trusted identity rather than exfiltrating one data source at a time.</p>
+        <p>The scheduled mailbox loop also illustrates a general persistence primitive. Defenders often focus on malicious system prompts or poisoned memory, as in the <a href="/posts/2026/07/memghost-one-email-persistent-agent-memory-poisoning/">MemGhost calendar-memory research</a>. A published agent adds another durable layer: saved instructions, connector grants, approval policy, and schedules can survive the event that created them and accept future attacker input through otherwise legitimate business systems.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li><strong>Require explicit confirmation for URL-supplied builder state.</strong> Query parameters and imported templates should populate inert fields, never auto-submit instructions or initiate authenticated state changes.</li>
+          <li><strong>Separate agent creation from security-policy changes.</strong> Natural-language setup should not silently lower approval requirements, attach every connector, publish an agent, and schedule execution in one flow. Each trust expansion needs a distinct, comprehensible confirmation.</li>
+          <li><strong>Make Preview genuinely non-production.</strong> A preview should use synthetic data or read-only test identities. If it can invoke live connectors, it requires the same approvals, audit events, and policy enforcement as a published run.</li>
+          <li><strong>Inventory agents as identities.</strong> Record creator, creation channel, instructions, connectors, approval modes, schedules, last editor, and run history. Alert when a new agent immediately attaches several data sources or disables action approvals.</li>
+          <li><strong>Constrain connectors centrally.</strong> Limit high-impact write and delete operations by workspace policy, not only per-agent prompts. Reused OAuth consent should not imply blanket approval for every future agent.</li>
+          <li><strong>Detect scheduled command loops.</strong> Look for agents repeatedly polling one sender or subject pattern, sending results externally, or combining broad searches with outbound messages. Correlate agent runs with mailbox, chat, file, and identity telemetry.</li>
+          <li><strong>Give users a visible kill switch.</strong> Workspace administrators need a fast way to enumerate, suspend, and delete agents and schedules, revoke their connector access, and preserve configuration and run logs for investigation.</li>
+          <li><strong>Treat first-party links as potentially state-changing.</strong> Secure email gateways and user training should not automatically trust a link because its hostname is the approved AI service. Builders and automation consoles deserve the same CSRF assumptions as financial and administrative applications.</li>
+        </ul>
+
+        <p>AgentForger’s central lesson is that agent lifecycle controls are part of the authorization boundary. The platform correctly recognized the employee and reused connectors the employee had previously approved, yet the user did not intentionally create the resulting operator. For autonomous systems, identity assurance must cover not only who is signed in, but who supplied the instructions, who approved the agent’s authority, and whether publication and persistence reflect a fresh human decision.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://labs.zenity.io/p/agentforger-part-1-chatgpt-cross-site-agent-forgery?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Zenity Labs — AgentForger, Part 1: ChatGPT Cross-Site Agent Forgery</a></li>
+          <li><a href="https://labs.zenity.io/p/agentforger-part-2-the-autonomous-insider?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Zenity Labs — AgentForger, Part 2: The Autonomous Insider</a></li>
+          <li><a href="https://developers.openai.com/workspace-agents?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">OpenAI Developers — Workspace Agents documentation</a></li>
+          <li><a href="https://www.theregister.com/security/2026/07/23/one_chatgpt_link_could_smuggle_a_rogue_ai_agent_into_your_company/5275116?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Register — One ChatGPT link could smuggle a rogue AI agent into your company</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-23">2026-07-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/kiro-mcp-config-prompt-injection-rce-protected-paths/">Kiro Let Web Prompt Injection Rewrite Its MCP Config and Execute Code</a></h3><p>Intezer and Kodem found that hidden web instructions could make AWS Kiro rewrite its user-level MCP configuration and execute code without meaningful approval; Kiro 0.11.130 blocks the chain.</p><a class="text-link" href="/posts/2026/07/kiro-mcp-config-prompt-injection-rce-protected-paths/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-14">2026-07-14</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/grok-build-whole-repository-upload-privacy/">Grok Build 0.2.93 Uploaded Whole Git Repositories Before Server-Side Shutdown</a></h3><p>Wire-level testing found Grok Build 0.2.93 uploaded tracked files and full Git history independently of agent reads. xAI has disabled the upload server-side and promised deletion.</p><a class="text-link" href="/posts/2026/07/grok-build-whole-repository-upload-privacy/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-17">2026-05-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/mcp-database-sql-injection-apache-doris-pinot-alibaba/">MCP Database Flaws — Apache Doris, Pinot and Alibaba RDS Vulnerabilities</a></h3><p>Security researcher Tomer Peled found three critical MCP server vulnerabilities affecting Apache Doris, Pinot, and Alibaba RDS — including SQL injection and metadata exfiltration — with one vendor declining to patch.</p><a class="text-link" href="/posts/2026/05/mcp-database-sql-injection-apache-doris-pinot-alibaba/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
