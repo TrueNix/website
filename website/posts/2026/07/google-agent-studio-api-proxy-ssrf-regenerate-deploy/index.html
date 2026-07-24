@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Google Says Pre-July Agent Studio Web Apps Need Regeneration After SSRF Fix — al-ice.ai</title>
+  <meta name="description" content="Google fixed SSRF in Agent Studio’s generated /api-proxy backend and told users to regenerate and redeploy web apps whose code was created before July 1, 2026." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/google-agent-studio-api-proxy-ssrf-regenerate-deploy/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Google Says Pre-July Agent Studio Web Apps Need Regeneration After SSRF Fix" />
+  <meta name="post:date" content="2026-07-24" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a><a href="/categories/">Categories</a><a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Google Says Pre-July Agent Studio Web Apps Need Regeneration After SSRF Fix</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-24">2026-07-24</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Google Cloud has fixed a server-side request forgery vulnerability in the backend code that Agent Studio generated for web applications. The affected component is the auto-generated <code>/api-proxy</code> endpoint in apps created before July 1, 2026. Google’s July 20 security notice tells anyone who downloaded, generated, or deployed that code before the cutoff to regenerate the application in Agent Studio and deploy the new version.</p>
+        <p>This is not a console-only repair that automatically reaches code already exported into a customer project. The vulnerable artifact is generated application code. An existing deployment remains a remediation target until its owner replaces it and verifies that the old revision is no longer serving traffic.</p>
+        <p>Google’s notice does not assign a CVE, severity score, exploitation status, or detailed impact statement. It identifies the weakness class as SSRF and says the updated backend performs strict destination-domain allowlist validation. Defenders should preserve that boundary: the confirmed facts support urgent regeneration and exposure review, but not unsupported claims that credentials or internal services were accessed.</p>
+
+        <h2>The proxy needed a destination policy</h2>
+        <p>Agent Studio lets a builder turn a prompt into a shareable web application. Its generated backend mediates requests to the managed AI service through <code>/api-proxy</code>. A server-side proxy is a security boundary because the server—not the browser—makes the outbound connection and may have network reach or an execution identity unavailable to an external caller.</p>
+        <p>Google says the replacement code validates that destination hostnames end with approved Google Cloud domains, giving <code>*-aiplatform.clients6.google.com</code> as an example. That changes the proxy from a generic destination mechanism into one constrained to the service endpoints the application is intended to reach.</p>
+        <p>The release note does not publish the vulnerable implementation, bypass syntax, authentication preconditions, or the exact resources reachable from a deployed app. Teams should therefore test their own deployment rather than infer impact from the SSRF label alone. Relevant context includes whether the application was public, what authentication protected it, where the backend ran, which service account it used, and what private routes and metadata services were available from that runtime.</p>
+
+        <h2>Regeneration is a source and deployment migration</h2>
+        <p>Regenerating code addresses only the first half of the repair. Teams must compare the new output with their maintained application, reapply intentional customizations without restoring the old proxy logic, build the result, deploy it to every active environment, and retire previous revisions. A generated-code workflow can otherwise produce a false sense of safety: the template is fixed upstream while a copied or forked vulnerable backend continues running indefinitely.</p>
+        <p>The same inventory problem applies to code that was downloaded but not deployed at the time of the notice. Templates in internal repositories, starter projects, CI artifacts, tutorials, and developer branches can reintroduce the old endpoint later. Searching source control and deployment manifests for <code>/api-proxy</code> is more reliable than checking only currently visible Agent Studio applications.</p>
+        <p>Because Google gives creation time—not package version—as the affected boundary, provenance matters. If an organization cannot establish when its Agent Studio backend was generated, the safe course is to regenerate it now and record the resulting source revision and deployment identity.</p>
+
+        <h2>Defensive response checklist</h2>
+        <ul>
+          <li><strong>Inventory generated applications.</strong> Find every Agent Studio web app, exported source tree, staging instance, sample, and production deployment created from code before July 1, 2026.</li>
+          <li><strong>Regenerate from Agent Studio.</strong> Follow Google’s instruction rather than attempting an improvised hostname check in the older backend. Review the resulting diff and preserve the new allowlist behavior.</li>
+          <li><strong>Redeploy every live environment.</strong> Confirm that traffic reaches the regenerated build, then remove or disable stale revisions, preview URLs, containers, and serverless deployments.</li>
+          <li><strong>Search for copied proxy code.</strong> Look across repositories and artifact stores for the route name and older generated templates. Prevent archived examples from becoming future production code.</li>
+          <li><strong>Review request and egress telemetry.</strong> Inspect application, load-balancer, platform, DNS, and network logs for unusual <code>/api-proxy</code> requests or outbound destinations. Keep conclusions proportional to the telemetry available.</li>
+          <li><strong>Reduce runtime reach.</strong> Give the backend a dedicated least-privileged service account, restrict egress where the platform permits it, and avoid attaching the app to private networks it does not need.</li>
+          <li><strong>Test the control without weakening it.</strong> Verify that legitimate approved AI endpoints work and that unapproved external, private, loopback, link-local, redirecting, and alternate-encoding destinations are rejected.</li>
+          <li><strong>Record the migration.</strong> Capture generation time, source commit, build artifact, deployment revision, service account, environment, and retirement of the old version for later audit.</li>
+        </ul>
+
+        <p>The broader engineering lesson is that generated AI application code is part of the software supply chain, not disposable scaffolding. When a platform fixes a generator, deployed copies do not inherit the repair. Owners need an inventory that connects generator version or creation date to source repositories, artifacts, and live revisions—and a repeatable way to replace all of them.</p>
+        <p>This also complements the containment controls discussed for <a href="/posts/2026/07/google-cloud-run-sandboxes-agent-code-isolation/">agent-generated code in Cloud Run sandboxes</a>. Network egress and service identity remain security controls even when an application is generated by a managed platform. A narrow destination allowlist reduces the proxy’s authority; least-privileged runtime placement limits the consequences if another parsing or validation defect appears.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/release-notes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Google Cloud — Gemini Enterprise Agent Platform release notes, July 20 SSRF security update</a></li>
+          <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/agent-studio/deploy-vais-prompt?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Google Cloud — Quickstart for generating and deploying an Agent Studio web application</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-20">2026-07-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/toolhive-auth-discovery-host-ssrf-cve-2026-58196/">ToolHive Auth Discovery Escaped MCP Container Isolation via Host-Side SSRF — CVE-2026-58196</a></h3><p>ToolHive before 0.31.0 let a remote MCP server steer host-side authentication discovery toward internal URLs, bypassing the container and egress isolation around the server.</p><a class="text-link" href="/posts/2026/07/toolhive-auth-discovery-host-ssrf-cve-2026-58196/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-16">2026-07-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/aws-healthlake-mcp-pagination-ssrf-cve-2026-15643/">AWS HealthLake MCP Pagination SSRF Could Exfiltrate Temporary Credentials — CVE-2026-15643</a></h3><p>AWS HealthLake MCP Server before 0.0.14 trusted a caller-supplied pagination URL, allowing an authenticated user to redirect a signed request and expose temporary AWS credentials.</p><a class="text-link" href="/posts/2026/07/aws-healthlake-mcp-pagination-ssrf-cve-2026-15643/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-10">2026-07-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/unit42-vertex-ai-pickle-middle-cross-tenant-rce/">Unit 42 — Pickle in the Middle: Cross-Tenant RCE in Google Vertex AI</a></h3><p>Palo Alto Networks Unit 42 disclosed a critical vulnerability in Google Cloud Vertex AI SDK that allowed cross-tenant model poisoning and remote code execution via bucket squatting.</p><a class="text-link" href="/posts/2026/07/unit42-vertex-ai-pickle-middle-cross-tenant-rce/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
