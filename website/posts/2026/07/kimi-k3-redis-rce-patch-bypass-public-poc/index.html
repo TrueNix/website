@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kimi K3 Redis Hunt Produced Public RCE Chains—and a Patch-Baseline Problem — al-ice.ai</title>
+  <meta name="description" content="Redis shipped seven security releases after researchers published authenticated RCE chains against versions previously considered fixed. The Kimi K3 discovery-speed claims remain self-reported." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/kimi-k3-redis-rce-patch-bypass-public-poc/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Kimi K3 Redis Hunt Produced Public RCE Chains—and a Patch-Baseline Problem" />
+  <meta name="post:date" content="2026-07-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a><a href="/categories/">Categories</a><a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Kimi K3 Redis Hunt Produced Public RCE Chains—and a Patch-Baseline Problem</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-25">2026-07-25</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Redis published seven security releases on July 23 after researchers released working authenticated remote-code-execution chains for multiple Redis lines. The public exploit repository targets Redis 6.2.22, 7.4.9, 8.6.4, 8.8.0, and—according to its authors—even the newly released 8.8.1 through a second RedisBloom error path.</p>
+        <p>The AI headline is striking but needs disciplined attribution. Researcher Chaofan Shou says a 32-agent Kimi K3 run found and exploited a Redis 8.8.0 zero-day in 27 minutes, while a separate run found 19 issues in roughly 90 minutes. Those timing, autonomy, and issue-count claims are self-reported; neither Redis release notes nor the public repository provides an independent benchmark trace that would reproduce the agent run.</p>
+        <p>The software-security evidence is firmer. Redis’s own releases describe a crafted stream <code>RESTORE</code> payload that can produce a shared pending-entry object and use-after-free, plus out-of-bounds writes in bundled RedisBloom and TDigest code that may lead to RCE. The researchers’ repository contains version-specific Python exploit chains, calibration tooling, target requirements, and reliability claims rather than only a crash reproducer.</p>
+
+        <h2>Seven releases replaced a two-month-old “fixed” baseline</h2>
+        <p>Redis’s May 5 advisory covered five CVEs, including <strong>CVE-2026-25243</strong> in the core <code>RESTORE</code> path and <strong>CVE-2026-25589</strong> in RedisBloom. It listed 6.2.22, 7.4.9, and 8.6.3 among fixed Community Edition releases. The new public chain characterizes its stream bug as a bypass in the CVE-2026-25243 family and demonstrates RCE against 6.2.22 and 7.4.9—the exact baselines operators could reasonably have adopted after that advisory—as well as 8.6.4.</p>
+        <p>On July 23, Redis published <strong>6.2.23, 7.2.15, 7.4.10, 8.2.8, 8.4.5, 8.6.5, and 8.8.1</strong>. The 6.x and 7.x notes identify the stream use-after-free. The supported 8.x releases also remediate RedisBloom and TDigest out-of-bounds writes where those modules are bundled. Redis has not assigned separate CVE identifiers in those release notes, so the newly fixed bug classes should not be presented as newly numbered CVEs.</p>
+        <p>There is one unresolved edge in the public record. The exploit repository says its <code>TopK</code> chain works against Redis 8.8.1 with RedisBloom 8.8.2 and bypasses the incomplete CVE-2026-25589 fix because only part of an undersized pointer array is cleared. That is a researcher claim, not a confirmation in Redis’s advisory. As of this writing, GitHub marks 8.8.1 as Redis’s latest final release, and its release note says crafted RedisBloom and TDigest payloads were fixed. Operators should therefore treat 8.8.1 as materially safer than 8.8.0 but should not use “latest” as the only control while Redis evaluates or supersedes the reported TopK path.</p>
+
+        <h2>Authentication narrows exposure, not impact</h2>
+        <p>These are not unauthenticated internet-to-root chains. The public proof of concept requires Redis access and a user permitted to invoke <code>RESTORE</code> and <code>EVAL</code>; the stream variants also require <code>XGROUP</code>. The 8.8 module chains require the bundled RedisBloom functionality. Several exploits are tuned to stock official container layouts, and the 8.8 paths are explicitly described as heap-layout-sensitive.</p>
+        <p>That still creates a serious cloud and platform boundary. A Redis credential is commonly issued to an application, job runner, developer tool, or tenant workload with data-level authority. If that identity can also deserialize attacker-supplied RDB values and execute Lua, a compromised application credential can become code execution as the <code>redis-server</code> OS account. In shared clusters, the difference between database access and host-process execution is the isolation boundary.</p>
+        <p>The repository’s “non-destructive” description should not be mistaken for a production-safety guarantee. Its own notes say incorrect offsets can crash a target, some chains require a fresh instance, and deliberate exploit residue must remain to avoid later heap corruption. Public, operational exploit code sharply reduces the distance between a memory-safety advisory and repeatable offensive use.</p>
+
+        <h2>The agent result is a response-time warning, not yet a benchmark</h2>
+        <p>If the Kimi K3 account is accurate, the important change is not that an AI model can name a bug class. Thirty-two agents reportedly moved from source inspection through heap exploitation against a current database build in less than half an hour. That compresses work normally divided among fuzzing, root-cause analysis, exploit development, target-layout calibration, and reliability testing.</p>
+        <p>But defenders should separate observable artifacts from provenance claims. The repository proves that exploit engineering was published; Redis release notes prove that consequential memory flaws were patched. They do not, by themselves, establish how many issues were novel, how much human steering occurred, what prompts and tools the agents received, or whether the 27-minute clock included setup. Reproducible agent transcripts, commit provenance, duplicate triage, and vendor acknowledgements are necessary before treating the run as a comparative capability measurement.</p>
+        <p>This distinction matters as <a href="/posts/2026/07/ai-bug-hunting-record-cve-spike-june-2026/">AI-assisted vulnerability discovery scales disclosure volume</a>. Security teams need to react to validated exploitability immediately without converting every vendor-neutral speed claim into a settled model benchmark.</p>
+
+        <h2>Defensive engineering response</h2>
+        <ul>
+          <li><strong>Move off the superseded lines now.</strong> At minimum, replace 6.2.22 with 6.2.23, 7.2.14 with 7.2.15, 7.4.9 with 7.4.10, 8.2.6 with 8.2.8, 8.4.3 with 8.4.5, and 8.6.4 with 8.6.5. Replace 8.8.0 with 8.8.1 while tracking Redis’s response to the independently reported 8.8.1 TopK path.</li>
+          <li><strong>Remove dangerous commands from application identities.</strong> Use Redis ACL categories and explicit command denials so ordinary services cannot invoke <code>RESTORE</code>, <code>EVAL</code>, <code>EVALSHA</code>, <code>FUNCTION</code>, or <code>XGROUP</code> unless their workload requires them. Separate restore and administration credentials from runtime credentials.</li>
+          <li><strong>Constrain every authenticated path.</strong> Keep Redis off public interfaces, enforce protected mode and authentication, restrict source networks, rotate credentials exposed to compromised applications, and do not assume post-authentication means low risk.</li>
+          <li><strong>Reduce module surface.</strong> Do not load RedisBloom, TDigest, TimeSeries, or other modules that the workload does not use. Inventory module versions separately from the core server because bundled and independently deployed builds can diverge.</li>
+          <li><strong>Contain the server process.</strong> Run Redis as an unprivileged account in a minimal container or VM, mount only required data paths, deny host sockets and cloud metadata access, use a read-only root filesystem where practical, and block unnecessary egress.</li>
+          <li><strong>Hunt for the transition from data access to execution.</strong> Review ACL logs and network telemetry for unexpected <code>RESTORE</code>, scripting, and consumer-group activity; investigate crashes, commands spawned by <code>redis-server</code>, anomalous egress, and filesystem changes owned by the Redis account.</li>
+          <li><strong>Track the disputed newest branch.</strong> Subscribe to Redis security releases and the upstream issue or patch associated with the reported TopK destruction path. Test the next fixed build before promoting it, rather than relying only on a version string or the May CVE table.</li>
+        </ul>
+
+        <p>The immediate lesson is operational: yesterday’s patched baseline can become today’s exploit target when a fix closes one malformed-object path but leaves an adjacent lifetime or bounds error. The longer-term AI lesson is about cadence. Whether the Redis chains were fully autonomous or heavily supervised, public exploit engineering and vendor patch cycles are compressing. Defensive controls must survive the interval between a credible repository appearing and the next unambiguous fixed release.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/berabuddies/redis-poc?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Bera Buddies — Redis authenticated RCE proof-of-concept repository, requirements, and hardening notes</a></li>
+          <li><a href="https://github.com/redis/redis/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Redis on GitHub — July 23 security releases</a></li>
+          <li><a href="https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Redis — May 5 advisory for CVE-2026-23479, CVE-2026-25243, CVE-2026-25588, CVE-2026-25589, and CVE-2026-23631</a></li>
+          <li><a href="https://x.com/Fried_rice/status/2080059356322918777?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Chaofan Shou — self-reported 27-minute, 32-agent Kimi K3 exploit run</a></li>
+          <li><a href="https://x.com/Fried_rice/status/2080190071102460108?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Chaofan Shou — self-reported 19-issue Redis 8.8.0 run</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-17">2026-05-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/cymulate-ai-cli-tools-prompt-injection-rce-cursor-kiro-codex/">Cymulate — Prompt Injection Triggers Zero-Click RCE in AI CLI Tools (Cursor, Kiro, Codex, Gemini)</a></h3><p>Cymulate researchers uncovered zero-click RCE chains across Cursor CLI, AWS Kiro, Codex Desktop, and Gemini CLI — where a single prompt injection can silently execute code via Windows PATH hijacking and config file poisoning.</p><a class="text-link" href="/posts/2026/05/cymulate-ai-cli-tools-prompt-injection-rce-cursor-kiro-codex/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-03">2026-07-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/litellm-pypi-supply-chain-attack-credential-stealer/">LiteLLM PyPI Supply Chain Attack — Credential Stealer in Versions 1.82.7–1.82.8</a></h3><p>LiteLLM PyPI package compromised — malicious versions 1.82.7 and 1.82.8 shipped a multi-stage credential stealer targeting cloud keys, CI/CD secrets, and crypto wallets.</p><a class="text-link" href="/posts/2026/07/litellm-pypi-supply-chain-attack-credential-stealer/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-27">2026-04-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/google-common-crawl-indirect-prompt-injection-survey/">Google — 32% Rise in Indirect Prompt Injection Attacks Found Across Public Web</a></h3><p>Google researchers scanned billions of pages in Common Crawl and found a 32% increase in malicious indirect prompt injection attempts between November 2025 and February 2026, with data exfiltration and destructive payloads in the wild.</p><a class="text-link" href="/posts/2026/04/google-common-crawl-indirect-prompt-injection-survey/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
