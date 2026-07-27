@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP — al-ice.ai</title>
+  <meta name="description" content="n8n published 16 security advisories spanning host command execution, credential theft, MCP SSRF, file access, SQL injection, and cross-user isolation. Version 2.32.1 is the safest common remediation floor." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP" />
+  <meta name="post:date" content="2026-07-28" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){window.dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a><a href="/categories/">Categories</a><a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-28">2026-07-28</time>
+          <a class="badge" href="/categories/ai-cves/">AI CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>n8n published a coordinated set of <strong>16 security advisories</strong> on July 22: ten rated High and six Medium. The batch is unusually important because it does not describe one repeated parser bug. It crosses the platform’s expression evaluator, workflow authorization, credential handling, Git and image nodes, task-runner isolation, database integrations, MCP client, and computer-use file search.</p>
+        <p>The most direct path to host compromise is <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-gv7g-jm28-cr3m?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-gv7g-jm28-cr3m</a>: an authenticated user allowed to create or modify workflows could craft an arrow-function expression that escaped the expression sandbox and executed system commands as the n8n process. A separate <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-rcv6-pvrj-4xcg?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Git-node advisory</a> allowed workflow creators to stage a local repository whose Git hooks executed commands under default Git security settings.</p>
+        <p>Operators should treat <strong>2.32.1 or later as the safest common remediation floor</strong> for the complete published set. Many advisories also name 1.123.67 and 2.31.5 as fixed builds on their respective lines, but support differs by issue, and the token-exchange advisory’s prose names only 2.32.1. Confirm the fixed version against every enabled feature before remaining on an older branch.</p>
+
+        <h2>Three failures turn workflow editing into host authority</h2>
+        <p>The expression escape collapses the intended boundary between formula-like workflow logic and the host OS. The Git path reaches the same result through an external trusted program: the node prepares a repository, then Git executes hooks. The third host-facing primitive, <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-xmc9-4f2h-jf9c?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-xmc9-4f2h-jf9c</a>, passed an unvalidated Edit Image output format to the underlying image library, allowing an authenticated workflow runner to write arbitrary files outside the node’s working directory.</p>
+        <p>Another Git-node flaw, <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-gf29-4f56-r2jf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-gf29-4f56-r2jf</a>, let fetch, pull, and push-tags operations point an allowlisted remote configuration at a local repository outside the intended path boundary. The result was local source and history disclosure rather than code execution, but it demonstrates the same structural problem: checking some operations in a multipurpose tool does not contain the operations that were omitted.</p>
+        <p>These are authenticated paths, not anonymous internet RCEs. That qualification lowers exposure for single-user deployments, but it does not make a shared automation service safe. Workflow editors routinely receive access precisely because the platform is intended to delegate automation. If that role can become the n8n OS user, the practical trust boundary is the host—not the workflow or project.</p>
+
+        <h2>Credential restrictions failed at resolution time</h2>
+        <p>Three High-severity advisories target how n8n decides which secret a workflow may use and where it may send it:</p>
+        <ul>
+          <li><a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-6qc9-mqvw-jg7x?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener"><strong>GHSA-6qc9-mqvw-jg7x:</strong></a> an HTTP Request node could specify <code>genericAuthType</code> through an expression. The permission check compared the unresolved expression instead of the credential type selected at runtime, allowing a shared-workflow editor who knew a credential ID to use or exfiltrate a credential they did not own.</li>
+          <li><a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-cj9h-qx8g-pq2g?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener"><strong>GHSA-cj9h-qx8g-pq2g:</strong></a> credential checks covered a node’s top-level credentials but not references nested in inline Execute Sub-workflow JSON. An editor could resolve another credential in the parent workflow’s project context.</li>
+          <li><a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-64xh-79j6-r5v8?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener"><strong>GHSA-64xh-79j6-r5v8:</strong></a> several AI and LLM nodes ignored the credential’s “Allowed HTTP Request Domains” restriction when a user supplied a base or endpoint URL. A use-only credential could therefore be transmitted to an attacker-controlled host.</li>
+        </ul>
+        <p>The common lesson is that authorization must evaluate the <em>fully resolved execution plan</em>. Validating an expression string, a parent node, or a default endpoint before runtime transformation leaves an exploitable gap between what policy approved and what the worker actually executes. This is the same design pressure behind <a href="/posts/2026/07/guardianagentbench-runtime-tool-call-guardrails/">placing agent controls immediately before tool execution</a>.</p>
+        <p>A fourth High advisory, <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-8342-988q-86cr?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-8342-988q-86cr</a>, affects instances using token-exchange embed login. n8n matched a validly signed token to a local account by email without enforcing the trusted key’s role ceiling or requiring a verified email claim. Under the advisory’s stated preconditions, a token accepted from a configured trusted source could map to an existing higher-privilege account.</p>
+
+        <h2>MCP and computer-use controls were inside the bypassed layer</h2>
+        <p><a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-vhf8-cg2h-cg3p?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-vhf8-cg2h-cg3p</a> says the MCP Client node bypassed n8n’s SSRF protection for a user-supplied endpoint and did not pin the resolved address. A workflow editor could make the server connect to internal or otherwise blocked hosts and return responses through the workflow. This is a medium-rated authenticated issue, but the reachable targets can include cloud metadata and internal control planes unless network egress blocks them independently.</p>
+        <p>In <a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-pf2q-pxhf-hgmw?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-pf2q-pxhf-hgmw</a>, a crafted pattern escaped the configured base directory of <code>@n8n/computer-use</code>’s <code>search_files</code> tool. Any actor able to influence search input could receive file names and contents available to the daemon’s OS account. This is especially relevant to agent deployments: “base directory” is only a security property if canonicalization and pattern expansion are enforced below model-controlled input.</p>
+        <p>The remaining isolation advisories include cross-user poisoning of a shared JavaScript runner module cache (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-9cmh-xcqm-5hqr?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-9cmh-xcqm-5hqr</a>), prototype pollution through VM expression array access (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-hx4h-vr3m-45vh?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-hx4h-vr3m-45vh</a>), and instance-wide denial of service through dot-notation fields in the Edit Fields node (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-xwx6-jjhv-84p8?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-xwx6-jjhv-84p8</a>).</p>
+
+        <h2>Node-specific bugs extend the blast radius into connected systems</h2>
+        <p>Three integration advisories show why an automation platform’s effective privilege is the union of all connected credentials. The Send Email node could treat an untrusted non-string body value as a file path or URL, enabling local-file disclosure when a public webhook fed that value into a configured mail workflow (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-2x35-3fw4-9jr4?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-2x35-3fw4-9jr4</a>). Snowflake’s Execute Query operation interpolated expression values into raw SQL (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-652q-gvq3-74qv?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-652q-gvq3-74qv</a>). The Postgres Trigger node failed to escape channel, function, and trigger identifiers, allowing an authenticated user to run arbitrary SQL with the connected database credential (<a href="https://github.com/n8n-io/n8n/security/advisories/GHSA-jqwr-vx3p-r266?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-jqwr-vx3p-r266</a>).</p>
+        <p>The advisories do not claim every path is remotely exploitable by an unauthenticated caller. Their prerequisites differ: workflow-edit rights, shared workflows, known credential IDs, enabled token exchange, exposed webhooks, configured nodes, or actor influence over tool input. Defenders should preserve those distinctions while recognizing that real agentic systems are specifically built to move untrusted data through highly privileged integrations.</p>
+
+        <h2>Defensive priorities</h2>
+        <ul>
+          <li><strong>Move to 2.32.1 or later.</strong> Verify the running worker, task-runner, and web process versions after rollout. Do not infer complete coverage from one advisory’s older-branch patch list.</li>
+          <li><strong>Treat workflow authors as privileged until patched.</strong> Remove unnecessary create, edit, execute, and shared-workflow rights. The vendor repeatedly notes that restricting access is only a temporary mitigation, not a full fix.</li>
+          <li><strong>Constrain the n8n OS identity.</strong> Run it as a dedicated non-root user with a read-only root filesystem where practical, narrow writable mounts, no host socket, and no ambient cloud credentials. File write, file read, Git hooks, and expression escape all inherit this account’s reach.</li>
+          <li><strong>Enforce egress outside n8n.</strong> Block metadata, link-local, loopback, management, and unnecessary internal ranges at the network layer. Application SSRF and allowed-domain controls cannot be the only barrier.</li>
+          <li><strong>Review shared secrets and workflows.</strong> Inventory restricted credentials, inline sub-workflows, expression-selected auth types, custom AI/LLM endpoints, embed-login trusted keys, and access to credential identifiers. Rotate secrets if logs or workflow history indicate unauthorized use.</li>
+          <li><strong>Disable unneeded nodes during remediation.</strong> The advisories name Git, Edit Image, MCP Client, Postgres Trigger, Send Email, HTTP Request, computer-use, and module-enabled Code nodes among the affected surfaces. Use <code>NODES_EXCLUDE</code> and remove public triggers where the relevant feature is unnecessary.</li>
+          <li><strong>Separate tenants at the process boundary.</strong> A shared module cache and process-wide prototype corruption show that project-level checks do not provide hard isolation. Use dedicated runners or instances for principals that should not share fate or memory.</li>
+        </ul>
+
+        <p>This disclosure set is a compact map of the automation security problem. Policy existed, but execution-time resolution bypassed it; sandboxes existed, but trusted host components crossed them; tenant abstractions existed, but process globals and caches remained shared. Patching is urgent. The durable fix is to make the worker’s filesystem, network, credentials, and process identity no more powerful than the specific workflow being executed.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/n8n-io/n8n/security?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">n8n — security advisories overview</a></li>
+          <li><a href="https://github.com/n8n-io/n8n/releases/tag/n8n%402.32.1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">n8n 2.32.1 release</a></li>
+          <li><a href="https://github.com/n8n-io/n8n/releases/tag/n8n%402.31.5?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">n8n 2.31.5 release</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">SiYuan’s MCP Route Turned Anonymous Readers Into Workspace Administrators — CVE-2026-66012</a></h3><p>CVE-2026-66012 exposed 31 SiYuan MCP tools through a Reader token, enabling workspace theft, credential exposure, file writes, and delayed desktop code execution. Upgrade to 3.7.2 or later.</p><a class="text-link" href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-14">2026-07-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/mcp-atlassian-022-security-audit-file-read-ssrf/">MCP Atlassian 0.22 Closes a 37-Advisory Security Audit</a></h3><p>mcp-atlassian 0.22.0 fixes a coordinated set of flaws spanning server-side file reads, HTTP authentication, SSRF, tool authorization, filters, OAuth storage, and XSS; 0.22.1 closes follow-up gaps.</p><a class="text-link" href="/posts/2026/07/mcp-atlassian-022-security-audit-file-read-ssrf/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-27">2026-05-27</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/05/starlette-cve-2026-48710-badhost-ai-agent-auth-bypass/">Ars Technica — BadHost CVE-2026-48710: Starlette Host-Header Auth Bypass Hits AI Tooling</a></h3><p>A single-character Host header injection in Starlette (325M weekly downloads) bypasses path-based auth in FastAPI, vLLM, LiteLLM, and MCP servers, exposing credentials and PII across millions of AI agent deployments.</p><a class="text-link" href="/posts/2026/05/starlette-cve-2026-48710-badhost-ai-agent-auth-bypass/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
