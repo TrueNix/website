@@ -456,7 +456,10 @@ ${topGrid}
 
     function rewrite(urlStr){
       try{
-        const u = new URL(urlStr);
+        // href attributes encode query separators as &amp;. Decode that entity for
+        // URL parsing so an existing utm_source is not mistaken for amp;utm_source.
+        const parsedUrl = urlStr.replaceAll('&amp;', '&');
+        const u = new URL(parsedUrl);
         // Only rewrite true external links
         if (u.hostname === 'al-ice.ai' || u.hostname.endsWith('.al-ice.ai')) return urlStr;
         if (u.protocol !== 'http:' && u.protocol !== 'https:') return urlStr;
