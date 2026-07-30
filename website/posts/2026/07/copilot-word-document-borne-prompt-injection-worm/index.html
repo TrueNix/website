@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Copilot for Word Can Carry Hidden Prompt Injection Into New Documents — al-ice.ai</title>
+  <meta name="description" content="Coordinated research shows Microsoft Copilot for Word copying hidden prompt injection into downstream documents. The lab chain is reproducible, but propagation still requires Copilot-assisted reuse." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/07/copilot-word-document-borne-prompt-injection-worm/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Copilot for Word Can Carry Hidden Prompt Injection Into New Documents" />
+  <meta name="post:date" content="2026-07-30" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small"><a href="/posts/">Posts</a><a href="/categories/">Categories</a><a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Copilot for Word Can Carry Hidden Prompt Injection Into New Documents</h1>
+        <div class="post-meta">
+          <time datetime="2026-07-30">2026-07-30</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A malicious Word document can do more than influence one Microsoft Copilot drafting session. In coordinated research published July 28, Håkon Måløy demonstrated Copilot for Word copying hidden attacker instructions into the document it generated. When that downstream document was later supplied to another Copilot session, the instructions triggered again and were copied forward—turning an ordinary business file into a new prompt-injection carrier.</p>
+        <p>The research is a controlled proof of concept, not evidence of an uncontrolled outbreak. Propagation is not automatic in the conventional malware sense: a user or Copilot retrieval flow must bring an affected document into a later Word drafting or editing context. But the chain changes the incident-response problem. Once Copilot places the payload in an internally created report, the next recipient sees a file produced through a legitimate workflow rather than the attacker’s original document.</p>
+        <p>Måløy says the behavior remained reproducible on July 28 after a 144-day disclosure process and multiple Microsoft mitigations. Microsoft told <em>The Register</em> that it had addressed the reported findings, uses defense-in-depth safeguards against malicious instructions, and continues to strengthen them. The apparent tension is important: Microsoft says the specific findings were addressed, while the researcher says modified payloads still reproduce the broader document-to-document propagation class.</p>
+
+        <h2>The document crosses two trust boundaries</h2>
+        <p>The first stage begins with instructions concealed in a Word file as small white text on a white background. According to the technical report, Copilot for Word strips formatting before passing document text to the model, so content hidden from the normal human view remains readable in model context. The user must either attach the file to Copilot or use an editing mode in which Copilot finds the file in OneDrive and selects it as relevant.</p>
+        <p>In the published scenario, the hidden instructions told Copilot to alter figures in a financial report and append the complete injection to the output in hidden text. The resulting report therefore carried both manipulated business data and the mechanism for repeating the manipulation. A later session used that report—but not the original malicious file—as source material for a new report. Copilot again changed the figures and copied the payload onward.</p>
+        <p>The first boundary failure is familiar indirect prompt injection: source material intended as data becomes an instruction. The second is a provenance failure: model-generated output inherits untrusted control text without retaining a visible, enforceable label that it came from an external source. The copied payload effectively launders its origin through a document created and shared by an authenticated employee.</p>
+
+        <h2>“Worm” describes propagation, not autonomous execution</h2>
+        <p>The self-propagating result warrants the worm analogy, but defenders should preserve the constraints of the demonstrated threat model. The payload did not independently enumerate users, send itself, or execute native code. Each hop depended on an affected document being reused in a Copilot-assisted drafting or editing workflow. Måløy also withheld most of the exact payload wording and disclosed the technique at the vulnerability-class level.</p>
+        <p>Those constraints reduce claims about speed and reach; they do not remove the integrity risk. Reports, policies, contracts, market analyses, and project plans are routinely reused as trusted source material. An internally generated carrier can move through SharePoint, Teams, Outlook, partner collaboration, or ordinary file sharing, and each legitimate handoff makes the original source harder to reconstruct.</p>
+        <p>The disclosure timeline also shows why a payload block is not a class-level fix. Microsoft’s first mitigation stopped the original wording in April, but altered instructions reproduced the behavior. A second mitigation and model change went live in July; the researcher reports reproducing the chain again with modified wording. His analysis credits those changes with raising the bar and says earlier memory and email-body vectors from the same research series were mitigated.</p>
+
+        <h2>Microsoft’s controls are layers, not a guarantee</h2>
+        <p>Microsoft’s public Copilot documentation says its defense-in-depth protections can include jailbreak and cross-prompt-injection classifiers, content filters, and safeguards in the underlying model. It also notes that these classifiers may not be available in every Microsoft 365 Copilot scenario. Microsoft advises users to review generated content before sending it to others and says generated responses are not guaranteed to be fully factual.</p>
+        <p>Output review is necessary, but hidden propagation exposes its limit. A reviewer can compare the visible figures and prose yet miss white-on-white instructions copied into the document. Content normalization helps reveal that carrier, but the payload need not remain visually hidden forever; visible prose can also contain instructions that are semantically hostile to the model.</p>
+        <p>The more durable control is to prevent source content from silently becoming trusted policy or inheritable output. A generated document needs machine-readable provenance for every source and model-performed edit, and downstream workflows need to preserve that taint rather than reset trust because the file owner belongs to the organization.</p>
+
+        <h2>Defensive priorities for Microsoft 365 environments</h2>
+        <ul>
+          <li><strong>Constrain external-document grounding.</strong> Do not allow Copilot to retrieve externally shared or newly downloaded files automatically for high-integrity drafting. Require users to select reviewed sources explicitly where the business process permits.</li>
+          <li><strong>Inspect representations, not only rendering.</strong> Extract document text, styles, metadata, relationships, comments, headers, footers, and embedded objects. Flag low-visibility text and differences between the human-rendered view and the text supplied to AI systems.</li>
+          <li><strong>Preserve source and edit provenance.</strong> Record which documents grounded an output, which passages came from each source, and what Copilot changed. Keep that lineage attached when a generated document is copied, renamed, or shared.</li>
+          <li><strong>Gate consequential use of generated documents.</strong> Financial, legal, compliance, safety, and executive reports need deterministic validation and independent approval before their figures or conclusions feed another automated workflow.</li>
+          <li><strong>Hunt for propagation indicators.</strong> Compare document XML across generations for repeated hidden blocks, unusual JSON-like instructions, tiny or background-matched text, and identical concealed strings appearing in files created by different users.</li>
+          <li><strong>Plan containment around carriers.</strong> If a suspicious document is found, identify every Copilot session that used it, every output produced from those sessions, and every later workflow that consumed those outputs. Quarantining only the first file is insufficient.</li>
+          <li><strong>Keep Copilot and Microsoft 365 controls current.</strong> Microsoft says customers should install the latest updates and use multiple security layers. Treat this as exposure reduction, not proof that all reformulations of the class are blocked.</li>
+        </ul>
+
+        <p>This disclosure extends prompt injection from a compromised answer to a contaminated information lineage. The operational question is no longer only whether Copilot obeyed one malicious document. Defenders must determine which trusted-looking outputs inherited its instructions, where those files traveled, and whether subsequent decisions were grounded in them.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://enklypesalt.com/posts/context-collapse-part3-ai-worming-through-word/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Håkon Måløy — Context Collapse, Part 3: AI Worming through Word</a></li>
+          <li><a href="https://www.theregister.com/security/2026/07/29/word-worm-crawls-into-copilot-spreads-chaos/5280588?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Register — Word worm crawls into Copilot, spreads chaos (including Microsoft statement)</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/microsoft-365/copilot/microsoft-365-copilot-privacy?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Learn — Data, Privacy, and Security for Microsoft 365 Copilot</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-01-30">2026-01-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/01/varonis-reprompt-copilot-single-click/">Varonis — Reprompt: single-click Copilot prompt injection chain for silent data exfiltration</a></h3><p>Varonis Threat Labs describes Reprompt: a one-click Copilot Personal deep-link technique (q=) combined with multi-request chaining that enabled silent data exfiltration; Microsoft says it has been patched.</p><a class="text-link" href="/posts/2026/01/varonis-reprompt-copilot-single-click/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-27">2026-05-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/promptarmor-copilot-cowork-prompt-injection-m365-exfil/">PromptArmor — Copilot Cowork Prompt Injection Bypasses M365 Approval to Exfiltrate Files</a></h3><p>PromptArmor demonstrated that weaponized workflow content can force Copilot Cowork to generate and share Microsoft 365 file links to unauthorized recipients, completely bypassing user consent.</p><a class="text-link" href="/posts/2026/05/promptarmor-copilot-cowork-prompt-injection-m365-exfil/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-26">2026-05-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/audiohijack-hidden-audio-prompt-injection-voice-ai/">AudioHijack — Hidden-Audio Prompt Injection Targets Voice AI</a></h3><p>New AudioHijack research shows imperceptible audio perturbations can inject malicious commands into voice AI assistants, achieving up to 96% attack success across 13 models.</p><a class="text-link" href="/posts/2026/05/audiohijack-hidden-audio-prompt-injection-voice-ai/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
