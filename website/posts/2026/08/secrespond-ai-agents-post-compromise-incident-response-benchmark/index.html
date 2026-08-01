@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SecRespond: AI Incident Agents Miss Silent Persistence — al-ice.ai</title>
+  <meta name="description" content="The SecRespond benchmark tested 23 frontier models across 10 compromised-host ranges; every agent detected more than it could fully remediate, and none completed a range." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/08/secrespond-ai-agents-post-compromise-incident-response-benchmark/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="SecRespond Finds AI Incident-Response Agents Follow Alerts but Miss Silent Persistence" />
+  <meta name="post:date" content="2026-08-01" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">SecRespond Finds AI Incident-Response Agents Follow Alerts but Miss Silent Persistence</h1>
+        <div class="post-meta">
+          <time datetime="2026-08-01">2026-08-01</time>
+          <a class="badge" href="/categories/research/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A new benchmark from Alibaba-NLP tests AI agents after the attacker has already won. <strong>SecRespond</strong> gives an agent a read-only forensic disk snapshot plus partial alerts, vulnerability findings, and baseline checks, then asks it to reconstruct the intrusion and produce a complete remediation plan. Across 23 frontier models and 10 compromised-host ranges, the researchers report that no model achieved complete detection and remediation on even one range.</p>
+        <p>The central failure was not an inability to recognize every obvious malicious artifact. Agents often followed the supplied alert trail successfully. They were much less reliable when evidence sat elsewhere on the disk without an active process or network signal, and their plans frequently stopped after the first correct cleanup step. Every tested model scored higher on detection than planning.</p>
+
+        <h2>The benchmark starts where most cyber evaluations stop</h2>
+        <p>Many cyber benchmarks place an agent before compromise and measure vulnerability discovery, exploitation, or patching in a clean environment. SecRespond instead models post-compromise work: an intrusion has unfolded, the host contains mixed traces and weaknesses, and the responder must separate clues from ground truth while preserving evidence and planning recovery.</p>
+        <p>The 10 synthetic ranges were built from distinct cloud hosts controlled by the researchers. Together they span Linux and Windows systems, four entry-point types, 21 MITRE ATT&amp;CK techniques, and scenarios including Log4Shell, exposed Docker and Redis services, an npm worm, Jenkins abuse, ASP.NET ViewState deserialization, and RDP service-permission abuse. Each agent had to deliver five artifacts: an investigation log, intrusion report, vulnerability report, baseline report, and prioritized remediation plan.</p>
+        <p>This design makes the benchmark operationally useful. Alerts are deliberately incomplete starting points, not an answer key. The frozen filesystems include visible artifacts and silent persistence, forcing an agent to decide whether to enumerate the wider host or merely explain what the security product already surfaced.</p>
+
+        <h2>Detection beat planning for every model</h2>
+        <p>The researchers ran all 23 models through the same OpenCode harness with identical prompts and tools. Claude Opus 4.7 led the reported range averages with 79.0% for detection and 65.7% for planning, followed by Claude Opus 4.6 at 78.2% and 58.0%. GLM-5.1 and Qwen3.7 Plus were also among the leaders, illustrating that provider category did not predict incident-response performance.</p>
+        <p>Even those aggregate scores need careful reading. Opus 4.7 refused every npm-worm attempt and produced no report, so its overall average excludes that range. More broadly, the evaluation used one common harness, default model parameters with reasoning enabled, synthetic hosts, and LLM judges. It is a strong comparative test, not a guarantee of production SOC performance.</p>
+        <p>The planning gap matters because incident response is a state-transition problem, not a report-writing contest. The paper describes agents that correctly recommended terminating a miner or deleting a dropped file but omitted credential rotation, outbound blocking, persistence removal, service restart, or verification that legitimate workloads remained healthy. A plausible first action can coexist with an incomplete recovery.</p>
+
+        <h2>Alert gravity pulled agents away from the rest of the host</h2>
+        <p>Across scenarios, the models were strongest at identifying concrete intrusion entities and weaker at finding persistence mechanisms. The paper attributes this to <strong>alert gravity</strong>: agents trace outward from the evidence they are given but rarely execute a systematic host-wide hunt.</p>
+        <p>That pattern appeared in different forms. In the Docker range, nearly every model failed the comprehensive persistence scan. In the Jenkins scenario, agents found the miner, mining-pool connection, cron entry, and rogue account while frequently missing a SUID-root backdoor, <code>LD_PRELOAD</code> injection, and sudoers tampering. In the Log4j range, every model except the GPT series missed at least one login-triggered persistence path. Windows-specific side-loading and encoded payloads were also difficult.</p>
+        <p>The result is an important warning for security teams adding copilots to endpoint or SIEM workflows. If an agent is grounded mainly in alerts, a fluent reconstruction may measure the coverage of its inputs more than the completeness of its investigation. Giving the model shell access to a forensic image does not ensure that it will search the right locations.</p>
+
+        <h2>Procedural skills helped—but became a new boundary</h2>
+        <p>The researchers also encoded general incident-response routines and report templates as a reusable skill, without including range answers, file paths, or CVE lists. That procedural prior produced large planning gains in some tests. For example, the paper reports that it raised Claude Opus 4.7's persistence detection score from 68% to 88% and persistence planning from 49% to 75%.</p>
+        <p>But the skill was not uniformly beneficial. GLM-5.1's detection declined on two broad ranges, which the authors suggest may reflect the model stopping at the categories enumerated by the procedure. A checklist can prevent omission while also creating a search boundary. Defensive playbooks therefore need an explicit “look beyond the playbook” phase, coverage telemetry, and escalation when evidence does not fit known categories.</p>
+
+        <h2>Defensive engineering guidance</h2>
+        <ul>
+          <li><strong>Keep agents in an evidence-preserving analysis plane.</strong> Mount forensic snapshots read-only, isolate tool execution, restrict network access, and require separately authorized responders to perform production changes.</li>
+          <li><strong>Measure discovery beyond supplied alerts.</strong> Seed silent persistence, unrelated baseline weaknesses, cross-service traces, and platform-specific artifacts. Score whether the agent conducts independent enumeration.</li>
+          <li><strong>Grade remediation as a closed loop.</strong> Require containment, eradication, credential rotation, patching, restart, functional verification, security-control verification, and rollback planning—not just a correct command.</li>
+          <li><strong>Separate findings from confidence.</strong> Demand concrete file, log, process, configuration, and timeline evidence. Unsupported CVE attribution or attacker claims should be marked uncertain rather than converted into incident fact.</li>
+          <li><strong>Test the actual model-harness pair.</strong> Model ranking can change with tool schemas, prompts, filesystem access, context limits, and procedural skills. Preserve versions and rerun representative internal cases after changes.</li>
+          <li><strong>Use diverse scenarios and operating systems.</strong> A strong score on common Linux CVEs does not establish coverage of Windows persistence, supply-chain propagation, databases, containers, or bespoke business logic.</li>
+          <li><strong>Retain accountable human ownership.</strong> Let agents accelerate evidence collection and drafting, but assign a responder to verify scope, approve destructive steps, evaluate business impact, and declare recovery complete.</li>
+        </ul>
+
+        <p>SecRespond's most valuable result is not a leaderboard. It exposes a mismatch between the shape of current agent behavior and the shape of real incident response. Agents are good at extending a visible trail; defenders need them to challenge that trail, search for what produced no alert, and prove that recovery changed the system safely. Until that gap closes, an AI-generated incident report should be treated as an investigation lead—not the end of the investigation.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2607.26791?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Wang et al. — SecRespond: Benchmarking AI Agents for Real-World Post-Compromise Incident Response</a></li>
+          <li><a href="https://github.com/Alibaba-NLP/qqr/tree/main/data/secrespond?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Alibaba-NLP — SecRespond dataset, prompts, scoring rubric, and range documentation</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-30">2026-07-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">Kimi K3 Trails Frontier Models in Cyber Tests but Completes an Autonomous Attack Range</a></h3><p>UK AISI and NIST CAISI found Kimi K3 below leading frontier models in preliminary cyber tests, yet it completed a 32-step attack range once in ten attempts and did not refuse offensive tasks.</p><a class="text-link" href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Axis Intelligence — AI Model Vulnerability Tracker: 71% Attack Success Rate Across Six Frontier Models</a></h3><p>Axis Intelligence tested 312 LLM attack vectors against six production models — 71% succeeded against at least one, 23% against all six, and system-prompt extraction works in 31% of deployments.</p><a class="text-link" href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-03-22">2026-03-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/03/arxiv-measuring-ai-agents-multi-step-cyber-attacks/">arXiv — Measuring AI agents on multi-step cyber attack scenarios</a></h3><p>A new arXiv paper benchmarks seven frontier models on multi-step cyber attack ranges and finds steady gains with both newer generations and larger inference-time token budgets.</p><a class="text-link" href="/posts/2026/03/arxiv-measuring-ai-agents-multi-step-cyber-attacks/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
