@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dynatrace MCP Advisories Expose an Unauthenticated Path From HTTP to Production Telemetry — al-ice.ai</title>
+  <meta name="description" content="Four GitHub advisories detail missing HTTP authentication, DQL and workflow-template injection, and an absent approval gate in the deprecated Dynatrace MCP server." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/08/dynatrace-mcp-server-auth-dql-template-injection-advisories/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Dynatrace MCP Advisories Expose an Unauthenticated Path From HTTP to Production Telemetry" />
+  <meta name="post:date" content="2026-08-02" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Dynatrace MCP Advisories Expose an Unauthenticated Path From HTTP to Production Telemetry</h1>
+        <div class="post-meta">
+          <time datetime="2026-08-02">2026-08-02</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Four GitHub security advisories published July 29 and July 31 describe a layered failure in the local Dynatrace MCP server: its optional HTTP transport accepted tool calls without authentication, one write tool omitted the project’s human-approval gate, “read-only” helpers allowed Dynatrace Query Language injection, and a workflow builder embedded caller input into a Jinja2 template.</p>
+        <p>The most serious advisory marks <code>@dynatrace-oss/dynatrace-mcp-server</code> through <strong>1.8.7</strong> as affected and <strong>2.0.0</strong> as the first patched release. The complete remediation floor is higher: the DQL-injection repair arrived in <strong>2.1.1</strong>. Version <strong>2.1.2</strong> is the final release, and the repository now tells users to migrate because no further updates will be made.</p>
+        <p>No CVE identifiers were assigned in the published records reviewed for this briefing. The GitHub Security Advisory identifiers are therefore the stable references operators should use when checking scanners and exceptions.</p>
+
+        <h2>HTTP mode turned the MCP endpoint into a Dynatrace credential proxy</h2>
+        <p><strong>GHSA-p7w7-4929-vpj5</strong> covers missing authentication for the server’s <code>--http</code> mode. The advisory says the handler parsed a JSON-RPC body and passed it to a stateless Streamable HTTP transport without checking a bearer token, session, <code>Host</code>, or <code>Origin</code>. A network-reachable caller could invoke tools under the Dynatrace credentials configured on the server without possessing those credentials.</p>
+        <p>The demonstrated read path was <code>execute_dql</code>. Because that tool intentionally executes arbitrary DQL, an attacker could query whatever Grail data the server identity was authorized to read, potentially including logs, security events, user sessions, and metrics. The unauthenticated write path reached <code>create_dynatrace_notebook</code>, allowing documents to be created in the tenant. The advisory’s proof used the harmless in-memory <code>reset_grail_budget</code> tool to establish anonymous dispatch; real data exposure still depends on valid Dynatrace credentials and their scopes.</p>
+        <p>GitHub scores the advisory high at CVSS 7.5. Exposure is configuration-dependent: the server had to run in HTTP mode and the listener had to be reachable. Binding to <code>0.0.0.0</code> in a container or shared network creates a direct remote path; loopback reduces reachability but does not substitute for authentication or browser-facing DNS-rebinding defenses.</p>
+        <p>Version 2.0.0 added bearer-token authentication, defaulted the listener to <code>127.0.0.1</code>, and enabled DNS-rebinding protection. Version 2.1.0 subsequently made <code>MCP_BEARER_TOKEN</code> mandatory for HTTP startup. These are separate controls: a loopback bind limits routing, host/origin validation constrains browser abuse, and a bearer token establishes caller authorization.</p>
+
+        <h2>An approval dialog did not make generated workflows safe</h2>
+        <p><strong>GHSA-xrmj-5g4g-8987</strong> concerns <code>create_workflow_for_notification</code> before 2.0.0. The tool interpolated <code>teamName</code>, <code>problemType</code>, and <code>channel</code> into a workflow whose action inputs are evaluated as Jinja2. A caller could place an expression such as <code>{{ event() }}</code> in a nominally plain-text field; the stored workflow would evaluate it later and could send the resulting event data through its notification action.</p>
+        <p>This was not a one-request data leak by itself. Exploitation required an agent induced by untrusted content—or a careless operator—to call the tool and approve the prompt. A usable downstream connector was also needed for delivery. But the consequence persisted beyond the MCP session: the generated workflow remained in the tenant and could execute for every matching event until deleted.</p>
+        <p>The approval prompt displayed the attacker-controlled text literally, without explaining that the workflow engine would later interpret it as a template. That is an important defensive distinction. Human approval is only meaningful when the interface presents the compiled action, destination, data classes, persistence, and interpreted expressions—not merely the friendly arguments supplied by an agent. The project removed both workflow-creation tools in 2.0.0 rather than attempting to preserve the vulnerable construction path.</p>
+
+        <h2>“Read-only” was a behavioral hint, not a query boundary</h2>
+        <p><strong>GHSA-pqh8-p93p-2rx7</strong> identifies DQL injection in helper tools including entity lookup, problem and vulnerability listing, exception listing, and Kubernetes-event retrieval. Parameters documented as names, identifiers, or time windows were concatenated into DQL without strict validation or escaping. Quote termination, added pipeline stages, and DQL line comments could bypass intended filters, selected fields, time ranges, and display caps.</p>
+        <p>The advisory is careful about marginal privilege: the same server exposed <code>execute_dql</code>, so the flaw did not grant the Dynatrace identity a new backend permission. Its practical value was policy bypass. MCP clients may use <code>readOnlyHint: true</code> when deciding that a tool can run with less friction. Injection converted a constrained, apparently safe helper into a broader query surface while retaining that trust signal.</p>
+        <p>Version 2.1.1 validates duration syntax, rejects pipeline-injection characters in additional filters, and escapes strings embedded in DQL literals. Operators should therefore treat 2.1.1—not 2.0.0—as the minimum version if they continue to run the deprecated local package.</p>
+
+        <h2>The missing notebook gate completed the chain</h2>
+        <p><strong>GHSA-pc2w-4mq8-32qw</strong> covers versions before 1.8.7, where <code>create_dynatrace_notebook</code> was the exception among six write tools: it did not call <code>requestHumanApproval()</code>. An agent could create a persistent, tenant-visible notebook without operator consent. The notebook could contain attacker-chosen Markdown and DQL cells; a query would execute under the permissions of a tenant user who later opened it.</p>
+        <p>On its own, GitHub rates this low. Combined with unauthenticated HTTP dispatch in the 1.x line, however, it supplied a no-approval write primitive to any caller that could reach the endpoint. Version 1.8.7 added the missing approval, but remained affected by the HTTP-authentication advisory. This is why remediation cannot be inferred from one advisory’s patched version in isolation.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Find the package and the transport.</strong> Search lockfiles, developer MCP configuration, CI images, containers, and long-running processes for <code>@dynatrace-oss/dynatrace-mcp-server</code>. Identify every use of <code>--http</code>, <code>--host 0.0.0.0</code>, and published container port.</li>
+          <li><strong>Prefer migration over a frozen dependency.</strong> The maintainers designate 2.1.2 as final and recommend Dynatrace-for-AI plus <code>dtctl</code> for local development or Dynatrace’s remote MCP service for agent-to-agent use. Threat-model the replacement independently; migration is not evidence that old credentials were never abused.</li>
+          <li><strong>If temporary operation is unavoidable, run at least 2.1.2.</strong> Require a strong <code>MCP_BEARER_TOKEN</code>, bind to loopback unless remote access is essential, preserve host/origin checks, and place the endpoint behind an authenticated network boundary. Do not expose the port directly from a developer workstation or container.</li>
+          <li><strong>Rotate and narrow Dynatrace credentials.</strong> Treat any reachable pre-2.0.0 HTTP deployment as a potential credential-proxy exposure. Rotate its token or OAuth material, remove unused Grail and document scopes, and separate read, write, and administrative identities.</li>
+          <li><strong>Hunt for effects, not only logins.</strong> Review DQL query-execution events, unusual fields and time ranges, unexpected notebooks, workflow creation and edits, outbound Slack or email actions, and requests to the MCP listener that lack authorization. The attack can use a legitimate server identity, so backend authentication logs alone may look normal.</li>
+          <li><strong>Delete hostile persistence.</strong> Inspect stored notebooks and workflows, including private objects, for template syntax, unfamiliar destinations, broad event functions, and embedded DQL. Revoking the MCP credential does not remove already-created workflow definitions.</li>
+          <li><strong>Make approval semantic.</strong> Show operators the resolved operation, scopes, destination, persistence, and escaped query or template—not just the agent’s input fields. Treat tool annotations as advisory metadata and enforce authorization in code at execution time.</li>
+        </ul>
+
+        <p>This advisory set demonstrates why an MCP server is a security boundary rather than a convenience adapter. It combines a network listener, a privileged observability identity, query construction, persistent tenant objects, and model-mediated approval. Failure in any one layer may look limited; failure across layers produces a clean path from an anonymous JSON-RPC request to production telemetry and durable content. The durable fix is not another prompt guardrail. It is authenticated transport, strict parameterization, least-privilege credentials, explicit side-effect policy, and an actively maintained deployment.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/advisories/GHSA-p7w7-4929-vpj5?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — unauthenticated HTTP MCP tool invocation</a></li>
+          <li><a href="https://github.com/advisories/GHSA-xrmj-5g4g-8987?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — workflow template injection</a></li>
+          <li><a href="https://github.com/advisories/GHSA-pqh8-p93p-2rx7?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — DQL injection in constrained read tools</a></li>
+          <li><a href="https://github.com/advisories/GHSA-pc2w-4mq8-32qw?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — missing human-approval gate for notebook creation</a></li>
+          <li><a href="https://github.com/dynatrace-oss/dynatrace-mcp/releases/tag/v2.0.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dynatrace MCP server — release 2.0.0 transport hardening</a></li>
+          <li><a href="https://github.com/dynatrace-oss/dynatrace-mcp/releases/tag/v2.1.1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dynatrace MCP server — release 2.1.1 DQL-injection repair</a></li>
+          <li><a href="https://github.com/dynatrace-oss/dynatrace-mcp?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dynatrace MCP server repository — deprecation and migration notice</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-03-06">2026-03-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/03/agentgateway-mcp-openapi-cve-2026-29791/">GitHub Advisory — Agentgateway MCP→OpenAPI parameter injection (CVE-2026-29791)</a></h3><p>CVE-2026-29791: Agentgateway’s MCP-to-OpenAPI proxy fails to sanitize path, query, and header inputs, enabling parameter injection.</p><a class="text-link" href="/posts/2026/03/agentgateway-mcp-openapi-cve-2026-29791/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-29">2026-07-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/ruflo-mcp-bridge-unauthenticated-rce-cve-2026-59726/">Ruflo’s Default Docker Stack Exposed an Unauthenticated MCP Shell — CVE-2026-59726</a></h3><p>Ruflo before 3.16.3 exposed an unauthenticated MCP bridge in its default Docker stack. The fix closes the shell path, but operators must investigate keys, MongoDB, and AgentDB memory.</p><a class="text-link" href="/posts/2026/07/ruflo-mcp-bridge-unauthenticated-rce-cve-2026-59726/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-28">2026-07-28</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP</a></h3><p>n8n published 16 security advisories spanning host command execution, credential theft, MCP SSRF, file access, SQL injection, and cross-user isolation. Version 2.32.1 is the safest common remediation floor.</p><a class="text-link" href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
