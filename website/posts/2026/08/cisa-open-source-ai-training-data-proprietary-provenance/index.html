@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CISA Says “Open Source” AI Without Training Data Needs Proprietary-Risk Treatment — al-ice.ai</title>
+  <meta name="description" content="CISA’s new federal OSS guidance says AI models without accessible training data and pipelines should be treated as proprietary software with incomplete provenance." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/08/cisa-open-source-ai-training-data-proprietary-provenance/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="CISA Says “Open Source” AI Without Training Data Needs Proprietary-Risk Treatment" />
+  <meta name="post:date" content="2026-08-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">CISA Says “Open Source” AI Without Training Data Needs Proprietary-Risk Treatment</h1>
+        <div class="post-meta">
+          <time datetime="2026-08-02">2026-08-02</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>CISA has drawn a hard procurement boundary around a term the AI industry often uses loosely. In federal guidance published July 30, the agency says an AI model that does not provide access to its training data and training pipeline should be treated as though it is <em>not</em> open source—even when its license satisfies the Open Source Initiative’s Open Source AI Definition.</p>
+        <p>The operational classification CISA recommends is more important than the label: treat such a model as <strong>proprietary software with incomplete provenance</strong>. Before an agency applies ordinary open-source risk-management assumptions, it should confirm access not only to weights and code but to the full training dataset, methodology, training code, and tuning parameters.</p>
+        <p>This requirement appears in <strong>Open Source Software: Security Principles and Practices</strong>, a 31-page guide for federal agencies. Most of the document covers conventional OSS selection, patching, contribution, publication, and lifecycle management. Its AI section makes a narrower—and consequential—argument: the transparency that makes repository evidence useful for software assurance does not automatically exist for a downloadable model.</p>
+
+        <h2>A valid open license is no longer enough for the risk decision</h2>
+        <p>CISA distinguishes a licensing determination from a security determination. The OSI definition grants freedoms to use, study, modify, and share an AI system. But CISA notes that the definition does not require the original training data to be accessible; sufficiently detailed information that lets a skilled person build a substantially equivalent system may satisfy the definition.</p>
+        <p>That may be enough to classify distribution rights. CISA says it is not enough for agencies to evaluate trustworthiness. Dataset descriptions cannot expose every poisoned record, hidden correlation, licensing problem, or transformation that shaped the released weights. Nor does the ability to run or fine-tune weights recreate the evidence needed to determine how a suspicious behavior entered the model.</p>
+        <p>The guidance therefore creates two separate questions for model intake:</p>
+        <ul>
+          <li><strong>Is the system distributed under terms that qualify as open source?</strong> That remains a licensing and freedoms question.</li>
+          <li><strong>Is the system transparent enough to receive open-source risk treatment?</strong> For CISA’s federal use case, that requires access to training data and the complete training pipeline.</li>
+        </ul>
+        <p>A procurement form that records only “open,” “open-weight,” or an OSI-compatible license collapses these questions and can grant a model more trust than the available evidence supports.</p>
+
+        <h2>Weights are executable supply-chain artifacts, not source-code substitutes</h2>
+        <p>CISA identifies model corruption, weight manipulation, and dataset poisoning as distinct security considerations. These risks live at different layers. A conventional source scan can inspect the loader and inference service. A model scanner may detect unsafe serialization or some anomalous tensors. Neither necessarily reconstructs the training examples, labels, ordering, tuning stages, or optimizer behavior that produced a backdoor.</p>
+        <p>The guidance cites research on computationally undetectable machine-learning backdoors to explain why this evidence gap matters. Its conclusion is categorical: without the training data, defenders lack information needed to find and fix some model vulnerabilities. The document does not claim that complete data access guarantees detection. Rather, it says the absence of that access makes the ordinary OSS transparency model insufficient.</p>
+        <p>This is also why an <a href="/posts/2026/08/cisa-2026-sbom-minimum-elements-ai-software-supply-chain/">updated software bill of materials</a> cannot settle the question alone. An SBOM can bind packages and executable artifacts to versions, hashes, producers, and build context. CISA’s separate OSS guidance asks for evidence inside the model-production process. Teams need both software composition and model provenance; substituting one for the other leaves a blind spot.</p>
+
+        <h2>CISA’s C4 framework moves trust from identity to observable process</h2>
+        <p>For ordinary OSS, the guide introduces a five-step assessment built around four evidence groups: <strong>Codebase, Community, Conduct, and Configuration</strong>. Codebase evidence includes commit recency, CVEs, and outdated dependencies. Community covers maintainers and organizational support. Conduct covers review rules, vulnerability disclosure, licenses, and whether maintainers approve their own commits. Configuration asks whether defaults are secure and what hardening the project supports.</p>
+        <p>CISA explicitly says assessment should focus on <em>how</em> software was produced rather than who produced it. Maintainers can be pseudonymous, globally distributed, and outside contractual obligations. Repository transparency makes development behavior measurable even when identity-based assurance is weak.</p>
+        <p>The five steps are to select measurable criteria, set risk tolerance and weights for the intended deployment, collect observations, evaluate each criterion, and compare observed risk with tolerance. A criterion such as “follows transparency practices” is too vague; “publishes an SBOM for each version” is measurable. Some criteria can be designated red flags whose failure blocks adoption regardless of the aggregate score.</p>
+        <p>Tools including Hipcheck, CHAOSS, and OpenSSF Scorecard can collect parts of this evidence, but the guidance warns against confusing presence with quality. A tool may confirm that an SBOM exists without checking whether its contents are complete. The same principle applies more strongly to model cards and dataset summaries: artifact presence is not provenance validation.</p>
+
+        <h2>The intake decision has to follow the deployment’s authority</h2>
+        <p>C4 is not intended to produce one universal trust score. CISA ties tolerance to the component’s environment, purpose, and access. That makes the framework directly relevant to agents. A local model used for low-impact text classification does not create the same exposure as the same model operating an email assistant, an incident-response shell, a code-writing agent, or an MCP client with production credentials.</p>
+        <p>For an agentic deployment, measurable criteria should extend beyond repository health to the model and runtime boundary:</p>
+        <ul>
+          <li>Can evaluators access the exact training and tuning data, code, parameters, and provenance records for the released checkpoint?</li>
+          <li>Are model files cryptographically bound to the evaluated release, distributed in a safe format, and scanned before loading?</li>
+          <li>Does the serving stack publish complete transitive SBOMs and security advisories for each version?</li>
+          <li>Are tool permissions, network destinations, data classes, and credential scopes enforced outside the model?</li>
+          <li>Can operators reproduce evaluations against the actual quantization, adapters, system prompt, and tools used in production?</li>
+          <li>Is there a supported patch or replacement path when maintainers stop responding?</li>
+        </ul>
+        <p>If data access fails the model-provenance criterion, teams should not compensate by assigning extra points for GitHub stars or a permissive license. Following CISA’s model, it should trigger a different treatment path: assume incomplete provenance, narrow authority, add safeguards, seek more evidence, or reject the component.</p>
+
+        <h2>Patch ownership stays downstream</h2>
+        <p>The wider guide reinforces a supply-chain reality that model consumers also inherit: OSS maintainers are not vendors contractually obligated to ship a fix. CISA’s two patching principles are “collaborate, don’t demand” and “push fixes upstream.” When a project does not respond to vulnerability information, agencies should re-evaluate whether it is effectively end-of-support, replace it when necessary, and maintain a fork only as a last resort.</p>
+        <p>CISA also anticipates that frontier AI will increase both vulnerability-report volume and patch-development speed. It recommends automated dependency and patch workflows, CI/CD testing, generated SBOMs, and project disclosure policies that state expectations for AI-supported or semi-automated reports. This is a useful balance: AI-assisted discovery can improve coverage, but maintainers need evidence standards and triage capacity rather than an unbounded stream of unverified findings.</p>
+
+        <h2>What security and procurement teams should change</h2>
+        <ul>
+          <li><strong>Split license status from assurance status.</strong> Record distribution rights separately from the evidence available to assess training, tuning, weights, code, and runtime dependencies.</li>
+          <li><strong>Make “open-weight” explicit.</strong> Do not map downloadable weights to “open source” in asset inventories. Preserve whether training data and each pipeline stage are accessible.</li>
+          <li><strong>Classify evidence gaps.</strong> When training artifacts are unavailable, record the model as proprietary with incomplete provenance for risk purposes, consistent with CISA’s recommendation.</li>
+          <li><strong>Bind evidence to the deployed checkpoint.</strong> Hash weights, adapters, quantizations, tokenizer files, configuration, and serving images. A general model-family card is not evidence for every derivative artifact.</li>
+          <li><strong>Scale authority to provenance.</strong> Models with incomplete evidence should not receive broad network access, durable credentials, unattended tool execution, or sensitive data merely because they can be self-hosted.</li>
+          <li><strong>Use measurable gates.</strong> Turn C4-style criteria into reviewable controls with deployment-specific red flags, owners, expiry dates, and events that force re-evaluation.</li>
+          <li><strong>Plan for abandonment.</strong> Track maintainer responsiveness and support status, automate dependency updates, and preserve a tested replacement route before a model or framework becomes operationally irreplaceable.</li>
+        </ul>
+
+        <p>CISA’s guidance does not settle the philosophical definition of open-source AI. It does something more immediately useful for defenders: it refuses to let a distribution label stand in for evidence. In a software repository, transparency can expose code history, review practice, dependencies, and maintainer behavior. In a model supply chain, weights and a license may expose only the final artifact. Until the training pipeline is available, that difference should remain visible in procurement, architecture, and authorization decisions.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cisa.gov/resources-tools/resources/open-source-software-security-principles-and-practices?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — Open Source Software: Security Principles and Practices</a></li>
+          <li><a href="https://www.cisa.gov/sites/default/files/2026-07/open-source-software-security-principles.pdf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — full OSS security principles and practices guidance (PDF)</a></li>
+          <li><a href="https://www.cisa.gov/news-events/news/cisa-guide-helps-federal-agencies-securely-and-effectively-use-open-source-software?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — federal OSS guidance release announcement</a></li>
+          <li><a href="https://opensource.org/ai/open-source-ai-definition?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Open Source Initiative — Open Source AI Definition 1.0</a></li>
+          <li><a href="https://arxiv.org/abs/2204.06974?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Goldwasser et al. — Planting Undetectable Backdoors in Machine Learning Models</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-08-01">2026-08-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/08/cisa-2026-sbom-minimum-elements-ai-software-supply-chain/">CISA’s New SBOM Baseline Adds Provenance and Integrity—but AI Still Needs a Second Layer</a></h3><p>CISA, NSA, FBI, and 15 international agencies updated the minimum SBOM baseline for all software, including AI and SaaS, adding provenance, integrity, tooling, and license fields.</p><a class="text-link" href="/posts/2026/08/cisa-2026-sbom-minimum-elements-ai-software-supply-chain/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-13">2026-07-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/ghostcommit-image-prompt-injection-ai-code-reviewers/">Ghostcommit Hides Secret-Theft Instructions in Images AI Code Reviewers Never Open</a></h3><p>UMKC researchers demonstrate Ghostcommit, a pull-request attack that hides prompt injection in a PNG, bypasses text-only review, and makes coding agents encode .env secrets into source code.</p><a class="text-link" href="/posts/2026/07/ghostcommit-image-prompt-injection-ai-code-reviewers/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-24">2026-06-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/cordyceps-ci-cd-supply-chain-google-ai-agent-kit/">Cordyceps CI/CD Flaw Exposes Google AI Agent Kit, Microsoft, Apache Repos</a></h3><p>Systemic GitHub Actions vulnerability class lets anonymous attackers hijack pipelines at Microsoft, Google AI Agent Development Kit, Apache, Cloudflare, and Python Software Foundation.</p><a class="text-link" href="/posts/2026/06/cordyceps-ci-cd-supply-chain-google-ai-agent-kit/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
