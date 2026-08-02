@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MCP’s Stateless Rewrite Makes Agent Traffic Easier to Govern—but Not Safe by Default — al-ice.ai</title>
+  <meta name="description" content="MCP 2026-07-28 removes protocol sessions, exposes tool identity in HTTP headers, and hardens OAuth issuer handling. Defenders still own authorization and state security." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/08/mcp-2026-07-28-stateless-oauth-security/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="MCP’s Stateless Rewrite Makes Agent Traffic Easier to Govern—but Not Safe by Default" />
+  <meta name="post:date" content="2026-08-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">MCP’s Stateless Rewrite Makes Agent Traffic Easier to Govern—but Not Safe by Default</h1>
+        <div class="post-meta">
+          <time datetime="2026-08-02">2026-08-02</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The Model Context Protocol has shipped the stable version of its largest architectural revision since launch. The final <strong>2026-07-28</strong> specification removes MCP’s initialization handshake and protocol-level session identifier, makes each request self-describing, and puts the called method and tool name into standard HTTP headers. It also tightens several OAuth and OpenID Connect behaviors intended to stop authorization-server confusion and accidental credential reuse.</p>
+        <p>We <a href="/posts/2026/06/mcp-2026-07-28-specification-security-attack-surface/">covered the release candidate’s new attack surfaces</a> and the <a href="/posts/2026/06/mcp-protocol-rewrite-security-decisions-developers/">shift of state-security decisions to implementers</a> in June. The final release now makes that design operational, adds a concrete migration target, and exposes controls that deserve separate attention: issuer-bound credentials, gateway-visible tool identity, explicit cache scope, and request-bound multi-round-trip approval.</p>
+        <p>These changes give defenders better enforcement points and fewer hidden transport dependencies. They do <em>not</em> make an MCP deployment stateless in the security sense, authenticate requests automatically, or solve prompt injection. The final specification and matching Tier 1 SDK support were published July 28; the project’s GitHub release records stable tag commit <code>5f5440bb26a62e2cf3440b92da5a667efa03b267</code>. This is a breaking protocol revision, not a transparent security patch for older clients and servers.</p>
+
+        <h2>Sessions disappear from the protocol, not from the threat model</h2>
+        <p>Earlier Streamable HTTP deployments began with <code>initialize</code>/<code>initialized</code> and carried an <code>Mcp-Session-Id</code> on later requests. Under 2026-07-28, that exchange and header are retired. Every request carries its protocol version and client capabilities in <code>_meta</code>; clients should also identify themselves on each request. Servers must implement <code>server/discover</code> for capability and version discovery, although clients do not have to call it before another operation.</p>
+        <p>The operational benefit is real. Any request can reach any compatible server instance behind an ordinary round-robin load balancer. Operators no longer need sticky routing or a shared transport-session store merely to preserve MCP protocol state.</p>
+        <p>Application state remains. The specification tells servers that need continuity to mint explicit handles—such as a browser, basket, job, or workspace identifier—and return them as tool results for the model to pass into later calls. That makes state visible and auditable, but it also turns the handle into a first-class authorization object. A bearer-like handle that is guessable, logged, exposed to an untrusted tool result, or accepted across users can become an insecure direct-object-reference path.</p>
+        <p>Defenders should therefore bind every handle to the authenticated principal, tenant, tool, and permitted operation; give it a short lifetime; prevent use after revocation; and avoid placing secrets inside a model-visible identifier. Stateless transport removes implicit affinity. It does not remove the need for server-side ownership checks.</p>
+
+        <h2>Tool identity moves into headers where gateways can act on it</h2>
+        <p>Streamable HTTP POST requests must now include <code>Mcp-Method</code> and <code>Mcp-Name</code>. A request calling a search tool, for example, exposes <code>tools/call</code> and <code>search</code> before a gateway parses the JSON-RPC body. The specification requires servers to reject a request when those headers disagree with the body.</p>
+        <p>This is the release’s most useful defensive engineering change. Gateways can build tool-aware allowlists, rate limits, telemetry, and step-up controls using ordinary HTTP infrastructure. A production policy can distinguish <code>tools/list</code> from <code>tools/call</code>, meter a costly query tool, deny an administrative tool at the edge, or route high-risk calls through additional inspection.</p>
+        <p>Headers are routing and policy inputs, not trustworthy claims by themselves. The server still has to compare them with the body and enforce authorization on the resolved operation. Intermediaries must preserve the headers without allowing an external client to smuggle duplicates or bypass normalization. Logs should record the authenticated subject, resource server, protocol version, method, tool name, outcome, and a trace identifier—while excluding tokens and sensitive arguments.</p>
+
+        <h2>The OAuth changes close specific mix-up and credential-binding gaps</h2>
+        <p>The authorization revision addresses a deployment pattern in which one MCP client connects to many resource and authorization servers. Authorization servers should return the <code>iss</code> parameter defined by RFC 9207, and clients must validate it when present before redeeming an authorization code. The maintainers describe this as a low-cost defense against authorization-server mix-up. The requirement is deliberately narrower than a guarantee: this release does not yet require clients to reject every response that omits <code>iss</code>, although the release-candidate guidance says a future version is expected to do so.</p>
+        <p>Persisted client credentials must also be keyed by the issuer that created them and must not be reused with another authorization server. This matters when a resource migrates, discovery changes, or a malicious endpoint tries to redirect registration and token traffic. The client should re-register rather than carrying credentials across issuer boundaries.</p>
+        <p>Dynamic Client Registration remains available for compatibility but is now formally deprecated in favor of Client ID Metadata Documents. While DCR remains, clients declare an appropriate OpenID Connect <code>application_type</code>, preventing desktop and CLI applications from being treated as web clients whose loopback redirect URIs are rejected. The revision also clarifies refresh-token requests, discovery suffixes, and how scopes accumulate during step-up authorization.</p>
+        <p>None of this authorizes a tool call on its own. OAuth establishes and constrains a client’s access to the MCP resource server; the MCP server must still map that identity to tenant, tool, argument, and downstream-data permissions. Token passthrough to another service remains a dangerous design because it blurs audiences and converts the MCP server into a confused-deputy boundary.</p>
+
+        <h2>Cache scope becomes a confidentiality control</h2>
+        <p>Results from tool, prompt, resource, and template listing operations—and from <code>resources/read</code>—now include <code>ttlMs</code> and a <code>cacheScope</code> value of <code>public</code> or <code>private</code>. Deterministic tool ordering and explicit freshness can reduce repeated catalog fetches and stabilize upstream prompt caches.</p>
+        <p>The security consequence is easy to miss. A wrongly labeled response can move a tenant-specific tool catalog or resource through a shared intermediary. “Public” must mean the result is safe to reuse across authenticated users, not merely that the endpoint was reachable. Cache keys should vary on every identity and policy attribute that can alter the result, and sensitive deployments should default to private scope until cross-user equivalence is demonstrated.</p>
+        <p>Cache invalidation also becomes part of revocation. Removing a user’s access or disabling a tool must prevent stale private results from continuing to advertise or expose data. A cached list is not authorization to execute what it names; every call and read still needs a fresh server-side decision.</p>
+
+        <h2>Multi-round-trip approval improves traceability, not judgment</h2>
+        <p>The specification replaces server-initiated sampling, elicitation, and roots requests with Multi Round-Trip Requests. A server processing a call can return <code>resultType: "input_required"</code> and identify the information or confirmation it needs. The client retries the original operation with <code>inputResponses</code>. Server-initiated requests are restricted to the processing of an active client request, linking a prompt to something the user or agent started.</p>
+        <p>This makes approval flows easier to correlate and removes the need for a permanently open bidirectional stream. It does not ensure that the person understands the side effect. Clients should display the resolved action, destination, identity, affected records, cost, persistence, and exact scope change—not an agent-authored summary. The retry must be bound to the original subject and operation, protected against replay, and invalidated when material inputs change.</p>
+        <p>Roots, Sampling, and Logging are deprecated under a new lifecycle policy, as is the legacy HTTP+SSE transport. They continue to work for at least the 12-month deprecation window, so mixed estates will remain common. Inventory and telemetry need to preserve protocol version; otherwise defenders cannot tell whether the session, routing, authorization, and observability assumptions of a request belong to the old or new design.</p>
+
+        <h2>What MCP operators should change now</h2>
+        <ul>
+          <li><strong>Inventory protocol versions before upgrading SDKs.</strong> Record every host, client, server, proxy, and gateway that speaks MCP. Test the breaking removal of initialization, session IDs, SSE resumability, and older task behavior before rollout.</li>
+          <li><strong>Make gateway policy tool-aware.</strong> Validate a single canonical <code>Mcp-Method</code> and <code>Mcp-Name</code>, reject header/body disagreement, and authorize the resolved tool at both gateway and server.</li>
+          <li><strong>Treat explicit handles as capabilities.</strong> Bind them to identity and tenant, enforce object ownership on every use, expire and rotate them, and keep their contents opaque and non-secret.</li>
+          <li><strong>Pin OAuth state to issuer and resource.</strong> Validate <code>iss</code> when supplied, key registrations and credentials by issuer, re-register after issuer migration, enforce token audience, and never pass an inbound token blindly to a downstream API.</li>
+          <li><strong>Default caches to private.</strong> Prove that a result is invariant across users before declaring it public. Include authorization context in cache keys and connect access revocation to invalidation.</li>
+          <li><strong>Harden multi-round-trip consent.</strong> Bind replies to the original request and principal, expire request state, prevent replay, and show semantic consequences rather than raw tool arguments.</li>
+          <li><strong>Preserve protocol-aware observability.</strong> Trace subject, issuer, resource, version, method, tool, decision, downstream target, and result without recording credentials or sensitive prompt data.</li>
+          <li><strong>Keep prompt-injection controls outside the protocol.</strong> The revision changes transport and authorization mechanics. It does not make model-generated tool choices trustworthy; least privilege, argument validation, egress control, and independent confirmation remain mandatory.</li>
+        </ul>
+
+        <p>MCP 2026-07-28 is a meaningful security improvement because it makes important facts explicit: which operation is being called, which protocol version governs it, which authorization server issued credentials, how cached data may be shared, and what additional input a server requires. Explicit facts are enforceable facts. But the protocol deliberately stops short of defining an organization’s authorization policy or deciding whether an agent’s requested action is safe. The new baseline is easier to govern—not safe by default.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.modelcontextprotocol.io/posts/2026-07-28/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol — 2026-07-28 specification announcement</a></li>
+          <li><a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol — 2026-07-28 key changes</a></li>
+          <li><a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol — authorization specification</a></li>
+          <li><a href="https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol — security best practices</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/modelcontextprotocol/releases/tag/2026-07-28?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol repository — stable 2026-07-28 release</a></li>
+          <li><a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Model Context Protocol — release-candidate architecture and authorization notes</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-30">2026-06-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/mcp-protocol-rewrite-security-decisions-developers/">MCP Protocol Rewrite — Session IDs Removed, Security Decisions Shifted to Developers</a></h3><p>The biggest MCP rewrite since launch removes session IDs to fix session hijacking but shifts authentication and authorization decisions to server implementers.</p><a class="text-link" href="/posts/2026/06/mcp-protocol-rewrite-security-decisions-developers/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-27">2026-06-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/mcp-2026-07-28-specification-security-attack-surface/">MCP 2026-07-28 Specification — Akamai Maps New Attack Surfaces After Security Overhaul</a></h3><p>The upcoming MCP 2026-07-28 specification removes old protocol-level risks but shifts security responsibility to developers, introducing workflow hijacking, header desync, stored XSS, and DoS vectors.</p><a class="text-link" href="/posts/2026/06/mcp-2026-07-28-specification-security-attack-surface/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-14">2026-07-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/mcp-atlassian-022-security-audit-file-read-ssrf/">MCP Atlassian 0.22 Closes a 37-Advisory Security Audit</a></h3><p>mcp-atlassian 0.22.0 fixes a coordinated set of flaws spanning server-side file reads, HTTP authentication, SSRF, tool authorization, filters, OAuth storage, and XSS; 0.22.1 closes follow-up gaps.</p><a class="text-link" href="/posts/2026/07/mcp-atlassian-022-security-audit-file-read-ssrf/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
