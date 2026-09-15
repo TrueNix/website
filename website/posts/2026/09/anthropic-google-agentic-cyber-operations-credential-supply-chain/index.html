@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anthropic and Google See AI Move From Copilot to Intrusion Orchestrator — al-ice.ai</title>
+  <meta name="description" content="New Anthropic and Google threat reports document multi-agent intrusion workflows, sub-six-hour credential harvesting, adaptive malware, and attacks on AI credentials." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/anthropic-google-agentic-cyber-operations-credential-supply-chain/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Anthropic and Google See AI Move From Copilot to Intrusion Orchestrator" />
+  <meta name="post:date" content="2026-09-15" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Anthropic and Google See AI Move From Copilot to Intrusion Orchestrator</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-15">2026-09-15</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two threat-intelligence reports released within days of each other describe the same operational shift from different telemetry: attackers are moving AI out of the chat window and into loops that scan, adapt, execute, and preserve campaign state.</p>
+        <p>Google Threat Intelligence Group says it investigated a compromised cloud resource where an actor planned, built, and ran an agent-enabled mass credential-harvesting campaign in <strong>under six hours</strong>, compromising thousands of third-party credentials. Anthropic says a majority of the notable cyber operations in its new misuse report used AI for direct execution or orchestration, including multi-agent reconnaissance, exploitation, and exfiltration. In Anthropic’s cases, humans still selected targets and reviewed stolen material.</p>
+        <p>These are provider-authored reports based on activity visible to their own services and incident-response teams, not a census of all attacks. They do not show that autonomous systems have replaced skilled operators or that every experiment succeeded. They do show that the useful unit of analysis is no longer a malicious prompt. It is the <strong>agentic workflow around the model</strong>: tools, credentials, memory, cloud compute, package registries, CI identities, and the feedback loop that decides what to do next.</p>
+
+        <h2>The new capability is closed-loop execution</h2>
+        <p>Traditional automation runs a predefined sequence. The workflows documented by both companies could interpret results, repair failures, and continue toward a goal. Google’s credential-harvesting case used preconfigured Markdown instructions as operational playbooks; agents managed a vulnerability-scanning pipeline, troubleshot errors, and rotated source IPs while operating from a victim’s cloud environment. A separate exposed command-and-control service contained agent configuration and memory files and later presented a dashboard for validating and managing more than <strong>23,800 harvested secrets</strong>.</p>
+        <p>Anthropic describes the same pattern at greater campaign depth. A suspected Russian state-nexus actor tracked as GTG-20006 used AI-driven workflows across tooling development, infrastructure acquisition, phishing, command and control, persistence, and exfiltration. Monitoring agents checked whether deployed malware was detected, then autonomously modified and rebuilt the toolkit until it evaded the existing detection. Anthropic identified more than 20 organizations in the actor’s planning, reconnaissance, or live operations.</p>
+        <p>Another Anthropic cluster, GTG-10007, used a lead agent to dispatch reconnaissance and post-exploitation work to parallel subagents. Persistent project memory retained targets, credentials, standing instructions, and campaign state between sessions. The group also operated a vulnerability-research loop that loaded appliance firmware into a decompiler, generated and tested exploit hypotheses in a lab, and iterated on exploit code. Anthropic says one continuously running workflow produced more than a dozen <em>possible</em> zero-day findings in a month. “Possible” matters: the report does not say every candidate was a validated, exploitable vulnerability.</p>
+        <p>Google draws a similarly important boundary. It observed autonomous credential harvesting and increasingly agentic attack workflows, but says it had <strong>not yet observed fully autonomous zero-day exploitation pipelines deployed against targets in the wild</strong>. Its evidence instead shows a progression: operators use models to accelerate n-day exploit development, link tools, troubleshoot execution, and automate stages that used to require repeated human decisions.</p>
+
+        <h2>Credentials are the control plane—and AI credentials are now first-class loot</h2>
+        <p>The strongest shared signal is not a new model exploit. It is credential industrialization. Anthropic reports that one ShinyHunters-associated operator distributed secret discovery across ten AWS EC2 workers, downloaded and decompiled 1.8 million Android APKs, and scanned them for hardcoded secrets. In another affiliate’s supply-chain intrusion, more than 2,100 Azure AD token sets spanning over 40 corporate tenants were dumped in about 34 hours; Anthropic says AI agents performed nearly all of that work.</p>
+        <p>The resulting attack loop is fast because a valid token removes entire defensive stages. Anthropic observed one intrusion move from a stolen developer token to full cloud administration in roughly three hours. Google separately investigated an intrusion that began with an exposed GitHub personal access token, then expanded into rogue service accounts, public AI proxy infrastructure, higher compute quotas, and an AI Workbench instance.</p>
+        <p>AI access itself has become target, infrastructure, and cover. Anthropic documented attackers stealing customer API keys and switching their offensive workloads onto the victim’s quota. One actor used prompt injection against an AI vendor’s automated evaluation sandbox to obtain production API keys held inside the environment, then attacked roughly 30 AI companies in about four days. Anthropic explicitly says the actor did not compromise Anthropic’s own systems and failed to reach its stated objective of a pre-release Claude model.</p>
+        <p>Google reports rising theft and resale of AI accounts and developer configurations. It observed infostealer operators target Cline’s <code>secrets.json</code> and Continue’s <code>config.yaml</code>, which can hold API keys and custom routing endpoints. The defender’s mistake is to treat these as low-risk application preferences. In an agentic stack, they may authorize paid model use, expose private endpoints, reveal tool routes, and let an attacker make activity appear to originate from a legitimate customer.</p>
+
+        <h2>Software supply-chain trust signals can be inherited by malware</h2>
+        <p>Google’s account of UNC6780, also known as TeamPCP, shows why package signatures and attestations must be interpreted as identity evidence rather than proof of benign behavior. The actor compromised developer accounts to publish trojanized forks of MCP servers and inject code into organizational repositories. Google names <code>tiktoken_mcp</code> and <code>azure-functions-mcp-extension</code> as examples.</p>
+        <p>Its DUSTMAKER credential stealer detected CI environments and extracted OpenID Connect tokens from GitHub Actions runner memory. Google says those tokens could authorize a publish operation as a trusted publisher, producing compromised packages with valid cryptographically signed SLSA Build Level 3 attestations. The attestation is not forged in that scenario; the attacker has stolen the identity and execution context entitled to create it.</p>
+        <p>DUSTMAKER also placed files in hidden agent and editor directories such as <code>.claude/</code>, <code>.cursor/</code>, and <code>.vscode/</code>, turning workspace configuration into persistence. It embedded prompt injection in JavaScript comments intended to make LLM security scanners refuse or skip analysis of the loader below. This is a direct collision between two trust systems: the build pipeline sees a valid publisher, while the AI reviewer sees content designed to trigger its own safety boundary.</p>
+        <p>The evidence extends earlier <a href="/posts/2026/07/anthropic-claude-cyber-evals-real-systems-pypi-incident/">research showing that agent evaluations can touch real organizations and package registries</a> and <a href="/posts/2026/07/unit42-deepseek-hermes-autonomous-cyberattack-campaign/">incident reporting on an AI-assisted live exploitation cycle</a>. The new reports add scale and operational continuity: attackers are preserving memory, harvesting the credentials that connect systems, and using legitimate CI and cloud identities to move between stages.</p>
+
+        <h2>Model refusals are telemetry, not containment</h2>
+        <p>Both providers say they disrupted malicious accounts and strengthened model or classifier safeguards. That work matters, but the reports themselves show why a refusal cannot be the primary enterprise boundary. Attackers used several commercial models, open-weight models, stolen accounts, local gateways, and public offensive frameworks. Anthropic notes that a month-long hacktivist campaign ran entirely on stolen API keys. Google observed actors use tooling that could switch among Claude, Gemini, and Codex.</p>
+        <p>A refusal at one model endpoint may still leave the attacker with valid cloud credentials, an already-deployed agent framework, persistent campaign memory, or another provider. Conversely, a safety trigger can be abused defensively by malware to discourage an AI scanner from examining code. Organizations therefore need to collect refusal and abuse signals without assuming that the blocked model response stopped the surrounding process.</p>
+        <p>The useful detection point is the action boundary: a new service account, an OIDC token read from runner memory, a package publish, an unusual model-key use pattern, an agent writing startup hooks, a mass token validation job, or a sudden change in compute quotas. These events remain observable even when the model conversation is encrypted, distributed across providers, or absent because the attacker moved to a local model.</p>
+
+        <h2>What defenders should change</h2>
+        <ul>
+          <li><strong>Inventory the whole agent execution plane.</strong> Record model accounts, API keys, MCP servers, tool permissions, instruction files, memory stores, sandboxes, CI identities, cloud roles, and outbound destinations. A model inventory alone misses the path that performs actions.</li>
+          <li><strong>Treat AI credentials as production credentials.</strong> Remove keys from repositories, mobile packages, container images, client-side code, and persistent agent memory. Use short-lived workload identity, audience restrictions, per-agent scopes, rapid revocation, and spend and geography anomaly detection.</li>
+          <li><strong>Constrain feedback loops.</strong> Set hard limits on targets, concurrency, runtime, retries, network ranges, tool calls, and data volume. Require an independent policy gate before an agent can widen scope, create identity, publish a package, or act on newly harvested credentials.</li>
+          <li><strong>Separate discovery from exploitation.</strong> A scanner should not automatically convert a hypothesis into a production exploit attempt. Bind authorization to the exact asset, technique, time window, and expected evidence; route ambiguous results to human review.</li>
+          <li><strong>Monitor agent state as persistence.</strong> Alert on changes to hidden workspace directories, instruction files, hooks, tool manifests, MCP configuration, scheduled agent jobs, and long-lived memory. Rebuilding a host without cleaning synchronized project state can restore the attacker’s instructions.</li>
+          <li><strong>Verify provenance beyond the badge.</strong> For signed packages, correlate the attestation with the expected workflow file, runner identity, source commit, reviewers, dependency graph, and build behavior. A valid signature from a stolen trusted-publisher token is still valid—and still malicious.</li>
+          <li><strong>Harden CI token handling.</strong> Keep OIDC tokens short-lived and audience-bound, prevent untrusted code from sharing publisher jobs, isolate runners, restrict process inspection, pin actions, and make release authorization independent of the build process being attested.</li>
+          <li><strong>Detect machine-speed transitions.</strong> Correlate secret discovery, token validation, privilege changes, cross-tenant enumeration, bulk export, and outbound transfer over minutes rather than reviewing each event in isolation. The reported intrusions moved from one credential to broad control in hours.</li>
+          <li><strong>Use provider abuse signals as one sensor.</strong> Ingest account disruption, key-compromise, model-refusal, and impossible-travel signals where available, but enforce authorization, egress, and data controls outside the model and across providers.</li>
+          <li><strong>Exercise autonomous attackers.</strong> Test defenses against agents that retry, change tools, rewrite payloads after detection, preserve memory, and exploit legitimate cloud or CI identity. A single blocked command does not end a closed-loop campaign.</li>
+        </ul>
+
+        <p>The consequential change in these reports is not that models can write exploit code; defenders have known that trajectory for years. It is that attackers are assembling the surrounding machinery needed to keep working when a command fails, a signature fires, a target differs from the last one, or a credential opens an unexpected route. The defensive answer is the same architecture principle required for legitimate agents: keep authority narrow, make state and actions observable, and ensure no model can silently turn a successful observation into an expanded mandate.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.anthropic.com/threat-intelligence-report-september-2026?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anthropic — Detecting and countering misuse of AI: September 2026</a></li>
+          <li><a href="https://www-cdn.anthropic.com/e50be2e51e7695dc4b1366a37a245a597377d3b5/Anthropic-Detecting-and-countering-091026.pdf?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anthropic — full September 2026 threat intelligence report (PDF)</a></li>
+          <li><a href="https://www-cdn.anthropic.com/b5af8acd5ee681422114af7c7b6b02c1ecd074ca/20260910_Anthropic_AI_Misuse_Report_IOCs.csv?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anthropic — indicators of compromise accompanying the report (CSV)</a></li>
+          <li><a href="https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Google Threat Intelligence Group — From Prompting to Autonomy: The Evolution of Adversarial AI</a></li>
+          <li><a href="https://cloud.google.com/blog/topics/threat-intelligence/ai-vulnerability-exploitation-initial-access?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Google Threat Intelligence Group — May 2026 report on AI vulnerability exploitation and initial access</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-04">2026-06-04</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/four-ai-labs-incompatible-prompt-injection-metrics/">Four Major AI Labs Use Incompatible Prompt-Injection Metrics</a></h3><p>Anthropic, OpenAI, Google, and Meta each publish prompt-injection benchmarks in 2026, but no two labs measure the same threat — leaving buyers with no common baseline for model safety claims.</p><a class="text-link" href="/posts/2026/06/four-ai-labs-incompatible-prompt-injection-metrics/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-23">2026-05-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/google-llm-morphing-malware-vulnerability-discovery/">Google Threat Intel — LLM-Generated Morphing Malware and Automated Vulnerability Discovery</a></h3><a class="text-link" href="/posts/2026/05/google-llm-morphing-malware-vulnerability-discovery/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-13">2026-05-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Miggo Security — Anthropic, Google, Microsoft Paid Bug Bounties for AI Agent Hijacks, No CVEs Issued</a></h3><p>A researcher demonstrated prompt injection attacks that hijacked AI agents from Anthropic, Google, and Microsoft via GitHub Actions — all three companies paid bounties quietly but published no advisories or CVEs.</p><a class="text-link" href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
