@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Two AI Agent Control Servers Exposed Unauthenticated Command Execution — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-86121 and CVE-2026-86124 expose Cua and AutoAgent control services to unauthenticated command execution; Cua is patched, while AutoAgent remains unresolved." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/cua-autoagent-unauthenticated-control-server-rce-cves/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Two AI Agent Control Servers Exposed Unauthenticated Command Execution" />
+  <meta name="post:date" content="2026-09-16" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Two AI Agent Control Servers Exposed Unauthenticated Command Execution</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-16">2026-09-16</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two critical CVEs published September 5 expose the same dangerous assumption in different agent stacks: a command service intended to connect an AI agent to its execution environment was treated as internal, then made reachable without authentication.</p>
+        <p><strong>CVE-2026-86121</strong> affects Cua’s <code>cua-computer-server</code> before 0.3.42. In its default local mode, the service listened on all interfaces and accepted command, file, desktop, and terminal operations without credentials. <strong>CVE-2026-86124</strong> affects HKUDS AutoAgent through the repository’s current commit: its Docker sandbox publishes a raw TCP command server to the host network, runs it as root inside the container, and mounts the host workspace into that container.</p>
+        <p>Both records are classified as CWE-306, Missing Authentication for Critical Function. VulnCheck assigned each a 9.3 CVSS 4.0 score and a 9.8 CVSS 3.1 score. Those ratings describe a network-reachable, low-complexity path with no privileges or user interaction. Actual exposure still depends on routing: an attacker must be able to reach the relevant listener. Neither record establishes exploitation in the wild.</p>
+
+        <h2>Cua turned “local development mode” into an allow-all policy</h2>
+        <p>Cua’s computer server is not a narrow inference endpoint. It is the control plane through which an agent can execute shell commands, read and write files, capture the screen, drive keyboard and mouse input, and open an interactive pseudo-terminal. Before 0.3.42, both the command-line entry point and server constructor defaulted to <code>0.0.0.0</code> on TCP port 8000.</p>
+        <p>The corresponding authentication logic depended on the <code>CONTAINER_NAME</code> environment variable. If that variable was present, requests had to supply the expected container identity and API key. If it was absent—the project’s local or standalone mode—the server returned success from its authentication check and proceeded without a token. The result was not merely an authentication bypass on one helper: the same trust decision guarded shell execution, unrestricted file operations, WebSocket control, and PTY endpoints.</p>
+        <p>That combination made a developer convenience remotely consequential. A process bound to all interfaces can be reached from the same LAN, a peer container, a VM network, or a cloud security group that exposes the port. Commands then run with the computer-server process’s operating-system privileges. The CVE does not imply an automatic sandbox escape or host-root access; those consequences depend on where the service runs, its account, and which host paths or credentials are available.</p>
+
+        <h2>Cua 0.3.42 reduces reachability rather than authenticating local mode</h2>
+        <p>The patch referenced by the CVE changes the default listener in the CLI and server constructor from <code>0.0.0.0</code> to <code>127.0.0.1</code>. Documentation now requires an explicit <code>--host 0.0.0.0</code> when external clients need access. The fix landed in the repository on June 18, and the 0.3.42 package was uploaded to PyPI on June 24—well before the CVE record was published. The current PyPI release at publication is 0.3.46.</p>
+        <p>This is a meaningful safe-default repair: a remote client can no longer reach a standard installation merely because the host is routable. It is not equivalent to authenticated transport. Operators who deliberately expose the listener still need an independent authenticated tunnel or network policy and should not infer authorization from the loopback default. Loopback also does not make every browser- or local-process threat disappear.</p>
+        <p>Upgrade <code>cua-computer-server</code> to at least 0.3.42, preferably the current supported release. Then verify the effective bind address rather than only the package version. Search process arguments, container manifests, service units, and startup scripts for <code>--host 0.0.0.0</code>, published port 8000 mappings, or reverse proxies that make a loopback service externally reachable.</p>
+
+        <h2>AutoAgent publishes the sandbox’s shell channel to the network</h2>
+        <p>AutoAgent’s vulnerable path is more direct. Its <code>tcp_server.py</code> binds to <code>0.0.0.0</code>, accepts bytes from a client, inserts the received text into a Bash command, and launches it with <code>shell=True</code>. There is no token, signature, peer identity, or command allowlist in the protocol.</p>
+        <p>The Docker launcher compounds that design. It starts the container as <code>root</code>, bind-mounts the local workspace, and uses a Docker publish argument of the form <code>-p host-port:container-port</code> without a host IP. Docker therefore exposes the port on the host’s interfaces rather than restricting it to loopback. The default communication port is 12347. A reachable client can execute commands as root <em>inside the container</em> and read or modify the host workspace through the bind mount.</p>
+        <p>Container root is not automatically host root. The immediate host impact documented by the record is the mounted workspace, not a demonstrated container escape. That boundary can still carry source code, environment files, SSH material copied into a project, generated artifacts, and CI configuration. Modifying those files also creates a delayed supply-chain path: a poisoned commit, build script, dependency manifest, or agent instruction can execute later under a more privileged developer or pipeline identity.</p>
+        <p>The public issue also identifies a separate unauthenticated FastAPI service that can expose tools and agents on port 8000 when started. That observation is part of the reporter’s broader analysis, not the narrow description in CVE-2026-86124, which covers the sandbox TCP command server.</p>
+
+        <h2>AutoAgent has no published remediation floor</h2>
+        <p>The AutoAgent case requires more caution than a routine “upgrade now” notice. Its repository’s default branch still ends at commit <code>16c12b052ef2330a198063c62a07a7f9723031e3</code>, the upper bound named as affected in the CVE record. The repository has not advanced since October 16, 2025; the disclosure issue remains open; and the project has no GitHub releases. Inspection of the current files still shows the all-interface bind, unauthenticated command receive loop, root container user, host workspace mount, and unrestricted Docker port publication.</p>
+        <p>There is therefore no verified fixed AutoAgent release to recommend at publication. Stop affected deployments or isolate them until a reviewed repair exists. A defensible patch needs more than changing one bind address: publish the port only on loopback or a private Docker network, authenticate every connection with a high-entropy per-run credential, avoid shell interpolation, run as a non-root user, constrain mounts, and bind the command to a specific sandbox instance and lifetime. The unauthenticated FastAPI surface should be assessed separately.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Inventory listeners, not just packages.</strong> Look for <code>cua-computer-server</code>, AutoAgent, TCP ports 8000 and 12347, Docker port publications, and processes listening on <code>0.0.0.0</code>. Confirm exposure from the network segments that matter.</li>
+          <li><strong>Patch Cua and review overrides.</strong> Move to Cua computer-server 0.3.42 or later. Remove external bind flags unless required; if remote control is necessary, place it behind mutually authenticated transport and explicit source restrictions.</li>
+          <li><strong>Quarantine AutoAgent’s command channel.</strong> Do not expose its published communication port. Existing deployments should be stopped or firewalled while the code is patched locally or replaced. Merely restricting the agent’s model permissions does not protect this non-model TCP path.</li>
+          <li><strong>Rotate what the execution environment could read.</strong> Inspect mounted workspaces and the server account’s filesystem access for API keys, cloud credentials, package tokens, SSH keys, and environment files. Rotate exposed secrets based on reachability and logs, not on proof that a malicious command was captured.</li>
+          <li><strong>Hunt for filesystem effects.</strong> Review shell histories where available, container logs, Docker events, network-flow records, new processes, changed workspace files, Git diffs, CI definitions, agent instruction files, and unexpected outbound connections during the exposure window.</li>
+          <li><strong>Separate agent intent from executor authorization.</strong> The service receiving an agent action must authenticate the caller, authorize the operation, constrain paths and commands, and log the result. A private-sounding component name such as “sandbox” or “computer server” is not a security boundary.</li>
+          <li><strong>Test the deployed topology.</strong> Validate the final bind address, container network, proxy, host firewall, and cloud ingress after changes. Secure source defaults can be undone by a compose file, Kubernetes Service, development tunnel, or explicit <code>0.0.0.0</code> override.</li>
+        </ul>
+
+        <p>These CVEs are a reminder that agent security can fail below the model layer. Prompt-injection defenses, tool approvals, and model refusals do nothing when the executor itself accepts unauthenticated network commands. The same pattern appeared in the <a href="/posts/2026/07/ruflo-mcp-bridge-unauthenticated-rce-cve-2026-59726/">Ruflo MCP bridge’s unauthenticated shell</a> and in <a href="/posts/2026/07/aws-api-mcp-security-policy-fail-open-cve-2026-16584/">an AWS MCP policy gate that could fail open</a>: the control plane around an agent needs conventional authentication, least privilege, network isolation, and fail-closed behavior before any AI-specific safeguard matters.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cve.org/CVERecord?id=CVE-2026-86121&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CVE Program — CVE-2026-86121 record</a></li>
+          <li><a href="https://github.com/trycua/cua/issues/1892?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cua issue #1892 — unauthenticated local-mode computer server</a></li>
+          <li><a href="https://github.com/trycua/cua/commit/59cf25c0ec54c8509bfbec614e7695bb8058dcb3?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cua patch commit — change default bind to localhost</a></li>
+          <li><a href="https://pypi.org/project/cua-computer-server/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">PyPI — cua-computer-server release history</a></li>
+          <li><a href="https://www.cve.org/CVERecord?id=CVE-2026-86124&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CVE Program — CVE-2026-86124 record</a></li>
+          <li><a href="https://github.com/HKUDS/AutoAgent/issues/96?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AutoAgent issue #96 — unauthenticated sandbox TCP command server</a></li>
+          <li><a href="https://github.com/HKUDS/AutoAgent/blob/16c12b052ef2330a198063c62a07a7f9723031e3/autoagent/environment/tcp_server.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AutoAgent affected TCP server implementation</a></li>
+          <li><a href="https://github.com/HKUDS/AutoAgent/blob/16c12b052ef2330a198063c62a07a7f9723031e3/autoagent/environment/docker_env.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AutoAgent affected Docker launcher implementation</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-23">2026-06-23</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/06/vllm-cve-2026-54235-cve-2026-41523-temperature-code-injection/">vLLM — Two New CVEs Expose AI Inference Servers to Code Injection and NaN Exploits</a></h3><p>CVE-2026-41523 and CVE-2026-54235 reveal how assert-based security checks and float validation gaps in vLLM enable RCE and GPU kernel manipulation.</p><a class="text-link" href="/posts/2026/06/vllm-cve-2026-54235-cve-2026-41523-temperature-code-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-16">2026-05-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/05/cyera-openclaw-claw-chain-cves/">Cyera — Four Chainable OpenClaw CVEs Expose 180K+ AI Agent Servers</a></h3><p>Cyera disclosed four chainable vulnerabilities in OpenClaw (CVSS 7.7–9.6), including a critical sandbox escape and privilege escalation, affecting 245K publicly exposed AI agent deployments.</p><a class="text-link" href="/posts/2026/05/cyera-openclaw-claw-chain-cves/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-08-02">2026-08-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/08/dynatrace-mcp-server-auth-dql-template-injection-advisories/">Dynatrace MCP Advisories Expose an Unauthenticated Path From HTTP to Production Telemetry</a></h3><p>Four GitHub advisories detail missing HTTP authentication, DQL and workflow-template injection, and an absent approval gate in the deprecated Dynatrace MCP server.</p><a class="text-link" href="/posts/2026/08/dynatrace-mcp-server-auth-dql-template-injection-advisories/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
