@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Four Flowise CVEs Reach From MCP Configuration to RCE, Cross-Workspace Tools, and Key Theft — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-91931, -91932, -91933, and -91935 expose command execution, tenant-boundary, SSRF, and LLM credential risks in Flowise before 3.1.4." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/flowise-four-cves-mcp-rce-workspace-key-theft/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Four Flowise CVEs Reach From MCP Configuration to RCE, Cross-Workspace Tools, and Key Theft" />
+  <meta name="post:date" content="2026-09-16" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Four Flowise CVEs Reach From MCP Configuration to RCE, Cross-Workspace Tools, and Key Theft</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-16">2026-09-16</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Four CVE records published September 15 expose a shared authorization problem in Flowise: ordinary workflow configuration could select not only what an AI application should do, but also which programs the server launches, which workspace’s tools it invokes, and where provider credentials are sent.</p>
+        <p><strong>CVE-2026-91931</strong> and <strong>CVE-2026-91932</strong> cover two authenticated code-execution paths in the Custom MCP node. <strong>CVE-2026-91933</strong> covers cross-workspace disclosure and execution of ChatFlow tools through OpenAI Realtime endpoints. <strong>CVE-2026-91935</strong> covers user-controlled model base URLs that can create server-side requests and send an LLM provider key to an attacker-selected endpoint.</p>
+        <p>The affected boundary is Flowise before 3.1.4. The vendor’s GitHub advisories rate the two MCP execution flaws at 9.0, the cross-workspace flaw at 7.6, and the base-URL flaw at 9.4 under CVSS 4.0. All four require an authenticated Flowise identity or a permission-bearing API context; none of the records establishes unauthenticated internet-wide compromise or exploitation in the wild. The practical blast radius depends on the user’s Flowise permissions, the tools and credentials configured in the targeted flow, and the filesystem, network, and cloud access granted to the Flowise process.</p>
+        <p>The disclosure timeline also matters. Flowise 3.1.4 was released July 29, and the vendor advisories became public August 31. The CVE records arrived September 15. Operators already on 3.1.4 have the named fixes; the new CVE publication does not indicate that the patched version has regressed.</p>
+
+        <h2>An allowlist included a package runner</h2>
+        <p>CVE-2026-91931 is not a conventional shell-metacharacter injection. Flowise’s Custom MCP validation explicitly allowed several executable names, including <code>npx</code>, while blocking selected dangerous flags. That distinction did not provide a security boundary: the normal purpose of <code>npx</code> is to obtain and execute npm package binaries. An authenticated user could therefore supply a package name in the MCP configuration and cause package-controlled code to start on the Flowise server before MCP initialization determined whether the process was a valid server.</p>
+        <p>The advisory’s validation used a harmless file-creation side effect and observed that Flowise returned “No Available Actions” while the side effect still occurred. That ordering is important for defenders. A failed MCP handshake is not evidence that no process ran; process launch precedes protocol validation.</p>
+        <p>CVE-2026-91932 reaches the same subprocess boundary through a different field. The validator checked <code>command</code>, <code>args</code>, and environment values but did not check the stdio transport’s <code>cwd</code> field. A clean relative filename could pass argument validation while an attacker-selected working directory changed which file the runtime executed. Exploitation therefore requires an authenticated user and executable attacker-controlled content at a usable path; it is not an arbitrary remote shell from the <code>cwd</code> value alone.</p>
+        <p>Flowise 3.1.4 changes the trust model rather than extending the old static list. <code>CUSTOM_MCP_ALLOWED_COMMANDS</code> is empty by default, so no Custom MCP stdio command is accepted until an operator opts in. The patched validator rejects <code>cwd</code> entirely. Operators who add <code>npx</code>, a generic interpreter, or a broad executable path back to the allowlist are reintroducing powerful execution semantics by configuration even though the named validation defects are patched.</p>
+
+        <h2>A ChatFlow ID crossed the workspace boundary</h2>
+        <p>CVE-2026-91933 shows why route authentication and object authorization are separate controls. The affected <code>GET</code> and <code>POST</code> OpenAI Realtime routes accepted a caller-supplied ChatFlow identifier, loaded that object directly, and initialized its tools without first proving that the ChatFlow belonged to the caller’s active workspace.</p>
+        <p>A credential from one workspace could consequently retrieve another workspace’s tool definitions and invoke a selected tool. The impact was not limited to metadata: the POST route returned tool output and could trigger whatever external side effects the victim tool was authorized to perform. The attacker still needed a valid Flowise credential and the target ChatFlow identifier; the flaw did not make every flow anonymously enumerable.</p>
+        <p>The 3.1.4 patch adds route-level ChatFlow permissions, passes the authenticated user’s active workspace into the service, and resolves the ChatFlow through a workspace-scoped lookup. This is the correct control point: authorization is bound to the object before credentials are loaded and before a tool is initialized, rather than inferred from possession of an opaque ID.</p>
+
+        <h2>Model endpoint flexibility became a credential-routing primitive</h2>
+        <p>CVE-2026-91935 affected eight chat-model integrations whose configurable <code>baseURL</code> or <code>basepath</code> was handed to an underlying LangChain or provider SDK without Flowise’s normal outbound-URL check. An authenticated member with ChatFlow create or update permission could direct server-side requests toward an internal address or an attacker-controlled service.</p>
+        <p>The credential consequence is more direct than generic SSRF. Provider SDKs commonly attach the configured model API key as an <code>Authorization</code> header to requests sent to the selected base URL. If a legitimate credential and an attacker-selected endpoint were combined in the same node, the SDK could deliver the key to that endpoint. The advisory names ChatOpenAICustom, two ChatOllama variants, ChatLocalAI, ChatLitellm, ChatNvdiaNIM, ChatNemoGuardrails, ChatCloudflareWorkersAI, and ChatGoogleGenerativeAI.</p>
+        <p>Flowise already had a shared <code>checkDenyList</code> control for many outbound HTTP features. The affected model nodes bypassed it because the request was made by the provider SDK. The 3.1.4 patch invokes that check before accepting the custom endpoint in the named nodes. That closes the published paths, but egress policy remains valuable: URL validation and SDK behavior can diverge around DNS, redirects, proxies, IPv6 forms, and future integrations, while a network boundary can independently prevent the Flowise workload from reaching cloud metadata and unrelated internal control planes.</p>
+
+        <h2>The common failure was delegating authority through configuration</h2>
+        <p>These flaws are different CWEs—command or code execution, missing object authorization, and SSRF—but the architectural mistake is consistent. A low-friction builder treated workflow fields as application data even when those fields selected an operating-system process, an authorization tenant, or a network trust destination.</p>
+        <p>That matters especially in agent platforms because “editor” is often understood as a content role. In practice, editing an agent may grant the ability to choose executables, attach production credentials, address internal services, and invoke tools with external side effects. The role is closer to deployment authority than document editing.</p>
+        <p>The batch also extends Flowise’s recurring MCP execution history. Earlier <a href="/posts/2026/07/flowise-cve-2026-40933-mcp-stdio-rce/">CVE-2026-40933 showed that imported MCP stdio configuration could reach server execution</a>. The new records demonstrate residual paths after argument-focused filtering: a permitted package runner, an unchecked working directory, and adjacent authorization and endpoint-routing gaps. A blacklist around command syntax cannot safely convert a general process launcher into a multi-tenant feature.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Upgrade every Flowise component to 3.1.4 or later.</strong> Check the running server and <code>flowise-components</code> versions, not only a lockfile or image tag. Recreate containers after updating and confirm that old replicas and workers are gone.</li>
+          <li><strong>Keep Custom MCP stdio disabled by default.</strong> Leave <code>CUSTOM_MCP_ALLOWED_COMMANDS</code> empty unless the deployment genuinely needs local subprocess MCP. Prefer remote, authenticated MCP transports or administrator-installed binaries with exact paths over package managers and general interpreters.</li>
+          <li><strong>Treat any opt-in as code-deployment permission.</strong> If <code>npx</code>, <code>node</code>, Python, or Docker is enabled, restrict who can create and update the corresponding nodes. Do not rely on blocked flags to make a general execution engine safe.</li>
+          <li><strong>Review tenant authorization independently of route login.</strong> Test that users and API keys from one workspace cannot read or invoke ChatFlows, credentials, tools, files, or runs from another by changing an identifier.</li>
+          <li><strong>Constrain egress from Flowise.</strong> Block cloud metadata, loopback services not required by the application, private management ranges, and arbitrary internet destinations. Route approved model providers through explicit proxies or destination policies.</li>
+          <li><strong>Rotate credentials if untrusted editors controlled model endpoints.</strong> Prioritize LLM provider keys and any secrets available to affected ChatFlows. Review provider access logs for unexpected source addresses, hosts, spend, models, or request timing.</li>
+          <li><strong>Hunt for process-launch evidence.</strong> Examine Flowise and container logs, npm cache and install activity, child processes, filesystem changes, outbound DNS and HTTP traffic, and failed Custom MCP action-discovery events. A protocol error may have followed a successful process start.</li>
+          <li><strong>Audit current configuration after patching.</strong> Identify custom MCP nodes, configured <code>baseURL</code>/<code>basepath</code> values, OpenAI Realtime integrations, public ChatFlows, broad workspace roles, and host or Docker-socket mounts. The upgrade prevents the published flaws; it does not remove risky operator-granted capabilities.</li>
+        </ul>
+
+        <p>The defensive lesson is broader than Flowise: agent configuration is executable policy. Any field that selects a command, working directory, endpoint, object ID, tool, or credential destination must be authorized against the caller and validated at the point where the action occurs. UI labels such as “node,” “flow,” or “integration” do not reduce the authority those fields carry.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-vcwp-f9rq-3887?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise advisory — Custom MCP <code>npx</code> execution (CVE-2026-91931)</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-x7x8-95gh-42xm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise advisory — Custom MCP <code>cwd</code> validation bypass (CVE-2026-91932)</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-gggp-6qmf-xwwc?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise advisory — cross-workspace OpenAI Realtime tool access (CVE-2026-91933)</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-hx55-h48h-7rw9?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise advisory — model base-URL SSRF and credential exposure (CVE-2026-91935)</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/releases/tag/flowise%403.1.4?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise 3.1.4 release notes</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/pull/6578?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise patch — operator-controlled Custom MCP command allowlist</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/pull/6586?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise patch — workspace-scoped OpenAI Realtime authorization</a></li>
+          <li><a href="https://github.com/FlowiseAI/Flowise/pull/6589?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Flowise patch — deny-list checks for chat-model endpoints</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-91931?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-91931</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-91932?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-91932</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-91933?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-91933</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-91935?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-91935</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-28">2026-07-28</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP</a></h3><p>n8n published 16 security advisories spanning host command execution, credential theft, MCP SSRF, file access, SQL injection, and cross-user isolation. Version 2.32.1 is the safest common remediation floor.</p><a class="text-link" href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">SiYuan’s MCP Route Turned Anonymous Readers Into Workspace Administrators — CVE-2026-66012</a></h3><p>CVE-2026-66012 exposed 31 SiYuan MCP tools through a Reader token, enabling workspace theft, credential exposure, file writes, and delayed desktop code execution. Upgrade to 3.7.2 or later.</p><a class="text-link" href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-16">2026-07-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/aws-healthlake-mcp-pagination-ssrf-cve-2026-15643/">AWS HealthLake MCP Pagination SSRF Could Exfiltrate Temporary Credentials — CVE-2026-15643</a></h3><p>AWS HealthLake MCP Server before 0.0.14 trusted a caller-supplied pagination URL, allowing an authenticated user to redirect a signed request and expose temporary AWS credentials.</p><a class="text-link" href="/posts/2026/07/aws-healthlake-mcp-pagination-ssrf-cve-2026-15643/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
