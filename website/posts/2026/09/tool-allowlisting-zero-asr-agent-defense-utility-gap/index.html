@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tool Allowlisting Drove Agent Attack Success to Zero—but Did Not Make the Agents Safe — al-ice.ai</title>
+  <meta name="description" content="A new ASB study’s trusted-tool restore defense reached 0% attack success in many settings; code inspection shows why the zero is narrow and utility sometimes collapses." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/tool-allowlisting-zero-asr-agent-defense-utility-gap/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Tool Allowlisting Drove Agent Attack Success to Zero—but Did Not Make the Agents Safe" />
+  <meta name="post:date" content="2026-09-16" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Tool Allowlisting Drove Agent Attack Success to Zero—but Did Not Make the Agents Safe</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-16">2026-09-16</time>
+          <a class="badge" href="/categories/research/">Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A new preprint reports zero attack success in many tests of tool-integrated agents, but the result is more useful—and narrower—than the headline number suggests. The strongest defense did not teach a model to recognize every malicious instruction. It restored a previously trusted tool list before planning, making the benchmark’s attacker-specific tools unavailable.</p>
+        <p>The study, <strong>Universal Defenses for Tool-Integrated LLM Agents Against Adversarial Attacks</strong>, evaluates direct and indirect prompt injection, memory poisoning, and a Plan-of-Thought backdoor across four open models and GPT-family models. Its “Normal Tool Recalling” defense frequently reduced attack success rate (ASR) to 0%. Yet original-task success rate (OTSR) sometimes remained low or fell sharply, and the evaluation used static simulated tools rather than consequential external systems.</p>
+        <p>The practical result is still important. A trusted capability boundary can outperform another layer of model persuasion. But “the forbidden tool could not be selected” is not equivalent to “the agent resisted prompt injection,” and defenders should not merge those claims.</p>
+
+        <h2>The strongest defense is a capability allowlist</h2>
+        <p>The paper tests two tool controls. <strong>Attacker Tool Filtering (ATF)</strong> embeds tool descriptions and applies an Isolation Forest to remove semantic outliers. <strong>Normal Tool Recalling (NTR)</strong> saves the original benign toolset, then replaces the agent’s current toolset with that trusted copy immediately before planning. The researchers combine either control with structured planning, GPT-4o-mini paraphrasing, and model self-reflection.</p>
+        <p>NTR is the stronger and more deterministic design. In the published implementation, it filters the available tools by membership in the benchmark’s <code>normal_tools</code> mapping. The benchmark defines attack success by whether an attacker goal associated with an injected attacker tool appears in the agent’s messages. Once that separate tool is removed, the measured attack path is structurally unavailable.</p>
+        <p>That is not a weakness in allowlisting. It is the reason allowlisting works. It does, however, define the scope of the zero: NTR proves the value of keeping untrusted tools out of the execution plane. It does not show that the model can safely use an allowed email, browser, shell, database, or file tool when hostile content redirects a legitimate capability toward the wrong destination.</p>
+
+        <h2>Zero ASR often coexisted with weak task completion</h2>
+        <p>The paper uses Agent Security Bench (ASB), which contains 10 domain-specific agents and 400 tasks per agent, split between aggressive and non-aggressive attacker tools. ASR measures execution of the attacker goal; OTSR measures completion of the original task. Those two numbers must be read together.</p>
+        <p>For GPT-4 under indirect prompt injection, the no-defense setting produced 44.56% ASR and 37.75% OTSR. The full NTR combination reduced ASR to 0%, but OTSR fell to 10.06%. Under the backdoor attack, GPT-4 moved from 58% ASR and 92.8% OTSR to 0% ASR and 18.7% OTSR. That is strong containment paired with a large availability and usefulness cost.</p>
+        <p>The pattern was not uniform. Under direct prompt injection, GPT-4’s NTR combination reduced ASR from 91.56% to 0% while raising OTSR from 0.44% to 11.62%. Several smaller open models improved on both metrics. The paper correctly describes the effect as model- and attack-dependent rather than claiming one prompt stack preserves utility everywhere.</p>
+        <p>GPT-5 received a narrower appendix evaluation because of time limits: one context-ignoring variant for direct and indirect injection, one combined memory attack, and one non-word backdoor trigger. NTR reached 0% ASR in all four rows, while OTSR ranged from 0.75% to 9.5% across the NTR configurations shown. Those results support testing capability restoration on newer models, but they are not a broad adaptive red-team result.</p>
+
+        <h2>The benchmark measures simulated traces, not production side effects</h2>
+        <p>The repository makes the evaluation boundary unusually clear. Its tools are simulated objects whose <code>run()</code> method returns a predefined “expected achievement” string. Attack success is detected by searching message content for the attacker-goal string. Original-task success is detected by searching messages for every normal tool’s expected-achievement string.</p>
+        <p>This gives researchers a repeatable way to compare many model and defense combinations. It does not test whether an agent sent a real message, changed a cloud role, wrote the intended file correctly, recovered from a partial failure, or caused a side effect through a second allowed tool. String-presence scoring can also count a goal mentioned in reasoning or logs without establishing that a production action completed.</p>
+        <p>The authors acknowledge the larger limitation: they did not evaluate dynamic environments and identify real-world applications and more complex tool ecosystems as future work. Teams should therefore treat the reported rates as evidence about this ASB harness—not as a deployment-grade estimate of prompt-injection risk.</p>
+
+        <h2>Semantic anomaly filtering has a weaker trust model</h2>
+        <p>ATF assumes an injected tool’s description will be semantically unusual relative to the legitimate set. The code embeds descriptions with <code>all-MiniLM-L6-v2</code> and runs an Isolation Forest with a 0.33 contamination rate. It then removes the detected outliers.</p>
+        <p>This may help when an attacker adds an obviously unrelated capability. It is less reliable when the malicious tool imitates the name and description of an approved one, when legitimate tools cover diverse domains, or when a small toolset makes a fixed expected-outlier fraction destructive. The paper’s tables reflect that uncertainty: ATF sometimes lowered ASR, but results varied by model and attack and occasionally trailed simpler baselines.</p>
+        <p>For production admission, provenance is a stronger signal than semantic normality. A tool should be authorized because its publisher, package, endpoint, schema, version, requested scopes, and integrity are approved—not because its description resembles neighboring tools. Semantic detection is useful telemetry; it is not identity.</p>
+
+        <h2>The released code is evidence, but not a turnkey reproduction</h2>
+        <p>The paper links a public repository with the ASB-derived harness, task data, simulated tools, attack launchers, and the NTR and ATF implementations. That is enough to inspect the control placement and scoring logic. The release does not include result logs, and its supplied YAML configurations enumerate GPT-4o-mini and GPT-3.5 rather than the paper’s GPT-4 and GPT-5 evaluations.</p>
+        <p>A fresh reproduction also needs dependency repair. The published <code>requirements.txt</code> omits packages imported by the harness, including the sentence-transformer and Isolation Forest libraries used by ATF, plus several orchestration dependencies. Model endpoints are mutable, and no response corpus or complete run manifest is included. The numerical tables should therefore be attributed to the preprint, not presented as independently reproduced results from the repository.</p>
+        <p>This does not invalidate the architecture finding. NTR’s core operation is visible and straightforward. It limits how strongly the surrounding model comparisons and exact percentages can be independently audited from the current artifact.</p>
+
+        <h2>What defensive engineering teams should take from the study</h2>
+        <ul>
+          <li><strong>Keep the approved capability set outside model-writable state.</strong> Store tool identity, versions, schemas, scopes, and destinations in a trusted policy layer. Reconstruct the effective set before every planning and execution step.</li>
+          <li><strong>Authorize tool plus arguments.</strong> A safe tool can still perform an unsafe action. Bind approval to the operation, principal, object, destination, data class, and time window—not only the tool name.</li>
+          <li><strong>Recheck at execution.</strong> Planning-time filtering is insufficient if a later observation can alter arguments, swap a tool endpoint, change MCP metadata, or invoke a capability through another route.</li>
+          <li><strong>Separate admission from anomaly detection.</strong> Use signatures, attestations, pinned identities, and explicit policy for admission. Use semantic outlier scores to investigate changes, not to establish trust.</li>
+          <li><strong>Measure secure utility.</strong> Report attack success, benign completion, refusal, latency, cost, and false-positive denial together. A 0% ASR system that completes almost no legitimate work is contained but not operational.</li>
+          <li><strong>Test allowed-tool abuse.</strong> Red-team exfiltration through approved messaging and storage tools, confused-deputy access with valid credentials, destination substitution, argument smuggling, chained tools, and delayed side effects.</li>
+          <li><strong>Use real state transitions in evaluation.</strong> Score observable sandbox effects and invariant violations rather than relying only on model text or expected strings.</li>
+          <li><strong>Preserve reproducibility artifacts.</strong> Pin model and harness versions, publish run configurations and raw traces, record evaluator logic, and rerun after tool, policy, prompt, or provider changes.</li>
+        </ul>
+
+        <p>The study’s best lesson is architectural: a model should not decide which capabilities are trusted. Restoring an approved toolset before planning is a useful control because it removes authority rather than asking the same model to reason its way out of hostile instructions. The next step is to carry that boundary through execution—where approved tools, attacker-controlled arguments, real credentials, and irreversible side effects meet.</p>
+        <p>This extends the site’s <a href="/posts/2026/03/prompt-injection-defense-playbook/">prompt-injection defense playbook</a> and complements <a href="/posts/2026/07/guardianagentbench-runtime-tool-call-guardrails/">GuardianAgentBench’s runtime-guardrail results</a>: model-facing defenses can reduce attacks, but deterministic authorization and consequence-aware evaluation are the controls that turn a promising benchmark result into a defensible system.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2609.16098?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Li and Wang — Universal Defenses for Tool-Integrated LLM Agents Against Adversarial Attacks</a></li>
+          <li><a href="https://arxiv.org/pdf/2609.16098?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Universal Defenses preprint, version 1 (PDF)</a></li>
+          <li><a href="https://github.com/Xiaoyan-Lisa/Defenses-for-Tool-Integrated-LLM?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Authors’ implementation and ASB-derived evaluation harness</a></li>
+          <li><a href="https://proceedings.iclr.cc/paper_files/paper/2025/hash/5750f91d8fb9d5c02bd8ad2c3b44456b-Abstract-Conference.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ICLR 2025 — Agent Security Bench (ASB)</a></li>
+          <li><a href="https://github.com/agiresearch/ASB?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Official Agent Security Bench repository</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-30">2026-07-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">Kimi K3 Trails Frontier Models in Cyber Tests but Completes an Autonomous Attack Range</a></h3><p>UK AISI and NIST CAISI found Kimi K3 below leading frontier models in preliminary cyber tests, yet it completed a 32-step attack range once in ten attempts and did not refuse offensive tasks.</p><a class="text-link" href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/twin-agent-privilege-separation-prompt-injection/">Twin Agent Cut Static Prompt-Injection Success to 0.1%—but Adaptive Attacks Still Reached 4.7%</a></h3><p>UC Berkeley-led research separates untrusted exploration from privileged action and compresses cross-boundary hints, sharply reducing prompt-injection success without the utility collapse of rigid dual-agent baselines.</p><a class="text-link" href="/posts/2026/07/twin-agent-privilege-separation-prompt-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-07">2026-05-07</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/mosaic-bench-compositional-vulnerability-coding-agents/">arXiv — MOSAIC-Bench: Coding Agents Ship Exploitable Code via Sequenced Prompts</a></h3><p>New benchmark shows nine production coding agents from Anthropic, OpenAI, and Google compose innocuous tickets into exploitable code at 53–86% success rate, bypassing per-prompt safety reviews.</p><a class="text-link" href="/posts/2026/05/mosaic-bench-compositional-vulnerability-coding-agents/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
