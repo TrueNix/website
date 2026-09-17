@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitLab MCP Flaws Turned a Personal Access Token Into an Unauthenticated Control Plane — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-61560 and CVE-2026-61568 exposed @zereight/mcp-gitlab to unauthenticated token theft and browser-driven access; version 2.1.30 is the safest common remediation floor." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/gitlab-mcp-pat-exfiltration-dns-rebinding-cves/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitLab MCP Flaws Turned a Personal Access Token Into an Unauthenticated Control Plane" />
+  <meta name="post:date" content="2026-09-17" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GitLab MCP Flaws Turned a Personal Access Token Into an Unauthenticated Control Plane</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-17">2026-09-17</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two newly assigned CVEs show how a GitLab MCP server could collapse the distance between an unauthenticated network client, a local browser, and the projects reachable by a server-side personal access token.</p>
+        <p><strong>CVE-2026-61560</strong> chains an unauthenticated legacy SSE transport with an arbitrary local-file upload tool in <code>@zereight/mcp-gitlab</code> before 2.1.27. A reachable attacker could read the server process’s environment, recover its GitLab personal access token, and act with that token’s privileges. <strong>CVE-2026-61568</strong> affects versions before 2.1.30: missing Host and Origin enforcement on the Streamable HTTP transport allowed a malicious website to reach a loopback MCP listener through DNS rebinding.</p>
+        <p>The CVE records were published September 15, but the underlying advisories and fixes are older. Version 2.1.27 shipped June 22, and version 2.1.30 shipped July 5. The project’s own advisories rate the flaws critical at CVSS 3.1 scores of 9.8 and 9.6. Neither record reports exploitation in the wild.</p>
+
+        <h2>The SSE chain converted a file read into GitLab authority</h2>
+        <p>CVE-2026-61560 combines two defects that are more consequential together than separately. When the server ran with <code>SSE=true</code>, its <code>/sse</code> and <code>/messages</code> routes had no authentication middleware. A client able to reach the listener could initialize an MCP session and invoke the server’s enabled tools under its configured GitLab identity.</p>
+        <p>The default-enabled <code>upload_markdown</code> tool then accepted a caller-supplied <code>file_path</code>, read that path from the MCP server’s filesystem, and uploaded the resulting bytes to a GitLab project. There was no path allowlist or workspace constraint. The advisory identifies <code>/proc/self/environ</code> as the direct bridge between the two defects: reading that pseudo-file can expose the process environment, including <code>GITLAB_PERSONAL_ACCESS_TOKEN</code>.</p>
+        <p>Once recovered, the token is no longer confined to MCP. An attacker can call GitLab directly with every repository, group, pipeline, package, issue, or administrative permission granted to that token. “Account takeover” here is therefore bounded by the configured token’s effective scope and the GitLab account behind it; it is not a claim that every GitLab user or instance becomes compromised automatically.</p>
+        <p>Deployment topology remains the first exploitability gate. The attacker needs network reachability to the SSE listener and a useful project destination for the uploaded file. The advisory notes that SSE was the documented Docker transport and that the affected container ran without a non-root <code>USER</code> directive, increasing the set of readable files. A loopback-only or otherwise unreachable listener narrows remote exposure, but it does not repair the missing authentication and path controls.</p>
+
+        <h2>The first fix changed transport defaults and file access</h2>
+        <p>Version 2.1.27 addressed the named chain. The SSE hardening requires <code>SSE_AUTH_TOKEN</code> for the transport unless an operator explicitly selects the dangerous unauthenticated override, applies the token check to both SSE routes, binds the Docker-published port to loopback, and runs the release container as the <code>node</code> user. The project also blocked the affected local-path behavior for remote transports.</p>
+        <p>Those are complementary controls. Authentication removes anonymous tool invocation. Loopback binding reduces reachability. A non-root container limits local file access. Remote-path rejection prevents a legitimate but untrusted MCP client from turning an upload helper into a server-file oracle. None should be treated as a substitute for the others.</p>
+        <p>Operators who deliberately set <code>SSE_DANGEROUSLY_ALLOW_UNAUTHENTICATED_REMOTE=true</code>, publish the listener through a proxy, or grant broad container mounts can undo part of that defense. The effective server configuration matters more than the image tag alone.</p>
+
+        <h2>Loopback did not stop a malicious browser</h2>
+        <p>CVE-2026-61568 covers a different transport and threat path. The Streamable HTTP <code>/mcp</code> endpoint did not validate the HTTP <code>Host</code> or browser <code>Origin</code> before entering MCP initialization. The server’s default loopback bind reduced ordinary network exposure, but loopback is precisely what DNS rebinding is designed to reach.</p>
+        <p>In a rebinding attack, a victim visits an attacker-controlled site. The attacker’s hostname first resolves to the attacker’s server, then to a loopback or private address while the browser continues sending the attacker-controlled hostname and origin. If the local service accepts those headers, browser JavaScript can cross the network boundary without defeating the browser’s same-origin model in the conventional way.</p>
+        <p>The advisory makes an important qualification: deployments using remote authorization still block material GitLab tool calls without a valid token. The missing Host and Origin gate nevertheless allowed attacker-controlled browser traffic to reach the MCP protocol boundary, and deployments using server-side credentials or weaker authentication modes could expose substantially more authority.</p>
+        <p>Version 2.1.30 adds explicit Host and Origin checks before <code>/mcp</code> handling. Loopback values are accepted for local use; non-loopback deployments must declare their public server URL or allowed hosts and origins. The regression tests verify rejection with a 403 before malformed JSON or MCP initialization is processed.</p>
+
+        <h2>The same release repaired deeper “read-only” and session assumptions</h2>
+        <p>The 2.1.30 release is the safer common remediation floor because its security work extends beyond the two assigned CVEs. Repository advisory <strong>GHSA-5648-rgj9-v224</strong> documents a cluster of five safety-control failures in 2.1.28, all fixed in 2.1.30.</p>
+        <p>The highest-impact logic flaw involved <code>execute_graphql</code>. The tool was classified as read-only, but its write-operation detector could miss a mutation prefixed with a GraphQL-insignificant comma. The same handler did not enforce <code>GITLAB_ALLOWED_PROJECT_IDS</code>, so a raw GraphQL request could target projects outside the configured allowlist if the server token had access. This matters under normal agent threat models: a client or prompt injection can shape tool arguments even when the operator believes the available capability is read-only and project-scoped.</p>
+        <p>The hardening release uses stronger GraphQL operation parsing and disables raw GraphQL when project scoping is configured. It also requires an MCP-layer authentication mode when Streamable HTTP uses server-side GitLab credentials, validates remote tokens with GitLab before allocating a session, rate-limits session creation, and requires SSE authentication by default.</p>
+        <p>A separate session-exhaustion defect demonstrates why syntactic credentials are not authentication. Before the fix, an arbitrary token with acceptable length and characters could allocate a session before GitLab validated it. Repeating initialization could occupy the default 1,000 session slots for the configured idle period and deny service to legitimate clients. Version 2.1.30 moves upstream validation ahead of allocation.</p>
+        <p>The umbrella advisory does not currently have one CVE covering all five findings. A September 15 project issue explains that GitHub declined a shared CVE because independently fixable defects should not be bundled into one identifier. That is a visibility issue, not evidence that the residual findings are unfixed: the project and reporter both identify 2.1.30 as the patch floor.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Upgrade <code>@zereight/mcp-gitlab</code> to 2.1.30 or later.</strong> Version 2.1.27 closes the CVE-2026-61560 chain, but 2.1.30 also closes CVE-2026-61568 and the documented authorization, transport, and session-control gaps.</li>
+          <li><strong>Verify the running artifact.</strong> Check the package inside the active container or process, recreate long-lived workloads, and confirm that older replicas are gone. A changed lockfile does not prove the vulnerable listener stopped.</li>
+          <li><strong>Rotate exposed GitLab credentials.</strong> If an affected SSE service was reachable, treat its personal access token, job token, OAuth material, and cookie file as potentially disclosed. Revoke first, replace with narrower scopes, and invalidate related sessions where applicable.</li>
+          <li><strong>Audit token consequences.</strong> Review GitLab audit events, API logs, repository and group changes, pipeline runs, deploy-token activity, package operations, releases, issues, merge requests, and unexpected uploads for the entire exposure window.</li>
+          <li><strong>Test both MCP transport layers.</strong> Confirm unauthenticated calls receive 401 responses, forged Host and Origin values receive 403 responses, invalid GitLab tokens do not allocate sessions, and the service is unreachable from network segments that do not require it.</li>
+          <li><strong>Keep server credentials out of shared transports.</strong> Prefer per-user OAuth or remote authorization that preserves caller identity. If a static server-side token is unavoidable, add the MCP transport’s own high-entropy authentication secret and restrict its GitLab scope.</li>
+          <li><strong>Do not expose the dangerous compatibility override.</strong> Search deployment manifests, service units, shell history, and environment management for <code>SSE_DANGEROUSLY_ALLOW_UNAUTHENTICATED_REMOTE</code>, broad <code>HOST</code> values, public port publications, and reverse proxies that bypass intended loopback isolation.</li>
+          <li><strong>Treat “read-only” as an enforced API property.</strong> Validate the parsed operation, bind every request to the configured project scope, and use a GitLab token that cannot write. A string detector and an application label cannot remove permissions held by the underlying credential.</li>
+        </ul>
+
+        <p>The larger agent-security lesson is that an MCP server is a credentialed control plane, not a formatting adapter. Tool names, read-only labels, project allowlists, loopback defaults, and session tokens only reduce risk when they are enforced before authority is attached and before state is allocated. This incident complements the recent <a href="/posts/2026/09/flowise-four-cves-mcp-rce-workspace-key-theft/">Flowise MCP authorization failures</a> and the <a href="/posts/2026/07/mcp-ruby-sdk-023-five-transport-cves-session-ownership/">MCP Ruby SDK transport flaws</a>: conventional authentication, object authorization, origin validation, credential minimization, and resource limits remain the security boundary around an agent.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/zereight/gitlab-mcp/security/advisories/GHSA-cv3r-c5h8-f4g5?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp advisory — unauthenticated file read and PAT exfiltration (CVE-2026-61560)</a></li>
+          <li><a href="https://www.cve.org/CVERecord?id=CVE-2026-61560&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CVE Program — CVE-2026-61560 record</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/pull/554?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp patch — authenticate and constrain the SSE transport</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/security/advisories/GHSA-vmp7-252j-cwp7?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp advisory — Streamable HTTP DNS rebinding (CVE-2026-61568)</a></li>
+          <li><a href="https://www.cve.org/CVERecord?id=CVE-2026-61568&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CVE Program — CVE-2026-61568 record</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/pull/555?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp patch — enforce Streamable HTTP Host and Origin policy</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/security/advisories/GHSA-5648-rgj9-v224?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp advisory — safety-control and session-exhaustion flaws</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/pull/571?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp patch — harden GraphQL, authentication, sessions, and untrusted traces</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/releases/tag/v2.1.30?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp 2.1.30 release notes</a></li>
+          <li><a href="https://github.com/zereight/gitlab-mcp/issues/748?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gitlab-mcp issue #748 — CVE split and advisory visibility status</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-28">2026-07-28</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">n8n’s 16-Advisory Security Batch Reaches the Expression Sandbox, Credentials, and MCP</a></h3><p>n8n published 16 security advisories spanning host command execution, credential theft, MCP SSRF, file access, SQL injection, and cross-user isolation. Version 2.32.1 is the safest common remediation floor.</p><a class="text-link" href="/posts/2026/07/n8n-2321-security-advisories-sandbox-credential-mcp/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-29">2026-07-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/hashicorp-terraform-mcp-server-credential-isolation-cves/">HashiCorp Terraform MCP Server Flaws Cross Tenant and Token Boundaries</a></h3><p>HashiCorp disclosed three Terraform MCP Server flaws spanning unauthenticated bearer-token theft, stateful session takeover, and stateless cross-tenant credential reuse. Version 1.1.0 fixes all three.</p><a class="text-link" href="/posts/2026/07/hashicorp-terraform-mcp-server-credential-isolation-cves/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">SiYuan’s MCP Route Turned Anonymous Readers Into Workspace Administrators — CVE-2026-66012</a></h3><p>CVE-2026-66012 exposed 31 SiYuan MCP tools through a Reader token, enabling workspace theft, credential exposure, file writes, and delayed desktop code execution. Upgrade to 3.7.2 or later.</p><a class="text-link" href="/posts/2026/07/siyuan-mcp-reader-admin-takeover-cve-2026-66012/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
