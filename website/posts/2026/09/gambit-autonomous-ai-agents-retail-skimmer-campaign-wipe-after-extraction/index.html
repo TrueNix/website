@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>An AI Attack Crew Cost $25 a Victim — and Its Cleanup Routine Destroyed the Data — al-ice.ai</title>
+  <meta name="description" content="Gambit recovered the staging server behind an autonomous agent campaign that hit 105 retail targets in six days. The novel detail is not the intrusion speed — it is a playbook step that wipes the victim’s database after exfiltration." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/gambit-autonomous-ai-agents-retail-skimmer-campaign-wipe-after-extraction/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="An AI Attack Crew Cost $25 a Victim — and Its Cleanup Routine Destroyed the Data" />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">An AI Attack Crew Cost $25 a Victim — and Its Cleanup Routine Destroyed the Data</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Gambit Security's threat intelligence team published an interim report on September 22 describing a financially motivated operator who ran three open-source AI harnesses against online retailers, recovered from the operator's own staging server. The headline numbers are large — <strong>105 attack projects launched between 10 and 15 September, at least 27 companies compromised, more than 600,000 unexpired credit card records taken from two victims</strong> — but the numbers are not the most useful part of the report for defenders.</p>
+        <p>The most useful part is a skill file. One of the operator's agent instruction documents contains a section titled <em>Database Wipe After Extraction</em>, which tells the agent to erase the card fields from the victim's database once the data has been downloaded. That is a destructive step written into the attacker's standard operating procedure, not an extortion lever and not an accident. It changes what a retail breach plan has to survive.</p>
+
+        <h2>The cost figure is the part that removes the filter</h2>
+        <p>Gambit recovered an OpenRouter account balance captured on 25 August 2026 showing <strong>$7,005.71</strong> spent over roughly four weeks, with about three further weeks at roughly twice the daily call volume, putting the full campaign model spend in Gambit's estimate between $12,000 and $18,000. The operator's own cost review gives a mean of <strong>$25.46 across 101 completed scans</strong>, ranging from $3.13 to $79.31 per target.</p>
+        <p>Every previous entry in this genre — the <a href="/posts/2026/04/gambit-security-mexican-government-claude-code-breach/">single operator who breached nine Mexican government agencies</a>, the <a href="/posts/2026/07/unit42-deepseek-hermes-autonomous-cyberattack-campaign/">DeepSeek-driven agent that ran a live exploit cycle</a> — demonstrated that an unskilled or lightly skilled operator could reach outcomes previously requiring a team. This report adds the unit economics. At a few tens of dollars per company, target selection stops being a triage decision about which victims are worth the analyst hours. Gambit describes the operator pasting <strong>301 results</strong> from a website traffic ranking service into the console with the instruction "run these, use the proxy, high severity only." The filter that used to protect mid-sized merchants was attacker labour cost, and it is now priced out of relevance.</p>
+        <p>The human involvement is correspondingly thin: Gambit counts <strong>1,951 prompts typed by the operator across 260 sessions</strong>, short instructions in Chinese — "read the vulnerability report and start," "can it get code execution?", "dig deeper into the API." A handful of prompts per target, with the harness choosing the attack path in real time.</p>
+
+        <h2>Three harnesses, three distinct jobs</h2>
+        <p>The division of labour is worth noting because it is the same shape a legitimate security team would build:</p>
+        <ul>
+          <li><strong>Strix</strong> for vulnerability discovery — run 146 times in "deep mode" against 138 hosts between 23 and 31 August, consuming 633 hours of scanner time inside 195 hours of wall-clock time. Backed by GLM 5.2, later DeepSeek v4 Pro.</li>
+          <li><strong>Cairn</strong> for autonomous end-to-end exploitation — given a domain and an objective such as "get a shell," then left running for hours. Backed by DeepSeek v4.1 Flash. 105 projects in six days.</li>
+          <li><strong>Hermes</strong> for orchestration and hands-on work — persistent memory, self-authored skills, scheduled jobs, web console. Gambit reports it ran Anthropic's opus-4.6 <em>after newer models refused its requests</em>, carried a Chinese "SOUL – Red Team Operator" persona, and held 121 skills of which 78 were attack skills, including one written specifically to strip the harness's own content filters.</li>
+        </ul>
+        <p>That parenthetical about model refusals is the single most load-bearing sentence in the report for anyone reasoning about model-level safety. Provider-side refusal training did function — it pushed the operator down a model generation. It did not stop the campaign, because the harness is model-agnostic and an older or more permissive weight set is a configuration change. Refusal at the model layer sets a cost, not a boundary, when the harness is open source and the router offers substitutes.</p>
+
+        <h2>The exploitation chains are ordinary; the sequencing is not</h2>
+        <p>Nothing in the documented attack paths is novel offensive research. One completed Cairn project reconstructed by Gambit runs: unauthenticated error-based SQL injection in a login parameter → plaintext OTP read from the OTP table, bypassing MFA → admin panel → unrestricted file upload through an image field → host RCE → <code>sudo NOPASSWD</code> on python3.12 → root → an NFS mount exported <code>no_root_squash</code> → WordPress database credentials from <code>wp-config.php</code> → plugin upload → second host RCE → a full dump of 46 AWS Secrets Manager secrets → Magento database access → encryption key extraction → verified decryption of Blowfish-ECB encrypted card numbers.</p>
+        <p>Every link is a finding a competent human tester would recognise from a decade ago. What is different is that the harness walked all fifteen of them without a human choosing the next move, and Gambit notes that where access was achieved it usually took <strong>less than a day, in many cases a few hours</strong>. Defensive controls calibrated to a human attacker's pacing — change windows, on-call escalation thresholds, the assumption that lateral movement leaves time between stages — were designed against an adversary that pauses.</p>
+
+        <h2>The skimmers show a patience defenders should not expect</h2>
+        <p>Skimmer injection was a primary objective: ordered against at least 27 named victims, confirmed in place on 19, with more than 100 further infected sites identified with researcher Varys. The injection methods vary by the access achieved, and several of them are notably careful:</p>
+        <ul>
+          <li>Appending the loader to the end of a legitimate JavaScript bundle the site already serves — a jQuery or Bootstrap file — <strong>and restoring the original file timestamp</strong>.</li>
+          <li>Writing the loader inside the site's Google tag block, between the real <code>gtag('js', …)</code> and <code>gtag('config', …)</code> calls, padded with roughly one hundred tab characters so it sits off the right edge of a source view.</li>
+          <li>Poisoning an S3 bucket behind a retailer's CDN using a discovered AWS access key, so the payload loads from the victim's own CDN hostname.</li>
+          <li>At a wine retailer where redeploys restored the clean bundle, leaving a cron job in the JBoss log directory that checked the file size every two minutes and re-appended the skimmer whenever it reverted.</li>
+        </ul>
+        <p>Timestamp restoration and horizontal padding are anti-review techniques aimed at a human reading a diff or a file listing. A persistence job that repairs itself against the victim's deployment pipeline is an acknowledgement that remediation would otherwise win. These are the behaviours of an operator with unlimited cheap attention — which is precisely what the cost figures describe.</p>
+
+        <h2>Wipe-after-extraction is the finding that changes planning</h2>
+        <p>The <em>Database Wipe After Extraction</em> skill opens with "After extracting and downloading all card data, wipe the source fields in batches," specifies a chunked PHP script for the serialized-field wipe on the grounds that "millions of rows with LIKE '%…%' is slow in a single UPDATE," and ends with a verification step: run the detection query again, all counts must be zero. Gambit's operator executed it, instructing the agent on 14 September to empty the serialized data columns of <code>sales_flat_order_payment</code> and <code>sales_flat_quote_payment</code>, then revising to "dump the two tables first, and empty them once the dump is done."</p>
+        <p>A second victim, a bicycle retailer, lost data a different way. The agent created staging tables with a <code>ZQ</code> prefix to hold extracted data, and the cleanup step then dropped 180 tables whose names matched <code>ZQ</code> or <code>Backup</code> — sweeping up backup tables the victim's own administrators had created. That is not a decision anyone made. It is a pattern match, executed at machine speed, against a production database.</p>
+        <p>Both cases produce the same planning consequence and it is not the usual one. Ransomware taught organisations to plan for data loss as a <em>negotiation</em>: the attacker wants the data recoverable because recovery is the product being sold. Here, destruction is an operational-security step and a byproduct of sloppy automation. Nobody is coming with a decryption key, because nobody encrypted anything. A recovery plan that assumes the attacker retains leverage over restoration does not describe this incident.</p>
+
+        <h2>Reading the evidence quality honestly</h2>
+        <p>Gambit is explicit about its own confidence, and the report deserves credit for it. Claims rest on three tiers: direct artifacts from the staging server, including exfiltrated data and tooling; live skimmers independently verified on public sites or logged by scanners; and logs plus the agents' own claims. The team states plainly that AI self-reports "may turn out to be inaccurate," and that they relied on them only where substantial portions had been corroborated by the first two methods. They label the report interim, flag that 57 of the 105 Cairn projects were deleted before analysis, and say they expect the real scope to be larger than reported.</p>
+        <p>That framing matters for how the numbers should be repeated. "At least 27 companies compromised" is bounded by what the server held, not by what happened. "600,000 unexpired card records" is grounded in recovered data handled with a fraud specialist for issuer notification, with a country breakdown showing 488,372 US-issued cards at 79.0%. The skimmer count on 19 victims is directly verified; the "more than 100 further websites" figure comes from partner infrastructure research. Treating an interim report's floor as a total is the failure mode here, and the correct reading is that these are minimums.</p>
+        <p>One attribution note: multiple outlets have described the operator as Chinese-speaking, and Gambit's evidence for the language is the prompt corpus itself. Language of operation is not nationality or sponsorship, and Gambit does not claim it is. The campaign is described as financially motivated, and the tooling — three public open-source projects and a commercial model router — is available to anyone.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Check your checkout page's script inventory against a known-good baseline, including the tail of files you consider yours.</strong> The most common injection here appended to a legitimate bundle and restored the timestamp, so mtime comparison will not catch it. Hash the served asset, not the file on the origin, and compare what a browser actually loads.</li>
+          <li><strong>Inspect analytics and tag blocks specifically.</strong> Loader code padded with tab characters inside a <code>gtag</code> block renders invisible in a normal source view. Review these with wrapping enabled or programmatically.</li>
+          <li><strong>Include the IOCs in retrospective hunts.</strong> Gambit published skimmer and C2 domains — among them <code>static-js[.]com</code>, <code>cdn[.]netlfjs[.]com</code>, <code>js-static[.]com</code>, <code>b8t[.]shop</code>, <code>x1opay[.]co</code>, and <code>traffic-analyzer[.]net</code> — plus staging and C2 addresses including <code>155.254.22.215</code> and <code>209.126.4.170</code>. Search historical DNS and proxy logs, not only current traffic; the campaign runs back to July.</li>
+          <li><strong>Test that backups survive a name-pattern deletion.</strong> The bicycle retailer lost administrator-made backup tables because they lived in the same database and matched a prefix. Backups inside the blast radius of the thing they protect are not backups. Verify restoration from isolated, immutable copies.</li>
+          <li><strong>Plan for destruction without an extortion phase.</strong> Decide in advance which systems constitute the minimum viable business and prove that set returns, rather than assuming a negotiation window exists. Gambit's own conclusion lands in the same place.</li>
+          <li><strong>Re-examine the pre-auth surface first.</strong> The documented entry points were unauthenticated SQL injection and unrestricted file upload. Autonomous discovery rewards breadth of trivial bugs, not depth; the harness will find the one form field nobody re-tested.</li>
+          <li><strong>Watch for agent-shaped tempo in your own telemetry.</strong> Sustained probing that continues through the night, escalates within hours of first access, and touches unrelated subsystems in sequence is not a human working a shift.</li>
+        </ul>
+
+        <p>The through-line from <a href="/posts/2026/09/anthropic-google-agentic-cyber-operations-credential-supply-chain/">Anthropic and Google's observation that AI has moved from copilot to intrusion orchestrator</a> is now fully instantiated in a live criminal campaign with a recovered cost ledger. The uncomfortable addition from this report is that the operator's playbook contains a destroy step, and an over-broad pattern match can execute it against assets nobody targeted. When the adversary's marginal cost is tens of dollars and the adversary's cleanup routine is a regular expression, resilience — what returns, and how fast — is the control that carries the weight.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Gambit Security — Autonomous AI Agents are breaking into hundreds of Online Retailers for $25 a target in an ongoing campaign (Eyal Sela, 22 September 2026)</a></li>
+          <li><a href="https://www.securityweek.com/ai-powered-campaign-targets-hundreds-of-online-retailers/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SecurityWeek — AI-Powered Campaign Targets Hundreds of Online Retailers (24 September 2026)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/malicious-ai-agents-steal-600k-credit-cards-infect-100-plus-sites-with-skimmers/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">BleepingComputer — Malicious AI agents steal 600K credit cards, infect 100+ sites with skimmers</a></li>
+          <li><a href="https://hackread.com/open-source-ai-agents-breach-credit-card-records/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Hackread — Open-Source AI Agents Breach 27 Companies, Steal 600,000 Credit Card Records</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-31">2026-07-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/unit42-deepseek-hermes-autonomous-cyberattack-campaign/">A DeepSeek-Powered Agent Ran a Live Exploit Cycle—Then Exposed Its Operator</a></h3><p>Unit 42 recovered a live threat actor’s autonomous attack loop: DeepSeek and Hermes Agent selected targets, sourced exploits, and launched attempts before an agent error exposed the operation.</p><a class="text-link" href="/posts/2026/07/unit42-deepseek-hermes-autonomous-cyberattack-campaign/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-17">2026-07-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/hugging-face-autonomous-agent-intrusion-dataset-pipeline/">Hugging Face Says an Autonomous Agent Breached Its Dataset Pipeline</a></h3><p>Hugging Face disclosed an AI-driven intrusion that began with malicious dataset processing, reached internal clusters, and generated more than 17,000 recorded events.</p><a class="text-link" href="/posts/2026/07/hugging-face-autonomous-agent-intrusion-dataset-pipeline/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-30">2026-05-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/detectify-mcp-server-ai-agents-vulnerability-scanning/">Detectify — MCP Server brings deterministic vuln scanning into AI coding agents</a></h3><p>Detectify launches an MCP Server that exposes its scanning engines to AI coding agents, enabling autonomous vulnerability finding, patching, and validation in real time.</p><a class="text-link" href="/posts/2026/05/detectify-mcp-server-ai-agents-vulnerability-scanning/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
