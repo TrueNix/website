@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Poisoned Release Pipeline Turned an AI Memory Plugin Into a Self-Spreading Credential Stealer — al-ice.ai</title>
+  <meta name="description" content="Attackers stole npm and PyPI publish tokens from MemTensor&#39;s own GitHub Actions release jobs using BASH_ENV injection, then shipped the sckit Go implant inside an OpenClaw memory plugin and the MemoryOS library." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Poisoned Release Pipeline Turned an AI Memory Plugin Into a Self-Spreading Credential Stealer" />
+  <meta name="post:date" content="2026-09-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Poisoned Release Pipeline Turned an AI Memory Plugin Into a Self-Spreading Credential Stealer</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-24">2026-09-24</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 23 an attacker published malicious releases of two MemTensor packages that give AI agents long-term memory: the npm plugin <code>@memtensor/memos-cloud-openclaw-plugin</code> and the PyPI library <code>MemoryOS</code>. Both carried the same cross-platform Go implant, tracked as <strong>sckit</strong>, which harvests credentials from the home directory and from CI job environments and ships them to hosts under <code>skyleen[.]fr</code>.</p>
+        <p>The payload is unremarkable as malware. The delivery is not. According to <a href="https://safedep.io/memtensor-sckit-worm-npm-pypi/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SafeDep’s analysis</a>, the attacker did not need to steal a maintainer’s laptop token. They pushed commits that made the project’s own GitHub Actions release jobs hand over the npm and PyPI publish tokens, in a step that ran <em>before</em> the publish step — turning a legitimate, project-owned release pipeline into the credential-exfiltration stage of its own compromise.</p>
+
+        <h2>What shipped, and what is still reachable</h2>
+        <p>The malicious npm versions are <strong>0.1.21</strong>, <strong>0.1.23</strong> and <strong>0.1.25</strong>; <strong>0.1.22</strong> and <strong>0.1.24</strong>, published minutes apart between them, contain clean 0.1.20 content. On PyPI, <strong>MemoryOS 2.0.34</strong> is the single malicious release.</p>
+        <p>We checked both registries directly while writing this. The npm package now lists <code>latest</code> as <strong>0.1.24</strong>, and 0.1.21, 0.1.23 and 0.1.25 no longer appear in its version list; the npm metadata still shows the original publish timestamps, from 02:23:04 UTC (0.1.21) to 04:36:58 UTC (0.1.25) on September 23. On PyPI the newest available MemoryOS release is <strong>2.0.33</strong>, published September 3, with no 2.0.34 artifacts served. <em>The Hacker News</em> reports that MemoryOS was quarantined on PyPI and that the malicious versions were subsequently removed from both registries.</p>
+        <p>Removal from a registry does not clean a lockfile, a warm CI cache, a container layer, or a vendored directory. Anyone who installed during the roughly two-hour window should treat the artifacts as still present in their environment until they have verified otherwise.</p>
+
+        <h2>The publish token was stolen by a script that ran one step early</h2>
+        <p>The npm release workflow reads <code>secrets.NPM_TOKEN</code> into the publish step and accepts a <code>workflow_dispatch</code> input naming an exact 40-character commit to build. SafeDep documents the attacker creating, pushing and deleting a short-lived <code>sc/release-*</code> branch five times, then having the workflow build one of those commits.</p>
+        <p>The added code is three lines in a release-validation script that runs earlier in the same job. It appends a <code>BASH_ENV</code> entry to <code>$GITHUB_ENV</code>, pointing at an attacker-supplied shell file. Every later step in the job inherits that variable, and Bash sources the named file before running any non-interactive script — so the attacker’s bridge script executed inside the publish step, checked that it was really the publish step by testing the package name and a distinctive 150-second timeout value, passed the token to the implant, deleted itself, and exited non-zero.</p>
+        <p>The PyPI side is the same trick wearing a different costume. Commit <code>b52958f</code> changed <code>pyproject.toml</code> to load a repository-local build backend, <code>sckit_poetry_build</code>, which wrote the same <code>BASH_ENV</code> pointer on import. The resulting bridge fired only inside <code>pypa/gh-action-pypi-publish</code>’s container — it tests that <code>$0</code> is <code>/app/twine-upload.sh</code> — captured <code>INPUT_PASSWORD</code>, then unset the token variables and exited 0 so nothing was actually uploaded. About two hours later a follow-up commit removed the single registration call with the message “allow native PyPI upload,” the <code>v2.0.34</code> tag was deleted and recreated on it, and MemTensor’s own workflow built and uploaded the malicious package with the project’s real token 62 seconds later. A deleted tag named <code>v2.0.34-capture-1</code> is consistent with SafeDep’s reading that the first run existed only to capture the token.</p>
+        <p>Two structural lessons sit in that sequence. First, <strong>any script a release job runs before the publish step can rewrite the environment of the publish step</strong>; <code>$GITHUB_ENV</code> plus <code>BASH_ENV</code> is a supported mechanism, not a bug. Second, both repositories built commits that were never merged to <code>main</code>, which means tag protection and a required reviewer on the release environment would have stopped the run before any token was in scope. SafeDep notes the Actions API returns no workflow runs for either repository after September 7, so the run logs appear to have been deleted, and says it could not confirm how the attacker obtained push access under the <code>Memtensor-AI</code> account.</p>
+
+        <h2>The trigger is the agent’s hot path, not an install hook</h2>
+        <p>This is where the choice of target matters. The npm package is a memory plugin for an agent gateway. The implant is launched at gateway startup and again on <em>every memory-recall event</em>, spawned detached with the full process environment — and, on recall, with the user’s prompt text passed in as <code>SCKIT_EVENT_TEXT</code>. The Python library starts the binary the first time logging is configured, which nearly every import path does.</p>
+        <p>No install hook is involved, so <code>--ignore-scripts</code> offers no protection. The independent reporter who <a href="https://github.com/MemTensor/MemOS-Cloud-OpenClaw-Plugin/issues/173?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">opened issue #173</a> at 04:17 UTC — noting that the published versions matched no commit or tag in the repository — also observed a second function reading <code>NPM_TOKEN</code> and <code>NODE_AUTH_TOKEN</code> explicitly, and states the analysis was static only.</p>
+        <p>A component that sits between an agent runtime and its memory store runs inside a process that already handles user input and already holds credentials. The unpacked npm artifact grew from roughly 272 KB to about 43 MB, and the Python wheel from 951 KB to 19 MB, because six platform-specific binaries were bundled. Size alone was a detectable signal here; most teams were not watching for it.</p>
+
+        <h2>Collection, worming, and operator targeting</h2>
+        <p>The implant’s Go build metadata names the module <code>supplychain.local/campaign</code>, and its function and string tables describe the behavior plainly:</p>
+        <ul>
+          <li><strong>Credential collection</strong> across <code>.npmrc</code>, <code>.pypirc</code>, <code>.git-credentials</code>, <code>.netrc</code>, SSH private keys, <code>.vault-token</code>, MSAL token caches and <code>access_tokens.json</code>, plus regular expressions matching JWTs, AWS <code>AKIA</code>/<code>ASIA</code> keys, GitHub and GitLab tokens, npm and PyPI tokens, Hugging Face and HashiCorp Vault tokens, and Slack, Stripe and SendGrid keys. The campaign configuration sets <code>inventory_roots</code> to the whole home directory.</li>
+          <li><strong>Self-propagation</strong> through functions such as <code>findRepositories</code>, <code>PrepareRemoteRepository</code> and <code>recursivePublish</code>, with embedded loader templates for Python packages, Node packages, and a GitHub Actions workflow saved as <code>runtime-update.yml</code>. SafeDep found no packages beyond MemTensor’s, but the capability is there and that list can grow.</li>
+          <li><strong>Operator-grade C2</strong> using CBOR, X25519 key exchange and XChaCha20-Poly1305 with signed leases and run-time-delivered modules, plus host-profiling fields named <code>geo_iso</code>, <code>deny_iso</code> and <code>ja4_deny</code> that imply victim filtering by country and TLS fingerprint, and <code>scheduleSelfDelete</code> for cleanup. The configuration carries a <code>not_after</code> value decoding to late October 2026.</li>
+        </ul>
+        <p>Version 0.1.25 also bundled a CA root file and pointed <code>SSL_CERT_FILE</code> at it — a detail that only makes sense if the operator expected victims in slim containers with no system trust store. That is an assumption about CI runners, not developer laptops.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Pin to a known-clean baseline and verify what is installed.</strong> Use 0.1.24 or 0.1.20 for the npm plugin and 2.0.33 for MemoryOS. Check lockfiles, container images and CI caches rather than only the registry’s current state.</li>
+          <li><strong>Treat every secret reachable from <code>$HOME</code> and from affected jobs as exposed.</strong> Rotate npm and PyPI tokens, GitHub and GitLab tokens, SSH keys, cloud CLI credentials, Vault tokens and <code>.env</code> secrets. On the npm path the implant also received prompt text, so review what your agents were handling during the window.</li>
+          <li><strong>Hunt for the specific artifacts.</strong> Kill any <code>sckit</code> process; remove <code>$HOME/.openclaw/.cache/runtime</code> and <code>$HOME/.memos/.cache/runtime</code>; block <code>skyleen[.]fr</code> and its subdomains at egress; and search repositories you can push to for an unexpected <code>runtime-update.yml</code> workflow or a <code>.sckit/</code> directory.</li>
+          <li><strong>Audit release jobs for pre-publish execution.</strong> Assume any step that runs before publishing can control the publish step through <code>$GITHUB_ENV</code>. Move validation into a separate job that never sees the token, or run it on a pinned, reviewed revision.</li>
+          <li><strong>Adopt trusted publishing and provenance.</strong> Short-lived OIDC credentials remove the long-lived token from the job entirely, and attestations would have made artifacts built from an unmerged commit visibly anomalous. Neither MemTensor package had provenance attestations.</li>
+          <li><strong>Protect tags and release environments.</strong> Require review for tag creation and for deploys to the publishing environment. A deleted-and-recreated tag pointing at an unmerged commit should never be able to reach a registry.</li>
+          <li><strong>Watch artifact size and file-count deltas.</strong> A 150× jump in unpacked size between patch releases is a cheap, high-signal alert that does not depend on recognizing the payload.</li>
+        </ul>
+
+        <p>The AI ecosystem keeps supplying attackers with components that combine high install counts, deep process placement, and maintainers who are shipping fast. We have covered that pattern through the <a href="/posts/2026/06/mini-shai-hulud-worm-170-packages-ai-coding-tools/">Shai-Hulud worm’s runs at npm and PyPI</a> and through <a href="/posts/2026/06/claude-code-github-actions-supply-chain-vulnerability-ryotak/">workflow-permission abuse in AI coding integrations</a>. What is sharpest here is the inversion: the release pipeline, the thing meant to prove an artifact’s origin, was the instrument that surrendered the credential. Until publishing identity is short-lived and artifacts carry <a href="/posts/2026/08/cisa-2026-sbom-minimum-elements-ai-software-supply-chain/">verifiable provenance</a>, “it came from the project’s own CI” means only that the attacker got there first.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://safedep.io/memtensor-sckit-worm-npm-pypi/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SafeDep — MemTensor npm and PyPI packages hit by a Go worm (sckit), September 23, 2026</a></li>
+          <li><a href="https://safedep.io/sckit-go-implant-framework/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SafeDep — sckit: a new Go implant framework for supply chain worms</a></li>
+          <li><a href="https://github.com/MemTensor/MemOS-Cloud-OpenClaw-Plugin/issues/173?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">MemOS-Cloud-OpenClaw-Plugin issue #173 — malicious versions published to npm, publish token appears compromised</a></li>
+          <li><a href="https://thehackernews.com/2026/09/compromised-memtensor-packages-deliver.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">The Hacker News — Compromised MemTensor packages deliver sckit credential stealer via npm and PyPI</a></li>
+          <li><a href="https://registry.npmjs.org/@memtensor/memos-cloud-openclaw-plugin?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">npm registry metadata — @memtensor/memos-cloud-openclaw-plugin (publish timestamps and current dist-tags)</a></li>
+          <li><a href="https://pypi.org/project/MemoryOS/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">PyPI — MemoryOS project page (current release 2.0.33)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-06">2026-05-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/quasar-linux-qlnx-developer-targeting/">Trend Micro — Quasar Linux Implant Targets Developer and DevOps Environments</a></h3><p>Trend Micro analyzes QLNX, a Linux rootkit/backdoor targeting developer workstations with credential theft across npm, PyPI, GitHub, AWS, Docker, and Kubernetes — enabling AI/ML supply-chain attacks.</p><a class="text-link" href="/posts/2026/05/quasar-linux-qlnx-developer-targeting/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-03">2026-07-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/litellm-pypi-supply-chain-attack-credential-stealer/">LiteLLM PyPI Supply Chain Attack — Credential Stealer in Versions 1.82.7–1.82.8</a></h3><p>LiteLLM PyPI package compromised — malicious versions 1.82.7 and 1.82.8 shipped a multi-stage credential stealer targeting cloud keys, CI/CD secrets, and crypto wallets.</p><a class="text-link" href="/posts/2026/07/litellm-pypi-supply-chain-attack-credential-stealer/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-29">2026-06-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/miasma-leoplatform-go-expansion-credential-theft/">Miasma — LeoPlatform Supply Chain Attack Expands to Go, Targets AI Coding Assistants</a></h3><p>Miasma malware compromises 23 LeoPlatform npm packages and expands to Go ecosystem, targeting AI coding assistant persistence and GitHub Actions credential theft.</p><a class="text-link" href="/posts/2026/06/miasma-leoplatform-go-expansion-credential-theft/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
