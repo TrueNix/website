@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Go Proxy Says This Malware Shipped in November 2025. It Shipped in September. — al-ice.ai</title>
+  <meta name="description" content="Aikido found Graphalgo malware in two Terraform providers and two Go modules — the first systematic malware distribution through HashiCorp's registry. We verified the more durable problem ourselves: the Go module proxy still serves the packages, with backdated commit timestamps it treats as authoritative." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/graphalgo-terraform-providers-go-modules-backdated-proxy-timestamps/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Go Proxy Says This Malware Shipped in November 2025. It Shipped in September." />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Go Proxy Says This Malware Shipped in November 2025. It Shipped in September.</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 22, Aikido researcher Oliver Smith published an analysis of Go malware distributed through two Terraform providers and two Go modules. The packages are <code>gocommunity-io/dockerd</code> and <code>kreuzwenker/docker</code> on the HashiCorp Registry, and <code>gocommunity.io/orderedbtree</code> and <code>gogets.dev/btreex</code> as Go modules. Aikido states this is the first instance of systematic malware distribution through Terraform providers it is aware of. The malware is a Go port of <strong>Graphalgo</strong>, the campaign ReversingLabs first documented in February 2026 and which The Hacker News reports has been attributed to North Korean threat actors.</p>
+
+        <p>The Terraform-first framing is the one that travelled. It is genuinely new, and we will get to why the target selection matters. But it is not the part of this disclosure that will still be causing problems next year.</p>
+
+        <p>That part is a single sentence in Aikido's writeup about how the Go module ecosystem records time. We checked it against the primary source, and it holds.</p>
+
+        <h2>A timestamp the ecosystem treats as fact</h2>
+
+        <p>Aikido reports that <code>gogets.dev/btreex</code> was first published on <strong>8 September 2026</strong>, and that the threat actor used forged commits in the <code>gogets-dev/btreex</code> repository to backdate them to November 2025. Because Go modules treat commit dates as authoritative, the module proxy and <code>pkg.go.dev</code> display the falsified release date.</p>
+
+        <p>This is checkable without trusting anyone's report, because Go's module proxy is a public, immutable, checksum-backed mirror. Querying <code>proxy.golang.org</code> directly at the time of writing returns six versions of <code>gogets.dev/btreex</code> — <code>v1.0.0</code> through <code>v1.2.3</code> — and the version metadata carries the fabricated history intact:</p>
+
+        <pre><code>$ curl https://proxy.golang.org/gogets.dev/btreex/@v/v1.0.0.info
+{"Version":"v1.0.0","Time":"2025-10-25T19:01:05Z", ... }
+
+$ curl https://proxy.golang.org/gogets.dev/btreex/@v/v1.2.3.info
+{"Version":"v1.2.3","Time":"2025-11-27T04:01:05Z", ... }</code></pre>
+
+        <p>A module the researchers say first appeared on 8 September 2026 presents to every Go toolchain, every dependency dashboard, and every human reviewer as a library that has existed since late October 2025 and matured through six releases over a month. The <code>gocommunity.io/orderedbtree</code> module presents sixteen versions.</p>
+
+        <p>Both modules were still being served by the proxy when we queried it — which is expected behaviour, not a failure. The Go module proxy is deliberately immutable: once a version is fetched, it stays fetchable so that builds remain reproducible. Removal is not the mechanism. The mechanism is the vulnerability database, and a <code>GOPRIVATE</code> or <code>GONOSUMDB</code> policy that keeps unvetted vanity domains out of your build in the first place.</p>
+
+        <h2>Why the forged date is the expensive part</h2>
+
+        <p>Nearly every heuristic defenders apply to an unfamiliar dependency is a function of time. Package age. Release cadence. Whether a library existed before the project that depends on it. "Is this brand new?" is the first question a reviewer asks about a package name they do not recognise, and it is the question most supply-chain dashboards answer automatically.</p>
+
+        <p>Against a package whose git history was authored by the attacker, every one of those checks returns a reassuring answer. Ten months of apparent history, a steady version progression, no suspicious burst of releases in the week the incident started. The signal defenders rely on most is the signal the attacker controls most cheaply — forging a commit date requires setting an environment variable.</p>
+
+        <p>The npm registry does not have this problem in the same form: npm records server-side publish timestamps that the publisher cannot choose. Go's design decision to derive module time from VCS commit metadata is a reasonable one for a decentralised, domain-addressed ecosystem with no central registry to authoritatively stamp anything. It is also a decision that hands the attacker the clock. If your tooling treats "first seen" as "created," it is reading a field the adversary filled in.</p>
+
+        <p>The practical instruction is narrow and worth acting on: for Go dependencies, the date your scanner shows you is a claim, not a measurement. The date you should trust is the one your own proxy cache, artifact store, or SBOM recorded the first time <em>you</em> pulled it.</p>
+
+        <h2>Inert until it isn't</h2>
+
+        <p>The Terraform providers themselves are built to fail every dynamic test you would run against them. Aikido describes hidden entry points in <code>internal/provider/resource_docker_container_funcs.go</code> that activate only when the SHA-256 hash of the <code>containerName</code> and <code>networkID</code> Terraform variables, concatenated, matches one specific hardcoded value. That hash then doubles as the AES key used to decrypt the next stage — a ZIP archive shipped as <code>examples/resources/docker_container/import-resource.sqlite3</code>, unpacked, decrypted, and executed via a detached <code>go run .</code>.</p>
+
+        <p>Two properties follow from that design, and both are worth naming precisely.</p>
+
+        <p>First, it is a <strong>targeted</strong> payload. The provider is inert for anyone whose infrastructure variables do not produce the expected hash. Running it in a sandbox proves nothing. The malware is not hiding from analysis so much as declining to appear for anyone it was not sent to.</p>
+
+        <p>Second, the trigger doubles as the key, so there is no decryptable second stage to recover without already knowing the victim's container name and network ID. An analyst who obtains the package obtains ciphertext. This is the same shape SafeDep described from the npm side of the campaign, noting it recovered the implant but not the later code delivered through the C2 channels, and therefore could not say what tasks an operator ran on a victim.</p>
+
+        <p>One of the two providers, <code>kreuzwenker/docker</code>, is a single-character typosquat of <code>kreuzwerker/docker</code>, a provider The Hacker News reports at 56 million downloads. Its malicious counterpart accumulated 1,449; <code>gocommunity-io/dockerd</code> reached 222. Those are small numbers, and for a targeted campaign, small numbers are the design goal rather than a failure to scale.</p>
+
+        <h2>C2 over a testnet and a Slack workspace</h2>
+
+        <p>The second stage is a Go RAT with two command channels. Aikido documents an Ethereum smart contract on the Arbitrum Sepolia testnet at a hardcoded address, polled every three seconds, alongside a Slack bot token polled every ten. On check-in the implant reports platform, architecture, hostname, username, home directory — and, notably, whether <code>node</code> is present on the host, because C2 messages can instruct it to execute either Go or JavaScript.</p>
+
+        <p>The key handling is the part that deserves attention from anyone building detections. Each client generates an ephemeral keypair and derives a shared key against the operator's public key, so every infected host decrypts only messages addressed to it. Aikido's assessment is that this limits leakage <em>and</em> bottlenecks the operator: all clients consume all messages and no-op on the ones they cannot decrypt. That is a deliberate trade of throughput for operational security, and it is consistent with everything else here — a campaign optimised for staying small and staying quiet.</p>
+
+        <p>Aikido's victim telemetry supports that reading. Plaintext check-in messages contained 18 unique hostnames across 725 messages: ten macOS, five Linux, three Windows. Eighteen machines. The researchers note they lacked sufficient information to notify victims, and assess the operation as small and targeted.</p>
+
+        <p>Blockchain dead drops keep recurring in this class of malware because they solve takedown for the attacker. Aikido's recommendation is the right one to lift verbatim: organisations without a business need to interact with blockchains should consider alerting on network communication with HTTP-based blockchain services. An Arbitrum Sepolia testnet RPC call from a DevOps workstation is not a false positive waiting to happen. It is an event.</p>
+
+        <h2>Why DevOps workstations, specifically</h2>
+
+        <p>The campaign has been distributing through npm for months. In the same week as this disclosure, Checkmarx published analysis of <code>indexed-btree</code>, a related npm package that impersonated <code>sorted-btree</code> and reached close to two million weekly downloads before removal. Its innovation was skipping install scripts entirely: the loader lived inside <code>BTree.prototype.set</code>, firing when the library was <em>used</em> rather than when it was installed, and only when called with one specific key value. Checkmarx frames this as the predicted consequence of npm v12 blocking lifecycle scripts — the execution moved from install time to import time, which is where most scanners stop looking.</p>
+
+        <p>So why extend into Terraform? Aikido's reasoning is the clearest statement of target selection in the report: developer workstations are consistently high-value, but Terraform users are more likely to be involved in infrastructure deployment, so targeting DevOps workstations may give an even more direct pathway to critical production credentials.</p>
+
+        <p>That is the structural point. A Terraform provider is not a library that gets imported into an application and reviewed in a pull request. It is an executable binary that runs on the machine of whoever is applying infrastructure changes, at the moment they are applying them, holding whatever cloud credentials that operation requires. Provider code runs with the operator's authority by design. There is no sandbox between <code>terraform apply</code> and the credentials in the operator's environment, because the entire point of the provider is to use them.</p>
+
+        <p>This is the same authority-inheritance problem we keep finding in agent tooling from the other direction. When <a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">the MemTensor release pipeline was poisoned</a>, the payload's value came from what the build machine could already reach. When <a href="/posts/2026/07/hashicorp-terraform-mcp-server-credential-isolation-cves/">HashiCorp's own Terraform MCP server crossed tenant and token boundaries</a>, the failure was credential isolation, not code execution. The component that executes is rarely the interesting part; the credential context it executes inside always is.</p>
+
+        <h2>Fake ecosystems as social engineering</h2>
+
+        <p>One detail separates this from routine typosquatting. The threat actor registered two domains — <code>gogets[.]dev</code> and <code>gocommunity[.]io</code> — each within a day of creating the corresponding GitHub organisation, and stood up websites presenting them as Go package ecosystems offering vanity import paths. Aikido reports that neither provides any mechanism for external users to add packages and both appear non-functional.</p>
+
+        <p>They are not ecosystems. They are context. Go's vanity import paths mean a module can be named after any domain its author controls, and a developer evaluating <code>gogets.dev/btreex</code> who visits <code>gogets.dev</code> finds something that looks like a community project rather than an empty parking page. Combined with the backdated commit history, the package arrives with a plausible home, a plausible age, and a plausible release cadence — three independent legitimacy signals, all of them manufactured, none of them expensive.</p>
+
+        <p>Aikido's read is that the dedicated infrastructure suggests continued intent to publish malware targeting the Go supply chain. Building a fake ecosystem is not a one-package investment.</p>
+
+        <p>The delivery route remains social. Per The Hacker News' account of Graphalgo, developers are approached on LinkedIn and Facebook or through job postings by operators posing as non-existent Web3 companies, then asked to complete a coding task using a benign-looking GitHub repository that pulls the malicious dependency. The package never has to be discovered organically. It only has to survive the thirty seconds a candidate spends glancing at a dependency before running the take-home exercise they were told would be evaluated.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Search your state and lockfiles for the four packages by name.</strong> Terraform providers <code>gocommunity-io/dockerd</code> and <code>kreuzwenker/docker</code> (note the <code>-wen-</code> spelling versus the legitimate <code>kreuzwerker/docker</code>); Go modules <code>gocommunity.io/orderedbtree</code> and <code>gogets.dev/btreex</code>. All versions are affected.</li>
+          <li><strong>Do not rely on package age or publish date for Go dependencies.</strong> The proxy reports what the commit says. Anchor on the first date your own cache, artifact repository, or SBOM observed the module — that timestamp the attacker does not control.</li>
+          <li><strong>Treat provider execution as credentialed execution.</strong> Run <code>terraform apply</code> from CI with scoped, short-lived credentials rather than from workstations holding long-lived cloud keys. Pin providers by version and checksum in the lock file, and review lock-file changes as seriously as code changes.</li>
+          <li><strong>Alert on blockchain RPC traffic from build and DevOps hosts.</strong> If nothing in your estate legitimately talks to Ethereum testnet endpoints, that traffic is a high-fidelity signal with near-zero background noise.</li>
+          <li><strong>Assume install-script controls are no longer the relevant boundary.</strong> The <code>indexed-btree</code> technique executes on library use; the Terraform payload executes on matching input. Neither trips install-time analysis. If your supply-chain tooling only inspects lifecycle hooks, it is covering the technique attackers moved away from.</li>
+          <li><strong>Extend name-similarity checks past npm and PyPI.</strong> Terraform providers, Go modules, and container images all resolve by name, and the registries differ in what they verify. The <a href="/posts/2026/05/slopsquatting-llm-hallucinated-npm-packages-supply-chain/">slopsquatting problem</a> gets worse here, because an AI assistant suggesting a plausible-sounding Go import has no registry-level trust signal to be wrong about.</li>
+          <li><strong>If a developer ran an unvetted "coding assessment" repository, treat the workstation as suspect.</strong> That is the documented entry point for this campaign, and the targeted trigger means absence of observed malicious behaviour is not evidence of absence.</li>
+        </ul>
+
+        <p>The Terraform first is real and will be the headline. The durable finding is the one that survives this campaign entirely: in an ecosystem that derives package age from commit metadata, package age is an attacker-supplied field. Every defence built on "this library has been around a while" is reading a number someone else wrote. The Go proxy will keep serving <code>btreex</code> with its November 2025 date because immutability is the feature, and that date will keep being wrong.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.aikido.dev/blog/graphalgo-terraform-go-modules?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Aikido — “Graphalgo campaign spreads to Terraform providers and Go Modules,” Oliver Smith (published 22 September 2026, updated 24 September)</a></li>
+          <li><a href="https://proxy.golang.org/gogets.dev/btreex/@v/list?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Go module proxy — version list and <code>.info</code> metadata for <code>gogets.dev/btreex</code> (backdated timestamps verified directly)</a></li>
+          <li><a href="https://thehackernews.com/2026/09/attackers-use-malicious-terraform.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — “Attackers Use Malicious Terraform Providers to Deliver Go Malware via HashiCorp Registry” (23 September 2026, download counts and DPRK attribution)</a></li>
+          <li><a href="https://checkmarx.com/zero-post/npm-btree-malware-campaign-affects-millions-of-downloads-no-need-for-install-script/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Checkmarx Zero — “npm ‘btree’ Malware Campaign Affects Millions of Downloads, No Need for Install Script,” Bruno Dias (17 September 2026)</a></li>
+          <li><a href="https://www.reversinglabs.com/blog/graphalgo-campaign-respawned?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ReversingLabs — Graphalgo campaign analysis (cited by Aikido for shared infrastructure and public key)</a></li>
+          <li><a href="https://developer.hashicorp.com/terraform/registry?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HashiCorp — Terraform Registry documentation</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-31">2026-07-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/anthropic-claude-cyber-evals-real-systems-pypi-incident/">Claude Cyber Evaluations Reached Three Real Companies—and Published Malware to PyPI</a></h3><p>Anthropic says misconfigured cyber ranges let Claude reach three real organizations, publish a malicious PyPI package, and expose why agent evaluations need production-grade containment.</p><a class="text-link" href="/posts/2026/07/anthropic-claude-cyber-evals-real-systems-pypi-incident/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">GlassWorm — developer-targeting botnet takedown (CrowdStrike, Google)</a></h3><p>CrowdStrike, Google and Shadowserver simultaneously disrupt all four C2 channels of the GlassWorm malware campaign that has poisoned 300+ GitHub repos since 2025.</p><a class="text-link" href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-01">2026-04-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/zscaler-claude-code-leak-malware-vidar-ghostsocks/">Zscaler ThreatLabz — Fake Claude Code Source Distributes Vidar &amp;amp; GhostSocks Malware</a></h3><p>Zscaler ThreatLabz discovers a malicious GitHub repository impersonating leaked Claude Code source code, distributing Vidar infostealer and GhostSocks proxy malware to developers searching for the leak.</p><a class="text-link" href="/posts/2026/04/zscaler-claude-code-leak-malware-vidar-ghostsocks/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

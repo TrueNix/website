@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ServiceNow Patched Five AI Platform Flaws — Four Need No Login at All — al-ice.ai</title>
+  <meta name="description" content="ServiceNow's September 24 advisory (KB3159623) fixes CVE-2026-13016, an unauthenticated SQL injection rated 9.3, plus four authorization failures in the AI Platform. Four of the five are reachable without credentials — and one was quietly patched in August." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/servicenow-ai-platform-five-cves-unauthenticated-sql-injection-kb3159623/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="ServiceNow Patched Five AI Platform Flaws — Four Need No Login at All" />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">ServiceNow Patched Five AI Platform Flaws — Four Need No Login at All</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>ServiceNow published its September CVE batch on <strong>September 24</strong> as knowledge-base article <strong>KB3159623</strong>. Five vulnerabilities, all in the <strong>ServiceNow AI Platform</strong>, all filed into NVD within the same minute that evening. Two are rated critical under CVSS v4.0 at 9.3; the other three score 8.4, 8.7, and 8.7.</p>
+
+        <p>The batch is worth reading closely for a reason the severity numbers do not convey. Four of the five are described as reachable by an <em>unauthenticated</em> attacker, and the set covers every direction of failure at once: read data you should not see, write data you should not touch, execute SQL against the database directly, and escalate privilege off the back of it.</p>
+
+        <h2>The five, from the vendor's own text</h2>
+
+        <p>ServiceNow's descriptions are terse and carry the standard "in certain circumstances" hedge throughout. Reproduced with their identifiers, CVSS v4.0 scores as assigned by ServiceNow's PSIRT, and the CWE classification NVD recorded:</p>
+
+        <ul>
+          <li><strong>CVE-2026-13016</strong> — 9.3 critical, CWE-89. SQL injection. An unauthenticated user, in certain circumstances, could execute arbitrary SQL statements against the instance's underlying database and gain access to, or modify, instance data beyond what was intended. Vector <code>AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H</code> — network, no privileges, no user interaction, high impact across confidentiality, integrity and availability. Internal tracking PRB2036897.</li>
+          <li><strong>CVE-2026-86860</strong> — 9.3 critical, CWE-862. Missing authorization. An unauthenticated user could extract instance data beyond what was intended, <em>resulting in privilege escalation</em>. The vector carries high subsequent-system confidentiality and integrity impact (<code>SC:H/SI:H</code>), which is why it reaches critical despite being read-oriented. PRB2050429.</li>
+          <li><strong>CVE-2026-86858</strong> — 8.7 high, CWE-284. Improper access control. An unauthenticated user could <em>create, modify, or delete</em> instance data beyond what was intended. Pure integrity impact: <code>VC:N/VI:H/VA:N</code>. PRB2059173.</li>
+          <li><strong>CVE-2026-86859</strong> — 8.7 high, CWE-284. Authorization bypass. An unauthenticated user could access data they are not entitled to, potentially enabling further unintended access. PRB2055263.</li>
+          <li><strong>CVE-2026-86857</strong> — 8.4 high, CWE-862. Authorization bypass, and the only one in the batch requiring authentication (<code>PR:L</code>). An authenticated user could access data beyond their entitlement. Scores high on subsequent-system impact. PRB2033195.</li>
+        </ul>
+
+        <p>ServiceNow states it is not currently aware of malicious exploitation against ServiceNow instances for any of the five, and that each was found through internal security testing, customer security assessments, or its responsible-disclosure and bug bounty programs, and remediated independently.</p>
+
+        <h2>The August patch hiding in the September batch</h2>
+
+        <p>One sentence in the advisory differs from the other four, and it changes what the disclosure date means.</p>
+
+        <p>For CVE-2026-86858 — the unauthenticated create/modify/delete flaw — ServiceNow writes: <em>"In August 2026, ServiceNow deployed a security update to hosted instances and ServiceNow provided the update to our partners and self-hosted customers."</em> The corresponding sentence for the other four says simply "ServiceNow deployed a security update," with no month.</p>
+
+        <p>So an unauthenticated data-modification flaw was fixed roughly a month before it was named. For hosted customers that gap is invisible and harmless — the patch arrived when it arrived. For self-hosted operators it is the entire question: if you deferred the August update because nothing in it looked urgent, you have been carrying an unauthenticated write primitive on the strength of a changelog that did not tell you what it closed. The CVE gave that update a severity a month after the decision to skip it was made.</p>
+
+        <p>This is a recurring shape in vendor-managed platforms, and it is not misconduct — coordinating an identifier takes longer than shipping a fix, and shipping the fix first is the right order. But it does mean the published date measures disclosure, not exposure, and self-hosted deployments are the population for whom that distinction has teeth.</p>
+
+        <h2>Why "AI Platform" is the whole product</h2>
+
+        <p>Every one of these lands in a component ServiceNow calls the AI Platform, and it is easy to misread that as a bolt-on feature module. It is not. ServiceNow renamed the core Now Platform to the AI Platform; the affected releases are the platform release trains themselves — Yokohama, Zurich, and Australia. This is not a vulnerability in an optional assistant. It is a vulnerability in the thing your ITSM, CMDB, HR cases, and change management all run on.</p>
+
+        <p>That matters for scoping. A CMDB is, by construction, a map of everything an organisation operates: hostnames, owners, dependencies, environments, credentials-adjacent metadata. Unauthenticated SQL access to the instance database is not merely a data breach of one application. It is a breach of the inventory that describes every other application, and — via CVE-2026-86858's write path — of the record that change and approval workflows treat as ground truth.</p>
+
+        <p>Read alongside CVE-2026-86860's privilege escalation, the chain assembles itself without much imagination: read what you shouldn't, escalate off what you read, then write. None of the advisories claim these compose, and we are not asserting they do — ServiceNow assigned separate PRB identifiers and remediated them independently. But they were all present in the same platform at the same time, and a defender scoping worst case should assume an attacker who found one would look for the others.</p>
+
+        <h2>Which version actually contains the fixes</h2>
+
+        <p>The version table in KB3159623 is more confusing than it needs to be, and misreading it is the likeliest way to be told you are patched when you are not.</p>
+
+        <p>Customers in the ServiceNow August Patching Program received:</p>
+        <ul>
+          <li><strong>Yokohama</strong> — Patch 13 Hot Fix 5a</li>
+          <li><strong>Zurich</strong> — Patch 10 Hot Fix 4a W32</li>
+          <li><strong>Australia</strong> — Patch 2 Hot Fix 4b W32</li>
+        </ul>
+
+        <p>ServiceNow separately lists additional versions that contain remediations for all five CVEs in the September batch: <strong>Zurich</strong> Patch 10 Hot Fix 3b, Patch 11 Hot Fix 3; <strong>Australia</strong> Patch 4 Hot Fix 3, Patch 5.</p>
+
+        <p>Note that the second table has no Yokohama row. Operators on Yokohama should read the first table as their target and confirm against ServiceNow's release notes rather than inferring from the Zurich and Australia entries. Hot-fix suffixes such as <code>4a</code>, <code>4b</code>, <code>3b</code>, and the <code>W32</code> designation are not orderable by intuition — <code>Hot Fix 4a</code> is not self-evidently newer than <code>Hot Fix 3b</code> in a way an operator can reason about from the string alone. Check the exact build, not the patch number.</p>
+
+        <h2>The structural point</h2>
+
+        <p>Five CVEs, four unauthenticated, and not one of them is an AI vulnerability. There is no prompt injection here, no tool-call abuse, no model-in-the-loop anything. They are SQL injection and four flavours of missing authorization — the same bugs that have been in web applications for twenty-five years, sitting in a product whose name now begins with "AI."</p>
+
+        <p>That is the observation worth carrying forward, and it cuts against where most attention currently goes. A platform becomes an AI platform by adding agents, assistants, and autonomous workflows on top of an existing data layer. The agents inherit the data layer's access control. If that layer has an unauthenticated authorization bypass underneath it, no amount of guardrail engineering at the agent tier is relevant, because the attacker has no reason to go through the agent at all.</p>
+
+        <p>We reached the same conclusion from the opposite direction in <a href="/posts/2026/09/ibm-ftm-47-vulnerabilities-rag-poisoning-mcp-cve-2026-18875/">IBM's Financial Transaction Manager bulletin</a>, where one AI-specific RAG-poisoning flaw shipped alongside dozens of conventional deserialization and traversal bugs, and in <a href="/posts/2026/09/salesbleed-agentforce-zero-click-crm-exfiltration-anonymous-phishing/">SalesBleed's Agentforce exfiltration chain</a>, where the novel agent behaviour mattered only because it reached ordinary CRM data. ServiceNow itself has been here before, with <a href="/posts/2026/03/servicenow-ai-platform-cve-2026-0542/">CVE-2026-0542 in March</a>.</p>
+
+        <p>The pattern holds: the AI features are the reason these platforms are being deployed faster and wired to more data, and the vulnerabilities being found in them are overwhelmingly the boring kind. Budget accordingly.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Verify your exact build against KB3159623</strong> — not the patch number, the full hot-fix string. Hosted instances were updated by ServiceNow; self-hosted and partner-managed deployments are the ones carrying risk.</li>
+          <li><strong>Treat CVE-2026-86858 as a separate timeline.</strong> It was patched in August. If your self-hosted instance skipped that update, you were exposed to an unauthenticated write path for roughly a month longer than the September publication date suggests.</li>
+          <li><strong>Check whether your instance is internet-reachable.</strong> Four of five carry <code>AV:N/PR:N</code>. Network exposure is the difference between "patch on the normal cycle" and "patch now" — and ServiceNow instances are frequently public by design, because that is how portals and integrations work.</li>
+          <li><strong>Hunt retrospectively rather than relying on "no known exploitation."</strong> ServiceNow reports no evidence of malicious exploitation, which is a statement about what the vendor can see across hosted instances, not a clean bill of health for yours. For an unauthenticated SQL injection, look for anomalous query patterns and error rates against the instance database, and for unexpected record creation or deletion in the window before your patch landed.</li>
+          <li><strong>Scope by data, not by module.</strong> If this instance holds your CMDB, the blast radius of a read primitive is your entire estate inventory — asset ownership, dependency mapping, environment topology. Assess it as that, not as one application's records.</li>
+          <li><strong>Audit what your AI agents and integrations can reach in the platform.</strong> The vulnerabilities here bypass the agent layer entirely, but the same over-broad service accounts that make agent features convenient are what turn an authorization bypass into a full extraction. Least privilege at the integration account is the control that limits both.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://support.servicenow.com/kb?id=kb_article_view&amp;sysparm_article=KB3159623&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ServiceNow — KB3159623, “ServiceNow Posture, September 2026” (published 24 September 2026; CVE descriptions, PRB identifiers, affected release table)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-13016?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-13016, CVSS v4.0 9.3 critical, CWE-89 (published 24 September 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-86860?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-86860, CVSS v4.0 9.3 critical, CWE-862</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-86858?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-86858, CVSS v4.0 8.7 high, CWE-284 (August remediation noted in vendor text)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-86859?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-86859, CVSS v4.0 8.7 high, CWE-284</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-86857?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-86857, CVSS v4.0 8.4 high, CWE-862 (the one requiring authentication)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-04-18">2026-04-18</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/04/18/fastgpt-nosql-injection-auth-bypass-cve-2026-40351-40352/">FastGPT NoSQL Injection Auth Bypass (CVE-2026-40351/40352)</a></h3><p>FastGPT, an open-source AI agent building platform, ships with critical NoSQL injection flaws that allow unauthenticated admin login and authenticated account takeover.</p><a class="text-link" href="/posts/2026/04/18/fastgpt-nosql-injection-auth-bypass-cve-2026-40351-40352/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/wso2-cve-2026-5430-jwt-bypass-kev-forged-admin-tokens/">Five Months After the Patch, WSO2’s JWT Bypass Hit CISA’s KEV — With a Three-Day Fix Deadline</a></h3><p>CVE-2026-5430 lets attackers forge JWTs with unsupported algorithms into WSO2 admin sessions. Patched in April, exploited in the wild from September 13, added to CISA’s KEV on September 24 with a September 27 deadline — and the KEV blurb describes a different bug than NVD does.</p><a class="text-link" href="/posts/2026/09/wso2-cve-2026-5430-jwt-bypass-kev-forged-admin-tokens/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/gitlab-critical-patch-cicd-regex-rce-duo-mcp-scope-cves/">GitLab’s CI Regex Parser Hid Two 9.9 RCEs — and Its AI Features Needed Four More Fixes</a></h3><p>GitLab’s September 23 critical patch (19.4.1, 19.3.3, 19.2.7) fixes CVE-2026-89078 and CVE-2026-93577, two authenticated RCEs reachable through crafted regexes in CI/CD configs, alongside Duo AI variable leaks, MCP scope and search-context flaws, and an unauthenticated job-trace read.</p><a class="text-link" href="/posts/2026/09/gitlab-critical-patch-cicd-regex-rce-duo-mcp-scope-cves/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
