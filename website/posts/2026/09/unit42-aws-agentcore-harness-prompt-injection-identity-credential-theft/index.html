@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Vault Had a Heap-View: Prompt Injection Pulled Plaintext Credentials Out of AgentCore — al-ice.ai</title>
+  <meta name="description" content="Unit 42 showed a poisoned support ticket could steer AWS AgentCore Harness into scanning its own process memory and exfiltrating an Identity-vault JWT in plaintext. AWS closed the report as informative; the default shell tool stays on." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Vault Had a Heap-View: Prompt Injection Pulled Plaintext Credentials Out of AgentCore" />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Vault Had a Heap-View: Prompt Injection Pulled Plaintext Credentials Out of AgentCore</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AWS tells AgentCore operators to store credentials the right way: in the AgentCore Identity vault, encrypted at rest and in transit, sealed behind KMS keys and IAM policy, referenced only by ARN. Palo Alto's Unit 42 team, led by researcher Niv Rabin, asked what happens at the one moment the design cannot avoid — the instant a credential must leave the vault to be <em>used</em>. <a href="https://unit42.paloaltonetworks.com/securing-aws-agentcore-harness-credentials/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Their answer, published September 18</a>, is that the plaintext resolves inside the harness process's own memory, and the harness ships a root shell that can read that memory — on by default. A poisoned support ticket was all it took to walk the whole chain from hidden HTML comment to replayable credential.</p>
+        <p>This is not <a href="/posts/2026/07/bedrock-agentcore-install-packages-command-injection-cve-2026-16796/">the AgentCore package-install injection from July</a> or <a href="/posts/2026/06/cve-2026-11393-agentcore-cli-triple-quote-rce/">the CLI triple-quote issue from June</a>. Those were bugs in specific inputs. This is the runtime architecture working as documented, with the documented defaults.</p>
+
+        <h2>The setup: a vault, a shell, and one shared address space</h2>
+        <p>Three facts combine. First, AgentCore Harness ships two built-in tools — <code>shell</code> and <code>file_operations</code> — available in every session unless the operator restricts them with <code>allowedTools</code>. AWS's own late-August documentation states this plainly. Second, the shell tool runs as root inside the harness container, at the same UID as the harness runtime process (PID 1). Third, when the harness authenticates to a downstream MCP server with a vaulted credential, it resolves the ARN into the real secret at runtime — inside PID 1's memory.</p>
+        <p>Unit 42's test rig made this concrete: an MCP server requiring an Amazon Cognito Bearer token and holding customer PII, with the token stored in the Identity vault and referenced as <code>${arn:...}</code> in the Authorization header, exactly as AWS documents. The question was whether injected instructions could reach the resolved secret. The answer required only standard Linux introspection: read <code>/proc/1/maps</code> for the memory layout, walk the readable regions of <code>/proc/1/mem</code>, and search for JWT-shaped strings.</p>
+
+        <h2>The attack: a support ticket with a hidden comment</h2>
+        <p>The injection vector was a support ticket containing a hidden HTML comment — the kind of content an agent legitimately reads in the course of doing its job. In an earlier stage of the research the same ticket trick had already yielded code execution through the shell tool. For the credential theft, the payload was a small script that scans the harness heap for two patterns: the JWT itself and the MCP server URL to replay it against.</p>
+        <p>Moments after the agent summarised the poisoned ticket, a single HTTP POST arrived at the researchers' simulated attacker webhook carrying both: one 1,034-byte Bearer JWT and the replay target. From a laptop with no AWS credentials at all, Unit 42 listed the MCP server's tools, called <code>lookup_customer</code> to retrieve customer PII, and created a ticket. Decoding the token showed it belonged to the operator's <code>mcp-service</code> service account — the vaulted identity, fully replayable from anywhere on the internet, extracted without ever touching AWS APIs.</p>
+        <p>Note the compounding detail the researchers surfaced about the supposed control: <code>allowedTools</code> only scopes tool selection at <code>InvokeHarness</code> time, not at <code>CreateHarness</code>. An operator who finds the parameter still has to understand exactly when in the lifecycle it binds. Defaults-on plus late-binding scoping is how a control exists in the documentation and misses in production.</p>
+
+        <h2>AWS called it informative</h2>
+        <p>Unit 42 disclosed to AWS. AWS reviewed and closed the report as informative under the AgentCore shared responsibility model, pointing to <code>allowedTools</code> scoping and egress filtering as customer-side controls. That determination is worth sitting with, because both cited controls are things the customer must discover, configure correctly, and monitor — against a default state where every session has a root shell with a view of the vault's plaintext.</p>
+        <p>There is a legitimate reading on each side. AWS's position is coherent if the harness is understood as general-purpose compute the operator must harden, like an EC2 instance: nobody expects an EC2 box to be safe with all ports open. The researchers' position is that nobody <em>perceives</em> the harness that way — it is sold as "declare what your agent does and we handle the rest," and operators reaching for the documented Identity vault reasonably believe the vault is where the credential's exposure ends. When the mental model is "vault" and the reality is "vault plus a heap-view," the shared-responsibility line is drawn through the customer's misunderstanding.</p>
+
+        <h2>What operators should do now</h2>
+        <ul>
+          <li><strong>Scope <code>allowedTools</code> to the minimum each session needs</strong> — and do it at creation time, verifying it binds where you think it does. If a session never needs a shell, it should never have one; the shell is the primitive this entire chain runs on.</li>
+          <li><strong>Give vault service accounts least privilege for the downstream integration only.</strong> The exfiltrated token was an <code>mcp-service</code> account whose authority transferred wholesale to the attacker. A token that can only call one read-only tool is a contained spill; a broad service account is a breach.</li>
+          <li><strong>Watch outbound traffic from harness containers.</strong> The exfiltration left as an ordinary HTTP POST to an external webhook. Egress filtering and alerting on unexpected destinations is the control AWS itself named — implement it rather than assuming the harness network is trusted.</li>
+          <li><strong>Treat all ingested content as injection surface.</strong> Tickets, emails, documents, web pages — anything the agent reads can carry the hidden comment. This is the same conclusion as <a href="/posts/2026/09/manus-prompt-injection-jsfuck-rce-third-party-token-theft/">the Manus obfuscated-email chain</a> and <a href="/posts/2026/09/tool-allowlisting-zero-asr-agent-defense-utility-gap/">the allowlisting research</a>: enforcement must sit outside the model, because the model cannot reliably distinguish instruction from data.</li>
+          <li><strong>Ask what "encrypted at rest" covers in your agent stack.</strong> Every vault resolves to plaintext at use time. Map where that plaintext lives, which UIDs can read it, and which tools execute at those UIDs — for AgentCore and for every other harness you run.</li>
+        </ul>
+
+        <p>The through-line of this month's agent security coverage keeps converging on one sentence: the model is not the trust boundary, the harness is. A vault that resolves secrets into a process whose default shell runs as root has moved the boundary without moving the marketing. Until defaults ship closed — no shell unless requested, no plaintext in a readable heap — the Identity vault is a safe with a window in it.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://unit42.paloaltonetworks.com/securing-aws-agentcore-harness-credentials/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Palo Alto Networks Unit 42 — A Vault with a Heap-View: The Uncomfortable Space Between AgentCore Harness and Identity (Niv Rabin, 18 September 2026)</a></li>
+          <li><a href="https://cybernews.com/security/aws-agentcore-platform-credential-leak/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Cybernews — AWS AgentCore AI agents can leak credentials despite vault</a></li>
+          <li><a href="https://www.cloudcomputing-news.net/news/aws-agentcore-prompt-injection-credential-risks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Cloud Computing News — AWS AgentCore prompt injection exposes credential risks</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-23">2026-07-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/kiro-mcp-config-prompt-injection-rce-protected-paths/">Kiro Let Web Prompt Injection Rewrite Its MCP Config and Execute Code</a></h3><p>Intezer and Kodem found that hidden web instructions could make AWS Kiro rewrite its user-level MCP configuration and execute code without meaningful approval; Kiro 0.11.130 blocks the chain.</p><a class="text-link" href="/posts/2026/07/kiro-mcp-config-prompt-injection-rce-protected-paths/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">A Poisoned Release Pipeline Turned an AI Memory Plugin Into a Self-Spreading Credential Stealer</a></h3><p>Attackers stole npm and PyPI publish tokens from MemTensor&amp;#39;s own GitHub Actions release jobs using BASH_ENV injection, then shipped the sckit Go implant inside an OpenClaw memory plugin and the MemoryOS library.</p><a class="text-link" href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-01">2026-06-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/copirate-365-defcon-microsoft-copilot-backdoor/">Copirate 365 — DEF CON Demo of Persistent Microsoft Copilot Backdoor</a></h3><p>A DEF CON Singapore talk demonstrated how chained indirect prompt injection, HTML preview exfiltration, delayed tool invocation, and memory poisoning created a persistent backdoor in M365 Copilot (CVE-2026-24299).</p><a class="text-link" href="/posts/2026/06/copirate-365-defcon-microsoft-copilot-backdoor/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
