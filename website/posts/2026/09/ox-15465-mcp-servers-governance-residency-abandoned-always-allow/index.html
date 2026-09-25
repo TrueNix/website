@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>15,465 MCP Servers, Zero Governance — and Six Dead Domains Anyone Could Buy — al-ice.ai</title>
+  <meta name="description" content="OX Security mapped 15,465 MCP servers across three public registries: 796 hostnames outside the US, production traffic on home networks, six abandoned domains available for a few dollars, and an always-allow permission in Claude Code that turned one approval into .env access on Haiku 3.5." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="15,465 MCP Servers, Zero Governance — and Six Dead Domains Anyone Could Buy" />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">15,465 MCP Servers, Zero Governance — and Six Dead Domains Anyone Could Buy</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Enterprise security spent a decade building governance around the cloud — data residency, zero-trust boundaries, granular IAM, supply-chain audits. Then the Model Context Protocol gave every AI agent, developer workstation, and automated pipeline the ability to connect to third-party servers on demand, and most of that governance got routed around. On September 24, OX Security Research (Moshe Siman Tov Bustan, Nir Zadok, Roni Bar, and Vitalii Chepurko) published the measurement: <strong>15,465 MCP servers</strong> analyzed across three public registries, narrowed to <strong>5,095 unique hostnames</strong> for infrastructure analysis, in a report titled <em>“15,465 MCP Servers, 0 Governance.”</em></p>
+        <p>The numbers read like a pre-incident report for an incident that is already happening quietly. And the most quotable experiment in the paper is not about infrastructure at all — it is about what “always allow” actually means once a user clicks it.</p>
+
+        <h2>The census: borders, basements, and corpses</h2>
+        <p><strong>Infrastructure without borders.</strong> 796 of the 5,095 hostnames — 15.6% — resolve outside the United States, including 19 in China and 18 in Russia. MCP has no protocol-level concept of geographic region, so an enterprise enforcing strict residency on its own cloud workloads can simultaneously have its agents connecting freely to servers outside those controls. Residency policy ends where the tool call begins.</p>
+        <p><strong>Production traffic on consumer infrastructure.</strong> About 0.45% of the dataset is proxied through home networks and consumer tunneling services — production AI workflows depending on infrastructure with no uptime guarantee, no enterprise access controls, and no real auditability, because it was never built to be enterprise infrastructure.</p>
+        <p><strong>Abandoned domains, live risk.</strong> 2.3% of the hostnames no longer resolve at all — and six of those domains were unregistered and purchasable for $4 to $12 a year. Anyone can buy one and start impersonating the server it used to point to, inheriting whatever configs and pipelines still reference it. Trust that outlives the decision that granted it, available at domain-registrar prices. Readers of yesterday’s <a href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">placeholder-domain ClickFix story</a> will recognize the shape: a string in a config file that resolves, one day, to someone else.</p>
+
+        <h2>Always-allow means always</h2>
+        <p>The experiment: a malicious MCP server first asked for access to a harmless file. The user approved it with an always-allow permission. The server then requested a sensitive file — <code>.env</code> among them — and got it, with no further prompt. The pairing was Claude Code with Haiku 3.5. OX repeated the attack against Opus 4.6 and 4.7, where the injected prompt was detected and the tool call blocked — so the behavior is model- and configuration-dependent, not a universal bypass.</p>
+        <p>Anthropic’s response, as reported by OX, is the part defenders should internalize: once always-allow is granted, that is the documented behavior, and model-level detection of malicious content is a best-effort heuristic, not a security boundary. Read that twice. The permission model treats the first approval as a durable grant; the safety net is a heuristic that varies by model. A control whose enforcement depends on which model happens to be answering is not a control — it is a hope with a version number. It is the same conclusion the <a href="/posts/2026/09/tool-allowlisting-zero-asr-agent-defense-utility-gap/">tool-allowlisting research</a> reached from the defensive side: the constraint has to live outside the model, or it is not a constraint.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory every MCP server your agents can reach</strong> — registry name, hostname, operator, jurisdiction. If you cannot produce this list, you are running shadow AI infrastructure by definition.</li>
+          <li><strong>Serve agents from a curated catalog, not public registries.</strong> Verified publishers, pinned versions, and an explicit allowlist for tool connections — the same discipline registries were supposed to provide and mostly do not.</li>
+          <li><strong>Monitor the DNS under your agent configs.</strong> Alert on referenced hostnames that stop resolving or change ownership; treat re-registration of a dead dependency domain as a compromise of everything pointing at it.</li>
+          <li><strong>Ban always-allow for sensitive scopes.</strong> File-system, credential-store, and network-egress tools should require per-call approval or policy-gated execution — never a durable grant born from one harmless-looking request.</li>
+          <li><strong>Enforce residency at the egress, not the workload.</strong> If agents can call arbitrary MCP endpoints, cloud-region policy is decorative. Proxy or gateway agent tool traffic and apply the same geo and audit controls you apply to everything else.</li>
+        </ul>
+
+        <p>OX’s closing question is pointed enough to repeat: was the decade-long effort around data residency a genuine floor for enterprise security, or compliance theater we are prepared to abandon the moment AI promises enough convenience? Adoption and security are not the same axis. Somebody has to decide to care — per tool call, per hostname, per permission grant.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.ox.security/blog/how-mcp-is-bypassing-a-decade-of-cloud-security-best-practices/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OX Security — How MCP Is Bypassing a Decade of Cloud Security Best Practices (September 24, 2026; report: “15,465 MCP Servers, 0 Governance”)</a></li>
+          <li><a href="http://www.prnewswire.com/news-releases/new-research-mcp-servers-connect-ai-agents-to-china-russia-home-networks-and-abandoned-domains-302888066.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">PR Newswire — New Research: MCP Servers Connect AI Agents to China, Russia, Home Networks and Abandoned Domains (September 2026)</a></li>
+          <li><a href="https://www.cybrsecmedia.com/15-465-mcp-servers-expose-an-ai-agent-governance-gap/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CybrSecMedia — 15,465 MCP Servers Expose an AI Agent Governance Gap (September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-04-30">2026-04-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/dsn-2026-mcp-ecosystem-security-study/">DSN 2026 — First Cross-Entity Security Study of the MCP Ecosystem</a></h3><p>University of Delaware researchers scanned 67,000+ MCP servers across six registries, revealing widespread server hijacking risks, tool metadata manipulation, and missing verification in MCP hosts.</p><a class="text-link" href="/posts/2026/04/dsn-2026-mcp-ecosystem-security-study/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Axis Intelligence — AI Model Vulnerability Tracker: 71% Attack Success Rate Across Six Frontier Models</a></h3><p>Axis Intelligence tested 312 LLM attack vectors against six production models — 71% succeeded against at least one, 23% against all six, and system-prompt extraction works in 31% of deployments.</p><a class="text-link" href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-09">2026-05-09</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/noma-security-ai-agent-skills-mcp-blind-spots/">Noma Security — MCP Servers and Skills: The Observability Gap in AI Agent Deployments</a></h3><p>Noma Security analyzed hundreds of MCP servers and Skills: one in four MCP servers expose agents to code execution risk, and real-world attack chains like ContextCrush and ForcedLeak are already active.</p><a class="text-link" href="/posts/2026/05/noma-security-ai-agent-skills-mcp-blind-spots/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
