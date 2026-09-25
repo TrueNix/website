@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SalesBleed: A Public Lead Form Became a Zero-Click Wire Out of Salesforce — al-ice.ai</title>
+  <meta name="description" content="Zenity Labs disclosed three Agentforce flaws, collectively SalesBleed: poisoned Web-to-Lead submissions hijacked AI agents to exfiltrate CRM records via image tags and Slack unfurling, and abused a Slack reply action for anonymous phishing. All three are now patched." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/salesbleed-agentforce-zero-click-crm-exfiltration-anonymous-phishing/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="SalesBleed: A Public Lead Form Became a Zero-Click Wire Out of Salesforce" />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">SalesBleed: A Public Lead Form Became a Zero-Click Wire Out of Salesforce</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The most dangerous prompt injection is the one nobody is present for. <strong>Zenity Labs</strong> disclosed <strong>September 24, 2026</strong> three vulnerabilities in <strong>Salesforce Agentforce</strong>, collectively dubbed <strong>SalesBleed</strong>, in which an attacker who never logs in, never touches the target tenant, and never interacts with a victim can still walk CRM records out the door. The entry point is the public <strong>Web-to-Lead form</strong> — a public endpoint designed to accept untrusted input from strangers. The exfiltration channel is the agent itself, doing exactly what it was built to do: read records, follow instructions found inside them, and render helpful output. All three chains are now patched, but the shape of the failure generalizes far beyond one vendor.</p>
+        <p>Zenity reported the findings to Salesforce on <strong>June 1</strong>; Salesforce confirmed it was working on fixes a day later. The Trusted URLs bypass fix was confirmed <strong>August 19</strong>, and Zenity finished testing the remaining fixes on <strong>September 21</strong>, ahead of disclosure with a video proof-of-concept. The timeline is worth noting for what it implies: the exposure window for customers ran the better part of a quarter, and nothing in the attack required anything the victim organization did wrong during it.</p>
+
+        <h2>A poisoned lead waits for a routine question</h2>
+        <p>The first two flaws convert lead intake into a data-exfiltration channel. The attacker submits a Web-to-Lead form carrying indirect prompt instructions, which sit dormant inside Salesforce until an employee asks an Agentforce agent an ordinary question — the researchers' example is <code>check my latest leads and help me with the newest one</code>. Processing the poisoned lead activates the hidden instructions: the agent queries the <strong>Accounts table through its Query Records subagent tool</strong>, takes a couple of fields such as company name and deal size, and pastes them into a <strong>subdomain string under an attacker-controlled hostname</strong>. It then prints that URL back to the user as an HTML image tag. The frontend fetches the image with no further sanitization and no user interaction — and the fetch, routed through the attacker's authoritative DNS and web infrastructure, carries the record data with it.</p>
+        <p>This is the classic three-ingredient agent compromise the researchers call out explicitly: attacker-controlled content, tool access to sensitive internal data, and a rendered output path that reaches the network. Any one ingredient is benign. Salesforce had all three in the same room, and the guardrail meant to separate them — <strong>Trusted URL controls</strong> that restrict and redact external destinations for Agentforce and Einstein agents — failed in two specific ways. Zenity found the redaction did not register hostnames ending in an <strong>unrecognized top-level domain</strong>, and that <strong>certain characters interfered with URL parsing</strong>, so exfiltration strings sailed through a control whose entire job was stopping them. URL allowlists that parse differently from the renderer are not a control; they are a second parser waiting to disagree with the first.</p>
+
+        <h2>Slack unfurling: the same wire, zero clicks again</h2>
+        <p>The second chain reuses the same planted injection but changes the output path to <strong>Slack's URL-unfurling mechanism</strong>. Slack automatically fetches linked URLs to generate previews, so when an employee interacts with the Salesforce agent over Slack and the agent surfaces a crafted link, Slack itself initiates the request carrying CRM data to attacker infrastructure — again with no click and no visible anomaly. The exfiltration primitive here belongs to the collaboration layer, not the agent, which is the uncomfortable part: the agent only had to emit a link, and a helpful feature in a different product did the rest. Defenders who scope prompt-injection review to the agent boundary will keep missing chains whose final hop lives in unfurlers, preview renderers, and notification pipelines.</p>
+
+        <h2>The agent's identity became the phish</h2>
+        <p>The third flaw, detailed in a separate Zenity writeup, targets trust rather than data. The Agentforce <strong>Reply to a Slack Thread</strong> action required <strong>no user confirmation before sending and carried no visible attribution to the invoking user</strong>. A malicious insider already chatting with the agent could therefore send phishing messages under the agent's trusted identity while staying anonymous — and an external attacker could reach the same outcome through the Web-to-Lead injection, having the agent post the phish once an employee processed the poisoned lead. Agent-impersonation phishing inherits every permission the organization granted the agent's voice: internal distribution, executive-adjacent credibility, and none of the friction that normally attaches to sending as someone else.</p>
+        <p>Zenity co-founder and CTO <strong>Michael Bargury</strong> framed the lesson as containment, not correctness: secure-by-design matters, but agents encounter edge cases in the real world that design-time review misses, and the OpenAI–Hugging Face sandbox escape is the same trend in a different costume. Monitoring what agents actually do in production is the backstop, because a single overlooked gap redefines the blast radius after deployment.</p>
+
+        <h2>What defenders should do now</h2>
+        <ul>
+          <li><strong>Confirm Salesforce's SalesBleed fixes are active on your tenant and review lead-triggered agent activity for June through September.</strong> Hunt for agent queries against Accounts or other sensitive objects that originated from lead-processing sessions, and for rendered output containing image tags or links to unfamiliar hosts.</li>
+          <li><strong>Treat every unauthenticated intake surface as an instruction channel.</strong> Web-to-Lead, support portals, file uploads, and calendar invites are prompt-injection entry points wherever an agent later reads them. Inventory which agents read externally submitted records and what tools those agents hold.</li>
+          <li><strong>Require confirmation and attribution on every agent action that speaks as you.</strong> Messaging, email, and ticket-update actions need explicit user approval plus visible invoking-user attribution — the exact two controls the Slack reply action lacked.</li>
+          <li><strong>Test your URL redaction against the renderer, not the spec.</strong> Feed the agent exfiltration-shaped strings with unusual TLDs, parsing edge characters, and redirector chains, then observe what the frontend actually fetches. A redaction control that disagrees with the renderer is decorative.</li>
+          <li><strong>Scope review to the full output path, including unfurlers and previews.</strong> Slack link previews, email clients, and notification renderers are exfiltration hops. Disable or constrain automatic fetching of agent-emitted links where the data classification demands it.</li>
+          <li><strong>Apply the three-ingredient test to every agent workflow.</strong> Wherever external content, sensitive tool access, and network-reaching output meet, assume the combination is exploitable and either separate them or instrument the junction with runtime monitoring.</li>
+        </ul>
+
+        <p>The pattern rhymes with this spring's <a href="/posts/2026/04/microsoft-copilot-studio-salesforce-agentforce-prompt-injection-cves/">ShareLeak and PipeLeak disclosures in Copilot Studio and Agentforce</a> — same vendor, same flaw family, five months later and one privilege level more creative. It also belongs beside this week's <a href="/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/">AgentCore harness findings</a>, where default configuration turned prompt injection into credential theft. The industry keeps relearning the same lesson per product: agents collapse the distance between reading untrusted data and acting on it, and every control that assumes those are separate operations needs re-examination.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://labs.zenity.io/post/salesbleed-0-click-data-exfiltration-on-agentforce?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zenity Labs — SalesBleed: 0-click data exfiltration in Agentforce (September 24, 2026)</a></li>
+          <li><a href="https://labs.zenity.io/post/salesbleed-hijacking-agentforce-in-slack-for-anonymous-phishing?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zenity Labs — SalesBleed: anonymous phishing via Agentforce in Slack (September 24, 2026)</a></li>
+          <li><a href="https://www.theregister.com/security/2026/09/24/salesforce-agentforce-vulns-allowed-0-click-crm-data-theft-anonymous-phishing/5298958?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Register — Salesforce Agentforce vulns allowed 0-click CRM data theft, anonymous phishing (September 24, 2026)</a></li>
+          <li><a href="https://www.darkreading.com/application-security/salesbleed-exploits-salesforce-agents-slack-phishing?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dark Reading — SalesBleed exploits Salesforce agents to enable Slack phishing (September 2026)</a></li>
+          <li><a href="https://cybersecuritynews.com/salesforce-salesbleed-vulnerability/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News — Salesforce indirect prompt injection vulnerability enables 0-click data exfiltration (September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">A Branch Named Like a Commit Broke Plugin Pinning in Four Coding Agents</a></h3><p>Plugin4Shell, disclosed September 17 by AIR Security, bypasses plugin SHA pinning in Claude Code, Codex, GitHub Copilot, and Gemini CLI for zero-click RCE. Claude Code 2.1.179 and Codex 0.146.0 are patched; Copilot has no fix and Gemini CLI will not get one.</p><a class="text-link" href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-13">2026-05-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Miggo Security — Anthropic, Google, Microsoft Paid Bug Bounties for AI Agent Hijacks, No CVEs Issued</a></h3><p>A researcher demonstrated prompt injection attacks that hijacked AI agents from Anthropic, Google, and Microsoft via GitHub Actions — all three companies paid bounties quietly but published no advisories or CVEs.</p><a class="text-link" href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-16">2026-04-16</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/microsoft-copilot-studio-salesforce-agentforce-prompt-injection-cves/">Capsule Security — ShareLeak and PipeLeak prompt injection in Copilot Studio and Agentforce</a></h3><p>Capsule Security disclosed CVE-2026-21520 (ShareLeak) in Microsoft Copilot Studio and PipeLeak in Salesforce Agentforce — indirect prompt injection via public forms leading to data exfiltration.</p><a class="text-link" href="/posts/2026/04/microsoft-copilot-studio-salesforce-agentforce-prompt-injection-cves/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
