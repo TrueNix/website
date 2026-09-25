@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Five mcp-remote CVEs Say “Arbitrary Code Execution.” The Research They Cite Does Not. — al-ice.ai</title>
+  <meta name="description" content="MITRE published five CVEs against mcp-remote on September 24, pinned to version 0.1.38 and citing a researcher package that explicitly withdrew two of those claims. The package is now at 0.14.3 under a different maintainer, and the CVE records say nothing about it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/mcp-remote-five-cves-descriptions-diverge-from-cited-advisories/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Five mcp-remote CVEs Say “Arbitrary Code Execution.” The Research They Cite Does Not." />
+  <meta name="post:date" content="2026-09-25" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Five mcp-remote CVEs Say “Arbitrary Code Execution.” The Research They Cite Does Not.</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-25">2026-09-25</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 24, MITRE published five CVE records against <code>mcp-remote</code> — the stdio-to-HTTP bridge that lets MCP clients which only speak local stdio connect to remote MCP servers. The package pulled 784,494 downloads in the week ending September 21. Its GitHub repository carries 1,603 stars. If you run Claude Desktop, Cursor, or any other stdio-only MCP client against a hosted server, there is a good chance this binary is in your process tree.</p>
+        <p>The five records are <strong>CVE-2026-51994</strong>, <strong>CVE-2026-51995</strong>, <strong>CVE-2026-51996</strong>, <strong>CVE-2026-51997</strong>, and <strong>CVE-2026-52001</strong>. All five were published within four-tenths of a second of each other at 15:17 UTC. All five cite the same source: a public research package by the researcher <a href="https://github.com/playb0t?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">playb0t</a>, tagged <code>v1.0.1</code>, containing seven bounded advisory records.</p>
+        <p>Read the CVE descriptions and then read the advisories they point at, and three separate problems fall out. This is not a story about a new attack on MCP infrastructure. It is a story about what happens to a careful piece of research on its way through the CVE pipeline — and it has a concrete consequence for anyone whose exposure decisions are driven by a scanner.</p>
+
+        <h2>Problem one: two records describe findings the researcher retracted</h2>
+        <p>CVE-2026-51996 reads: <em>“An issue in geelen mcp-remote 0.1.16 through 0.1.38 allows a remote attacker to execute arbitrary code via the src/lib/utils.ts and the getServerUrlHash function.”</em> Its sole technical reference is <code>advisories/F-04-md5-token-isolation.md</code>.</p>
+        <p>That file is titled “MD5-based storage namespace hardening.” Its classification block reads:</p>
+        <pre><code>- CWE-328: Use of Weak Hash
+- Evidence: defense-in-depth / corrected claim
+- CVSS: not applicable to the current evidence
+- CVE: no public record claimed</code></pre>
+        <p>The finding is that <code>getServerUrlHash()</code> uses MD5 to derive per-server directory names under <code>~/.mcp-auth/</code>. The advisory’s own “Correction and limitations” section says the original write-up “overstated the practical mechanism,” explains that a chosen-prefix collision is not the same thing as a second-preimage attack against an already-fixed identifier, and states plainly: <em>“No token namespace takeover or real-token access was demonstrated.”</em> The project’s <code>CORRECTIONS.md</code> repeats it.</p>
+        <p>A weak hash used as a filename encoding became, in the CVE record, remote arbitrary code execution.</p>
+        <p>CVE-2026-52001 has the same shape. It cites <code>F-11-sse-token-origin-scope.md</code>, which is also marked <em>“defense-in-depth / corrected claim,”</em> and which spends most of its length explaining why the original claim <em>does not hold</em>: the pinned <code>@modelcontextprotocol/sdk@1.25.3</code> already compares the SSE endpoint origin against the connection origin, and the pinned <code>undici@7.12.0</code> already strips authorization and cookie headers on cross-origin redirects. The advisory’s words: these controls <em>“refute the original claim of a current token-forwarding exploit path.”</em> The CVE records it as information disclosure.</p>
+        <p>The researcher put a bold note at the top of the advisory index — <em>“F-04 and F-11 do not claim current CVE eligibility”</em> — and a second one below it: <em>“No new CVE identifier is claimed until a public CVE record binds it to the corresponding advisory.”</em> Both got CVEs anyway.</p>
+
+        <h2>Problem two: “arbitrary code execution” appears twice with no supporting evidence class</h2>
+        <p>CVE-2026-51997 also asserts remote code execution, <em>“via the open() functions.”</em> Its reference is <code>F-08-browser-url-validation.md</code>, whose actual claim is that the URL check added in <code>0.1.16</code> — the fix for <a href="https://nvd.nist.gov/vuln/detail/CVE-2025-6514?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CVE-2025-6514</a>, the 9.6-rated command injection JFrog disclosed in July 2025 — accepts HTTP(S) URLs but does not reject loopback, private, link-local, or cloud-metadata destinations before handing the URL to the user’s browser. Classification: CWE-20, evidence class “source review,” impact described as internal-service interaction, reconnaissance, or browser-mediated CSRF. Not code execution. The advisory explicitly notes that “browser security controls and the behavior of the destination service affect practical impact.”</p>
+        <p>The distinction matters because <code>open()</code> is exactly where the 2025 command-injection bug lived. A description that says “arbitrary code execution via the open() functions” reads, to anyone triaging quickly, as a regression of CVE-2025-6514. It is not one. The current release wraps the URL in <code>sanitizeUrl()</code> from <code>strict-url-sanitise</code> before calling <code>open</code> — which is the 2025 fix, still in place.</p>
+        <p>Of the five, only two survive contact with their sources intact. CVE-2026-51994 (SSRF via the <code>resource_metadata</code> URL lifted from a server’s <code>WWW-Authenticate</code> header) and CVE-2026-51995 (blind SSRF via <code>authorization_servers[]</code>) both map to findings the researcher marked <em>“Local PoC, reverified”</em> — validated with localhost-only canaries in February and re-confirmed in May. Those are real, and they are the ones worth your attention. CISA’s ADP enrichment attached a CVSS 3.1 base of 7.5 (<code>AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N</code>) to CVE-2026-51995 on the day of publication; the researcher declined to assert any numeric score, writing that “the demonstrated evidence does not independently establish every impact metric.”</p>
+        <p>Worth noting what even the strong findings do and don’t show: the F-01 advisory states the localhost canary “demonstrated request issuance; it did not demonstrate response exfiltration.” That is an honest scoping statement, and it is the kind of detail that disappears entirely when a finding is compressed into one sentence.</p>
+
+        <h2>Problem three: the version ranges point at a package that no longer exists</h2>
+        <p>This is the part with operational consequences.</p>
+        <p>Every one of the five CVEs pins its upper bound at <code>0.1.38</code>. That was correct at disclosure — the researcher’s <code>TIMELINE.md</code> records <code>0.1.38</code> as the current release on 2026-07-31 and notes “Later upstream release: none known as of disclosure.” The package had sat untouched since February 5, 2026.</p>
+        <p>Then, three weeks after disclosure, it moved. npm’s registry metadata shows <code>0.1.39</code> through <code>0.1.43</code> published on August 21, another six releases on August 23, <code>0.2.0</code> on August 24, and a further march up to <code>0.14.3</code> on September 21 — 51 releases in a month against a package that had shipped nothing in six. The maintainer list changed with it: <code>0.1.38</code> was published by <code>threepointone</code> and <code>geelen</code>; <code>punkpeye</code> appears from <code>0.1.39</code> onward and is now the sole maintainer. The repository moved too — <code>github.com/geelen/mcp-remote</code> now issues a 301 to <code>github.com/punkpeye/mcp-remote</code>.</p>
+        <p>None of that is visible in the CVE records. A defender reading “0.1.16 through 0.1.38” has no way to learn from NVD whether <code>0.14.3</code> is fixed, partially fixed, or unfixed. There is no “fixed in” version, because at the time the CVEs were minted there was no maintainer response to point at.</p>
+        <p>We checked the published <code>0.14.3</code> tarball directly. The picture is mixed, and it is worth being precise about it:</p>
+        <ul>
+          <li><strong>F-04 (MD5 namespace) is unchanged.</strong> <code>getServerUrlHash()</code> still ends in <code>crypto.createHash("md5")</code>. It now folds more inputs into the digest — authorize resource, sorted authorize params, sorted headers, client metadata URL, token endpoint — which makes the namespace more specific, but the primitive is the same. Given the researcher withdrew the exploitability claim, this is a hygiene item, not an exposure.</li>
+          <li><strong>F-09 (cleartext token storage) is unchanged in kind.</strong> Tokens still land as files under <code>~/.mcp-auth/</code> (or <code>MCP_REMOTE_CONFIG_DIR</code>), written with <code>mode: 384</code> — that is <code>0o600</code>, the restrictive permission the advisory credits to <code>0.1.37</code>. The writes are now atomic via temp-file-and-rename. Still cleartext on disk; still not in an OS keychain.</li>
+          <li><strong>F-08 (browser launch) retains the 2025 sanitizer</strong>, as described above.</li>
+          <li><strong>The discovery fetch path still has no destination policy we could find.</strong> <code>discoverOAuthProtectedResourceMetadata()</code> passes the server-supplied <code>resourceMetadataUrl</code> through to a fetch with no scheme, hostname, or private-address classification anywhere in the call chain. Searching the bundle for loopback and link-local guards turns up checks in three unrelated places — a TLS requirement on the token endpoint, the local callback server binding, and a CLI validation of <code>--token-endpoint</code> — but nothing gating outbound discovery requests. There is one <code>redirect: "manual"</code> in the bundle, and it is in the cached dynamic-client-registration preflight, not in the metadata discovery path that F-10 describes.</li>
+        </ul>
+        <p>That is a read of a minified bundle, not a reproduction, and we are labelling it as such: it establishes that the specific guards the advisories ask for are absent from the shipping code, not that the SSRF is exploitable in <code>0.14.3</code>. But it means the two findings with real PoC evidence — the ones that <em>did</em> earn their CVEs — have no visible remediation in the current release, while the CVE records tell scanners the affected range topped out seven months and 51 versions ago.</p>
+
+        <h2>The feed problem underneath all of this</h2>
+        <p>Query these five CVE IDs against OSV and all five come back. Query GitHub’s global advisory database for npm advisories affecting <code>mcp-remote</code> and you get exactly one result: GHSA-6xpm-ggf7-wc3p, the 2025 command-injection record. The September 2026 batch is not there.</p>
+        <p>OSV’s own ingestion illustrates the gap. Because MITRE’s records carry <code>"product": "n/a"</code> and <code>"version": "n/a"</code> in their structured affected-products fields, OSV had to parse the version range out of the free-text description — its metadata literally records <code>"source": "DESCRIPTION"</code> for the extracted <code>introduced</code> and <code>fixed</code> events. It resolved them to GIT commit ranges on <code>github.com/punkpeye/mcp-remote</code>, and mapped <code>fixed</code> to <code>02619aff36e79803d7c894e8c8ae7b34b2d11f8c</code> — which is the commit the researcher identifies as the <em>reviewed vulnerable</em> release, <code>0.1.38</code>. An advisory whose upper bound is a version gets reinterpreted downstream as a version where the bug is fixed.</p>
+        <p>We flagged the mirror image of this a day ago with <a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">the DBHub advisories</a>, where a real CVE was invisible to NVD and the GHSA database entirely. The failure modes are opposite and the lesson is the same: for AI and agent tooling, the CVE feeds are currently a lagging, lossy index rather than a reliable inventory. The <a href="/posts/2026/09/litellm-cve-2026-59822-mcp-auth-bypass-kev-first/">LiteLLM KEV entry</a> showed what it looks like when the pipeline works. This shows what it looks like when it does not.</p>
+
+        <h2>Why this keeps happening to MCP packages specifically</h2>
+        <p>Three structural conditions line up here, and they are not unique to <code>mcp-remote</code>.</p>
+        <p>The first is that OAuth discovery in an MCP bridge is a genuine trust boundary that does not look like one. The researcher’s framing is the sharpest line in the whole package: <em>“Remote metadata is not passive data. Every URL, redirect, origin, and credential handoff is a trust decision.”</em> A bridge that fetches a URL because a server told it to in a <code>WWW-Authenticate</code> header is making an outbound request on behalf of an untrusted party, from inside the user’s network. That is the same shape as the SSRF class we covered in <a href="/posts/2026/09/gitlab-mcp-pat-exfiltration-dns-rebinding-cves/">the GitLab MCP advisories</a> — and it keeps recurring because the protocol’s discovery flow hands URL selection to the remote side by design.</p>
+        <p>The second is maintainer discontinuity. The disclosure timeline records a private report on 2026-02-17, revalidation on 2026-05-03 after no acknowledgement, the 90-day window elapsing on 2026-05-18, and public disclosure on 2026-07-31 — five and a half months with no maintainer response. Then the package changed hands and was rewritten at high velocity. An unresponsive maintainer and a fast-moving new one produce the same outcome for a CVE record: version data that is stale on arrival.</p>
+        <p>The third is that careful evidence grading does not survive the trip. This research package is unusually disciplined — it separates “Local PoC, reverified” from “Source review” from “defense-in-depth / corrected,” it publishes a corrections file that admits three of its own CVSS vectors did not match their displayed scores, and it declines to claim CVEs for findings it downgraded. Every one of those distinctions was flattened into a single sentence per CVE, and in two cases the flattening inverted the researcher’s conclusion.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Do not treat these five CVEs as five vulnerabilities.</strong> Two (CVE-2026-51994, CVE-2026-51995) rest on reverified local PoCs. One (CVE-2026-51997) is a source-review finding whose description overstates impact. Two (CVE-2026-51996, CVE-2026-52001) trace to findings the researcher explicitly withdrew.</li>
+          <li><strong>Do not read “0.1.38” as “fixed in 0.1.39.”</strong> The upper bound is the last version the researcher reviewed, not a remediation boundary. The maintainer and repository both changed after disclosure; treat the current line as unaudited against these findings rather than as patched.</li>
+          <li><strong>Constrain the bridge at the network layer.</strong> The two credible findings are outbound SSRF from your host. Egress policy on the process running <code>mcp-remote</code> — deny loopback beyond its own callback port, deny RFC1918, deny <code>169.254.169.254</code> — neutralises them regardless of which version you run. That control does not depend on the CVE record being right.</li>
+          <li><strong>Treat <code>~/.mcp-auth/</code> as a credential store.</strong> Access tokens, refresh tokens, client secrets, and PKCE verifiers sit there in cleartext with <code>0600</code> permissions. That stops other users; it does not stop same-user malware, backup tooling, or an agent with filesystem access. Exclude it from sync and backup scopes, and scope the OAuth clients it holds narrowly.</li>
+          <li><strong>Check whether your scanner returns anything for these IDs.</strong> GitHub’s npm advisory database does not currently carry them. If your dependency alerting is GHSA-sourced, this batch is invisible to it — and so is the fact that the package changed owners.</li>
+          <li><strong>When a CVE description and its cited advisory disagree, believe the advisory.</strong> This batch has a linked primary source for every record. Not every batch does, which is the more common and worse failure.</li>
+        </ul>
+
+        <p>There is a version of this story where the headline is “five new CVEs in a package with 784,000 weekly downloads,” and that version would be wrong in a way that costs defenders time. The useful finding is narrower and more uncomfortable: a researcher did the hard part correctly — bounded the claims, graded the evidence, published the corrections, declined the CVEs they did not think were earned — and the identifier system that sits downstream discarded exactly the distinctions that made the work trustworthy. Agent tooling is being shipped and rewritten faster than the vulnerability-tracking infrastructure around it can describe, and when the two disagree, the raw advisory is the artifact with the evidence in it.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-51994?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-51994, SSRF via <code>resource_metadata</code> URL (published 24 September 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-51995?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-51995, information disclosure, CVSS 3.1 7.5 assigned by CISA-ADP (CWE-200)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-51996?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-51996, cites advisory F-04</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-51997?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-51997, cites advisory F-08</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-52001?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-52001, cites advisory F-11</a></li>
+          <li><a href="https://github.com/playb0t/mcp-remote-oauth-security?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">playb0t — mcp-remote OAuth Trust-Boundary Security Advisories, v1.0.1 (advisory index, CORRECTIONS.md, TIMELINE.md, METHODOLOGY.md)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-6514?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2025-6514, mcp-remote OS command injection, CVSS 3.1 9.6 (JFrog, July 2025; fixed in 0.1.16)</a></li>
+          <li><a href="https://github.com/punkpeye/mcp-remote?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">punkpeye/mcp-remote — current repository (301 target of github.com/geelen/mcp-remote)</a></li>
+          <li><a href="https://www.npmjs.com/package/mcp-remote?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">npm — mcp-remote registry metadata (release timestamps, maintainers, 0.14.3 published 21 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">DBHub’s Read-Only Mode Was Dead Code — and Three Advisories Landed at Once</a></h3><p>Three DBHub advisories published September 24 describe an unauthenticated MCP endpoint, a DNS-rebinding bypass, and a read-only guardrail whose database-level enforcement was never wired up. All were fixed in June; the CVEs surfaced publicly three months later.</p><a class="text-link" href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-30">2026-07-30</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/mcp-ruby-sdk-023-five-transport-cves-session-ownership/">MCP Ruby SDK 0.23.0 Fixes Five Transport Flaws—but Session Ownership Still Needs Application Logic</a></h3><p>Five newly published CVEs affect the official MCP Ruby SDK through 0.22.0. Version 0.23.0 adds DNS-rebinding defenses and resource limits, but deployers must configure session ownership validation.</p><a class="text-link" href="/posts/2026/07/mcp-ruby-sdk-023-five-transport-cves-session-ownership/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-16">2026-09-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/praisonai-27-cve-agent-security-boundaries/">PraisonAI’s 27-CVE Batch Breaks Agent Approval, MCP, Sandbox, and Authentication Boundaries</a></h3><p>Twenty-seven PraisonAI CVEs published September 14–15 include 12 critical flaws across agent APIs, MCP, tool approval, sandboxes, files, webhooks, and JWT authentication.</p><a class="text-link" href="/posts/2026/09/praisonai-27-cve-agent-security-boundaries/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
