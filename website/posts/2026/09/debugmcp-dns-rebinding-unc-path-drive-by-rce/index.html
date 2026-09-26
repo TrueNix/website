@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Microsoft’s Debugger for AI Agents Shipped a Drive-By RCE — and the Fix Never Got a Version Number — al-ice.ai</title>
+  <meta name="description" content="Imperva Threat Research chained DNS rebinding, a stateless MCP transport, and a Windows UNC path to get code execution on developer machines running microsoft/DebugMCP 1.1.4 — a VS Code extension that starts an unauthenticated MCP server on port 3001. The fix landed as a commit titled “resolve icms” with no version bump, no release, and no advisory." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/debugmcp-dns-rebinding-unc-path-drive-by-rce/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Microsoft’s Debugger for AI Agents Shipped a Drive-By RCE — and the Fix Never Got a Version Number" />
+  <meta name="post:date" content="2026-09-26" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Microsoft’s Debugger for AI Agents Shipped a Drive-By RCE — and the Fix Never Got a Version Number</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-26">2026-09-26</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 25, <strong>Imperva Threat Research</strong> published its analysis of a vulnerability in <strong>DebugMCP</strong>, the Microsoft-published VS Code extension that hands an AI coding agent real control of the debugger — breakpoints, stepping, variable inspection, expression evaluation. In version <strong>1.1.4</strong>, a developer who merely visited a malicious web page could end up running attacker code on their own machine, in the background, with no further interaction. Imperva describes it plainly as a drive-by.</p>
+        <p>The detail worth sitting with is not the exploit chain, impressive as it is. It is the remediation. Imperva says the maintainers patched the flaw silently — no version bump, no advisory — and published its writeup only after a 90-day disclosure window. We checked the repository against that claim, and it holds up in an uncomfortable way.</p>
+
+        <h2>One click of “Install,” one unauthenticated server</h2>
+        <p>DebugMCP lives at <a href="https://github.com/microsoft/DebugMCP?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">github.com/microsoft/DebugMCP</a> — 526 stars at the time of writing — and ships to the VS Code Marketplace as <code>ozzafar.debugmcpextension</code>. Its purpose is to let GitHub Copilot, Cline, Cursor, Codex, Windsurf and other MCP clients drive the debugger instead of having a human paste stack traces into a chat box. Installing it starts a local MCP server on <strong>port 3001, with no authentication</strong>. That is the whole premise: a privileged local tool endpoint that any agent on the box can call.</p>
+        <p>Imperva notes the amplifier — the same extension is installable in one click not just on laptops but on shared environments like GitHub Codespaces and OpenVSCode Server, where “local” is a much more generous word than it sounds.</p>
+
+        <h2>Four weaknesses that only matter together</h2>
+        <p>The chain is a good lesson in how agent tooling fails: every link is individually defensible, and the composition is fatal.</p>
+        <ul>
+          <li><strong>No Host or Origin validation.</strong> The MCP TypeScript SDK added DNS-rebinding defenses in version 1.24.0 after <strong>CVE-2025-66414</strong> — the advisory covering the SDK’s failure to enable that protection by default, rated 8.1 (CVSS v3.1) and 7.6 (CVSS v4.0) when published in December 2025. But the protection only applies automatically when a server uses the SDK’s preconfigured Express app. DebugMCP built its own, and the header-validation middleware was never wired in.</li>
+          <li><strong>A stateless transport that skips the handshake.</strong> MCP over HTTP is meant to require an <code>initialize</code> request and an <code>initialized</code> notification before any tool call. The SDK’s <code>StreamableHTTPServerTransport</code> enforces that with a <code>validateSession</code> check — but when <code>sessionIdGenerator</code> is undefined, the check returns immediately and the lifecycle is bypassed entirely. DebugMCP v1.1.4 configured the transport in exactly that stateless mode, collapsing the attack to a <em>single</em> no-cors HTTP request.</li>
+          <li><strong>A file-execution primitive in the tool schema.</strong> The <code>start_debugging</code> tool takes a <code>fileFullPath</code> argument and tells VS Code to launch a debug session against it. That is not a bug; that is the product. It only becomes a weapon once an unauthenticated stranger can call it.</li>
+          <li><strong>UNC paths solve the attacker’s reconnaissance problem.</strong> Needing the full path of an executable on the victim’s disk sounds like a serious constraint — until you remember Windows accepts <code>\\SERVER\SHARE\path</code>. Imperva pointed the path at an attacker-controlled SMB share; VS Code’s debug infrastructure handed it to the Python launcher, which fetched the remote file and ran it as the victim. Their proof of concept called <code>os.system("calc.exe")</code>, and Calculator opened.</li>
+        </ul>
+        <p>Delivery across the same-origin boundary used classic DNS rebinding: a domain with a 1–2 second TTL, a JavaScript loop polling until the browser re-resolves the name to <code>127.0.0.1</code>, and then a fetch the browser considers same-origin that lands on the victim’s loopback debugger. Imperva demonstrated it on Firefox 150.0.3 and notes that Firefox added Local Network Access protections in version 153 — a mitigation that exists in Chrome and Firefox but is not yet universal, and is not a substitute for the server checking its own headers.</p>
+
+        <h2>What the repository actually shows</h2>
+        <p>We pulled the fix commit Imperva cites, <code>86776b2</code>, directly from the GitHub API. The findings line up with the report and add some texture:</p>
+        <ul>
+          <li>The commit is dated <strong>2026-05-24</strong> and its message is, in its entirety, <strong>“resolve icms”</strong> — a reference to Microsoft’s internal incident-management system. The accompanying test file it adds is titled for two ICM ticket numbers. Nothing in the commit message says “security,” “RCE,” or “rebinding.”</li>
+          <li>It adds a <code>LOOPBACK_HOSTNAMES</code> allow-list and exported <code>isLoopbackHost</code> / <code>isLoopbackOrigin</code> helpers, plus a new <code>debugmcp.bindHost</code> setting defaulting to <code>127.0.0.1</code>, with a README “Security model” section and a settings warning that changing it to <code>0.0.0.0</code> exposes “arbitrary code execution via <code>evaluate_expression</code> and <code>start_debugging</code>” to the network. The new test suite explicitly asserts that <code>attacker.example:3001</code>, <code>rebind.local:3001</code>, and <code>169.254.169.254</code> are rejected — the maintainers knew exactly which attack they were closing.</li>
+          <li>The <code>version</code> field in <code>package.json</code> reads <strong>1.1.4 before the fix commit and 1.1.4 after it</strong>. The repository carries no git tags and no GitHub releases. Imperva’s statement that the fix shipped without a version bump is verifiably correct at the commit level; the extension has since moved on to 2.4.1.</li>
+        </ul>
+        <p>So a user on 1.1.4 who checked their version number, checked the releases page, and checked for an advisory would have found no signal at all that they were running a remotely exploitable debugger. The fix was real and reasonably thorough. The <em>communication</em> of the fix was an internal ticket number.</p>
+
+        <h2>The pattern this belongs to</h2>
+        <p>This is the same failure shape we keep documenting. <a href="/posts/2026/09/gitlab-mcp-pat-exfiltration-dns-rebinding-cves/">GitLab’s MCP server fell to DNS rebinding</a> against a loopback endpoint holding a personal access token. <a href="/posts/2026/03/backslash-mcp-neighborjack-network-exposure/">Backslash found hundreds of MCP servers bound to 0.0.0.0</a> with command-execution tools attached. <a href="/posts/2026/05/network-ai-cve-2026-46701-mcp-unauthenticated-cross-origin/">CVE-2026-46701 was unauthenticated cross-origin MCP tool invocation</a>. Imperva’s own prior work on the <a href="/posts/2026/04/13/framelink-figma-mcp-command-injection-cve-2025-53967/">Framelink Figma MCP server (CVE-2025-53967, CVSS 8.0)</a> involved the same custom-Express pattern. The ecosystem has now produced enough of these that “unauthenticated loopback MCP server” should be read as a finding on sight, not a design choice.</p>
+        <p>The developer-targeting angle is what raises the severity above the CVSS a scanner would assign. Imperva is right to stress it: the compromised host is not a kiosk, it is a machine holding cloud CLI sessions, SSH keys, tokens in VS Code secret storage, an open VPN tunnel, and push access to production branches. A payload running as that user inherits all of it silently.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update DebugMCP.</strong> The fix ships after 1.1.4 — Imperva points to 1.2.0 and later; current is 2.4.1. Because there was no advisory, assume nothing about what your team is running and check the installed extension version directly rather than trusting an absence of alerts.</li>
+          <li><strong>Never set <code>debugmcp.bindHost</code> away from loopback.</strong> The maintainers’ own warning text is unusually blunt about this. If you are port-forwarding into a container, forward the loopback port; do not bind the debugger to an interface.</li>
+          <li><strong>Audit what is listening on loopback on developer machines.</strong> This is the actionable generalization. Enumerate local ports on engineer endpoints and treat every unauthenticated MCP server as an internet-reachable one, because DNS rebinding makes that distinction thinner than it looks.</li>
+          <li><strong>Make Host/Origin validation a review gate for any MCP server you build.</strong> Using the SDK is not enough — the protection rides on <code>createMcpExpressApp</code>. If your team hand-rolled an Express instance, the middleware is your responsibility, and stateless transport mode silently removes the handshake that might otherwise have slowed an attacker down.</li>
+          <li><strong>Treat “no CVE, no release note” as a detection gap, not an all-clear.</strong> Imperva’s report names no CVE identifier. Version-based vulnerability management sees nothing here. If your SCA tooling is your only signal on agent tooling, you are blind to exactly this class of silent fix.</li>
+        </ul>
+
+        <p>One more thing deserves saying, because the maintainers’ patch quietly concedes it: Imperva notes that even with header validation in place, an LLM can still be steered by indirect prompt injection into calling <code>start_debugging</code> on a file outside VS Code’s workspace trust — and the fix does not address that. The rebinding hole is closed. The deeper question, of a debugger tool that executes whatever path its agent is talked into supplying, is still open. Locking the front door is progress. It is not the same as deciding who gets to give the agent orders.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.imperva.com/blog/from-debugging-to-code-execution-rce-in-microsoft-devlabs-debugmcp/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Imperva Threat Research — From Debugging to Code Execution: RCE in Microsoft DevLabs’ DebugMCP? (25 September 2026)</a></li>
+          <li><a href="https://github.com/microsoft/DebugMCP/commit/86776b21609578ba7087b0b8ec316c2994c72a32?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">microsoft/DebugMCP — commit 86776b2 “resolve icms” (24 May 2026), adding loopback Host/Origin validation and the <code>debugmcp.bindHost</code> setting</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-w48q-cv73-mx4w?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MCP TypeScript SDK advisory GHSA-w48q-cv73-mx4w — CVE-2025-66414, DNS rebinding protection not enabled by default before 1.24.0</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-53967?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2025-53967, Framelink Figma MCP Server command injection (CVSS 8.0)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/bifrost-ai-gateway-unauthenticated-rce-insecure-admin-default/">Bifrost’s Off-by-Default Admin Auth Turned an AI Gateway Into Two Unauthenticated RCE Paths</a></h3><p>CVE-2026-90898 lets an unauthenticated caller run commands through Bifrost’s MCP stdio registration, and a second advisory reaches code execution through remote Go plugin loading. Transport 2.1.0 is the remediation floor.</p><a class="text-link" href="/posts/2026/09/bifrost-ai-gateway-unauthenticated-rce-insecure-admin-default/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">DBHub’s Read-Only Mode Was Dead Code — and Three Advisories Landed at Once</a></h3><p>Three DBHub advisories published September 24 describe an unauthenticated MCP endpoint, a DNS-rebinding bypass, and a read-only guardrail whose database-level enforcement was never wired up. All were fixed in June; the CVEs surfaced publicly three months later.</p><a class="text-link" href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/opencode-ghsa-632h-h47v-g4x4-upgrade-endpoint-rce/">A Content-Type Confusion Turned OpenCode’s Upgrade Endpoint Into Drive-By RCE</a></h3><p>GHSA-632h-h47v-g4x4 chains an install-target injection in OpenCode’s /global/upgrade endpoint with a text/plain content-type confusion, letting a malicious webpage run code on a developer’s machine. Version 1.18.22 is the fix; 1.14.30 through 1.18.21 are affected.</p><a class="text-link" href="/posts/2026/09/opencode-ghsa-632h-h47v-g4x4-upgrade-endpoint-rce/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
