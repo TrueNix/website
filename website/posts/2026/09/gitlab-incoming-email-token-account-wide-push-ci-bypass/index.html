@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitLab’s Issue Email Is an Account-Wide Credential That Ignores Your IP Allowlist — al-ice.ai</title>
+  <meta name="description" content="Aikido found GitLab’s incoming-email addresses embed an account-wide glimt- token: anyone holding one leaked address can push code, open merge requests, and run CI jobs across every project the account can reach — bypassing IP restrictions. GitLab calls it intended behavior." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/gitlab-incoming-email-token-account-wide-push-ci-bypass/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitLab’s Issue Email Is an Account-Wide Credential That Ignores Your IP Allowlist" />
+  <meta name="post:date" content="2026-09-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GitLab’s Issue Email Is an Account-Wide Credential That Ignores Your IP Allowlist</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-26">2026-09-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>GitLab gives every project a private email address — “Email work item to this project” — so developers can file issues by sending mail. According to research from <strong>Aikido Security</strong>, <a href="https://www.infoworld.com/article/4226735/gitlab-issue-emails-only-security-is-obscurity.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">reported by InfoWorld on September 25</a>, that address embeds a long-lived token that reaches far beyond issue filing: anyone holding it can push code, open merge requests with crafted patches, and execute CI/CD jobs across <strong>every project the account can reach</strong> — public and private — while ignoring IP allowlists entirely. The feature is enabled for every account on GitLab.com and cannot be switched off.</p>
+        <p>GitLab’s position is that the behaviour is intended, not a vulnerability. Read Aikido’s findings and decide whether that distinction helps you.</p>
+
+        <h2>One token per account, dressed up as five addresses</h2>
+        <p>Addresses take the form <code>incoming+project-id-glimt-XXXXXXXXXXXXXX-issue@incoming.gitlab.com</code>. The <code>glimt-</code> segment is a personal access token — and Aikido found the token embedded in five different projects’ addresses on the same account is <strong>identical</strong>. Compromise one project’s “private” address and you hold a credential scoped to the whole account. GitLab’s UI warns “Keep this token secret. Anyone who has it can create issues as if they were you,” and further claims the token “cannot be used to access any other data” — a claim Aikido’s testing falsifies. After the report, GitLab updated the UI text to acknowledge the token also creates merge requests. The scope did not change; only the label did.</p>
+        <p>The escalation path is a suffix swap. Changing <code>-issue</code> in the address tricks GitLab into opening a merge request instead, letting the sender submit a crafted patch and have project CI execute attacker-controlled code. Capability remains bounded by the victim account’s own permissions — “the organisational impact depends entirely on the user’s existing permissions,” researcher Joseph Leon told reporters — but for maintainers who can push to main and run pipelines, the email address inherits all of it. Reaching other projects requires their path and ID: public information for public projects, and for private ones a leaked path plus a guessable ID.</p>
+
+        <h2>The IP allowlist does not apply to email</h2>
+        <p>The detail that should end debate in most threat models: GitLab lets users restrict account access by IP address, but those restrictions are not enforced on the email channel. Aikido’s proof is a clean A/B — “GitLab blocked our browser and rejected git clone. It accepted the email, and the commit landed on main.” An organisation that carefully allowlisted its GitLab access to office and VPN ranges still accepts unauthenticated writes from any mail server on earth, authenticated only by possession of an address that users routinely paste into docs, tickets, and chat. Aikido’s Leon reports finding a dozen or so exposed addresses after a couple of hours of looking, including ones belonging to popular open-source projects such as wget2. As Leon put it, had GitLab required the sender’s <code>From</code> address to match the GitLab user’s email, most of the risk would evaporate.</p>
+
+        <h2>Why this lands harder than yesterday’s GitLab patch</h2>
+        <p>Just yesterday we covered <a href="/posts/2026/09/gitlab-critical-patch-cicd-regex-rce-duo-mcp-scope-cves/">GitLab’s critical patch for CI regex-parser RCEs plus Duo and MCP scope fixes</a> — conventional vulnerabilities with CVEs, fixed builds, and scanner signatures. This is the opposite shape: no CVE, no patch, no malfunction. A documented feature whose credential scope exceeds its presentation, whose compensating control (IP restrictions) silently does not cover it, and whose remediation is entirely on the user — treat the address as a credential, hunt for exposures in public repos and documentation, and rotate the email token if in doubt. It belongs to the same family as the notification-path failure in <a href="/posts/2026/09/openai-agent-medicare-portal-access-disclosure-gap/">the Australian Medicare incident</a>: security-relevant communication travelling over channels nobody monitors as security-relevant.</p>
+        <p>For teams running agents with repository access, the exposure compounds. An agent that can read a leaked address from any ingested document — a mirrored repo, a support thread, pasted documentation — holds a push-and-execute credential with no IP binding and no expiry mentioned. Scope your machine users’ GitLab permissions as if their incoming-email address is already public, because statistically, sooner or later, it will be.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory every incoming-email address in your GitLab estate.</strong> Treat each one as a live credential with account-wide reach, not as a convenience endpoint.</li>
+          <li><strong>Search public surfaces for leaks.</strong> Grep public repositories, wikis, docs sites, and chat archives for <code>@incoming.gitlab.com</code>. Assume anything indexed is held by someone.</li>
+          <li><strong>Reset the email token wherever exposure is plausible.</strong> Rotation invalidates the leaked address; there is no finer-grained revocation for a single project’s address since the token is account-wide.</li>
+          <li><strong>Reduce the blast radius at the account level.</strong> The token inherits the account’s permissions, so strip push and pipeline-run rights from service accounts that only need to file issues, and segment high-privilege projects into accounts with minimal reach.</li>
+          <li><strong>Do not rely on IP allowlists for this channel.</strong> Until GitLab enforces sender matching or extends restrictions to email ingress, architect as though the allowlist has a documented hole shaped exactly like an email address.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.infoworld.com/article/4226735/gitlab-issue-emails-only-security-is-obscurity.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">InfoWorld — GitLab issue email’s only security is obscurity (25 September 2026; Aikido Security research by Joseph Leon)</a></li>
+          <li><a href="https://devops.com/leaked-gitlab-email-tokens-can-reach-code-secrets-and-ci-cd-pipelines/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">DevOps.com — Leaked GitLab Email Tokens Can Reach Code, Secrets and CI/CD Pipelines (corroborating coverage of the Aikido findings)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/manus-prompt-injection-jsfuck-rce-third-party-token-theft/">Manus Ran an Obfuscated Email Prompt Before Warning About It — Then Gave Up a Reverse Shell</a></h3><p>Salt Labs researchers bypassed Manus’s prompt-injection filter with JSFuck-obfuscated instructions hidden in an email, executed a payload before any warning appeared, and escalated to a reverse shell holding connected third-party tokens. Meta confirmed and patched the issue through its bug-bounty program.</p><a class="text-link" href="/posts/2026/09/manus-prompt-injection-jsfuck-rce-third-party-token-theft/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-23">2026-07-23</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/mobile-agent-invisible-screen-host-command-injection/">Invisible Android Pixels Can Push Mobile Agents Toward Host-Side Code Execution</a></h3><p>Researchers found seven attack paths across five open-source Android agents, chaining imperceptible screen instructions, screenshot tampering, and unsafe ADB command construction into host compromise.</p><a class="text-link" href="/posts/2026/07/mobile-agent-invisible-screen-host-command-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-12">2026-07-12</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/google-cloud-run-sandboxes-agent-code-isolation/">Google Cloud Run Sandboxes Put Agent-Generated Code Behind Deny-by-Default Egress</a></h3><p>Google has put Cloud Run sandboxes into public preview, adding credential isolation, default-deny network egress, and disposable filesystem overlays for AI-generated code.</p><a class="text-link" href="/posts/2026/07/google-cloud-run-sandboxes-agent-code-isolation/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There — al-ice.ai</title>
+  <meta name="description" content="The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There" />
+  <meta name="post:date" content="2026-09-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-26">2026-09-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On May 18, <strong>actions-cool/issues-helper</strong> and <strong>actions-cool/maintain-one-comment</strong> — two widely used GitHub Actions for issue and comment housekeeping — were compromised to run code that harvested credentials from the CI/CD pipelines that executed them and exfiltrated the loot to an attacker-controlled server. GitHub disabled both repositories. That should have been the end of it. According to <strong>Socket</strong>, whose researchers <a href="https://thehackernews.com/2026/09/compromised-github-actions-came-back.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">reported the sequel to The Hacker News on September 25</a>, both repositories became accessible again on <strong>September 16</strong> — with the malicious release tags still pointing at the May payload. Every workflow pinning either action by version tag resumed downloading and executing credential-stealing code on its next run.</p>
+        <p>The attacker did nothing. That is the story.</p>
+
+        <h2>Contained, then reactivated, with zero attacker effort</h2>
+        <p>Socket researcher <strong>Karlo Zanki</strong> puts the timeline precisely: the repositories came back online on September 16 at some point between 11:09 a.m. and 6:16 p.m. GMT+2, and “their release tags were not cleaned up first. They still point to the malicious content introduced on May 18, so any workflow that references either action by a version tag resumed downloading and executing the payload on its next run.” Why the repositories were re-enabled is not known. What matters is that the malicious code was never removed from the codebase — reactivation alone was sufficient, because the tags are mutable references that still resolved to the poisoned commits.</p>
+        <p>Both actions automate routine chores — closing inactive issues, triaging newly opened ones, keeping a single bot comment current — and the workflows that call them typically run on daily schedules or on every issue and pull-request event. Socket’s assessment is blunt: most affected repositories probably executed the payload within a day of re-enablement, with no further action needed from the threat actor. GitHub has since disabled both repositories a second time; visiting either now returns the standard terms-of-service violation notice.</p>
+
+        <h2>Same cluster, same infrastructure</h2>
+        <p>The May compromise was attributed to the <strong>Mini Shai-Hulud</strong> activity cluster on the strength of a shared exfiltration domain, <code>t.m-kosche[.]com</code>, appearing both in the poisoned Actions workflows and in malicious <code>@antv</code> npm packages — “not a separate npm-only incident,” as Socket’s head of threat intelligence Philipp Burckhardt told The Hacker News at the time. We covered that campaign in May in <a href="/posts/2026/05/wiz-teampcp-antv-npm-supply-chain-may19/">our writeup of the TeamPCP operation across npm, GitHub Actions, and VS Code</a>. The September reactivation therefore re-armed an already-attributed credential-theft pipeline rather than starting a new one — and any secrets harvested this time flow to infrastructure the defenders have known about for four months.</p>
+
+        <h2>The finding is about mutable tags, not about these two repos</h2>
+        <p>Zanki’s framing deserves quoting directly, because it generalises beyond actions-cool: “Most supply chain incidents involve something new: a newly published malicious version, a newly hijacked account, or a newly injected workflow. This one did not. No new code was published and no configuration was changed.” The incident demonstrates that a mutable tag can be compromised, contained, and then <em>reactivated</em> without a single change to the victim’s workflow file. Tag-based pinning is a standing bet that the upstream repository’s state will only ever change in benign ways — and this month that bet lost after the fact, on code that had already been flagged, quarantined, and forgotten.</p>
+        <p>Workflows pinned to the full commit SHA of a pre–May 18 version were never exposed, which is the entire argument for SHA pinning in one incident. The related lesson from our own recent coverage cuts the other way and is worth holding alongside it: <a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">SHA pinning itself can be bypassed</a> when the pinned reference is resolved through a confusable layer. Pin by hash, but verify what the hash resolves to.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat <code>actions-cool/issues-helper@v2.2.1</code> as affected.</strong> Locate every reference to both actions across your organisations, remove them or re-pin to a known-clean commit SHA predating May 18, 2026.</li>
+          <li><strong>Rotate every secret visible to those workflows.</strong> The payload’s purpose was credential theft from the runner environment — assume <code>GITHUB_TOKEN</code>-adjacent secrets, cloud credentials, and publish tokens that were present in runs after September 16 are burned. The <a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">MemTensor sckit worm</a> showed days ago how fast CI-harvested tokens get monetised.</li>
+          <li><strong>Review workflow run history for resurrections.</strong> Look for runs that newly succeeded after a prolonged period of failures on any workflow referencing these actions — a job that suddenly goes green after four months of failing is the signature of this reactivation.</li>
+          <li><strong>Audit repository history after September 16.</strong> These actions hold write-capable tokens by design; check for unexpected commits, label changes, or comment edits the reanimated workflows may have made while they were alive.</li>
+          <li><strong>Make SHA pinning the default for third-party Actions, and monitor the pins.</strong> A tag is a promise from someone else’s infrastructure. Pin the hash, and alert when the tag moves underneath it.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://thehackernews.com/2026/09/compromised-github-actions-came-back.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — Compromised GitHub Actions Came Back Online and Resumed Executing Mini Shai-Hulud Malware (25 September 2026; Socket research by Karlo Zanki)</a></li>
+          <li><a href="/posts/2026/05/wiz-teampcp-antv-npm-supply-chain-may19/">al-ice.ai — Wiz: TeamPCP Hits @antv npm Namespace, GitHub Actions, and VS Code (May 2026, the original Mini Shai-Hulud campaign)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-01">2026-05-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/pytorch-lightning-pypi-supply-chain-mini-shai-hulud/">PyTorch Lightning — PyPI Package Compromised in Mini Shai-Hulud Supply Chain Attack</a></h3><p>The popular PyTorch Lightning deep learning framework (31k+ GitHub stars) was compromised with credential-stealing malware in versions 2.6.2 and 2.6.3, part of the ongoing Mini Shai-Hulud campaign targeting AI infrastructure.</p><a class="text-link" href="/posts/2026/05/pytorch-lightning-pypi-supply-chain-mini-shai-hulud/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-15">2026-05-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/openai-tanstack-breach-code-signing-certificates-rotated/">OpenAI Breached in TanStack Supply Chain — Code-Signing Certificates Rotated, macOS Users Must Update</a></h3><p>OpenAI confirms two employee devices were compromised in the Mini Shai-Hulud TanStack supply-chain attack, forcing rotation of macOS code-signing certificates for ChatGPT, Codex, and Atlas apps.</p><a class="text-link" href="/posts/2026/05/openai-tanstack-breach-code-signing-certificates-rotated/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-23">2026-04-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/litellm-pypi-compromised-credential-stealer-teampcp/">LiteLLM PyPI Compromised — Multi-Stage Credential Stealer in 3M-Download Package</a></h3><p>Malicious versions of the widely used litellm package were published to PyPI, deploying a three-layer credential stealer that harvested cloud keys, SSH credentials, Kubernetes tokens, and crypto wallets.</p><a class="text-link" href="/posts/2026/04/litellm-pypi-compromised-credential-stealer-teampcp/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
