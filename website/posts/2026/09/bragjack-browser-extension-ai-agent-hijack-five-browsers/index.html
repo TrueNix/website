@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Extension Hijacked the AI Inside Five Browsers — No Prompt Injection Required — al-ice.ai</title>
+  <meta name="description" content="BragJack, disclosed by Forever Security researcher Gal Weizman, uses a single malicious extension and Chromium declarativeNetRequest to seize built-in browser AI agents in Chrome, Comet, Edge, Opera Neon, and Claude in Chrome — with zero clicks, two CVEs, and over $20,000 in bounties." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/bragjack-browser-extension-ai-agent-hijack-five-browsers/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Extension Hijacked the AI Inside Five Browsers — No Prompt Injection Required" />
+  <meta name="post:date" content="2026-09-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Extension Hijacked the AI Inside Five Browsers — No Prompt Injection Required</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-26">2026-09-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 16, <strong>Gal Weizman of Forever Security</strong> published <strong>BragJack</strong>, a technique that hijacks the built-in AI assistants of five Chromium-based browsers with a single malicious extension: Gemini in Chrome, Perplexity Comet, Microsoft Edge, Opera Neon, and Claude in Chrome. The vendors paid out more than $20,000 in bounties — $7,000 each from Google and Perplexity, $5,000 from Microsoft, $900 from Opera, $600 from Anthropic — and two CVEs were assigned. Every attack runs with zero clicks once the extension is installed.</p>
+        <p>The detail that should unsettle agent deployers: Weizman says he did not bypass any model guardrail and did not use prompt injection at all. He found something he considers worse, and gave it a name — <strong>Prompt Forcing</strong>. Where prompt injection sneaks malicious instructions into content the agent already reads, Prompt Forcing hands the agent an entire prompt plus follow-up instructions outright, and the agent converts them into legitimate browser actions using privileges it already holds. The attack is not carried out by malware. It is carried out by the trusted assistant, on instruction.</p>
+
+        <h2>One extension, one primitive, five agents</h2>
+        <p>The same extension worked against all five targets because all five share the same architectural shape and the same weak seam. Weizman frames these systems as a “brain” (the model, usually server-side, deciding what to do) and a “body” (a privileged browser component that screenshots tabs, reads content, touches local state, and acts on websites). The seam is that the body trusts web traffic and pages that extensions are allowed to manipulate — via Chromium’s <code>declarativeNetRequest</code> (DNR) API, which lets an extension rewrite response headers and redirect resources.</p>
+        <p>The Chrome attack is the cleanest illustration. Extensions are blocked from touching the privileged <code>chrome://glic</code> component or injecting scripts into Google’s Gemini site — but DNR rules could still intercept requests made by the embedded Gemini web app. Weizman weakened security headers and redirected a JavaScript resource, landing code execution inside the Gemini context and speaking directly to Chrome’s privileged AI component instead of going through Gemini’s normal request flow. His impact table credits the Chrome attack with local file access, screenshots, browser-profile leakage, and potential camera and microphone reach. Google assigned <strong>CVE-2026-0628</strong> and has fixed it.</p>
+
+        <h2>The agentic browsers fall further</h2>
+        <p>Against Comet and Edge the payoff escalates from reading data to driving the agent, because those agents can act on websites rather than merely observe them. In Comet, the browser’s built-in agent extension trusted several Perplexity domains — including a testing domain that lacked the protections of the primary site. Weizman removed a redirect to that domain with DNR, loaded it, and injected a content script able to converse with the built-in agent. The loot: browsing history, screenshots, local files, and the ability to issue the agent instructions. His demonstration forced the agent to open Perplexity, summarize the victim’s emails, and exfiltrate the summary to another address.</p>
+        <p>Edge was supposed to be structurally resistant: Microsoft had split its agent into “Think” and “Do” modes precisely so it could not take arbitrary instructions and arbitrary actions at the same time. Weizman found a race condition that briefly drops the restriction while forcing a prompt, then restores the action capability before the agent re-checks its state — Think and Do reunited in the gap. Microsoft assigned <strong>CVE-2026-55945</strong> and has resolved it. Similar flaws fell in Opera Neon and in Claude in Chrome, which is itself an extension rather than a browser — a reminder that the “browser boundary” here is whatever the agent trusts, not whatever the installer is called.</p>
+
+        <h2>This is a pattern, not an incident</h2>
+        <p>BragJack slots into a lineage this site has been tracking. <a href="/posts/2026/04/unit42-chrome-gemini-live-hijack/">Unit 42 showed Chrome’s Gemini Live panel could be hijacked</a> for camera and microphone access; <a href="/posts/2026/05/claudebleed-chrome-extension-flaw-ai-agent-takeover/">ClaudeBleed showed Claude for Chrome trusting an origin instead of the calling script</a>; Weizman himself previously reported, from his time at Manifold Security, that Claude for Chrome executed built-in AI workflows on synthetic clicks without verifying a real user — code he says was still reproducible eight releases later. Each finding is a different door into the same room: a privileged agent that cannot reliably tell who is driving it. And the <a href="/posts/2026/06/promptsnatcher-chrome-adblocker-ai-chat-exfiltration/">PromptSnatcher campaign</a> already proved that extensions with ad-blocker-level permissions will quietly intercept AI chats at scale — BragJack is what happens when the thing being intercepted can also act.</p>
+        <p>The endpoint-defense implication is the one Weizman stresses and the one worth repeating: the final malicious action is performed by legitimate software. An EDR watching for malicious code sees an extension doing things extensions are allowed to do, and an assistant doing things assistants are supposed to do. Detection has to move up a level — to which principal authored the instruction, not which binary executed it.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Update all five browsers now, and treat extensions as agent attack surface.</strong> Audit installed extensions, remove anything unrecognized or unused, and treat “read and change all your data on all websites” permission prompts as the equivalent of handing over your assistant — because that is now literally what they can mean.</li>
+          <li><strong>Separate the agent’s privileges from the user’s browsing.</strong> Do not run built-in browser agents in the same profile that holds email, admin consoles, and SSO sessions unless you have modeled the extension-to-agent path. A dedicated profile with minimal sessions shrinks what Prompt Forcing can reach.</li>
+          <li><strong>Demand instruction provenance, not just content filtering.</strong> Guardrails that scan what the agent reads do nothing against an attacker who writes the prompt directly. Ask vendors whether their agent verifies the origin of instructions and binds privileged actions to real user gestures — and whether synthetic events are rejected.</li>
+          <li><strong>Monitor the assistant, not just the endpoint.</strong> Log what browser agents access and instruct: file reads, screenshot calls, outbound messages composed from mailbox content. The Comet email-summarization demo is your detection scenario — an agent reading mail it was never asked to read, then sending the result somewhere new.</li>
+          <li><strong>Track the two CVEs in your inventory.</strong> CVE-2026-0628 (Chrome) and CVE-2026-55945 (Edge) are the assigned identifiers; confirm fixed builds are deployed, but do not treat the absence of a CVE on the other three targets as absence of risk — the technique, not the identifiers, is the finding.</li>
+        </ul>
+
+        <p>The uncomfortable arithmetic: one extension, five assistants, zero clicks, ad-blocker permissions — and the model’s safety training never even enters the picture, because nobody attacked the model. They attacked the plumbing around it. Every organization deploying browser agents just inherited a new trusted insider: the assistant itself, taking orders from anyone who can load a web page it trusts.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://forever.security/blog/bragjack-hijacking-5-browsers-via-built-in-ai-assistants/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Forever Security — BragJack: How We Hijacked 5 of the World’s Most Popular Browsers Using Their Built-In AI Assistants (Gal Weizman, 16 September 2026)</a></li>
+          <li><a href="https://forever.security/blog/bragjack-attack-hijacks-every-browser-agent/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Forever Security — BragJack technical overview: hijacking all five browser agents with one extension</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/bragjack-attacks-hijack-ai-browser-agents-through-malicious-extensions/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — BragJack attacks hijack AI browser agents through malicious extensions (19 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-01">2026-07-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/bioshocking-layerx-ai-browser-guardrail-bypass/">LayerX — BioShocking: AI Browser Guardrail Bypass via Fictional Context Manipulation</a></h3><p>LayerX researchers demonstrate BioShocking, a prompt injection technique that tricks six AI browsers into abandoning safety guardrails by establishing a fictional context — affecting ChatGPT Atlas, Comet, Fellou, Genspark, Sigma, and Claude Chrome.</p><a class="text-link" href="/posts/2026/07/bioshocking-layerx-ai-browser-guardrail-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-13">2026-05-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Miggo Security — Anthropic, Google, Microsoft Paid Bug Bounties for AI Agent Hijacks, No CVEs Issued</a></h3><p>A researcher demonstrated prompt injection attacks that hijacked AI agents from Anthropic, Google, and Microsoft via GitHub Actions — all three companies paid bounties quietly but published no advisories or CVEs.</p><a class="text-link" href="/posts/2026/05/miggo-security-ai-agent-bug-bounties-no-cves/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-11">2026-05-11</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/claudebleed-chrome-extension-flaw-ai-agent-takeover/">ClaudeBleed: Chrome Extension Flaw Allows AI Agent Takeover via Prompt Injection</a></h3><p>LayerX discovered a Chrome extension vulnerability (ClaudeBleed) that lets any extension hijack Claude in Chrome for data exfiltration, email abuse, and document sharing.</p><a class="text-link" href="/posts/2026/05/claudebleed-chrome-extension-flaw-ai-agent-takeover/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
