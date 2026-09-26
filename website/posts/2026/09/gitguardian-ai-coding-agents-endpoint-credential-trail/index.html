@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Coding Agents Leave Credentials Where Repo Scanners Never Look — al-ice.ai</title>
+  <meta name="description" content="GitGuardian's 25 September analysis maps where Cursor, Claude Code, and GitHub Copilot stash credentials on the endpoint — backed by Secrets Sprawl 2026 data: 24,008 secrets in public MCP configs, 2,117 of them valid, and a 3.2% leak rate in Claude-assisted commits." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/gitguardian-ai-coding-agents-endpoint-credential-trail/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="AI Coding Agents Leave Credentials Where Repo Scanners Never Look" />
+  <meta name="post:date" content="2026-09-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">AI Coding Agents Leave Credentials Where Repo Scanners Never Look</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-26">2026-09-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On 25 September 2026, GitGuardian published a per-tool map of a problem most AppSec programs are not instrumented to see: <strong>Cursor, Claude Code, and GitHub Copilot scatter credentials across the developer endpoint</strong> — config files, logs, shell history, session stores, and temp files that repository, pre-commit, and CI scanners never traverse. The post pairs the inventory with measurements from the company's <strong>State of Secrets Sprawl 2026</strong> dataset: <strong>24,008 unique secrets in public MCP-related configuration files, 2,117 of them valid</strong>, and a <strong>3.2% secret-leak rate in public Claude Code-assisted commits versus a 1.5% baseline</strong> across all public GitHub commits.</p>
+        <p>The uncomfortable sentence in the analysis is the one about causation. GitGuardian is explicit that the 3.2% figure does not prove the tool causes the leaks. Faster development has not removed the underlying credential failure; it has multiplied the surfaces where a copied token can come to rest. That framing is worth taking seriously, because it reframes the endpoint from a hygiene backlog into the layer where agent-era credential sprawl actually lives.</p>
+
+        <h2>Where the trail lives, tool by tool</h2>
+        <p><strong>Cursor</strong> keeps two MCP configurations: <code>.cursor/mcp.json</code> inside the project, which travels with the repository, and <code>~/.cursor/mcp.json</code> in the user's home directory, which never enters one. Both accept inline credentials — as environment variables for local servers or request headers for remote ones. Cursor's own docs describe OAuth for remote servers and variable references instead of values, but neither is enforced. So the project file creates the familiar risk (one inline token committed and distributed to every clone), while the user-level file creates the opposite one: credentials and server definitions that sit entirely outside repository controls, invisible to every scanner the security team operates.</p>
+        <p><strong>Claude Code</strong> keeps user state in <code>~/.claude/</code> plus a companion <code>~/.claude.json</code> holding the sign-in session, user-level MCP servers, and per-project trust decisions. The login token is the best-protected item on the machine — OS keychain on macOS, permission-protected file on Linux and Windows — but Anthropic's docs note macOS falls back to that file when the Keychain is unavailable, such as over SSH. And the login token was never the whole inventory: API keys, connection strings, and tool credentials the agent encounters elsewhere on the machine are uncounted. The project-scoped <code>.mcp.json</code> is designed to be checked into version control so teams can share setup; nothing stops a team writing a token inline, at which point the file is pushed and pulled everywhere. The entire state directory relocates with <code>CLAUDE_CONFIG_DIR</code>, so any file-path rule a defender writes is one environment variable away from irrelevance.</p>
+        <p><strong>GitHub Copilot</strong> has the most varied footprint — editor, CLI, OS, and auth method all change it — and GitGuardian's point is that the variation itself is the governance problem: no single file-path rule covers the fleet. Copilot CLI stores its OAuth token in the OS keychain by default, but when no keychain is available GitHub's docs describe a prompt to fall back to a plaintext config file, plus a setting that makes plaintext the default. Around it sit MCP server definitions, session logs, command and session history, a SQLite session store (<code>session-store.db</code>), saved permission decisions, and fallback MCP OAuth material. Like Claude Code, the whole directory relocates with an environment variable (<code>COPILOT_HOME</code>). Across a large fleet, even a minority of machines on plaintext fallbacks or overprivileged MCP configs is a material credential inventory that repository scanning cannot reach.</p>
+
+        <h2>Why existing controls miss it by design</h2>
+        <p>The analysis is careful to note that nothing here is a control failure in the conventional sense. Repository, pre-commit, and CI scanning cover tracked content, working-tree changes, or pipeline inputs — not unrelated home-directory config, browser stores, shell history, or temp files. IdP, IAM, and PAM govern identities and sessions they issue or observe; a locally copied API key or an unmanaged third-party token falls outside that perimeter. Secrets managers protect credentials stored in and retrieved through the vault; they cannot govern the unmanaged copy after it lands in a log or history file unless some other control discovers it. Each layer works as designed, and the endpoint trail sits in the gap between all of them — a gap that widens every time a developer adds an agent, connects an MCP server, or copies a token to keep local work moving.</p>
+        <p>The MCP dimension is what makes this an agent-security story rather than a secrets-hygiene rerun. Every new MCP connection can introduce another non-human identity with real organizational access, and the safer patterns — OAuth, environment-variable references, credential stores — are not enforced across unmanaged installations. When credentials go inline, the MCP configuration files of all three tools become plaintext credential stores, and project-scoped ones get shared through version control. The 24,008 public secrets are the visible portion; enterprise endpoints and internal repositories hold the same pattern outside public view. Readers will recognise the shape from <a href="/posts/2026/07/pillar-coding-agent-sandbox-escapes-cursor-codex-gemini-antigravity/">the seven coding-agent escapes we covered in July</a>: the sandbox ends where host trust begins, and the credential trail is what host trust leaves behind.</p>
+
+        <h2>The fix being proposed — and its privacy design</h2>
+        <p>GitGuardian's answer is its Developer Endpoint Protection offering, built from four independently deployable capabilities: a local agent-and-MCP inventory per endpoint, scheduled filesystem scans over configs, dotfiles, logs, caches, shell history, temp dirs, browser storage, and archives, real-time AI hooks (prompt-submission and pre-tool checks that can block secrets in prompts, commands, file reads, and MCP calls; post-tool checks that notify because the tool already ran), and per-machine honeytokens — decoy AWS credentials that grant nothing and alert when used. Two design choices are worth noting regardless of vendor. Detection happens locally, with only a 256-bit Scrypt fingerprint sent through the HasMySecretLeaked protocol plus finding metadata; plaintext secrets and file contents stay on the machine, and validity checks run endpoint-to-provider. And deployment is an MDM-scheduled script rather than a continuously running EDR-style agent. That is a frank acknowledgement of the actual buyer objection: developers will not tolerate a second always-on agent watching their agent.</p>
+        <p>Treat the vendor's path table as perishable — the post itself warns the documented locations change often and to check the linked vendor pages before encoding any of them in policy. The durable takeaways are structural: inventory the agents and MCP servers on the fleet before writing rules about them, assume a minority of machines are always on the plaintext fallback path, and measure the endpoint layer directly instead of inferring it from repository scan results. April reporting on the same Secrets Sprawl dataset found Claude-assisted commits leaking at roughly double the baseline rate; the September update puts numbers on where the other half of that problem lives. It was never in the repo.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory agents and MCP servers per endpoint, not per repo.</strong> You cannot scope what you cannot enumerate; repository scanning tells you about code, not about the machines that access production.</li>
+          <li><strong>Ban inline credentials in MCP configs and enforce variable references or OAuth.</strong> All three tools support the safer pattern; none enforces it. That gap is policy-shaped, and policy is yours to write.</li>
+          <li><strong>Assume the plaintext fallback is in use somewhere.</strong> Keychain-unavailable paths (SSH sessions, containers, minimal images) silently downgrade token storage on both Claude Code and Copilot CLI. Scan for the fallback files explicitly.</li>
+          <li><strong>Pin <code>CLAUDE_CONFIG_DIR</code> and <code>COPILOT_HOME</code> in managed environments.</strong> A relocatable state directory defeats path-based detection rules; on managed machines those variables should be set by policy, not by developers.</li>
+          <li><strong>Put MCP configuration changes under change control.</strong> A stdio server command spec is code execution with a config file's ergonomics — the same lesson as <a href="/posts/2026/09/openclaw-72-cve-batch-vulncheck-advisory-to-cve-lag/">the OpenClaw authorization batch</a>, applied to the developer's own machine.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.gitguardian.com/ai-coding-agents-credential-security/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitGuardian — AI Coding Agents Are Leaking Credentials: Cursor, Claude Code, Copilot, and MCP (25 September 2026)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/04/14/gitguardian-ai-agents-credentials-leak/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security — GitGuardian State of Secrets Sprawl 2026: AI-assisted commits leaking at roughly double the baseline (14 April 2026)</a></li>
+          <li><a href="https://docs.gitguardian.com/endpoint-protection/ai-hooks?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitGuardian documentation — AI Hooks for endpoint protection</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-29">2026-06-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/mitiga-poisoned-coding-test-ai-agent-supply-chain/">Mitiga — Poisoned Coding Test Turns AI Agent Into Attacker, 1,230+ Repos Leaking API Keys</a></h3><p>Mitiga Labs scanned 50,000+ AI instruction files and found 1,230+ repos leaking API keys via poisoned CLAUDE.md and .cursor/rules — plus a real incident where a fake interview repo stole AWS credentials in under two minutes.</p><a class="text-link" href="/posts/2026/06/mitiga-poisoned-coding-test-ai-agent-supply-chain/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-13">2026-07-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/ghostcommit-image-prompt-injection-ai-code-reviewers/">Ghostcommit Hides Secret-Theft Instructions in Images AI Code Reviewers Never Open</a></h3><p>UMKC researchers demonstrate Ghostcommit, a pull-request attack that hides prompt injection in a PNG, bypasses text-only review, and makes coding agents encode .env secrets into source code.</p><a class="text-link" href="/posts/2026/07/ghostcommit-image-prompt-injection-ai-code-reviewers/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-02">2026-07-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/socket-ai-coding-agents-supply-chain-blind-spot/">Socket — AI Coding Agents Are the Supply Chain Blind Spot Nobody Mapped</a></h3><p>AI agents pull packages past scanners, enabling PromptMink, slopsquatting, and Clinejection attacks that bypass human review entirely.</p><a class="text-link" href="/posts/2026/07/socket-ai-coding-agents-supply-chain-blind-spot/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
