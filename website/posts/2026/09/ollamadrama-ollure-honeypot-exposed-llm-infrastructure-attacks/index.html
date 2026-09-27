@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>290,000 Attacks on a Fake Ollama Server: What a Honeypot Reveals About Exposed LLM Infrastructure — al-ice.ai</title>
+  <meta name="description" content="OllamaDrama (arXiv 2609.29757) deployed Ollure, a honeypot emulating the Ollama API with no backend LLM, for 84 days across cloud and university networks: 290,887 interactions from 2,793 IPs, spanning discovery, RCE and miner payloads, prompt injection, and agent-oriented tool use." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/ollamadrama-ollure-honeypot-exposed-llm-infrastructure-attacks/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="290,000 Attacks on a Fake Ollama Server: What a Honeypot Reveals About Exposed LLM Infrastructure" />
+  <meta name="post:date" content="2026-09-27" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">290,000 Attacks on a Fake Ollama Server: What a Honeypot Reveals About Exposed LLM Infrastructure</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-27">2026-09-27</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On September 24, researchers Karina Elzer, Niklas Netterstrøm Johansen, and Emmanouil Vasilomanolakis published <strong>OllamaDrama</strong> (arXiv 2609.29757), the first empirical measurement of what actually happens to LLM infrastructure left facing the internet. Their instrument was <strong>Ollure</strong>, a low- and medium-interaction honeypot that emulates the Ollama management API with no backend model at all. Across four deployments on cloud and university networks over 84 days, it recorded <strong>290,887 interactions from 2,793 unique source IPs</strong> — a dataset that shows exposed inference servers are not merely scanned, but actively worked over at both the infrastructure and the model layer.</p>
+        <p>The bulk of the traffic was what you would expect: automated discovery, fingerprinting, and model enumeration. The value of the paper is everything past that baseline. The authors document concrete exploitation attempts against the infrastructure layer — model management abuse, path traversal and SSRF probes, remote code execution and cryptocurrency mining payloads, and resource exhaustion — alongside attacks aimed at the LLM layer itself: prompt injection, information extraction, and agent-oriented tool use. In other words, scanners map the surface, and then a meaningful minority tries to spend it: compute for mining, a foothold for execution, and the model itself as an oracle or an agent with tools.</p>
+
+        <h2>An unauthenticated API is the whole vulnerability</h2>
+        <p>Ollama's management API ships without authentication and historically bound to all interfaces, so a default install on a poorly secured host is remotely reachable. That design decision keeps producing incidents. Attackers have folded exposed Ollama servers into <a href="/posts/2026/01/bizarre-bazaar-llmjacking/">LLM-jacking operations</a> that resell stolen inference, and researchers have <a href="/posts/2026/01/greynoise-threat-actors-targeting-llms/">tracked threat actors systematically targeting LLM endpoints</a>. In August, Oasis Security showed the same missing-authentication shape inside NVIDIA's NemoClaw stack, where a malicious webpage could reach the local Ollama backend and implant persistent instructions — and <a href="/posts/2026/05/nvidia-nemoclaw-cve-2026-24222-24231-sandbox-exfil-ssrf/">NemoClaw had already drawn CVEs for sandbox and SSRF flaws</a> earlier in the year. OllamaDrama generalizes these anecdotes into a measured background rate: leave the API exposed and the internet will find it, fingerprint it, and try to use it within the window the paper covers.</p>
+        <p>One tradecraft detail worth internalizing: research notes tracking the paper observe that model names themselves serve as an injection surface, with requests referencing bogus or unrelated CVE identifiers as model names — so detectors keyed on "known CVE string present" will misfire in both directions. Treat model identifiers as untrusted input, not as inventory facts.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Bind local inference to loopback and put a real authenticator in front of anything shared.</strong> Ollama's <code>OLLAMA_HOST</code> default of <code>127.0.0.1</code> is the safe posture; every deployment listening on <code>0.0.0.0</code> should be treated as an incident-in-waiting. Anything beyond a single workstation gets a reverse proxy with authentication, not a port forward.</li>
+          <li><strong>Inventory every Ollama-shaped endpoint, including the ones developers stood up.</strong> Scan your own address space for the management API the way the paper's visitors do — model enumeration endpoints answer anonymously, so assume anything reachable has already been catalogued by someone else.</li>
+          <li><strong>Monitor for the paper's second-stage behaviors, not just scans.</strong> Alert on model pull and create calls from unexpected sources, outbound mining-pool connections from inference hosts, and tool-use or function-call patterns that suggest an agent harness has found your endpoint and is treating it as infrastructure.</li>
+          <li><strong>Constrain what an exposed model can reach.</strong> Egress filtering, no cloud credentials on inference hosts, and resource quotas turn a compromised endpoint from a foothold into a dead end. The paper's RCE-to-miner pipeline only pays if the host has spare compute and a route out.</li>
+        </ul>
+
+        <p>The uncomfortable finding is not that attackers scan — it is that the boundary between "scanning an LLM server" and "using it" has dissolved. The same session that enumerates your models can inject into them, and the same host that serves completions can mine coins. Self-hosted inference inherits the full discipline of internet-facing infrastructure, and most of it is currently deployed with none of it.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2609.29757?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv 2609.29757 — OllamaDrama: Designing and Deploying a Honeypot to Measure Attacks on Exposed LLM Infrastructure (Elzer, Johansen, Vasilomanolakis, 24 September 2026)</a></li>
+          <li><a href="https://github.com/Xore/APIARY/issues/3394?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Xore/APIARY research tracker — OllamaDrama/Ollure attack-class notes</a></li>
+          <li><a href="https://www.esecurityplanet.com/vulnerabilities/news-nvidia-nemoclaw-cve-2026-65105/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">eSecurity Planet — NVIDIA NemoClaw CVE-2026-65105 missing-authentication flaw (August 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-03-22">2026-03-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/03/arxiv-indirect-prompt-injection-public-competition/">arXiv — Indirect prompt injection competition findings for AI agents</a></h3><p>A new arXiv paper analyzes 272,000 attack attempts from a public competition and shows that frontier AI agents remain broadly vulnerable to indirect prompt injection across tool use, coding, and computer-use settings.</p><a class="text-link" href="/posts/2026/03/arxiv-indirect-prompt-injection-public-competition/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-29">2026-05-29</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-prompt-injection-resume-screening/">arXiv: Real-World Prompt Injection Attacks in LLM-Based Resume Screening</a></h3><p>New arXiv paper measures prompt injection attacks in production LLM resume screening systems, testing prevention, detection, and localization defenses across real-world HR workflows.</p><a class="text-link" href="/posts/2026/05/arxiv-prompt-injection-resume-screening/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-19">2026-04-19</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/clawguard-runtime-security-framework-tool-augmented-agents/">ClawGuard — Runtime Security Framework for Tool-Augmented LLM Agents</a></h3><p>arXiv:2604.11790 introduces ClawGuard, a runtime security framework that enforces deterministic rule-based controls at every tool-call boundary to block indirect prompt injection across web, MCP, and skill-file attack vectors.</p><a class="text-link" href="/posts/2026/04/clawguard-runtime-security-framework-tool-augmented-agents/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
