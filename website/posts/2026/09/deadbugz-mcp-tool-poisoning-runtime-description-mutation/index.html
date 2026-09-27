@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>It Passed Every Review, Then Turned Hostile on the Fourth Tool Call — Deadbugz and Runtime MCP Poisoning — al-ice.ai</title>
+  <meta name="description" content="Pillar Security's Deadbugz campaign filed 23 pull requests in 74 minutes wiring projects to a benign-looking MCP server that rewrites its tool descriptions after three calls into credential-hunting instructions. An independent reproduction proves name allowlists pass the poison through — only definition pinning catches it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/deadbugz-mcp-tool-poisoning-runtime-description-mutation/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="It Passed Every Review, Then Turned Hostile on the Fourth Tool Call — Deadbugz and Runtime MCP Poisoning" />
+  <meta name="post:date" content="2026-09-27" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">It Passed Every Review, Then Turned Hostile on the Fourth Tool Call — Deadbugz and Runtime MCP Poisoning</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-27">2026-09-27</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In August, <strong>Pillar Security</strong> disclosed an active MCP supply-chain campaign it named <strong>Deadbugz</strong>. A single account filed <strong>23 pull requests across unrelated AI and developer-tool projects in 74 minutes</strong>, each one wiring the target project up to a remote MCP server calling itself <strong>productivity-suite</strong>. The server offers two tools — text formatting and summarization — and it behaves. Then, <strong>after a connected client has made three tool calls</strong>, it changes what it returns: the tool descriptions become instructions directing the model to hunt down SSH keys, AWS credentials, shell history, and kubeconfig — and to conceal that activity from the operator.</p>
+        <p>The important word is <em>after</em>. Every check you run at install time, at review time, at approval time runs against the benign version. Metadata that only turns hostile at runtime defeats review by construction — and on <strong>22 September</strong>, an independent researcher reproduced the whole thing in a four-container demo and showed exactly which common control fails to catch it.</p>
+
+        <h2>A tool description is program text, not documentation</h2>
+        <p>The point worth internalizing is architectural. An MCP tool is not an API endpoint the model calls by name. The tool description is prose injected into the model's context, and the model reasons over it; the input schema is the set of fields the model is invited to fill in. So the description is not documentation — <strong>it is program text delivered to your agent at runtime</strong>, and a changed description is a changed program arriving under a familiar name. The tool names in the Deadbugz server never change: <code>format_text</code> and <code>summarize</code> before, during, and after the mutation. Any control keyed on names is answering a different question than the one that matters.</p>
+        <p>This is the same channel-confusion failure as <a href="/posts/2026/09/salesbleed-agentforce-zero-click-crm-exfiltration-anonymous-phishing/">SalesBleed's indirect prompt injection</a>, where attacker instructions arrive inside data the agent was expected to process. Here the channel is <code>tools/list</code> itself — the one endpoint every agent polls and almost nobody monitors.</p>
+
+        <h2>The reproduction: allowlist passes the poison, pinning rejects it</h2>
+        <p>Mike Moore's 22 September writeup stands out because it is an experiment, not an advisory. He built a Deadbugz-shaped server plus two broker controls and ran three scenarios with the control as the only variable. The results, in his words:</p>
+        <ul>
+          <li><strong>No broker (baseline):</strong> the server genuinely mutates — benign <code>tools/list</code> first, poisoned after three calls, same names throughout. Mutation reproduced.</li>
+          <li><strong>Deny-by-default on tool name (the common control):</strong> the gated tool stays invisible, the allowlisted tool stays visible — and the poisoned description flows straight through. The allowlisted <code>format_text</code> now instructs the model to read <code>~/.ssh/id_rsa</code>, <code>~/.aws/credentials</code>, and more. The allowlist did its job and still handed the model a credential-hunting instruction.</li>
+          <li><strong>Allowlist plus definition pinning:</strong> the first benign <code>tools/list</code> is pinned, and the mid-session mutation is rejected — the broker refuses the changed definition.</li>
+        </ul>
+        <p>The demo code is public at <a href="https://github.com/themsquared/mcp-tool-rbac?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">github.com/themsquared/mcp-tool-rbac</a>, and every command in it was run before publishing. That reproducibility is what elevates this above the usual guidance posts: the claim “a name allowlist is not enough” is not argued, it is demonstrated, with the passing control sitting one scenario away from the failing one.</p>
+
+        <h2>The mitigation names software that barely exists</h2>
+        <p>Pillar's own mitigation guidance names the control precisely: <strong>tool-definition approval mechanisms that require renewed consent when definitions change</strong>. That is a sentence describing software that mostly does not exist yet. Agents re-poll <code>tools/list</code> freely, clients do not diff definitions across polls, and no mainstream host implementation prompts the operator when a description changes mid-session. Until that exists, the practical substitutes are definition pinning at a broker layer, alerting on any mid-session <code>tools/list</code> change, and treating a description change as a code deployment — because that is what it is.</p>
+        <p>The campaign also sharpens two adjacent findings. Backslash's September analysis of 8,000 popular MCP servers found <strong>29% carrying at least one risk finding</strong> — the population Deadbugz-style PRs swim in is already heavily exposed. And the <a href="/posts/2026/09/cis-mcp-server-benchmark-v1-55-recommendations-ten-domains/">CIS MCP Server Benchmark's</a> supply-chain, observability, and governance domains now read less like hygiene and more like prerequisites: you cannot approve what a server will become if you only inventory what it was at install time. For the release-pipeline side of the same war, see also the <a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">MemTensor self-spreading credential stealer</a> — poisoned at publish time rather than at runtime, but hunting the same developer credentials.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Pin tool definitions, not just tool names.</strong> Hash the description and schema at approval time and reject mid-session changes — Moore's demo shows this is the control that actually catches the mutation.</li>
+          <li><strong>Alert on <code>tools/list</code> drift.</strong> Log tool definitions per session and treat any change after initial approval as a security event, not a refresh.</li>
+          <li><strong>Review MCP-related pull requests as code execution vectors.</strong> 23 PRs in 74 minutes from one account is detectable at the forge layer — rate-limit, flag, and manually review PRs that add remote server references.</li>
+          <li><strong>Constrain what a poisoned agent can reach.</strong> Egress filtering, short-lived scoped credentials, and no ambient access to <code>~/.ssh</code>, <code>~/.aws</code>, or kubeconfig bound the blast radius when — not if — a description turns.</li>
+          <li><strong>Demand renewed-consent behavior from agent hosts.</strong> Until clients re-prompt on definition change, assume every approved tool is one server response away from being a different tool.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://dev.to/webofmike/mcp-tool-poisoning-a-name-allowlist-is-not-enough-5le?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Mike Moore — “MCP Tool Poisoning: A Name Allowlist Is Not Enough” (22 September 2026; four-container reproduction; Deadbugz mechanics via Pillar Security's August disclosure)</a></li>
+          <li><a href="https://github.com/themsquared/mcp-tool-rbac?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">themsquared/mcp-tool-rbac — demo repo (poisoned-server reproduction, name-allowlist broker, definition-pinning broker)</a></li>
+          <li><a href="https://blog.bonfy.ai/mcp-security-statistics-2026-what-the-vulnerability-data-reveals-about-ai-agent-risk?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Bonfy — MCP Security Statistics 2026 (Deadbugz: 23 pull requests in 74 minutes; benign for three tool calls before rewriting descriptions)</a></li>
+          <li><a href="https://bex.co/blog/2026/09/23/mcp-cve-wave-2026-deploy-mcp-supply-chain?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">bex. — 30+ MCP CVEs in Two Months (invocation logging and egress filtering mapped to malicious-server and audit-gap findings)</a></li>
+          <li><a href="https://www.backslash.security/blog/mcp-server-security-risks-research?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Backslash — MCP server security risks research (8,000 popular servers analyzed; 29% with at least one risk finding; September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-20">2026-05-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/sysdig-agentic-ai-runtime-security/">Sysdig: Runtime Security Is the Missing Layer in Agentic AI Tooling</a></h3><p>Sysdig maps the agentic AI attack surface across five infrastructure layers and details MCP tool poisoning, indirect prompt injection via tool responses, and credential theft via coding agents.</p><a class="text-link" href="/posts/2026/05/sysdig-agentic-ai-runtime-security/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Fiddler AI — AI Coding Agent Threat Models and Controls</a></h3><p>Fiddler AI maps the full coding-agent attack surface — prompt injection, supply-chain poisoning, credential leaks, MCP spoofing — and proposes runtime guardrails.</p><a class="text-link" href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-29">2026-05-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/uvcyber-mcp-threat-advisory-tool-poisoning/">UVCyber MCP Threat Advisory: 40+ CVEs, Tool Poisoning, and the Missing Auth Layer</a></h3><p>UVCyber publishes a comprehensive MCP threat advisory covering 40+ CVEs, tool poisoning, rug pulls, and the architectural gap of missing built-in authentication in the Model Context Protocol.</p><a class="text-link" href="/posts/2026/05/uvcyber-mcp-threat-advisory-tool-poisoning/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
