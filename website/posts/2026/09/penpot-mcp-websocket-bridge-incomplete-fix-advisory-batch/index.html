@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Penpot Patched the MCP Bridge It Missed in May — and the REPL Still Has No Password — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-100868 closes a second unauthenticated MCP listener in Penpot, four months after the first one. Two of the 17 advisories published on 25 September describe a sibling bug and an incomplete fix — and the project’s own Docker image and devenv script still bind the MCP stack to 0.0.0.0." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/penpot-mcp-websocket-bridge-incomplete-fix-advisory-batch/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Penpot Patched the MCP Bridge It Missed in May — and the REPL Still Has No Password" />
+  <meta name="post:date" content="2026-09-27" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Penpot Patched the MCP Bridge It Missed in May — and the REPL Still Has No Password</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-27">2026-09-27</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In May 2026, the open-source design platform <strong>Penpot</strong> fixed <strong>CVE-2026-45805</strong> — an MCP REPL server that bound to all interfaces and exposed an unauthenticated <code>/execute</code> endpoint, CVSS 8.8, remote code execution for anyone on the same network. The advisory suggested two fixes: bind to the configured host, <em>and</em> add authentication. The project shipped the first one.</p>
+        <p>On <strong>27 September 2026</strong>, NVD published <strong>CVE-2026-100868</strong>, which is the same class of bug in the component sitting next to it. The MCP module's <em>plugin WebSocket bridge</em> was never wired to a host variable at all, so it kept listening on every interface with no authentication in single-user mode — the default. Penpot <strong>2.18.0</strong>, released <strong>23 September 2026</strong>, fixes it. What makes this worth a defender's attention is not the CVSS (6.3 medium on CVSS 3.1, 5.3 on CVSS 4.0) but the pattern: this listener was in the blast radius of the May advisory, was not in its diff, and took four more months to find.</p>
+
+        <h2>One fix, two listeners, and the one that was never gated</h2>
+        <p>Penpot's MCP module runs three network services. The main HTTP server (<code>PenpotMcpServer.ts</code>) binds <code>this.host</code>, default <code>localhost</code> — correct. The REPL server (<code>ReplServer.ts</code>) was corrected in the May fix and, in current 2.18.0 source, calls <code>listen(this.port, this.host)</code> with the same <code>localhost</code> default — correct. The third, <code>PluginBridge.ts</code>, constructed its WebSocket server as:</p>
+        <pre><code>this.wsServer = new WebSocketServer({ port: port });</code></pre>
+        <p>The <code>ws</code> library defaults to all interfaces when no <code>host</code> option is supplied. No <code>PENPOT_MCP_SERVER_HOST</code>, no dev-mode flag, no opt-in. And unlike the REPL — which is gated behind <code>PENPOT_MCP_DEVENV</code>/<code>PENPOT_MCP_REPL_ENABLE</code> — this bridge is constructed unconditionally whenever the MCP server is constructed. It ran in the plain, documented "Getting Started" local setup.</p>
+        <p>Authentication is optional by design here. The connection handler only demands a <code>userToken</code> in multi-user mode; in single-user mode it takes whichever client connects and treats it as <em>the</em> plugin. From there, any MCP tool call that dispatches work — <code>execute_code</code>, <code>export_shape</code>, <code>import_penpot_file</code> — hands the task to that connection. An attacker on the adjacent network impersonates the browser plugin, reads the task payloads the agent is dispatching, and returns forged results the MCP client will treat as ground truth. NVD classifies it <strong>CWE-1327, binding to an unrestricted IP address</strong>, vector <code>AV:A</code> — adjacent, not internet-wide, which is the honest scoping.</p>
+        <p>The fix, commit <code>b5274a4</code> dated 22 September, is one line: <code>new WebSocketServer({ port: port, host: mcpServer.host })</code>. The commit message is candid about what the bug allowed — "exposing unauthenticated task dispatch to the network in single-user mode."</p>
+
+        <h2>The incomplete-fix advisory is the more useful document</h2>
+        <p>A second advisory in the batch, <strong>GHSA-852x-m8p9-558v</strong>, is filed explicitly as an <em>incomplete fix</em> of the May RCE, and it is the one to read if you operate Penpot. Its argument: the <code>/execute</code> endpoint still has no authentication, which would normally be acceptable because the REPL is disabled by default and binds localhost — except the project's own shipped tooling re-creates the original exposure.</p>
+        <p>We verified both claims against release tags rather than taking the advisory's word for it:</p>
+        <ul>
+          <li><strong><code>mcp/scripts/start-mcp-devenv</code></strong> — the documented devenv launcher — sets <code>PENPOT_MCP_SERVER_HOST=0.0.0.0 PENPOT_MCP_REMOTE_MODE=true PENPOT_MCP_DEVENV=true</code> in 2.17.2. In <strong>2.18.0 it additionally sets <code>PENPOT_MCP_REPL_HOST=0.0.0.0</code></strong> — the new per-service variable is present in the script, pointed at all interfaces. The devenv path still puts an unauthenticated code-execution endpoint on every interface after the upgrade; the difference is that it is now explicit rather than accidental.</li>
+          <li><strong><code>docker/images/Dockerfile.mcp</code></strong>, the official MCP image, sets <code>ENV PENPOT_MCP_SERVER_HOST=0.0.0.0</code> in 2.17.2 — and still does in 2.18.0. That directly contradicts the <code>localhost</code> default the module's own README documents, and the README's "Beyond Local Execution" section frames <code>0.0.0.0</code> as an operator opt-in with the warning to "use caution in untrusted networks."</li>
+          <li><strong><code>isRemoteMode()</code> never gates the REPL.</strong> The flag exists precisely to add restrictions when "the server is not assumed to be accessed only by a local user on the same machine," and it gates filesystem access — but the REPL is constructed purely from <code>isReplEnabled()</code>, with no token, remote mode or not.</li>
+        </ul>
+        <p>So the accurate upgrade note is narrow: 2.18.0 closes the WebSocket bridge exposure. It does not add authentication to <code>/execute</code>, and it does not change the container's bind address. If you run the official MCP image or the devenv script, patching does not move your exposure — your network boundary is still the only control.</p>
+
+        <h2>Seventeen advisories in one day, and one broken version field</h2>
+        <p>Penpot published <strong>17 GitHub security advisories on 25 September</strong> — 1 critical, 1 high, 12 medium, 3 low — against a repository that had published seven in total across the rest of 2026. Three deserve separate mention:</p>
+        <ul>
+          <li><strong>GHSA-4f36-m4hj-cv86 (critical, CVSS 9.9)</strong> — authenticated OS command injection in the SVG exporter. A <code>fill-color</code> string such as <code>#000000$(command)</code> stored on a text object reaches <code>child_process.exec()</code> during export. The advisory credits <strong>three independent reporters</strong> across June, July and August 2026 — lyhtheori, B1gN0Se and KimiSecurityTeam — for the same bug class. Note a data-quality trap: the advisory prose says affected <code>&lt;= 2.17.1</code>, fixed in <strong>2.17.2</strong>, but the machine-readable patched field reads <strong><code>1.17.2</code></strong>. Scanners consuming the structured field will compare against a version that does not exist.</li>
+          <li><strong>GHSA-wxgm-8qjw-x445 (high)</strong> — SSRF guard bypass via IPv6 transition addresses. Java's <code>InetAddress</code> predicates do not classify NAT64 (<code>64:ff9b::/96</code>), 6to4 (<code>2002::/16</code>) or Teredo (<code>2001::/32</code>), so <code>64:ff9b::a9fe:a9fe</code> reaches 169.254.169.254 through a guard that blocks the literal IPv4 form. The allow/deny logic only applied its extra CIDR checks to 4-byte addresses.</li>
+          <li><strong>GHSA-cjm5-wh82-hwr2 (CVSS 6.1)</strong> — importing a crafted design-tokens file executes JavaScript in the victim's Penpot origin, because the notification component renders its <code>detail</code> field through an unconditional <code>dangerouslySetInnerHTML</code> that ignores the component's own <code>is-html</code> flag. Token key paths from the uploaded file are spliced in raw.</li>
+        </ul>
+        <p>The shape here is familiar from <a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">DBHub's read-only mode that was dead code</a> and from <a href="/posts/2026/07/mcp-python-sdk-websocket-origin-validation-cve-2026-59950/">the MCP Python SDK's WebSocket origin gate</a>: MCP servers accumulate listeners faster than they accumulate authentication, and the safe-by-default posture lives in documentation rather than in code. The <a href="/posts/2026/09/cis-mcp-server-benchmark-v1-55-recommendations-ten-domains/">CIS MCP server benchmark</a> published this month exists precisely because "which interfaces does each of my MCP listeners bind, and which of them checks a credential" is a question most operators cannot currently answer.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade to 2.18.0, then verify the bind addresses yourself.</strong> On the MCP host, <code>ss -lntp</code> and confirm the plugin bridge, MCP HTTP server and REPL port are on loopback. The upgrade fixes the bridge; it does not fix your container's <code>ENV</code>.</li>
+          <li><strong>Override <code>PENPOT_MCP_SERVER_HOST</code> and <code>PENPOT_MCP_REPL_HOST</code> explicitly in your compose or deployment file.</strong> Do not inherit the image default. Treat any MCP port reachable off-host as a code-execution port until proven otherwise.</li>
+          <li><strong>Do not run <code>start-mcp-devenv</code> on a shared or office network.</strong> It binds an unauthenticated <code>/execute</code> to all interfaces by design in 2.18.0. That is a laptop-with-no-neighbours tool.</li>
+          <li><strong>If you patched only for CVE-2026-45805 in May, re-audit.</strong> The sibling listener was never in that diff. When an advisory names one service in a module, inventory every other listener that module opens before you close the ticket.</li>
+          <li><strong>Pin the SVG exporter fix by prose, not by the structured field.</strong> 2.17.2 is the real fix for the 9.9; a scanner that trusts the advisory's <code>1.17.2</code> will misreport. Anyone below 2.17.2 should treat the command injection — not the MCP bridge — as the urgent item in this batch.</li>
+          <li><strong>Extend SSRF denylists to IPv6 transition ranges.</strong> NAT64, 6to4 and Teredo bypass language-runtime "is this private" helpers in more codebases than this one. If your agent or webhook stack fetches user-supplied URLs, test <code>64:ff9b::a9fe:a9fe</code> against your own guard today.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-100868?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-100868 (published 27 September 2026; CVSS 3.1 6.3 AV:A, CVSS 4.0 5.3, CWE-1327; Penpot before 2.18.0)</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-ch2q-6x56-qg5r?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-ch2q-6x56-qg5r — MCP plugin WebSocket bridge binds all interfaces regardless of PENPOT_MCP_SERVER_HOST (published 25 September 2026; affected ≤ 2.17.2, patched 2.18.0)</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-852x-m8p9-558v?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-852x-m8p9-558v — Incomplete fix of GHSA-22qr-rp27-j9wm: devenv script and Docker image reintroduce unauthenticated MCP REPL on 0.0.0.0</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-22qr-rp27-j9wm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-22qr-rp27-j9wm / CVE-2026-45805 — MCP REPL server binds 0.0.0.0 with unauthenticated /execute, RCE (CVSS 8.8; published 19 May 2026, patched 2.15.0)</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-4f36-m4hj-cv86?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-4f36-m4hj-cv86 — Authenticated OS command injection in the Penpot SVG exporter via legacy fill-color (CVSS 9.9; three independent reporters)</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-wxgm-8qjw-x445?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-wxgm-8qjw-x445 — SSRF guard bypass via IPv6 transition addresses (NAT64/6to4/Teredo)</a></li>
+          <li><a href="https://github.com/penpot/penpot/security/advisories/GHSA-cjm5-wh82-hwr2?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-cjm5-wh82-hwr2 — XSS via crafted design-tokens import rendered through dangerouslySetInnerHTML (CVSS 6.1)</a></li>
+          <li><a href="https://github.com/penpot/penpot/commit/b5274a44766d095247037be18c1d1918ac67ddeb?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">penpot/penpot commit b5274a4 — Bind MCP PluginBridge WebSocket to configured host (#11605), 22 September 2026</a></li>
+          <li><a href="https://github.com/penpot/penpot/releases/tag/2.18.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">penpot/penpot release 2.18.0 (published 23 September 2026)</a></li>
+          <li><a href="https://github.com/penpot/penpot/blob/2.18.0/mcp/README.md?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Penpot MCP module README at 2.18.0 — PENPOT_MCP_SERVER_HOST and PENPOT_MCP_REPL_HOST default to localhost; "Beyond Local Execution"</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">DBHub’s Read-Only Mode Was Dead Code — and Three Advisories Landed at Once</a></h3><p>Three DBHub advisories published September 24 describe an unauthenticated MCP endpoint, a DNS-rebinding bypass, and a read-only guardrail whose database-level enforcement was never wired up. All were fixed in June; the CVEs surfaced publicly three months later.</p><a class="text-link" href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-29">2026-07-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/ruflo-mcp-bridge-unauthenticated-rce-cve-2026-59726/">Ruflo’s Default Docker Stack Exposed an Unauthenticated MCP Shell — CVE-2026-59726</a></h3><p>Ruflo before 3.16.3 exposed an unauthenticated MCP bridge in its default Docker stack. The fix closes the shell path, but operators must investigate keys, MongoDB, and AgentDB memory.</p><a class="text-link" href="/posts/2026/07/ruflo-mcp-bridge-unauthenticated-rce-cve-2026-59726/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Ten SiYuan CVEs Landed in One Batch — and the Release Notes Called Them “Some security vulnerabilities”</a></h3><p>VulnCheck published ten SiYuan CVEs on 26 September 2026 for flaws fixed in v3.8.4 on 17 September. They include an incomplete fix that lets recursive MCP file operations bypass the sensitive-path guard, and two XSS bugs that reach code execution because the Electron renderer runs with nodeIntegration on.</p><a class="text-link" href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
