@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>350,000 Files Cite Two Domains That Show Scams Only to Macs — and Every Static Check Cleared Them — al-ice.ai</title>
+  <meta name="description" content="Manifold Security’s follow-up finds yoursite[.]com and your-domain[.]com — cited in over 350,000 GitHub files and ~350 agent skills — routing macOS visitors to scareware and investment fraud through a shared ad account. RDAP, blocklists, archives, and 52 User-Agent probes all came back clean." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/placeholder-domains-macos-cloaked-ads-agent-skills-part-two/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="350,000 Files Cite Two Domains That Show Scams Only to Macs — and Every Static Check Cleared Them" />
+  <meta name="post:date" content="2026-09-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">350,000 Files Cite Two Domains That Show Scams Only to Macs — and Every Static Check Cleared Them</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-28">2026-09-28</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Manifold Security published the second part of its placeholder-domain research on <strong>24 September 2026</strong>, and the numbers reframe the problem. <a href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">Part I covered third-party[.]com</a> — a documentation stand-in hard-coded across 1,700+ repositories that was turned into a Windows ClickFix lure. Measured by citations, that turns out to be the <em>small</em> case. Researcher Cody Nash swept for every other placeholder domain of the same class that is not IANA-reserved and found <strong>thirteen more, cited by 1,536 agent skills</strong>. Two of them are serving scams right now.</p>
+        <p><strong>yoursite[.]com</strong> and <strong>your-domain[.]com</strong> sit on parking services, which is why they carry advertising at all. Manifold rendered the pair twenty-four times in a real browser. Twenty renders ended on a parking page or an ordinary ads article; one hit a Cloudflare challenge; one failed to load. Two ended on fraud — a counterfeit "MacOS Security Center" claiming four viruses and selling a discounted fake McAfee renewal, and a counterfeit ZDFheute news article built around a fabricated talk-show confrontation between two German politicians, selling an investment scheme. Both hits were on macOS. <strong>None of the eight Windows or Linux renders reached either one.</strong> Between them, these two domains appear in <strong>over 350,000 GitHub files and roughly 350 skills</strong> in Manifold's corpus.</p>
+        <p>The finding that should change practice is not the scam content. It is that <strong>every static check cleared all thirteen domains</strong>. Manifold ran registry RDAP for ownership and recent changes of control, blocklist history, twenty-one years of archived page sizes, and a 52-request probe varying the User-Agent across Windows, macOS, and Linux. All clean. They were clean because the lure is not hosted on these domains at all — you fetch the parking page, and the redirect to the scam fires <em>after that page's JavaScript runs</em>, one hop away on another host. A text-only fetch never sees it, however many User-Agents you send.</p>
+
+        <h2>The detection problem is structural, not a coverage gap</h2>
+        <p>Three properties here defeat the checks most organizations actually run, and they compound.</p>
+        <p><strong>The lure is downstream of JavaScript.</strong> Any scanner that issues an HTTP GET and inspects the response body is looking at a parking page. Reaching the scam requires executing the page and following the ad chain — which means a real browser, not a fetch with a spoofed header. Manifold's own 52-request UA sweep is the control experiment: varying the User-Agent on a static fetch does nothing, because the decision point is in code that a static fetch never runs.</p>
+        <p><strong>The targeting is probabilistic.</strong> Two hits in sixteen macOS renders. A single check clears the domain almost every time, and the destination changes between visits. This is not a domain that is malicious in the way a blocklist models malice — it is an on-ramp into a general malvertising market, where what a visitor gets depends on who is buying that day. Both parking pages load the same ad-redirect account, and between them Manifold reached tech-support scareware, a counterfeit BBC article, and a counterfeit ZDF article through different redirectors and different ad networks. One campaign it is not.</p>
+        <p><strong>Blocklists are weaker than their reputation.</strong> Manifold notes a public blocklist added third-party[.]com on 7 July and dropped it ten days later — while the lure was live throughout. That is the expected outcome when a page serves its payload to one operating system and a decoy to everyone else: a scanner fingerprinted as one platform sees nothing from the other, concludes the domain is clean, and removes it. The delisting is not an error in the blocklist so much as an accurate report of what that scanner saw.</p>
+        <p>There is a fourth property that makes blocking harder still. The scareware page runs five screens ending in an expiry notice with a countdown, and its exit function ships as a single line of obfuscated JavaScript. Deobfuscated, it fires a one-pixel tracking image and then navigates — whether or not the pixel loads, and clearing the page's own exit guard on the way. Crucially, the destination is assembled at runtime from the page's own query string via <code>getURLParameter("domain")</code>, with the <code>https://</code> and path fragments hidden in an obfuscated lookup table. <strong>No hostname appears anywhere in the code.</strong> Scanning the page yields nothing to block, and the operator can rotate routing domains without editing the page at all.</p>
+        <p>Manifold followed one exit: a day-old click ID led through the router <code>prosecutoralliance[.]com</code> to an affiliate click tracker, <code>fastdltrk[.]com</code>, and from there to a <em>genuine</em> McAfee landing page carrying the affiliate parameters that credit a sale. The business model is lead generation — fake virus warnings funneling people into real subscriptions for commission. Manifold is careful here and so are we: that is one observation, from Germany, and the same router feeds other scam pages, so other visitors may be sent elsewhere. Nothing suggests McAfee is a party to it; the abuse is of its affiliate program. But the defensive implication is sharp: a scanner that follows the chain to its end lands on a legitimate company's website, so every detection signal at the terminus points somewhere entirely innocent.</p>
+
+        <h2>The distribution channel is the part that is unique to this class</h2>
+        <p>Manifold checked urlscan.io's public index for other entrances to the same scam page in the week to 23 September and found five besides their own — all bank and parcel lookalikes, including <code>scotiabank-secure[.]info</code>, <code>fedexsupportverification[.]com</code>, and <code>lnterac-transfer-login[.]com</code> (a lowercase L standing in for the I in Interac). At least four arrived carrying the same router in the query string. The redirector above it handled 95 different entry domains across a three-day sample. These are floors, not totals — the index holds only what somebody thought suspicious enough to submit.</p>
+        <p>What separates the placeholder domain from those five is marketing cost. A lookalike domain has to be pushed in front of a victim: phishing mail, paid ads, search placement. The placeholder needs none of that. It arrives inside documentation people already trust, copied into hundreds of thousands of files. It is the one entrance with a distribution channel the operator did not have to build.</p>
+        <p>And the projects citing these domains are victims of a change, not parties to it. Of the affected skills Manifold could date from git history, the third-party[.]com lines went in on <strong>2026-01-19</strong> and <strong>2026-02-28</strong> — months before the domain began serving its lure, which it has done since at least June. Those citations were correct when written. Control changed hands afterward, and nothing in the skill had to change for the meaning of the line to invert. One of those skills has since been <strong>forked 1,089 times</strong>, and every copy carries it.</p>
+        <p>The citation table is uncomfortable reading for security practitioners specifically. Two of the most-starred repositories citing yoursite[.]com are security projects: <code>pwnlandia/mhn</code>, the Modern Honey Network, and <code>RoseSecurity/Red-Teaming-TTPs</code>, a red-team reference. Security tooling is citing a domain whose advertising chain also serves scareware. The broader table is a reminder of scale — foo.com appears in 333,312 GitHub files, yourdomain.com in 195,072, yoursite[.]com in ~185k, your-domain[.]com in ~174k. Eleven of the fourteen tracked domains were clean when Manifold looked. All fourteen are purchasable.</p>
+
+        <h2>Why agents are the exposed population</h2>
+        <p>Manifold makes a restrained claim and it is the right one: these pages are built for a person at a browser, and a discerning person usually evades them. The more exposed reader is an agent — because agents fetch and act on the documentation these citations live in. The report explicitly does <em>not</em> test whether models fall for a fake renewal page, and flags that a sophisticated model may well refuse; the population it expects to be more susceptible is agents on cheaper, smaller models tuned for speed.</p>
+        <p>That restraint is worth preserving, but the structural point stands without any claim about model gullibility. An agent that resolves a documented example URL at runtime is making a network request to a host somebody else controls, inside a trust context the user granted to the tool. That is the same shape as <a href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">a package that ships with valid provenance and fetches its payload later</a>, and the same shape Manifold found in its earlier work on <code>curl | bash</code> install instructions: documentation pointing an agent at a remote resource that nobody re-checks at the moment it runs. <a href="/posts/2026/09/cis-mcp-server-benchmark-v1-55-recommendations-ten-domains/">The CIS MCP benchmark's egress recommendations</a> exist for exactly this — the domain in the example was dormant when it was written, and dormancy is not a property that persists.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Grep your own corpus for the fourteen.</strong> Search skills, MCP server docs, READMEs, and agent instruction files for <code>yoursite.com</code>, <code>your-domain.com</code>, <code>third-party.com</code>, <code>foo.com</code>, <code>yourdomain.com</code>, <code>acme.com</code>, <code>mysite.com</code>, <code>myapp.com</code>, <code>your-app.com</code>, <code>yourapp.com</code>, <code>your-site.com</code>, <code>company.com</code>, <code>mycompany.com</code>, and <code>vendor.com</code>. Match on the scheme separator so you catch URLs rather than prose.</li>
+          <li><strong>Replace them with RFC 2606 reserved names.</strong> <code>example.com</code>, <code>example.org</code>, and <code>example.net</code> are reserved by IANA and can never be registered by anyone. Every domain in the table above can be bought. This is a one-line fix per occurrence with no downside.</li>
+          <li><strong>Check forks and vendored copies, not just your source of truth.</strong> The 1,089-fork example is the point: a corrected upstream does not correct the copies, and agents install from wherever they install from.</li>
+          <li><strong>Replace "is it on a blocklist" with "who owns it now, and what does its ad chain do today."</strong> Manifold's framing is exact. Ownership and current behavior are the questions; blocklist membership answers neither, as the ten-day listing demonstrated.</li>
+          <li><strong>If you must validate domains, render them.</strong> Headless-browser rendering on the operating systems your readers actually run, repeated — not a single fetch with a spoofed User-Agent. One check clears these domains almost every time, so a single clean result is close to meaningless.</li>
+          <li><strong>Constrain agent egress by policy rather than by reputation.</strong> An agent following documentation should not be able to reach arbitrary hosts. Allow-list the destinations a tool legitimately needs; the placeholder problem disappears entirely when an unknown host is simply unreachable.</li>
+          <li><strong>Treat documentation as executable supply chain.</strong> Every URL an agent may resolve is a dependency with no version pin and no integrity check. It deserves the same review as a package reference — and the same alarm when its owner changes.</li>
+        </ul>
+
+        <p>The durable lesson is about time. A code dependency is pinned; a cited hostname is not. The skills in this report were written correctly, reviewed successfully, and forked a thousand times, and then someone bought the domain and the same unchanged line started pointing at a fake virus warning. Nothing in the repository moved. Audit the domains you cite on ownership and live behavior, or stop citing domains you do not control — and in documentation an agent will read, prefer the second.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.manifold.security/blog/placeholder-domains-ads-serve-scams?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Manifold Security — Cody Nash, "Over 350,000 GitHub files cite placeholder domains serving scams" (24 September 2026; render counts, static-check methodology, exit-function analysis, citation tables)</a></li>
+          <li><a href="https://www.manifold.security/blog/third-party-com-placeholder-clickfix?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Manifold Security — Part I: third-party[.]com placeholder domain turned into a ClickFix lure (1,700+ repositories; Windows-gated payload)</a></li>
+          <li><a href="https://www.manifold.security/blog/curl-bash-ai-agents?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Manifold Security — earlier research on <code>curl | bash</code> install instructions and AI agents (the same re-check-at-runtime failure shape)</a></li>
+          <li><a href="https://www.iana.org/domains/reserved?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">IANA — Reserved Domains (example.com, example.org, example.net under RFC 2606; cannot be registered)</a></li>
+          <li><a href="https://hackread.com/placeholder-domains-ai-agent-skills-redirect-scams/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Hackread — "Placeholder Domains Used by 349 AI Agent Skills Found Redirecting to Scams" (independent coverage of the Manifold findings)</a></li>
+          <li><a href="https://www.infoworld.com/article/4226814/documentation-placeholder-domain-used-in-clickfix-attacks-2.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">InfoWorld — "Documentation placeholder domain used in ClickFix attacks" (context on rising ClickFix detection rates)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">A Placeholder Domain in 1,700 Repos Started Serving ClickFix — Including to Agent Skills and MCP Docs</a></h3><p>Manifold Security found third-party[.]com — hard-coded as an example endpoint in 1,700+ public repos including AI agent skills and MCP-server docs — serving a Windows ClickFix lure since at least June. Thirteen more squattable placeholders, two serving scams, ride on hundreds of thousands of files that static checks never flagged.</p><a class="text-link" href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</a></h3><p>The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed.</p><a class="text-link" href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-04">2026-07-04</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/unit42-malicious-openclaw-skills-clawhub-infostealers/">Unit 42 — Malicious OpenClaw Skills on ClawHub Delivered Infostealers and Crypto Fraud</a></h3><p>Palo Alto Networks Unit 42 found five malicious OpenClaw skills on ClawHub that evaded VirusTotal and ClawScan, delivering macOS infostealers and running agentic financial fraud.</p><a class="text-link" href="/posts/2026/07/unit42-malicious-openclaw-skills-clawhub-infostealers/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
