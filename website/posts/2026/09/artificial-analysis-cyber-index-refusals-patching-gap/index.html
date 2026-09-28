@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Four Frontier Models Refused 98% of the Defensive Work — The Cyber Index Scores Nobody Above 56% — al-ice.ai</title>
+  <meta name="description" content="Artificial Analysis launched the Cyber Index on 28 September 2026 with NVIDIA, IBM, Vercel and Collinear AI. The top composite score is 56%. On the memory-safety benchmark, six models — including GPT-6 Astra, GPT-6 Sol, Claude Fable 5.1 and Claude Opus 5.5 — refused at least 98% of tasks on safety grounds." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/artificial-analysis-cyber-index-refusals-patching-gap/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Four Frontier Models Refused 98% of the Defensive Work — The Cyber Index Scores Nobody Above 56%" />
+  <meta name="post:date" content="2026-09-29" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Four Frontier Models Refused 98% of the Defensive Work — The Cyber Index Scores Nobody Above 56%</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-29">2026-09-29</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>28 September 2026</strong> Artificial Analysis published the <a href="https://artificialanalysis.ai/articles/artificial-analysis-cyber-index?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Artificial Analysis Cyber Index</a>, together with a Cyber Index Alliance whose launch partners are Collinear AI, IBM, NVIDIA and Vercel. It is an independent, like-for-like measurement of how well models do the defensive loop — find a vulnerability in source code, reproduce it, patch it without breaking anything else. Exploit development is explicitly out of scope; no model is asked to build a working exploit.</p>
+        <p>The headline number is modest: the best composite score is <strong>56%</strong>, shared by Grok 4.7 (xhigh) and MiMo-V2.6-Pro, with GPT-6 Luna (max) at 53% and GLM-5.3-Flash at 50%. But the composite is the least interesting thing in the release. Three findings underneath it change how a security team should read any vendor claim about AI-assisted defence, and one of them is a safety-policy result that nobody appears to have designed for.</p>
+
+        <h2>The refusal column is the story</h2>
+        <p>The Index reports refusals separately from scores — a design decision that turns out to be the most valuable thing in the methodology. On <strong>CyberGym-E2E-AA</strong>, the memory-safety benchmark built from Berkeley RDI's CyberGym-E2E and filtered to 131 tasks (one per C/C++ project, drawn from a 920-instance dataset), Artificial Analysis reports that <strong>GPT-6 Astra, GPT-6 Sol, Claude Fable 5.1, Claude Opus 5.5, Qwen3.8 2.4T A95B and Qwen3.8 27B each refuse at least 98% of tasks</strong>, "making it difficult to assess frontier model performance."</p>
+        <p>Read that against what the task actually is. The agent gets a real memory-safety bug in a widely used open-source project — FFmpeg, CPython and similar — and has to locate it, write a crashing input, and patch it so the crash stops reproducing. That is maintainer work. It is the exact activity an upstream project performs when it fixes a use-after-free. Six models, including four frontier systems from the two labs that talk most about defensive AI, decline nearly all of it.</p>
+        <p>This is not a new tension on this site — <a href="/posts/2026/07/nist-caisi-glm-5-2-cyber-safeguards-assessment/">NIST's CAISI assessment of GLM-5.2</a> and <a href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">the UK AISI evaluation of Kimi K3</a> both examined where safeguards bite relative to capability — but the Cyber Index is the first public leaderboard where the refusal rate is a reported column sitting next to the score, on an unambiguously defensive task. The practical consequence for a buyer is blunt: a model can be at or near the top of a general coding leaderboard and contribute essentially nothing to memory-safety remediation, and you will not see that from the capability number alone.</p>
+        <p>The number to be careful with is what it does <em>not</em> mean. A 98% refusal rate is a measurement of one harness, one prompt framing and one task family. It is evidence that off-the-shelf access to these models via a generic agent harness will not do this work; it is not evidence about what the same weights do under a vendor's own gated, contracted security product. Those are different products with different policy surfaces, and the Index measures the first.</p>
+
+        <h2>Patching is where the work fails, and the good models fail differently</h2>
+        <p><strong>CWE-Bench-AA</strong> — Artificial Analysis's implementation of Collinear AI's CWE-bench, 120 held-out tasks covering all ten OWASP Top 10 (2025) categories across C/C++, Go, Java, JavaScript/TypeScript, Python and Rust — gives the clearest picture of where the effort goes and where it is wasted. Models spend on average <strong>38% of their turns searching</strong> for the bug and the remaining 62% patching and validating. Discovery, in other words, is not the bottleneck. The fix is.</p>
+        <p>Excluding refusals and timeouts, the failure breakdown is:</p>
+        <ul>
+          <li><strong>55% partial fixes.</strong> The agent correctly repairs the primary issue and leaves a related one open — a second entry point reaching the same weakness. The vulnerability class survives the patch.</li>
+          <li><strong>~24% over-corrections.</strong> The patch breaks legitimate behaviour, "usually a close edge case of legitimate functionality."</li>
+        </ul>
+        <p>The distribution of that second mode is the finding worth internalising: over-corrections make up <strong>~40% of failures for the four highest-scoring models, against ~15% for the lowest performers</strong>. Stronger models do not fail more often — they fail in a more expensive way. A partial fix leaves you where you already were. A patch that silently breaks a working edge case is a production incident you shipped yourself, authored by the tool you adopted to reduce risk. Anyone planning to route AI-generated patches into a merge queue should be sizing their regression suite against that number, not against the headline score.</p>
+
+        <h2>The bugs models find are the bugs that were already easy to find</h2>
+        <p><strong>DeepsecBench-AA</strong>, from Vercel's DeepsecBench, isolates discovery: review scanner-flagged files and report every vulnerability you can confirm, scored with an F2 metric against a golden set of expert-verified findings. The best model surfaces <strong>41%</strong> of the expert-verified issues.</p>
+        <p>The shape of the miss matters more than the ceiling. Models find flaws "with a direct path from untrusted input to consequence" — the taint-style bug a good static analyser also flags. Bugs that require reasoning across a sequence of events, or against business and privacy rules, are rarely reported. When a model does report one, it is almost always right: <strong>95% of sequence-of-events reports are correct</strong>. GPT-6 Sol and GPT-6 Astra find them in about 30% of runs, roughly twice the next best models and three to four times the typical one, which Artificial Analysis reads as a possibly emerging capability.</p>
+        <p>High precision and low recall on exactly the bug class that scanners cannot reach is an uncomfortable combination, because it is the combination most likely to be misread as coverage. The findings you receive are trustworthy. The silence is not informative. That is the same asymmetry defenders have always had with automated analysis, restated in a more persuasive voice — and it maps onto Palo Alto Networks' independent framing at the launch of <a href="https://www.paloaltonetworks.com/blog/2026/09/introducing-unit-42-continuous-frontier-ai-defense/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Unit 42 Continuous Frontier AI Defense</a> on 22 September, where the company reported that no single model catches more than 40% of vulnerabilities in a complex environment and that Claude Mythos 5 and GPT-5.6-Cyber overlap on under 10% of the exposures they find. Two organisations, different methodologies, same conclusion: single-model coverage is a fraction, and the fractions do not stack.</p>
+
+        <h2>Off-target passes: the scoring detail that should change how you read any vendor demo</h2>
+        <p>One CyberGym-E2E-AA statistic deserves separate attention because it generalises past this benchmark. Among passing attempts, <strong>31% patch a real crash other than the target</strong>. These off-target passes skew shallow: null-pointer crashes account for 22% of them against 9% of on-target passes, because models "stop at the first crash they can validate and finish within a couple of turns."</p>
+        <p>The agent found a genuine bug. It fixed a genuine bug. It did not fix the bug you were exposed on. Under a naive grading rule that counts "a crash was fixed," that is a pass — and nearly a third of passes here are of that kind. If you are evaluating an AI remediation tool on your own code, the question to force is not <em>how many issues did it close</em> but <em>did it close the specific issue in the ticket</em>, verified against a reproducer you wrote, not one the agent chose. Artificial Analysis only surfaces this because its harness records the target separately; most vendor demonstrations do not give you that column.</p>
+        <p>The rest of the CyberGym-E2E-AA failure profile is consistent with the discovery gap elsewhere: <strong>42% of attempts hit the 90-minute limit</strong> without producing a crashing input, and pass rates split sharply by bug class — <strong>50% on out-of-bounds, 33% on use-after-free, 20% on integer and arithmetic bugs</strong>. Use-after-free depends on an object's lifetime across several operations; arithmetic bugs depend on state that has to be reasoned forward. The same weakness — multi-step state — appears in all three benchmarks independently.</p>
+
+        <h2>What to take from this</h2>
+        <ul>
+          <li><strong>Ask vendors for the refusal rate, in writing.</strong> A safety policy that declines memory-safety remediation is a capability constraint on your security programme, and it is invisible in every score that excludes refusals. The Index reports it as a separate column; require the same of anyone selling you agentic defence.</li>
+          <li><strong>Budget your review effort for over-correction, not for misses.</strong> On the four strongest models, breaking working functionality is ~40% of failures. AI-authored patches need the regression discipline of a risky refactor, not the trust of a dependency bump.</li>
+          <li><strong>Grade against the target bug, not against "a bug."</strong> With 31% of passes fixing something other than the intended vulnerability, any pass/fail that does not pin the specific issue is measuring activity.</li>
+          <li><strong>Treat a partial fix as an open finding.</strong> 55% of non-refusal failures close one entry point and leave another. Re-run the original reproducer <em>and</em> hunt for the second path before closing the ticket — a discipline this site has repeatedly seen vendors skip, most recently in <a href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">UTCP's four consecutive incomplete SSRF fixes</a>.</li>
+          <li><strong>Do not infer coverage from silence.</strong> 41% recall with 95% precision on sequential bugs means the report is worth reading and the absence of a report means nothing at all.</li>
+          <li><strong>Plan for multi-model, or plan for a fraction.</strong> Independent measurements from Artificial Analysis and Unit 42 agree that one model is a partial view. Whether you orchestrate several or accept the gap, do it deliberately.</li>
+        </ul>
+
+        <p>The Index is v1 and Artificial Analysis says so: incident response, writing new code without introducing vulnerabilities, and targets without source access — compiled software, live servers — are all named as gaps to be added. All three evaluations run on <a href="https://github.com/ArtificialAnalysis/Stirrup?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Stirrup</a>, the company's open-source agent harness, which means the harness variable is at least inspectable rather than proprietary — a meaningful difference from most published cyber evaluations, and the reason the refusal numbers can be interpreted at all. That openness is the contribution. The scores will move; the failure modes are the durable part.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://artificialanalysis.ai/articles/artificial-analysis-cyber-index?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Artificial Analysis — "Announcing the Artificial Analysis Cyber Index Alliance: toward better benchmarking of agentic cyber defense" (28 September 2026; launch scores, benchmark composition, failure analysis, refusal rates)</a></li>
+          <li><a href="https://artificialanalysis.ai/evaluations/artificial-analysis-cyber-index?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Artificial Analysis — Cyber Index leaderboard (live results across models; launch article notes scores are as of launch)</a></li>
+          <li><a href="https://artificialanalysis.ai/methodology/cyber-index?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Artificial Analysis — Cyber Index methodology (scope, grading, and per-benchmark implementation)</a></li>
+          <li><a href="https://github.com/ArtificialAnalysis/Stirrup?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Stirrup — the open-source agent harness used for every Cyber Index task</a></li>
+          <li><a href="https://www.cybergym.io/cybergym-e2e/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Berkeley RDI — CyberGym-E2E (source dataset for CyberGym-E2E-AA)</a></li>
+          <li><a href="https://www.paloaltonetworks.com/blog/2026/09/introducing-unit-42-continuous-frontier-ai-defense/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Palo Alto Networks — Sam Rubin, "Introducing Unit 42 Continuous Frontier AI Defense" (22 September 2026; single-model coverage cap and cross-model overlap figures)</a></li>
+          <li><a href="https://securityboulevard.com/2026/09/ai-security-agents-struggle-with-complex-bugs-and-safe-patching/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Security Boulevard — James Maguire, "AI Security Agents Struggle With Complex Bugs and Safe Patching" (28 September 2026; independent summary of the launch results)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99%</a></h3><p>A 24 September arXiv paper injects malicious scratchpad reasoning into three frontier models across 1,800 AdvBench cases. Reasoning alone scores ~0%. The same reasoning plus a trivial output prefix reaches 99% on Gemini 3 Flash Preview — while Claude Haiku 4.5 never exceeds 1%.</p><a class="text-link" href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Axis Intelligence — AI Model Vulnerability Tracker: 71% Attack Success Rate Across Six Frontier Models</a></h3><p>Axis Intelligence tested 312 LLM attack vectors against six production models — 71% succeeded against at least one, 23% against all six, and system-prompt extraction works in 31% of deployments.</p><a class="text-link" href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-19">2026-04-19</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Kill-Chain Canaries — arXiv:2603.28013 Stage-Level Prompt Injection Tracking</a></h3><p>arXiv:2603.28013 — MIT and University of Chicago researchers track prompt injection through four kill-chain stages across five frontier models, revealing that write-node placement is the highest-leverage safety decision in agent pipelines.</p><a class="text-link" href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

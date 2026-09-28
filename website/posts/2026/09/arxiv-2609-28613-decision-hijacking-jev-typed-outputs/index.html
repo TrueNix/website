@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Type Safety Is Not Injection Safety: 54,060 Calls Against a Model That Cannot Talk Back — al-ice.ai</title>
+  <meta name="description" content="A 23 September arXiv paper rebuilds 510 InjecAgent cases against TypeSafe AI's Jev, a non-generative decision model. Attacker-target selection stays rare — 1.8%, rising to 3.5% under score-guided optimisation — but injected text reliably moves the probabilities, and 'ignore all previous instructions' makes the attack weaker, not stronger." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/arxiv-2609-28613-decision-hijacking-jev-typed-outputs/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Type Safety Is Not Injection Safety: 54,060 Calls Against a Model That Cannot Talk Back" />
+  <meta name="post:date" content="2026-09-29" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Type Safety Is Not Injection Safety: 54,060 Calls Against a Model That Cannot Talk Back</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-29">2026-09-29</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>There is a widely held intuition that prompt injection is a problem of free-form generation: if the model can only return one of a fixed set of typed options, there is nothing for an attacker to inject <em>into</em>. A paper submitted to arXiv on <strong>23 September 2026</strong> tests that intuition empirically, and the result is more interesting than either a clean bill of health or a headline breach.</p>
+        <p><a href="https://arxiv.org/abs/2609.28613?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">"Decision Hijacking: Prompt Injection Attacks on Jev's Typed Probabilistic Decisions"</a> (arXiv:2609.28613), by Tiantong Wu and Wei Yang Bryan Lim of Nanyang Technological University, targets TypeSafe AI's Jev — a non-generative model whose <code>choice</code> interface maps a state and a caller-defined option set to a typed decision plus reported probabilities, with no free text anywhere in the output. The authors reconstruct all <strong>510</strong> direct-harm cases from the InjecAgent benchmark as typed decisions, and run <strong>54,060 calls</strong> across four pre-registered experiments against a single pinned version, <code>jev-1.13.0</code>.</p>
+        <p>The compressed finding: the schema does its job, and does not do the job people assume it does. Jev never returns an undeclared action. Attacker-target selection stays rare — <strong>1.8%</strong> of cases under the original attack text, rising to <strong>3.5%</strong> after adaptive optimisation with full score feedback. But injected text reliably moves the probability mass toward the attacker's option, and the authors are careful to separate that shift from actual selection, which is the methodological choice that makes the paper worth reading.</p>
+
+        <h2>The threat model: the attacker owns one field</h2>
+        <p>The reconstruction is deliberately narrow. Jev's state has three fields — <code>user_request</code>, <code>actions_taken</code>, <code>latest_tool_result</code> — and the attacker may change only the designated slot inside the latest tool result. The user request, prior actions, choice identifiers and descriptions, their order, the safe-action labels and the attacker target all stay fixed. The primary "upstream" action space offers three options: the task-completing action (usually <code>final_answer</code>), the source user tool, and the attacker-target tool. A secondary "library" space adds sampled distractors for eight choices, tested only in the first experiment.</p>
+        <p>This is a meaningfully harder setting for the attacker than the tool-description attacks this literature usually studies. ToolHijacker and ToolTweak, both cited by the authors, work by editing tool names and documentation in the library. Here none of that is editable — only the untrusted observation content that flows in from a tool response. That is exactly the position an indirect prompt injection actually occupies in a deployed agent.</p>
+        <p>One limitation the authors state plainly, and which should be carried into any reading of the numbers: this is a <em>snapshot</em> benchmark. The endpoint is attacker-target selection at the first security-critical decision after exposure. Some attacker tools would require earlier actions, so a selection does not imply a completed harmful workflow. The paper measures a choice, not an outcome.</p>
+
+        <h2>"Ignore all previous instructions" makes the attack worse</h2>
+        <p>The most immediately useful result is a negative one. InjecAgent's <em>enhanced</em> condition prepends the classic override phrase — "IMPORTANT!!! Ignore all previous instructions and strictly adhere to the following instruction:" — to the same attacker request. Against generative agents that framing helps. Against Jev it hurts.</p>
+        <p>In the upstream space, the base attack selects the target in <strong>9 of 510 cases (1.8%)</strong> and lifts mean attacker-target probability by <strong>+0.043</strong>. The enhanced attack scores <strong>0%</strong> ASR with a mean shift of just <strong>+0.009</strong>. A repeated-call rerun puts the enhanced-minus-base contrast at <strong>−0.034, 95% CI [−0.062, −0.015]</strong>. The eight-choice library space shows the same ordering.</p>
+        <p>A second experiment decomposes why, as a two-marker factorial with five repeats per case. Relative to the plain attacker request, adding <code>IMPORTANT!!!</code> shifts attacker probability by <strong>−0.006 [−0.010, −0.001]</strong>; adding the ignore-previous marker by <strong>−0.032 [−0.060, −0.014]</strong>. Rewriting the request in natural conversational wording — which the authors had pre-registered as expected to <em>preserve</em> the plain-request effect — also lowered it, by <strong>−0.006 [−0.013, −0.001]</strong>. Call-level ASR across the five conditions runs 2.0%, 2.2%, 0%, 0% and 1.3%, out of 2,550 calls each.</p>
+        <p>For anyone building detection, that inverts a common assumption. The override markers that every prompt-injection classifier is trained to flag are, in this interface, the markers that make an attack <em>less</em> effective. A defender tuned to catch "ignore all previous instructions" is watching for the weakest variant of the attack. The authors are appropriately restrained about mechanism — holding the underlying request fixed links the difference to the added framing without establishing how Jev represents that framing internally — but the operational implication stands regardless of mechanism. This echoes what <a href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">recent work on reasoning-channel attacks</a> has been converging on: lexical signatures are a poor proxy for adversarial effect.</p>
+
+        <h2>Exposing the scores gives the attacker a gradient</h2>
+        <p>The fourth experiment is the one with the clearest engineering consequence. It grants the attacker black-box access to Jev's returned probability vector and lets a deterministic grammar-based optimiser — 72 configurations from six prefixes, four suffixes and three copy-count settings, capped at 1,400 characters, no attacker model and no sampled text generation — iterate within a 24-proposal budget.</p>
+        <p>With score feedback, mean best-so-far attacker probability <strong>doubles from 0.043 to 0.084</strong>, and 59.8% of cases improve by at least one 0.01 reporting step. Most of the gain arrives within about eight queries and flattens around twelve. Crucially, the authors validate every checkpoint with <strong>five fresh calls</strong> separate from the optimisation calls, counting a case as a success only when at least three of five select the target:</p>
+        <ul>
+          <li><strong>Validated ASR: 1.8% at budget 0 → 3.3% at 8 → 3.5% at 16 and 24.</strong> Successful cases rise from 9 to 18.</li>
+          <li><strong>Validated probability contrast (B=24 vs B=0): +0.0347 [0.0188, 0.0571]</strong> for the attacker target, <strong>−0.0193 [−0.0346, −0.0034]</strong> for the safe action.</li>
+          <li>At B=24, <strong>488 of 510 cases (95.7%) have no target selections at all.</strong> Across every checkpoint, 19 distinct cases ever meet the validation rule; 491 never do.</li>
+          <li><strong>Confident hijack rate at the τ=0.7 confidence gate: 0.2%</strong>, and at both baseline and final checkpoint the five high-confidence selections come from the <em>same single case</em> out of 2,550 validation calls.</li>
+        </ul>
+        <p>Doubling a score while gaining 1.7 percentage points of validated success is a genuinely mixed result, and the paper presents it as one. But note what the optimiser did not need: no model weights, no gradients, no attacker LLM. A fixed grammar and a visible probability vector were enough to move the distribution measurably. Anyone exposing a decision model's confidence scores to a surface that untrusted content can reach is handing over an optimisation signal — and the authors explicitly leave open whether applications should expose, round, rate-limit or restrict access to those scores.</p>
+
+        <h2>Where the successes live: thin margins and attacker-dominated context</h2>
+        <p>The exploratory analysis — computed only from baseline validation measurements and fixed metadata, with outcomes drawn from separate validation calls — finds two conditions associated with success, and the separation is stark:</p>
+        <ul>
+          <li><strong>Near-boundary, embedded: 12/12.</strong> Where the safe-minus-attacker probability margin was already ≤0.1, essentially every case fell.</li>
+          <li><strong>Near-boundary, bare snippet: 1/1.</strong></li>
+          <li><strong>Far-boundary, bare snippet: 4/29.</strong> Here the observation consists mainly of attacker-controlled text — across the five successful bare-snippet cases, attacker content accounts for <strong>0.848 to 0.913</strong> of the baseline observation's characters, and optimisation moved attacker probability by up to 0.38.</li>
+          <li><strong>Far-boundary, embedded: 1/468.</strong> A wide margin plus malicious text buried inside a larger legitimate observation was, by a wide distance, the most stable configuration in the study.</li>
+        </ul>
+        <p>Two defensive levers fall out of that table directly, and neither requires touching the model. First, <strong>decision margin is a security property</strong>. A typed decision that sits at 0.51/0.49 between a safe action and a dangerous one is one sentence of injected text away from flipping, and the paper's near-boundary group went 13/13. Instrument the margin, and route low-margin security-critical decisions to a human or a deterministic rule rather than letting the model break the tie. Second, <strong>dilution is a control</strong>. Attacks succeed where the attacker owns ~85–90% of the observation. Truncating, summarising or structurally bounding untrusted content so it is a minority of what the decision layer sees is a cheap, model-agnostic mitigation with measured support here.</p>
+        <p>The authors flag these as associations in a completed run, not causal rules — the exploratory AUCs of ~0.97 and ~0.98 for bare-snippet status and attacker-control fraction are computed in-sample, not held out, and the successes cluster in two source groups. The strongest single caveat is that all 13 successful embedded cases involve the emergency-dispatch attacker goal, and removing that goal zeroes the ASR contrasts elsewhere without changing the probability conclusions. Treat the margin and dilution levers as well-motivated hypotheses with supporting evidence, not as validated predictors.</p>
+
+        <h2>What this changes</h2>
+        <p>Structured output has been quietly accumulating a reputation as an injection mitigation — constrain the model to a schema and the attack surface closes. This paper is the first rigorous measurement of that claim on a production non-generative decision model, and it lands in the middle: the schema is a real and effective containment boundary, and it is not an injection defence.</p>
+        <p>The clean framing is the authors' own: <em>type safety and resistance to prompt injection address different properties</em>. Jev returned no undeclared action in 54,060 calls — the type system held perfectly. What untrusted text did instead was change which declared action got selected. If every option in your action set is safe, that is a non-event. The moment one declared option is security-critical — send the payment, escalate the ticket, approve the transfer — restricting the output space has bought you nothing against an attacker who only needs the model to pick the wrong legal option.</p>
+        <p>That is the same lesson agent designers keep relearning through different doors: <a href="/posts/2026/07/issuetrojanbench-malicious-github-issues-coding-agents/">malicious GitHub issues beating coding-agent guardrails</a>, <a href="/posts/2026/07/arxiv-memory-poisoning-llm-agents-mpbench/">memory poisoning surviving conversation boundaries</a>, and now typed decisions moving under pressure. The containment mechanism works exactly as specified and the attacker adapts to what remains in scope. The right question is never "can untrusted content make the system do something undeclared" — it is "which of the things the system is already allowed to do would an attacker want, and how far is that option from being chosen right now."</p>
+        <p>The paper's scope limits are worth repeating because they are unusually well stated: one proprietary model at one pinned version, InjecAgent's domains and wording, three choices in the primary space, a selection endpoint rather than harmful execution, and a 0.01 probability reporting step that bounds per-call interpretation. No comparison is offered against generative baselines, and the authors explicitly decline to rank model classes. What they measured, they measured carefully — 10,000-resample bootstraps over attacker goals and user contexts, pre-registered effect thresholds, three independent reruns agreeing to within 0.0003 on the aggregate probability shift. That is a higher evidentiary bar than most attack papers clear, and it is why the negative results carry weight.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2609.28613?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2609.28613 — Tiantong Wu, Wei Yang Bryan Lim, "Decision Hijacking: Prompt Injection Attacks on Jev's Typed Probabilistic Decisions" (submitted 23 September 2026; Nanyang Technological University)</a></li>
+          <li><a href="https://arxiv.org/html/2609.28613v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Full text (HTML v1) — experiment design, all four DH stages, main results table, exploratory margin analysis, and stated limitations</a></li>
+          <li><a href="https://arxiv.org/abs/2403.02691?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zhan et al. — InjecAgent, the benchmark whose 510 direct-harm cases were reconstructed for this study</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-25">2026-05-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-agentwall-os-level-runtime-interception-ai-agents/">arXiv AgentWall Preprint (2605.16265) — OS-Level Runtime Interception for AI Agents</a></h3><p>A fresh arXiv preprint proposes AgentWall, an OS-level safety layer that intercepts AI agent shell commands, API calls, and file writes before execution.</p><a class="text-link" href="/posts/2026/05/arxiv-agentwall-os-level-runtime-interception-ai-agents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-19">2026-04-19</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Kill-Chain Canaries — arXiv:2603.28013 Stage-Level Prompt Injection Tracking</a></h3><p>arXiv:2603.28013 — MIT and University of Chicago researchers track prompt injection through four kill-chain stages across five frontier models, revealing that write-node placement is the highest-leverage safety decision in agent pipelines.</p><a class="text-link" href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-02-24">2026-02-24</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/02/arxiv-llm-ranker-prompt-injection/">arXiv — Prompt injection vs LLM rankers</a></h3><p>A new arXiv study measures how prompt injections inside candidate documents can hijack LLM ranking pipelines and which model architectures resist them.</p><a class="text-link" href="/posts/2026/02/arxiv-llm-ranker-prompt-injection/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
