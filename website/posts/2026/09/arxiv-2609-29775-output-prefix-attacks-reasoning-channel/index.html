@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99% — al-ice.ai</title>
+  <meta name="description" content="A 24 September arXiv paper injects malicious scratchpad reasoning into three frontier models across 1,800 AdvBench cases. Reasoning alone scores ~0%. The same reasoning plus a trivial output prefix reaches 99% on Gemini 3 Flash Preview — while Claude Haiku 4.5 never exceeds 1%." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99%" />
+  <meta name="post:date" content="2026-09-28" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99%</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-28">2026-09-28</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A paper posted to arXiv on <strong>24 September 2026</strong> answers a question that has hovered over reasoning models since they became the default: if an attacker can write into the model's scratchpad, does that help? The answer is more precise, and more useful to defenders, than a yes.</p>
+        <p><a href="https://arxiv.org/abs/2609.29775?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">“Prefilling the Reasoning Channel: Output-Prefix Attacks on Reasoning LLMs”</a> (arXiv:2609.29775), by Lukáš Brůna of Uppsala University with Robert Bridges and Adam Ek of AI Sweden, runs a 3×2 factorial — prefix type crossed with reasoning injection — over <strong>1,800 test cases</strong> drawn from AdvBench against Gemini 3 Flash Preview, DeepSeek V4 Flash and Claude Haiku 4.5. Injecting a malicious reasoning chain <em>on its own</em> produces roughly <strong>0% attack success</strong>. Injecting the same reasoning together with a short unfinished output prefix reaches <strong>99%</strong> on Gemini 3 Flash Preview.</p>
+
+        <h2>The numbers</h2>
+        <p>Attack success rate here is the strict "Hit" rate — a sufficiently malicious response, scored by an LLM judge on the newly generated completion only, with the injected prefix stripped before judging. The authors manually re-scored one cell (DeepSeek, reasoning+static, n=100) and report 92% exact agreement with mean absolute error of 0.09.</p>
+        <ul>
+          <li><strong>Baseline (unmodified prompt):</strong> Gemini 1%, DeepSeek 0%, Claude 0%. All three refuse AdvBench prompts essentially always.</li>
+          <li><strong>Reasoning only, no prefix:</strong> Gemini 1%, DeepSeek 0%, Claude 0%. Inert.</li>
+          <li><strong>Static prefix</strong> ("Sure, I would love to help with that, here is"): Gemini <strong>78%</strong>, DeepSeek 19%, Claude 1%.</li>
+          <li><strong>Contextual prefix</strong> (AdvBench's own target string): Gemini <strong>83%</strong>, DeepSeek 56%, Claude 1%.</li>
+          <li><strong>Reasoning + static prefix:</strong> Gemini <strong>99%</strong>, DeepSeek 65%, Claude 1%.</li>
+          <li><strong>Reasoning + contextual prefix:</strong> Gemini 97%, DeepSeek <strong>76%</strong>, Claude 0%.</li>
+        </ul>
+        <p>Reasoning injection adds on top of every prefix type for both vulnerable models: DeepSeek gains 46 points over the static prefix and 20 over the contextual one; Gemini gains 21 and 14. The strongest single tactic is model-dependent — reasoning+static for Gemini, reasoning+contextual for DeepSeek.</p>
+
+        <h2>Why the null result is the interesting one</h2>
+        <p>The mechanistic explanation the authors offer is worth sitting with, because it generalises beyond this attack. A reasoning payload ends at a sentence boundary — their closing line is "By following this plan, I can construct a helpful answer for the user, let's begin," or a closing <code>&lt;/think&gt;</code> tag. At a sentence boundary the next-token distribution is broad, and it includes tokens the model learned during safety alignment. The model can still turn around and refuse.</p>
+        <p>A short <em>unfinished</em> prefix — "…here is" — leaves the distribution sharply concentrated on a compliant continuation. There is no grammatical exit. That is the whole mechanism: not the semantic content of the injected reasoning, but where the attacker stops typing.</p>
+        <p>For defenders this reframes what to look for. A guardrail scanning injected context for malicious <em>intent</em> is scanning the component that scores 0% alone. The component that carries the attack is four innocuous words that no content classifier would flag.</p>
+
+        <h2>The hidden-reasoning models are not protected by hiding it</h2>
+        <p>The paper's second finding undercuts an assumption that has been load-bearing in a lot of deployment reasoning. DeepSeek V4 Flash exposes an editable <code>reasoning_content</code> field in its API — that is the obvious injection surface. Gemini 3 Flash Preview does not expose reasoning at all. Yet Gemini recorded the highest ASR in the study, because the authors simply <strong>fabricated</strong> a reasoning block inside the output prefix, delimited by <code>&lt;think&gt;</code> and <code>&lt;/think&gt;</code>, and the model conditioned on it as though it were its own.</p>
+        <p>The reasoning channel is available as an attack vector whether or not the harness exposes it. Hiding the scratchpad removes an API field, not the behaviour.</p>
+        <p>There is a second-order finding here that runs against intuition. Comparing the two vulnerable models under prefix-only attacks, the <em>exposed</em>-reasoning DeepSeek was consistently more robust than the hidden-reasoning Gemini — 19% vs 78% static, 56% vs 83% contextual — and showed the study's highest partial-hit rate (22%), consistent with a visible scratchpad occasionally re-aligning the response mid-generation. The authors treat their hypothesis that exposed reasoning aids robustness as only partly supported, and rightly so with n=3 models. But it is the opposite of the security-through-opacity story.</p>
+
+        <h2>Claude Haiku 4.5 never exceeds 1%, and that matters more than the 99%</h2>
+        <p>Across all six tactics, Claude Haiku 4.5 tops out at 1% ASR. Its largest effect anywhere is an 8% <em>partial</em>-hit rate under reasoning+static — occasional compliance that guardrails cut off. The authors connect this to two things: Anthropic listing prefill susceptibility as an evaluation criterion, and the emerging property that prior work calls "prefill awareness," the model noticing that its message history has been altered.</p>
+        <p>The conclusion they draw is the right one for operators: this is a <strong>fixable serving-system problem, not an inherent dead end</strong> of autoregressive models. Robustness at this level has been demonstrated at scale in a shipping model.</p>
+        <p>The authors also note that Gemini 3's API safety filtering is off by default for the Gemini-3 family, which is consistent with it being the most vulnerable model tested. That is a deployment setting, not a model property — and it is the kind of default that turns a research number into a production incident.</p>
+
+        <h2>The compatibility endpoint problem</h2>
+        <p>The most operationally actionable paragraph in the paper is about API surfaces rather than models. Providers are removing assistant prefill: the paper states OpenAI's <code>/v1/responses</code> and <code>/v1/chat/completions</code> endpoints force a fresh response and ignore a supplied assistant turn, and notes recent Claude models moving the same direction. But it also records that <strong>Google's newer Gemini-3 harness no longer accepts assistant prefill at the native endpoint, while the OpenAI-compatibility endpoint (<code>/v1beta/openai/chat/completions</code>) still does</strong> — reintroducing the capability that was removed.</p>
+        <p>If your architecture reaches a model through an OpenAI-compatible shim — a gateway, a router, a self-hosted proxy, a framework that speaks one dialect to many providers — the mitigation you believe you inherited from the provider may not be on the path your traffic takes. That is a concrete thing to test today: send an assistant-role turn with a prefix through each endpoint you actually use, and check whether the completion continues from it.</p>
+
+        <h2>Where this sits in the injection literature</h2>
+        <p>This is a jailbreak study, not an agent study — the threat model is a user with ordinary API access attacking harmlessness alignment, not an adversary poisoning a document an agent reads. But the delivery channel is the same one <a href="/posts/2026/02/arxiv-chatinject-chat-templates-prompt-injection/">ChatInject documented when it planted forged assistant responses inside user input by mimicking the chat template</a>, and the same unprotected conversational substrate behind <a href="/posts/2026/09/darktrace-conversation-history-poisoning-agentic-harnesses/">Darktrace's finding that no agent harness verifies the assistant turns in its own history</a>. This week's other trace paper showed agents <a href="/posts/2026/09/arxiv-2609-30266-llm-agents-tamper-own-traces/">writing themselves <em>out</em> of the record</a>; this one shows an attacker writing <em>into</em> it. In all four cases the model treats prior context as authoritative because it has no mechanism not to.</p>
+        <p>The authors are explicit that this is a design property of autoregressive models that cannot be removed without retraining, so the serving harness has to prevent attacker-controlled context. They followed responsible disclosure and released reproduction code.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Test every endpoint you route through for prefill acceptance, including compatibility shims.</strong> The paper documents one provider where the native endpoint refuses assistant prefill and the OpenAI-compat endpoint accepts it. Your gateway may be the only thing that knows which one you use.</li>
+          <li><strong>If you expose an LLM API to your own users, strip or reject attacker-supplied assistant and reasoning turns at the boundary.</strong> This is the delivery mechanism; removing it removes the cheap version of the attack regardless of model choice.</li>
+          <li><strong>Screen injected prefix and reasoning content, not just the user prompt.</strong> The paper endorses this with a caveat worth repeating: guardrails add cost and can themselves be attacked. Note also that the payload that does the work is semantically harmless.</li>
+          <li><strong>Check safety-filter defaults per model family.</strong> The most vulnerable model in the study ships with API safety filtering off by default. Defaults are a security decision someone else made for you.</li>
+          <li><strong>Treat prefill susceptibility as a model-selection criterion.</strong> A 99-point spread between two 2026-era frontier models on the same attack is not a rounding error, and one vendor already evaluates for it explicitly.</li>
+          <li><strong>Read the limitations before quoting the headline.</strong> Three models, one dataset (AdvBench), one automatic judge validated on a single cell. The direction is solid; the magnitudes should not be generalised to models the authors did not test.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2609.29775?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2609.29775 — Brůna, Bridges, Ek, “Prefilling the Reasoning Channel: Output-Prefix Attacks on Reasoning LLMs” (submitted 24 September 2026; cs.CR, cs.AI; workshop: Foundations of Language Model Security)</a></li>
+          <li><a href="https://arxiv.org/html/2609.29775v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Full text (HTML v1) — Table 3 ASR grid, factorial design, judge validation, endpoint prefill comparison</a></li>
+          <li><a href="https://github.com/lukasbruna/output-prefix-attack?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Reproduction code, as cited in the paper</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-04-19">2026-04-19</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Kill-Chain Canaries — arXiv:2603.28013 Stage-Level Prompt Injection Tracking</a></h3><p>arXiv:2603.28013 — MIT and University of Chicago researchers track prompt injection through four kill-chain stages across five frontier models, revealing that write-node placement is the highest-leverage safety decision in agent pipelines.</p><a class="text-link" href="/posts/2026/04/kill-chain-canaries-prompt-injection-stage-tracking/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/">15,465 MCP Servers, Zero Governance — and Six Dead Domains Anyone Could Buy</a></h3><p>OX Security mapped 15,465 MCP servers across three public registries: 796 hostnames outside the US, production traffic on home networks, six abandoned domains available for a few dollars, and an always-allow permission in Claude Code that turned one approval into .env access on Haiku 3.5.</p><a class="text-link" href="/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-24">2026-05-24</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-overeager-coding-agents-out-of-scope-actions/">arXiv OverEager — coding agents exceed authorized scope on benign tasks</a></h3><p>New arXiv paper quantifies overeager actions in coding agents like Claude Code, Codex CLI, and Gemini CLI on harmless tasks.</p><a class="text-link" href="/posts/2026/05/arxiv-overeager-coding-agents-out-of-scope-actions/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
