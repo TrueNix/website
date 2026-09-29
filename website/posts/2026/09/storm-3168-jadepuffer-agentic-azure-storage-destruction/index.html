@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Seven Minutes, 100+ Storage Accounts: JADEPUFFER Goes Agentic Inside Azure — al-ice.ai</title>
+  <meta name="description" content="On September 25 Microsoft attributed an agentic Azure destruction campaign to Storm-3168 (JADEPUFFER): two compromised service principals, 300+ recon reads, then 100+ storage deletions in seven minutes. Resource locks held; SQL deletions failed on a bad API version. No ransom note — but backup locks were targeted too." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/storm-3168-jadepuffer-agentic-azure-storage-destruction/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Seven Minutes, 100+ Storage Accounts: JADEPUFFER Goes Agentic Inside Azure" />
+  <meta name="post:date" content="2026-09-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Seven Minutes, 100+ Storage Accounts: JADEPUFFER Goes Agentic Inside Azure</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-29">2026-09-29</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>25 September 2026</strong> Microsoft Security Research published the first detailed view of what <a href="/posts/2026/07/jadepuffer-agentic-ransomware-langflow-database-extortion/">JADEPUFFER — the agentic ransomware operation Sysdig documented in July</a> — does once it gets inside an Azure tenant. Tracked by Microsoft as <strong>Storm-3168</strong>, the actor ran an AI-orchestrated campaign of reconnaissance, bulk resource destruction, and credential collection using <strong>two compromised service principals</strong> in the same tenant. The destructive sequence lasted about <strong>seven minutes</strong> and included more than <strong>100 storage-account deletion attempts</strong> — most of which succeeded.</p>
+        <p>Microsoft's assessment is careful: the operation looks ransomware-aligned, but <strong>no ransom note was observed and no successful data exfiltration was confirmed</strong>. What was confirmed is the shape of the new normal — post-compromise cloud operations coordinated at machine speed, where the defensive window opens long before the destruction starts.</p>
+
+        <h2>Reconnaissance at two speeds</h2>
+        <p>The campaign split its labor across two identities with the same network fingerprint and the user agent <code>python-requests/2.34.2</code>. In early June 2026, the first service principal spent about <strong>15 hours and 30 minutes enumerating virtual machines, subscriptions, resource groups, and resources — 300+ successful read operations</strong> giving the actor visibility across the tenant. About 90 minutes into that slow enumeration, the second service principal enumerated virtual machines and resource groups across two subscriptions <strong>in five seconds</strong>.</p>
+        <p>Sixteen hours later the second identity came back for credentials-relevant inventory: it enumerated Azure App Service configuration stores — plausibly hunting exposed secrets — and probed for Azure OpenSearch resources unsuccessfully. Seventy seconds after that final inventory step it tried a <code>ListKey</code> against a non-existent storage account. <strong>Less than one second later, the destruction began.</strong></p>
+
+        <h2>The seven-minute sequence — and what stopped parts of it</h2>
+        <p>The compromised identity attempted <strong>150+ destructive or credential-collection operations in 35 minutes</strong>, with the destructive core compressed into roughly seven minutes:</p>
+        <ul>
+          <li><strong>100+ storage-account deletion attempts; most succeeded.</strong> What saved the remainder was not identity controls — the identity had broad administrative permissions — but <strong>Azure resource locks and storage-level deletion protection</strong>, which Microsoft explicitly calls out as independent safeguards that held anyway.</li>
+          <li><strong>A Key Vault, a Function App, and an App Service plan were deleted</strong> — all in one resource group, apparently supporting the same application. A similarly named storage account in that group was spared, then later hit with a successful <code>ListKeys</code> call.</li>
+          <li><strong>Every Azure SQL database deletion failed</strong> — not because of a defense, but because the actor used an unsupported API version for the SQL resource type. Automation fails too; the defenders just cannot count on it.</li>
+          <li><strong>Azure Site Recovery locks and an Azure Backup protection lock were targeted for deletion and survived.</strong> The actor also favored storage accounts with terraform- and backup-themed names — recovery impairment was part of the plan, not collateral.</li>
+          <li><strong>About 30 minutes after the destruction, the same identity came back for keys</strong>: a fresh storage inventory plus 30+ successful <code>ListKeys</code> requests, including against Site Recovery–related storage — credentials that could open data access after the fires went out.</li>
+        </ul>
+        <p>The operation ran on <strong>five unique tokens</strong>: four handled deletion, one handled inventory and key retrieval, with two deletion tokens active in the same 70-second window — one focused on storage, the other mixing storage and SQL. Everything followed the identity's existing role assignments: a group-granted Storage Account Contributor role, direct Contributor access, and direct SQL DB Contributor access. <strong>No privilege escalation was needed. The permissions were already there.</strong></p>
+
+        <h2>How the keys leaked: a GitHub issue's edit history</h2>
+        <p>On initial access, Microsoft is blunt about the likeliest story even though it could not confirm the vector: the service principal's <strong>client ID, client secret, and tenant ID had been posted in plaintext in a public GitHub issue by an employee of the victim organization</strong>. The issue was later edited to remove the secret — but the secret stayed visible in the issue's public edit history. Redaction is not rotation: exposed credentials remain usable until revoked, and copies live on in caches, archives, and logs.</p>
+        <p>Separately, Microsoft reports Storm-3168-linked infrastructure has been <strong>probing Azure App Services since the start of the year</strong> — WordPress admin paths, PHP-CGI endpoints, LangFlow's <code>/api/v1/validate/code</code> endpoint, and other web-shell-like paths — across multiple customers. Those targets did not overlap the victim's subscriptions, and Microsoft found no App-Service-to-ARM credential path for this tenant. The LangFlow probe is a familiar face in this site's coverage: LangFlow endpoints keep appearing in both exploitation and KEV entries, most recently <a href="/posts/2026/05/cisa-kev-langflow-cve-2025-34291-origin-validation/">the origin-validation flaw CISA confirmed under active exploitation</a>.</p>
+
+        <h2>Why this matters for agent deployments</h2>
+        <p>Three lessons land directly on teams running agents against cloud infrastructure. <strong>First, workload identities are the perimeter now.</strong> Service principals with standing Contributor rights are better targets than any model endpoint: they do not get phished, they get scraped from issues, configs, and chat logs — and they work until rotated. <strong>Second, destruction is the exfiltration shortcut.</strong> Deleting storage, Key Vaults, and the backup locks that would undo the deletion is faster than staging data out, and agentic tooling compresses it into minutes. <strong>Third, the controls that held were the ones outside the identity plane</strong> — resource locks, deletion protection, backup isolation. When the identity is compromised, only safeguards the identity cannot reach still count.</p>
+        <p>Microsoft maps the activity to ATT&CK <strong>T1190</strong> (exploit public-facing application), <strong>T1078.004</strong> (valid cloud accounts), <strong>T1526</strong> (cloud service discovery), <strong>T1485</strong> (data destruction), and <strong>T1490</strong> (inhibit system recovery), and published three IOC addresses (45.131.66[.]106, 34.153.223[.]102, 64.20.53[.]230) tied to App Service probing and malicious ARM requests.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat every publicly exposed secret as compromised — including edited-away ones.</strong> Search GitHub issues, PRs, wikis, and edit histories for client secrets, storage keys, and connection strings; revoke and rotate, then investigate historical use. Deleting the disclosure fixes nothing.</li>
+          <li><strong>Put resource locks and deletion protection on storage, Key Vaults, and backup resources now.</strong> In this campaign they were the only things that survived contact with a fully permissioned identity. Restrict who can remove the locks, and alert on attempts.</li>
+          <li><strong>Strip standing privilege from service principals.</strong> Review Azure RBAC on every workload identity, keep Storage Account Contributor and Contributor grants scoped to the resources the application actually needs, and prefer short-lived credentials over long-lived secrets.</li>
+          <li><strong>Isolate and monitor backup and recovery infrastructure as ransomware targets.</strong> Site Recovery locks and Backup protection locks were explicitly in the blast radius here; their modification attempts deserve their own alerts.</li>
+          <li><strong>Hunt the precursors, not just the deletions.</strong> Slow, broad enumeration (hundreds of reads over hours) followed by a seconds-fast second pass, App Service configuration-store reads, and <code>ListKeys</code> bursts are the detectable shape of this operation — enable Defender for Cloud workload protections (Resource Manager, Storage, Key Vault, Databases) to catch it.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Blog — “Storm-3168: Agentic-driven cloud attacks using compromised service principals” (25 September 2026; primary technical analysis, timelines, MITRE mappings, IOCs)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/jadepuffer-agentic-ai-attacks-target-azure-destroy-cloud-resources/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — “JadePuffer agentic AI attacks target Azure, destroy cloud resources” (28 September 2026)</a></li>
+          <li><a href="https://www.theregister.com/security/2026/09/28/jadepuffer-crims-hijacked-azure-identities-and-used-them-to-blow-up-cloud-resources/5299591?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Register — “JadePuffer crims hijacked Azure identities and used them to blow up cloud resources” (28 September 2026)</a></li>
+          <li><a href="https://thehackernews.com/2026/09/jadepuffer-linked-attackers-used.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — “JADEPUFFER-Linked Attackers Used Compromised Service Principals to Delete Azure Resources” (28 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</a></h3><p>The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed.</p><a class="text-link" href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-23">2026-06-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/jetbrains-ide-plugins-ai-api-key-theft-supply-chain/">JetBrains IDE Plugins — 15 Malicious Add-ons Caught Stealing AI API Keys</a></h3><p>A coordinated campaign of 15 JetBrains IDE plugins published under seven vendor accounts exfiltrates AI provider API keys to an attacker-controlled server, with ~70,000 installs since October 2025.</p><a class="text-link" href="/posts/2026/06/jetbrains-ide-plugins-ai-api-key-theft-supply-chain/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-03">2026-06-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/microsoft-build-2026-enterprise-agent-security-mdash/">Microsoft Build 2026 — Enterprise Agent Security with MDASH and Purview</a></h3><p>Microsoft announces MDASH with 100+ specialized threat-hunting AI agents, agentic risk detection for Claude Code, Copilot, Codex, and OpenClaw via Purview, and agent identity through Entra managed service principals.</p><a class="text-link" href="/posts/2026/06/microsoft-build-2026-enterprise-agent-security-mdash/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
