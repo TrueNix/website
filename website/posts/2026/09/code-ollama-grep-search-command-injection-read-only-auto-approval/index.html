@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The “Read-Only” Tool That Runs Shell: code-ollama’s grep_search Auto-Executes Injected Commands (GHSA-456v-xq2p-r4cj) — al-ice.ai</title>
+  <meta name="description" content="GHSA-456v-xq2p-r4cj (High, CVSS 7.8, added to the GitHub Advisory Database 28 September 2026): code-ollama 0.36.0 and earlier interpolated model-supplied pattern and path arguments into a shell string, escaping only backslashes and double quotes — leaving $() substitution intact. Because grep_search is classified read-only, it auto-executes in Plan mode with no approval prompt. Fixed in 0.36.1." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/code-ollama-grep-search-command-injection-read-only-auto-approval/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The “Read-Only” Tool That Runs Shell: code-ollama’s grep_search Auto-Executes Injected Commands (GHSA-456v-xq2p-r4cj)" />
+  <meta name="post:date" content="2026-09-29" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The “Read-Only” Tool That Runs Shell: code-ollama’s grep_search Auto-Executes Injected Commands (GHSA-456v-xq2p-r4cj)</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-29">2026-09-29</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>GHSA-456v-xq2p-r4cj</strong> was published by the <code>ai-action/code-ollama</code> maintainer on <strong>24 June 2026</strong> and reviewed into the GitHub Advisory Database on <strong>28 September 2026</strong>. It carries <strong>no CVE ID</strong>, is rated <strong>High</strong> at <strong>CVSS 7.8</strong> (<code>CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H</code>) under <strong>CWE-78</strong>, affects <strong>code-ollama &lt;= 0.36.0</strong> on npm, and is fixed in <strong>0.36.1</strong>. The package — a terminal coding agent driven by an Ollama backend — is currently at <strong>0.53.8</strong>, so the patched line is many releases old. The interesting part is not the injection. It is <em>who</em> supplies the payload and <em>why nobody was asked</em>.</p>
+
+        <h2>The bug: two characters escaped, one class forgotten</h2>
+        <p>Per the advisory, the <code>grep_search</code> tool built a shell command string by interpolating the model-supplied <code>pattern</code> and <code>path</code> arguments and handing the result to <code>child_process.exec()</code>. The sanitisation replaced backslashes and double quotes — and nothing else. Command substitution via <code>$(&hellip;)</code> and backtick expansion passed through untouched, and because <code>exec</code> routes the string through <code>/bin/sh</code>, the shell obligingly evaluated them.</p>
+        <p>This is the oldest injection shape in the book, and the fix is equally old: do not build a shell string at all. Pass <code>rg</code> its pattern and path as an argument vector (<code>execFile</code>/<code>spawn</code> with an array, no shell), and the question of which metacharacters to escape stops existing. Escaping is a denylist; argument vectors are a structural guarantee. Every allowlist of “dangerous characters” eventually ships with one missing.</p>
+
+        <h2>The threat model inversion: the model is the attacker</h2>
+        <p>The advisory is explicit that the injection source is “a malicious or compromised Ollama server.” That sentence deserves to be read slowly, because it inverts the assumption most local-agent deployments are built on.</p>
+        <p>A terminal coding agent treats its model endpoint as trusted infrastructure — it is, after all, the thing whose reasoning the user asked for. But the tool-call arguments in a streamed response are just attacker-controllable bytes the moment the endpoint is not yours: a self-hosted Ollama instance on a shared network, a colleague’s box, a container pulled from a registry, a reverse proxy someone added for “caching,” or a model whose weights were tuned to emit a particular tool call under a particular trigger. The trust boundary was drawn around the network connection, not around the data crossing it. That is the same shape as the <a href="/posts/2026/09/opencode-ghsa-632h-h47v-g4x4-upgrade-endpoint-rce/">OpenCode upgrade-endpoint RCE</a> and the <a href="/posts/2026/03/github-copilot-cli-cve-2026-29783/">Copilot CLI shell-expansion RCE (CVE-2026-29783)</a>: the agent’s own plumbing turns model output into process execution.</p>
+
+        <h2>The real amplifier: “read-only” is a security classification nobody audits</h2>
+        <p>The detail that turns a 7.8 into an operational problem is the approval path. The advisory notes <code>grep_search</code> sits in the agent’s read-tool set and is exposed in Plan mode — and read-only tools execute automatically, without an approval prompt. So the exploitation path requires no user interaction beyond starting the agent. The human-in-the-loop control that the entire agent-safety consensus rests on was never invoked, because a list somewhere said this tool could not do harm.</p>
+        <p>That list is a security boundary, and almost nobody treats it like one. “Read-only” in these codebases means <em>the tool’s intent is to read</em>. It does not mean the implementation lacks a write primitive. A search tool that shells out has the full authority of the shell; a file-lister that globs through a shell does too; a “fetch this URL” helper with a redirect follower reaches the metadata service. Intent is not a capability bound. The only defensible definition of read-only is <em>this code path cannot invoke an interpreter, cannot write the filesystem, and cannot open a socket</em> — and that is a property you assert by construction, not by naming.</p>
+        <p>We keep finding the same failure in different costumes: <a href="/posts/2026/09/zscaler-mcp-cve-2026-59563-hmac-token-replay-cross-resource/">an approval token that does not bind what it approves</a>, and now an approval step that is skipped entirely because of a label. Both are checks that do not check what they claim to.</p>
+
+        <h2>What to do today</h2>
+        <ul>
+          <li><strong>Upgrade <code>code-ollama</code> past 0.36.0</strong> — 0.36.1 carries the fix, and the current release line is 0.53.8. Check global npm installs, not just project lockfiles; terminal agents are usually installed with <code>--global</code> and never audited again.</li>
+          <li><strong>Audit your own agent’s read-tool allowlist as a security control.</strong> For every tool marked auto-executable, trace the sink. If any path reaches <code>exec</code>, <code>system</code>, <code>eval</code>, a template-rendered SQL string, or an outbound socket, it is not read-only — move it behind approval or rewrite the sink.</li>
+          <li><strong>Ban shell-string construction in tool implementations.</strong> Argument vectors with <code>shell: false</code>, always. Add a lint or CI grep for <code>child_process.exec(</code> with a template literal; it is a cheap, high-yield rule.</li>
+          <li><strong>Treat the model endpoint as untrusted input.</strong> Validate tool-call arguments against a schema with character classes at the dispatcher, before any tool sees them — the dispatcher is the one place that covers every tool at once.</li>
+          <li><strong>Track no-CVE advisories.</strong> This one has no CVE ID, so CVE-keyed scanners will not surface it; the <a href="/posts/2026/09/cisa-vulnerability-bulletin-discontinued-bod-26-04-kev-patch-gap/">shrinking coverage of CVE-indexed feeds</a> makes GHSA and OSV ingestion a requirement rather than a nicety.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/advisories/GHSA-456v-xq2p-r4cj?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GitHub Advisory Database — GHSA-456v-xq2p-r4cj, “code-ollama: <code>grep_search</code> Command Injection via Unescaped <code>$()</code> Shell Substitution (CWE-78)” (published in <code>ai-action/code-ollama</code> 24 June 2026; reviewed and added to the database 28 September 2026; affected <code>&lt;= 0.36.0</code>, patched <code>0.36.1</code>; High / CVSS 7.8; no known CVE)</a></li>
+          <li><a href="https://advisories.gitlab.com/npm/code-ollama/GHSA-456v-xq2p-r4cj/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GitLab Advisory Database — GHSA-456v-xq2p-r4cj (independent mirror of the affected/patched ranges and summary)</a></li>
+          <li><a href="https://registry.npmjs.org/code-ollama?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">npm registry metadata for <code>code-ollama</code> (current <code>latest</code> dist-tag 0.53.8, checked 29 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Ten SiYuan CVEs Landed in One Batch — and the Release Notes Called Them “Some security vulnerabilities”</a></h3><p>VulnCheck published ten SiYuan CVEs on 26 September 2026 for flaws fixed in v3.8.4 on 17 September. They include an incomplete fix that lets recursive MCP file operations bypass the sensitive-path guard, and two XSS bugs that reach code execution because the Electron renderer runs with nodeIntegration on.</p><a class="text-link" href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/openclaw-72-cve-batch-vulncheck-advisory-to-cve-lag/">72 OpenClaw CVEs Landed in One Day — for Bugs Patched Back in July</a></h3><p>VulnCheck published 72 OpenClaw CVEs on 26 September 2026 covering advisories GitHub carried since 11 September, for defects fixed in releases dating to 13 July. Forty-five point at 2026.8.1, twenty at 2026.7.1, and more than half the batch is a missing owner or scope check.</p><a class="text-link" href="/posts/2026/09/openclaw-72-cve-batch-vulncheck-advisory-to-cve-lag/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">DBHub’s Read-Only Mode Was Dead Code — and Three Advisories Landed at Once</a></h3><p>Three DBHub advisories published September 24 describe an unauthenticated MCP endpoint, a DNS-rebinding bypass, and a read-only guardrail whose database-level enforcement was never wired up. All were fixed in June; the CVEs surfaced publicly three months later.</p><a class="text-link" href="/posts/2026/09/dbhub-readonly-bypass-dns-rebinding-cve-2026-61742-61788-61789/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
