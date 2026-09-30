@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>x47.c Botnet Burns Victims’ AI Credits: Denial-of-Wallet Goes Commodity — al-ice.ai</title>
+  <meta name="description" content="Qrator Research Labs' analysis of the x47.c Windows botnet — sold from $200 with 18 DDoS methods — documents an 'AI API drain' mode that burns victims' paid OpenAI, xAI, and compatible API credits directly at the provider, plus a Grok-driven persistence module. The operator must supply a valid key, which is exactly why key hygiene is now financial defence." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/x47c-botnet-ai-api-drain-denial-of-wallet-qrator/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="x47.c Botnet Burns Victims’ AI Credits: Denial-of-Wallet Goes Commodity" />
+  <meta name="post:date" content="2026-09-30" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">x47.c Botnet Burns Victims’ AI Credits: Denial-of-Wallet Goes Commodity</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-30">2026-09-30</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A Windows botnet sold by an actor calling itself <strong>WraithTools</strong> has productised an attack the AI-security community has warned about for two years: <strong>denial-of-wallet against paid AI APIs</strong>. According to analysis by <strong>Qrator Research Labs</strong> (covered from 23 September 2026), the <strong>x47.c</strong> botnet ships an “AI API drain” mode that fires billable requests directly at <strong>OpenAI, xAI, and compatible chat APIs</strong> using the victim’s own key — so the website stays reachable while the account behind its AI features runs dry. Base package: <strong>$200</strong>. DDoS add-on: <strong>$150</strong>. The full kit: <strong>$950</strong>.</p>
+        <p>This matters beyond the usual botnet noise for two reasons. First, the drain bypasses the defences most teams actually bought: requests go straight to the provider, never traversing the victim’s app or WAF. Second, the same botnet uses a frontier model — <strong>xAI’s Grok</strong> — to maintain its own persistence, while bundling a stealer that harvests exactly the material (browser credentials, AI-site tokens) that feeds the drain. Offence and defence are now bidding on the same API credits.</p>
+
+        <h2>How the AI drain works — and its hard requirement</h2>
+        <p>The operator’s panel (branded “x47 Fast Flux C2GUI v4.1”) offers <strong>18 attack methods</strong>: HTTP floods, slow HTTP, TCP and UDP floods, a TLS stresser, reflection/amplification techniques — and AI API draining. For the drain, the operator supplies a <strong>model name plus a valid API key for the targeted account</strong>; bots then hammer the provider directly, consuming prepaid balances or running up usage-based charges. Seller documentation reportedly markets it against AI chatbots, content-management systems, scanners, and trading bots — including as a way to <strong>disrupt competitors</strong>.</p>
+        <p>The crucial corrective, straight from Qrator’s analysis: <strong>there is no indication x47.c automatically converts stolen browser tokens into provider API keys</strong>. The drain only works with an operator-supplied credential. That bounds the hype — but it also names the defence precisely. The campaign still depends on key compromise, and the botnet’s stealer (passwords, cookies, Discord tokens, wallet data, AI-site tokens) exists to make that compromise happen. Every leaked key is now both a confidentiality incident and an open line of credit to whoever holds it. The same lesson runs through the <a href="/posts/2026/09/cycode-anthropic-mcp-python-sdk-oauth-account-takeover/">MCP OAuth account-takeover class</a>: AI credentials change hands silently, and the blast radius is measured in someone else’s spend.</p>
+
+        <h2>Grok handles persistence; fast-flux handles survival</h2>
+        <p>x47.c’s “AI Stealth” module reportedly embeds an <strong>xAI key at build time</strong> and asks Grok to choose from a predefined list of host-maintenance actions: startup entries, scheduled tasks, persistence repair, Windows Defender exclusions — with optional process hollowing and privilege escalation. Status messages report what changed, and <strong>local fallback actions keep maintenance going when the model call fails</strong>. Note the design discipline worth stealing: the AI proposes, the menu constrains, and failure degrades to a safe default. Most enterprise agent deployments would benefit from exactly that shape.</p>
+        <p>Command-and-control uses <strong>fast-flux</strong> (six domains and eight IPs in the management tab, per the seller), with bots retaining the last working destination and trying alternates after failures — which complicates takedowns even though multiple domains may resolve to one VPS. A rootkit module removes rival malware from infected hosts, and a <strong>SOCKS5 module</strong> monetises endpoints as reverse proxies that work from behind NAT, with health monitoring per connection.</p>
+
+        <h2>What to do today</h2>
+        <ul>
+          <li><strong>Cap spend per key, and alert on velocity.</strong> Separate keys per workload, strict per-key spending ceilings, automatic top-ups disabled or tightly governed, and billing-telemetry alerts on abrupt request or token-consumption spikes. OWASP’s unbounded-consumption guidance exists for this exact invoice.</li>
+          <li><strong>Treat exposed AI keys as financial-breach events.</strong> Revoke, rotate, and review charges — not just the code that leaked them. Add circuit breakers that halt anomalous consumption before it becomes an invoice.</li>
+          <li><strong>Keep AI credentials out of browser-accessible environments.</strong> x47.c harvests exactly where developers paste keys. Scope keys to least privilege, restrict model access, and never let a frontend or shared workstation hold a key with top-up authority.</li>
+          <li><strong>Monitor the persistence primitives, not just the malware name.</strong> New startup entries, scheduled tasks, and Defender-exclusion changes are the observable half of “AI Stealth” — alert on them regardless of which family creates them.</li>
+          <li><strong>Assume competitor-grade targeting.</strong> The seller explicitly markets disruption of rivals’ AI features. If your product is an AI chatbot or agent, denial-of-wallet belongs in your threat model next to DDoS, with runbooks that cover a drained account, not just a downed server.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.securityweek.com/new-x47-c-windows-botnet-weaponizes-xai-grok-ai-api-draining/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SecurityWeek — “New x47.c Windows Botnet Weaponizes xAI Grok, AI API Draining” (26 September 2026; Qrator findings, pricing, 18 methods, Grok persistence, fast-flux, stealer)</a></li>
+          <li><a href="https://gbhackers.com/ai-powered-botnet-x47-c/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers — “New AI-Powered Botnet x47.c Steals Credentials and Drains AI Account Credits” (29 September 2026; operator-supplied-key requirement, direct-to-provider design, defensive controls)</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/x47c-botnet-ai-api-draining-18/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine — “Windows Botnet x47.c Offers AI API Draining, 18 Attack Methods” (23 September 2026)</a></li>
+          <li><a href="https://cybernews.com/security/hackers-advertise-ai-token-draining-service/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cybernews — “AI API drain botnet can run up huge bills for victims” (25 September 2026)</a></li>
+          <li><a href="https://cybersecuritynews.com/hackers-built-a-botnet/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cybersecurity News — “Hackers Built a Botnet That Doesn’t Just Steal Data, It Burns AI Credits” (29 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-29">2026-09-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/storm-3168-jadepuffer-agentic-azure-storage-destruction/">Seven Minutes, 100+ Storage Accounts: JADEPUFFER Goes Agentic Inside Azure</a></h3><p>On September 25 Microsoft attributed an agentic Azure destruction campaign to Storm-3168 (JADEPUFFER): two compromised service principals, 300+ recon reads, then 100+ storage deletions in seven minutes. Resource locks held; SQL deletions failed on a bad API version. No ransom note — but backup locks were targeted too.</p><a class="text-link" href="/posts/2026/09/storm-3168-jadepuffer-agentic-azure-storage-destruction/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">TeamPCP — Supply Chain Compromise of Trivy, LiteLLM, and KICS Feeds VECT Ransomware Credential Archive</a></h3><p>TeamPCP poisoned Trivy, Checkmarx KICS, LiteLLM, and Telnyx SDK to harvest 500K+ CI/CD credentials — VECT ransomware then selected victims from the archive.</p><a class="text-link" href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">GlassWorm — developer-targeting botnet takedown (CrowdStrike, Google)</a></h3><p>CrowdStrike, Google and Shadowserver simultaneously disrupt all four C2 channels of the GlassWorm malware campaign that has poisoned 300+ GitHub repos since 2025.</p><a class="text-link" href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
