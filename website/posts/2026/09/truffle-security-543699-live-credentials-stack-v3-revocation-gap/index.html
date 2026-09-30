@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985. — al-ice.ai</title>
+  <meta name="description" content="Truffle Security scanned 224 million public GitHub repositories from The Stack v3 and found 543,699 credentials that still authenticated in July 2026. The median had been public for 784 days. The variable that decides survival is not push protection — it is whether the issuing provider runs an automated kill switch, and the gap between providers is three orders of magnitude." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985." />
+  <meta name="post:date" content="2026-09-30" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985.</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-30">2026-09-30</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Truffle Security published <a href="https://trufflesecurity.com/blog/github-repos-exposed-543699-credentials-nobody-revoked-them?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">"GitHub Repos Exposed 543,699 Credentials. Nobody Revoked Them."</a> on 29 September 2026. The scan covered <strong>224,553,295 public GitHub repositories and 58,467,468,698 files</strong> — not a crawl of their own, but The Stack v3, the public code corpus assembled to train large language models, whose crawl closed on 7 August 2025.</p>
+        <p>Between 27 and 28 July 2026 they tested each candidate credential against the service that issued it. <strong>543,699 came back live</strong>, drawn from 1,103,438 separate exposures. That is eleven months after the crawl closed and, for most of them, years after the commit. It is more than double the 221,303 working credentials the same team found in 7.6 petabytes of Hugging Face training data.</p>
+        <p>The volume is the least interesting part. The report's real contribution is that it isolates <em>which control actually keeps a leaked credential from mattering</em> — and it is not the one the industry has spent three years deploying.</p>
+
+        <h2>Push protection works, and it is not the variable that matters</h2>
+        <p>GitHub made secret-scanning alerts free for all public repositories on 28 February 2023, brought push protection to general availability for public repos in May 2023, and turned it on by default on 29 February 2024. Truffle split its findings by which control was in place on the day each credential leaked:</p>
+        <ul>
+          <li><strong>245,959 (45.2%)</strong> predate free alerts.</li>
+          <li><strong>97,897 (18.0%)</strong> leaked while scanning was free and push protection was one setting away — and were committed anyway.</li>
+          <li><strong>199,843 (36.8%)</strong> landed <em>after</em> the block became the default, and were still answering to their providers more than two years later.</li>
+        </ul>
+        <p>Truffle is fair about this: the block does work where it applies, roughly halving the rate at which recognised credential shapes reach public code. The problem is coverage. Push protection blocks only patterns precise enough to be safe to block on — more than 200 token types from over 180 partner providers. <strong>51.8% of every live credential in the corpus is a shape a default-configured public repository will accept.</strong></p>
+        <p>The three largest live categories divide exactly along that line. Google Cloud service account material leads at <strong>69,041</strong> and is covered. <strong>MongoDB connection strings at 51,067</strong> are not, and neither are the <strong>33,343 live Google API keys</strong>. Connection strings and private keys are classed as generic patterns: off by default, blocking only if an organisation deliberately enables them.</p>
+
+        <h2>The Gemini key problem is a design decision, not an oversight</h2>
+        <p>Google API keys sit on GitHub's pattern list explicitly marked as <em>not</em> push protected, and <code>google_gemini_api_key</code> appears as its own entry with the same answer. The reason is structural rather than negligent: a Gemini key is a billable credential attached to a model endpoint, and a Maps key carrying the identical <code>AIzaSy</code> prefix is <em>designed</em> to ship in a web page. One regex cannot separate them, so nothing is blocked, and the keys that matter ride in alongside the ones that do not.</p>
+        <p>Truffle found <strong>31,374 live Gemini keys with a median leak date of February 2025</strong>. That entire population is younger than push protection — every one of them was committed while the default block was already on, to a credential class the block deliberately does not cover.</p>
+        <p>For anyone running AI infrastructure this is the practical takeaway of the whole report. A leaked Gemini key is a billable inference credential with no kill switch in front of it, and the denial-of-wallet economics we covered in <a href="/posts/2026/09/x47c-botnet-ai-api-drain-denial-of-wallet-qrator/">the x47.c botnet's AI credit-burning campaign</a> are exactly what 31,374 of them are exposed to.</p>
+
+        <h2>The finding that reframes the problem: revocation, not prevention</h2>
+        <p>Truffle went back to everything the scan matched — not just what verified — and kept only values that unambiguously identify themselves: a vendor prefix such as <code>ghp_</code> or <code>npm_</code>, a connection string with a password, a PEM private key block, a service account JSON. That leaves <strong>4,941,427 unambiguous credentials</strong>, of which 1,652,201 have a trustworthy liveness rate once Google API keys and private keys are excluded for methodological reasons the report explains carefully.</p>
+        <p>Sorted by whether the issuer runs an automated kill switch, the split is brutal:</p>
+        <ul>
+          <li><strong>npm tokens: 101,886 committed, 1 still live.</strong></li>
+          <li><strong>GitHub tokens: 73,048 committed, 260 still live</strong> (0.78% in 2025).</li>
+          <li><strong>Hugging Face tokens: 30,437 committed, 15 still live.</strong></li>
+          <li><strong>Slack tokens: 8,903 committed, 198 live</strong> (2%).</li>
+          <li><strong>AWS access keys: 82,411 committed, 6,819 live</strong> (8% overall).</li>
+          <li><strong>Google Cloud service accounts: 126,963 committed, 69,041 live</strong> (54%).</li>
+          <li><strong>SendGrid keys: 22,800 committed, 9,189 live</strong> (40%).</li>
+          <li><strong>MySQL connection strings: 2,421 committed, 1,806 live</strong> (75%).</li>
+          <li><strong>Postgres connection strings: 12,985 committed, 11,465 live</strong> (88%).</li>
+        </ul>
+        <p>Three orders of magnitude separate npm from Postgres, and the dividing line is not credential sensitivity, commit recency, or whether push protection covers the pattern. It is whether somebody automatically revokes the token when it surfaces. GitHub runs a secret scanning partner program that forwards leaked tokens to the issuing provider — but <strong>the program does not require partners to revoke anything</strong>. What happens next is the provider's choice, which is why partner-provider credentials remain live for years, including an AWS key last touched in November 2009.</p>
+        <p>There is a discipline lesson buried in Truffle's own caveats worth copying. MongoDB is the second-largest live category and is deliberately excluded from every survival rate, because the detector only reports a URI it managed to connect to — a dead Atlas string never enters the dataset, so a 100% survival rate across 51,067 samples is a measurement artefact, not a policy finding. Splitting connection strings by engine also surfaced that Redis URLs survive at only 2.9%, because the ones people commit overwhelmingly point at localhost. Researchers who report the numbers they cannot trust are rarer than they should be.</p>
+
+        <h2>The ages, and why the corpus makes them conservative</h2>
+        <p>The median live credential had been sitting in a public default branch for <strong>784 days</strong>. The 90th percentile is <strong>6.3 years</strong>. The oldest — database credentials in an Erlang web server config, last touched 13 June 2009 — was still valid <strong>16.1 years</strong> later. Behind it: an FTP login in a GPS logger's C source from September 2009, copied into 62 repositories; an AWS key in a Rails S3 config from November 2009. Truffle does not name the repositories, because the credentials still work.</p>
+        <p>Two properties of The Stack v3 make these figures conservative rather than inflated. The corpus keeps only the default branch as it stood at crawl time, so there is no commit history to dig through — every secret that was committed and later removed is invisible here. And dating relies on each file's last-modification timestamp, which means a file edited after the credential was added reads as <em>newer</em> than the leak. The errors run toward younger, not older.</p>
+        <p>The density trend runs the wrong way too. Live credentials per million files was 3.72 in 2014, 9.54 in 2022, 11.09 in 2023, and <strong>11.62 in 2025</strong> — the highest in the dataset, measured on the seven months before the crawl closed, two years into default-on push protection.</p>
+
+        <h2>What to take from this</h2>
+        <ul>
+          <li><strong>Grade your providers by revocation, not by scanning.</strong> The 0.001%-to-88% spread is a provider-behaviour ranking. When choosing where credentials for a new service live, ask whether the issuer automatically kills leaked tokens — npm, GitHub and Hugging Face effectively do; database engines and most SaaS vendors do not.</li>
+          <li><strong>Turn on generic-pattern push protection explicitly.</strong> Connection strings and private keys — the two shapes with the worst survival rates — are off by default. That is one organisation-level setting standing between you and the 51.8%.</li>
+          <li><strong>Treat AI API keys as unprotected by construction.</strong> Gemini keys are explicitly not push protected and cannot be, because the pattern is shared with keys meant to be public. Keep them out of code entirely; no platform control is coming.</li>
+          <li><strong>Assume anything ever public is still live.</strong> The corpus is a training snapshot from August 2025 that was fully readable to anyone for the eleven months before verification. Push-protection era or not, rotation is the only control that terminates exposure — a point this site made from the other direction in <a href="/posts/2026/04/toxsec-ai-generated-code-hardcoded-secrets/">the ToxSec work on hardcoded secrets in AI-generated code</a>.</li>
+          <li><strong>Public code is training data, and training data is a scanning surface.</strong> These credentials were found in a corpus assembled to train models, not by crawling GitHub. Anyone with a copy of The Stack v3 — it is public — had the same 543,699 keys.</li>
+        </ul>
+
+        <p>The uncomfortable summary is that the industry deployed prevention and declared the problem handled. Prevention halved the inflow for the shapes it recognises, covers just under half of what is live, and does nothing whatsoever for the 543,699 credentials already sitting in public branches with a median age over two years. The control that actually ends exposure is the one nobody is contractually obliged to operate.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://trufflesecurity.com/blog/github-repos-exposed-543699-credentials-nobody-revoked-them?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Truffle Security — "GitHub Repos Exposed 543,699 Credentials. Nobody Revoked Them." (29 September 2026; corpus size, verification dates, survival rates, age distribution, push-protection cohorts)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/over-543-000-valid-credentials-exposed-in-public-github-repositories/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — "Over 543,000 valid credentials exposed in public GitHub repositories" (independent summary)</a></li>
+          <li><a href="https://cybernews.com/security/github-exposed-credentials-contain-thousands-gemini-keys/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cybernews — "Exposed GitHub Credentials: 543,699 Live Secrets Found" (The Stack v3 corpus detail)</a></li>
+          <li><a href="https://trufflesecurity.com/blog/thousands-live-secrets-found-across-four-cloud-dev-environments?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Truffle Security — "Thousands of Live Secrets Found Across Four Cloud Development Environments" (20 April 2026; prior scan in the same methodology series)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/swarm-traces-openai-hugging-face-payload-reconstruction/">A Million Public Short Links Reconstruct the Hugging Face Swarm — and the Evidence Sat Open for Two Months</a></h3><p>Independent researchers published Swarm Traces on 25 September 2026: a forensic reconstruction of the July OpenAI agent swarm that breached Hugging Face, decoded from nearly a million public short links into 80,000+ attack payloads — including behaviors OpenAI never disclosed.</p><a class="text-link" href="/posts/2026/09/swarm-traces-openai-hugging-face-payload-reconstruction/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-08">2026-06-08</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/anthropic-glasswing-expansion-mythos-preview-200-orgs/">Anthropic — Project Glasswing Expands Mythos Preview to 200 Organizations, 10,000+ Vulnerabilities Found</a></h3><p>Anthropic expands Project Glasswing to ~200 organizations across 15+ countries; Claude Mythos Preview has surfaced over 10,000 high- and critical-severity vulnerabilities in widely used software, with first public CVE wave expected July 2026.</p><a class="text-link" href="/posts/2026/06/anthropic-glasswing-expansion-mythos-preview-200-orgs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-18">2026-05-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/mcpsafe-50-mcp-servers-coordinated-disclosures/">MCPSafe — 7 Coordinated Disclosures After Scanning 50+ MCP Servers</a></h3><p>MCPSafe scanned 50+ MCP server repositories and found indirect prompt injection, SSRF, and annotation mislabeling across official servers from Anthropic, GitHub, Atlassian, Microsoft, and more.</p><a class="text-link" href="/posts/2026/05/mcpsafe-50-mcp-servers-coordinated-disclosures/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
