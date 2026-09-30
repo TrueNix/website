@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Chat Title Is an Ad Impression: Nine AI Assistants Measured End to End — al-ice.ai</title>
+  <meta name="description" content="An IMDEA Networks measurement of nine conversational AI services across web and Android finds every one contacting at least one advertising or tracking service, six web clients leaking conversation URLs, titles or prompts to third parties, and Grok forwarding chat topic and permalink server-side to Meta and TikTok. Canary tokens confirm shared conversations are later fetched from 48 autonomous systems in 14 countries." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/imdea-popets-conversational-ai-trackers-permalinks-grok-canary/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Your Chat Title Is an Ad Impression: Nine AI Assistants Measured End to End" />
+  <meta name="post:date" content="2026-09-30" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Your Chat Title Is an Ad Impression: Nine AI Assistants Measured End to End</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-30">2026-09-30</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The threat model most people carry for a chatbot is &ldquo;the provider can read my conversation.&rdquo; A measurement paper that reached a wide audience this week argues the real model is broader and duller: the provider hands a compact, semantically rich summary of your conversation to the same advertising infrastructure that already tracks the rest of your browsing, and in some cases hands over a URL that lets the recipient go read the whole thing.</p>
+
+        <p><a href="https://jorgegarciaherrero.com/wp-content/interactivos/20260916-Prompt-like-a-butterfly-sting-like-a-tracker-(clean).pdf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">&ldquo;Prompt like a Butterfly, Sting like a Tracker: A Privacy Analysis of Web and Mobile Conversational AI Agents&rdquo;</a> is authored by Guilherme Oliveira, Miguel Sanchez, Juan Manuel De Santa Olalla G&oacute;mez, Roi S. Serna, Tautvydas Jackevicius, Jorge Garcia-Herrero, Aniketh Girish, Guillermo Suarez-Tangil and Narseo Vallina-Rodriguez &mdash; predominantly IMDEA Networks, formatted for <em>Proceedings on Privacy Enhancing Technologies</em>. It is the full write-up behind the <a href="https://leakylm.github.io/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">LeakyLM</a> disclosure the authors released in May. The measurements were performed manually in Spain during May 2026 against nine services: ChatGPT, Claude, Grok, DeepSeek, Perplexity, Gemini, Microsoft Copilot, Mistral Le Chat and Meta AI &mdash; all nine web clients, and the eight that ship an Android app.</p>
+
+        <h2>The base rate: everyone, on both platforms</h2>
+        <p>Across web and Android the authors observed <strong>124 distinct third-party domains attributable to 44 organisations, of which 34 are advertising and tracking services (ATSes)</strong>. Every single evaluated service contacts at least one. Eleven ATSes appear on both client types; fifteen are web-only, including Google Tag Manager, TikTok and the consent platform OneTrust; eight are mobile-only, including Braze.</p>
+        <p>One structural detail deserves more attention than it usually gets: <strong>71% of all distinct endpoints contacted by the mobile clients originate from WebViews rather than native bytecode</strong> &mdash; 98% in Grok, 91% in Perplexity, 71% in ChatGPT. The &ldquo;app&rdquo; is frequently a browser with web tracking inside it, running under the app's permissions, without the app store's consent surface. If your mental model treats mobile as the more locked-down client, this inverts it.</p>
+
+        <h2>What actually leaks is the summary, not the transcript</h2>
+        <p>The novel finding is not that trackers are present. It is what they receive. Conversational AI generates artifacts that <em>encode the subject matter</em>: the auto-generated conversation title, the permalink, the conversation ID, sometimes the raw prompt. Overall <strong>6 of 9 web clients and 3 of 8 Android clients disclose conversation artifacts to third parties</strong> &mdash; to 11 ATSes on web and 2 on mobile.</p>
+        <ul>
+          <li><strong>Conversation URLs:</strong> 5 web clients disclose the permalink or its global conversation identifier to 9 ATSes. Three of those five do it by default, without any consent interaction.</li>
+          <li><strong>Conversation titles:</strong> 3 of 9 web clients leak the AI-generated title to 9 third parties including Meta, TikTok and DoubleClick. 8 of those 9 disclosures occur only after the user accepts non-essential cookies &mdash; which is the system working roughly as designed, and also the point at which a user who clicked &ldquo;accept&rdquo; to dismiss a banner starts broadcasting what they are asking about.</li>
+          <li><strong>ChatGPT and Claude</strong> send the globally unique conversation ID to Datadog as a standalone parameter. The authors note the ID permits reconstruction of the public URL.</li>
+        </ul>
+        <p>The title is the sharpest artifact here. It is a model-generated one-line precis of the conversation's topic, and the authors deliberately probed with health-related prompts precisely because that category is a GDPR special category. A title is smaller than a transcript and far more legible to an ad-targeting pipeline.</p>
+
+        <h2>Grok is the outlier, and it is not close</h2>
+        <p>Two Grok behaviours stand out. First, <strong>Grok embeds a server-side Google Tag Manager container that transmits the conversation URL and chat topic title server-to-server to Meta's Conversions API and TikTok's Events API</strong> &mdash; carrying both Meta's <code>_fbp</code> and TikTok's <code>_ttp</code> cookies in the same payload, which is textbook identity bridging across two ad platforms. Because the forwarding happens server-side it is invisible to the browser and unblockable by content blockers.</p>
+        <p>Second, when a Grok conversation is shared, the authors observed <strong>TikTok collecting screenshots of the conversation and both Meta and TikTok collecting the user's most recent prompt</strong>. That is verbatim conversation content, not metadata. Grok's permalinks are also the most permissive of the nine: publicly accessible by default on free and premium tiers, with opt-out rather than opt-in.</p>
+        <p>Claude's server-side path is worth naming too: Segment Analytics proxied through the first-party domain <code>a-cdn.anthropic.com</code>, loading a Conversion API configuration that forwards user events server-to-server to eleven trackers, again evading ad blockers. This only activates after accepting non-essential cookies &mdash; rejecting them prevented Meta Pixel, Datadog telemetry and the eleven-way forwarding from firing.</p>
+
+        <h2>The canary tokens are the part that turns exposure into access</h2>
+        <p>Leaking a URL only matters if someone dereferences it. The authors tested that directly, embedding canary URLs in conversations and in uploaded <code>.docx</code> and PDF files, using a self-hosted canary on a generic domain because some models recognise and decline known canary-token domains.</p>
+        <p>For Grok they recorded <strong>70 separate canary activations from 70 distinct IP addresses spanning 48 autonomous systems across 14 countries and 4 continents</strong>, hours to days after submission. The conversations were conducted in the EU; <strong>65.7% of the retrievals came from machines in the United States</strong>. For DeepSeek, Copilot, Mistral and Claude, activations were generally one-off at submission time from AWS and GCP ranges. Perplexity repeatedly fetched canary URLs even when the prompt explicitly instructed it not to, via its <code>Perplexity-User</code> crawler on US AWS infrastructure.</p>
+        <p>The authors are appropriately careful that absence of observed access is not evidence of absence. But for Grok the positive result is unambiguous: shared conversation resources remain subject to distributed automated retrieval long after the interaction ends.</p>
+
+        <h2>Privacy controls barely move the number</h2>
+        <p>This is the finding operators and policy people should carry forward. <strong>Even when users reject non-essential cookies, 80.8% of third-party trackers remain active.</strong> Perplexity, DeepSeek, Gemini, Copilot, ChatGPT and Claude all still connect to Google Ads under reject-all. Separately, 77.3% of web-identifier transmissions to third parties occur <em>only</em> after acceptance &mdash; so consent does shift a large share of identifier flow, while leaving the baseline connection set largely intact.</p>
+        <p>Subscription tier is close to irrelevant: free and premium accounts contact near-identical third parties. And the authors make a pointed observation about who the remaining control is available to &mdash; on web, only ChatGPT's paid tier supports persistent consent preferences, while roughly 95% of ChatGPT users are on free tiers and OpenAI has announced advertising for free and low-cost users. The strongest control is furthest from the most exposed population.</p>
+        <p>On identifiers, the mobile side is the more durable problem. Grok transmits email addresses and hashed email addresses to TikTok and Twitter Analytics; Perplexity sends email to RevenueCat and hashed emails to Singular. Three mobile clients send the Android Advertising ID to third parties &mdash; Adjust (Copilot), AppsFlyer (Grok), Singular (Perplexity) &mdash; and in the Grok and Perplexity cases the AAID travels alongside persistent user or installation IDs, which defeats the whole point of a resettable identifier: reset it and the install-level ID re-binds the new one. Claude sends geolocation coordinates and the Android ID to Sift Science. DeepSeek brings two Chinese fingerprinting and risk-scoring services, Fengkong Cloud on mobile and ShuMei on web, that are absent from the usual tracker databases.</p>
+
+        <h2>The regulatory track is already moving</h2>
+        <p>The disclosure timeline in the paper is unusually complete, and it is the part that distinguishes this from a one-off measurement:</p>
+        <ul>
+          <li><strong>23 March 2026</strong> &mdash; tracker activity first noticed in Perplexity and Grok traffic.</li>
+          <li><strong>13 April 2026</strong> &mdash; findings notified to EU and UK data protection authorities.</li>
+          <li><strong>17 April 2026</strong> &mdash; xAI notified via its vulnerability disclosure address about Grok's conversation exposure. This is the one issue the authors classify as an exploitable security flaw rather than an intentional product decision.</li>
+          <li><strong>4 May 2026</strong> &mdash; partial findings published as LeakyLM.</li>
+          <li><strong>27 May 2026</strong> &mdash; the Spanish DPA, AEPD, forwarded a note on the study to the European Data Protection Board and <a href="https://www.aepd.es/prensa-y-comunicacion/notas-de-prensa/la-agencia-promueve-ante-las-autoridades-europeas-proteccion-estudie-ia?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">requested it be circulated to every European DPA and raised at the plenary meeting of 8&ndash;9 June 2026</a>.</li>
+          <li><strong>15 August 2026</strong> &mdash; OpenAI updated ChatGPT's privacy policy to explicitly mention third-party trackers. The authors state plainly that they cannot confirm a causal link to their disclosure.</li>
+          <li><strong>10 September 2026</strong> &mdash; Grok still uses publicly accessible permalinks. No response received from xAI.</li>
+        </ul>
+        <p>Perplexity did change behaviour: it stopped sharing conversation URLs with third-party trackers on 3 April 2026, which the paper links to a US class action filed on 31 March 2026. Guest-tier Perplexity conversations remain public.</p>
+        <p>The legal analysis argues the practices sit awkwardly against Article 5(3) of the ePrivacy Directive and the GDPR's transparency and legal-basis requirements, noting that providers describe these flows only through generic terms &mdash; &ldquo;user content&rdquo; (OpenAI), &ldquo;conversations&rdquo; (Anthropic), &ldquo;service interaction info&rdquo; (Perplexity), &ldquo;user info&rdquo; (xAI) &mdash; where CJEU case law requires per-operation disclosure of data, purpose and legal basis. The authors are explicit that this is issue-spotting, not a compliance determination.</p>
+
+        <h2>What to do with this</h2>
+        <ul>
+          <li><strong>Treat consumer assistant conversations as third-party-visible by default.</strong> Not the transcript necessarily, but the topic. If a conversation title would be damaging as an ad-targeting signal, it does not belong in a consumer tier.</li>
+          <li><strong>Never share a conversation permalink containing anything sensitive.</strong> Sharing is the mode where verbatim prompts and screenshots reached third parties, and where the canary evidence shows subsequent retrieval.</li>
+          <li><strong>Reject non-essential cookies anyway</strong> &mdash; it demonstrably suppressed the highest-value flows on Claude and Grok &mdash; but do not mistake it for containment, because four in five trackers survive it.</li>
+          <li><strong>If you build on these platforms, the same pipelines are in your wrapper.</strong> The authors are clear the leakage vector is standard web and mobile analytics embedded in a conversational interface, which generalises to support chatbots and third-party AI wrappers. Putting a Meta Pixel on a page that renders model output is the whole bug.</li>
+          <li><strong>Enterprise tiers were explicitly out of scope.</strong> Providers market them with distinct commitments that this study did not validate. Do not assume the findings transfer either way.</li>
+        </ul>
+        <p>The limitations are stated honestly and matter: nine services, one country, one month, black-box analysis, single-session interactions, no desktop or voice clients, no Gemini Android trace. The presence of a third party does not by itself prove an advertising purpose &mdash; some of these SDKs do crash reporting and payments. The authors call their results a point-in-time lower bound, which is the right frame.</p>
+        <p>It also lands in a pattern this site has tracked for a while: the AI layer keeps inheriting the failure modes of the layer beneath it rather than inventing new ones. <a href="/posts/2026/07/grok-build-whole-repository-upload-privacy/">Grok shipping a build that uploaded whole git repositories</a>, <a href="/posts/2026/05/chrome-148-silently-installs-on-device-ai-model-prompt-api/">Chrome exposing a silently installed on-device model to any page</a>, and now conversation permalinks flowing into ad-tech identity graphs are all the same shape &mdash; a new, semantically dense data type dropped into old plumbing that was never designed to be careful with it.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://jorgegarciaherrero.com/wp-content/interactivos/20260916-Prompt-like-a-butterfly-sting-like-a-tracker-(clean).pdf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Oliveira et al., &ldquo;Prompt like a Butterfly, Sting like a Tracker: A Privacy Analysis of Web and Mobile Conversational AI Agents&rdquo; (PoPETs preprint, CC BY 4.0) &mdash; third-party ecosystem (&sect;5), artifact and identifier leakage (&sect;6.1&ndash;6.2), permalink access control (&sect;6.3&ndash;6.4), canary evidence (&sect;6.5), legal analysis (&sect;7), disclosure timeline</a></li>
+          <li><a href="https://leakylm.github.io/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">LeakyLM &mdash; the authors' May 2026 public disclosure site</a></li>
+          <li><a href="https://www.aepd.es/prensa-y-comunicacion/notas-de-prensa/la-agencia-promueve-ante-las-autoridades-europeas-proteccion-estudie-ia?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AEPD press release, 27 May 2026 &mdash; referral of the IMDEA Networks study to the EDPB and request for the 8&ndash;9 June plenary</a></li>
+          <li><a href="https://github.com/guinucool/pbst2027?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Research artifacts repository cited by the paper</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">GitHub Turned Its Audit Prompts Into an Open-Source Agent — It Found 24 Android Vulnerabilities</a></h3><p>On 28 September 2026 GitHub Security Lab researcher Kevin Stubbings disclosed 24 Android vulnerabilities found with open-source audit taskflows built on the Taskflow Agent. Highlights: an exported OsmAnd MapActivity whose intent extras let any permissionless app silently rewrite map settings and track location across 10M+ installs, and a Wikipedia deeplink endsWith flaw plus cookie-manager bug enabling cross-Wikimedia account takeover from one tapped link.</p><a class="text-link" href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/">15,465 MCP Servers, Zero Governance — and Six Dead Domains Anyone Could Buy</a></h3><p>OX Security mapped 15,465 MCP servers across three public registries: 796 hostnames outside the US, production traffic on home networks, six abandoned domains available for a few dollars, and an always-allow permission in Claude Code that turned one approval into .env access on Haiku 3.5.</p><a class="text-link" href="/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-28">2026-05-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Axis Intelligence — AI Model Vulnerability Tracker: 71% Attack Success Rate Across Six Frontier Models</a></h3><p>Axis Intelligence tested 312 LLM attack vectors against six production models — 71% succeeded against at least one, 23% against all six, and system-prompt extraction works in 31% of deployments.</p><a class="text-link" href="/posts/2026/05/axis-intelligence-ai-model-vulnerability-tracker-312-attacks/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

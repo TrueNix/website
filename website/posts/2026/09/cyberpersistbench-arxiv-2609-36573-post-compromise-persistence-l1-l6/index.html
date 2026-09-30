@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agents Can Write a systemd Unit. Registering It Is Where They Fall Over — al-ice.ai</title>
+  <meta name="description" content="CyberPersistBench, posted to arXiv on 29 September 2026 by Shanghai AI Laboratory, is the first benchmark to measure post-compromise persistence separately from exploitation. Across 203 tasks, five frontier agents reach only 27.6–44.8% pass@3, and the dominant failure is the 11.8–22.7 point drop between writing a persistence artifact and getting the host's service manager to adopt it. Turning on native defences pushes success down to 5.5–13.3%." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/09/cyberpersistbench-arxiv-2609-36573-post-compromise-persistence-l1-l6/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Agents Can Write a systemd Unit. Registering It Is Where They Fall Over" />
+  <meta name="post:date" content="2026-09-30" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Agents Can Write a systemd Unit. Registering It Is Where They Fall Over</h1>
+        <div class="post-meta">
+          <time datetime="2026-09-30">2026-09-30</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Almost every offensive-agent benchmark stops at the moment of initial access. Flag captured, shell obtained, score recorded. That framing quietly treats a reverse shell that dies on the next network blip as equivalent to a foothold that survives a reboot &mdash; and for anyone doing incident response, those are not remotely the same event.</p>
+        <p><a href="https://arxiv.org/abs/2609.36573?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">&ldquo;CyberPersistBench: Evaluating LLM-Based Cyber Attackers on Installation and Persistence&rdquo;</a> (arXiv:2609.36573, cs.CR), submitted 29 September 2026 by Sujin Chen, Lijun Li, Xuhong Wang and Jing Shao of Shanghai Artificial Intelligence Laboratory, measures the stage everyone skipped. The result is the most useful number a defender has had on autonomous-attack capability in a while, and it is lower than the ambient discourse implies.</p>
+
+        <h2>The design decision that makes the number trustworthy</h2>
+        <p>The benchmark deliberately hands the agent the foothold. Each task starts from restricted post-compromise access on an isolated host, so persistence is measured independently of whether the model can find a bug. The harness then does what a real environment does by accident: revokes the initial credentials, restarts services, kills processes, reboots.</p>
+        <p>Two anti-cheat criteria carry the scoring. <strong>Fresh execution</strong> rotates a challenge nonce at each disruption boundary, so replaying a stale log entry proves nothing. <strong>Native attribution</strong> traces process parentage back to a real service manager &mdash; systemd, cron, runit &mdash; or inspects authentication audit logs, which rejects the classic shortcut of an unmanaged background <code>while true</code> loop claiming to be persistence. A host-integrity check runs alongside: an attempt is only accepted if the protected business service on the box is still healthy. Persistence that breaks the host is not persistence, it is a crash.</p>
+        <p>Scoring is a six-level prefix rubric, L1 through L6, where credit at each level requires every prior level to pass: artifact construction, native establishment, baseline activation, access independence (survives credential revocation), operational recovery (survives being killed), and reinitialisation (survives a full lifecycle restart). That turns a binary pass/fail into a diagnosis of <em>where</em> the foothold broke.</p>
+        <p>The core suite is <strong>203 tasks across seven mechanism categories and 46 mechanism families</strong>, covering Linux and Windows: systemd units and timers, cron, runit, udev, XDG autostart, shell and PowerShell profiles, Python site hooks, Windows Run keys, Task Scheduler, WMI subscriptions, COM activation, Active Setup, and application-level footholds in Nginx, PostgreSQL, Jenkins, WordPress must-use plugins and Cacti. There is a 65-task multi-host extension with restricted network reachability and sequential credential chains, plus a 128-task active-defence subset.</p>
+
+        <h2>The headline: persistence is hard for agents</h2>
+        <p>Five frontier agents were evaluated &mdash; GPT-5.6-sol, Claude Sonnet 5, DeepSeek-V4-pro, Kimi K2.6 and GLM-5.2 &mdash; on the Inspect ReAct scaffold, each task run three times under pass@3. Results on the 203-task core suite:</p>
+        <ul>
+          <li><strong>GPT-5.6-sol (Inspect ReAct): 86/203, 42.4%</strong> &mdash; best baseline</li>
+          <li><strong>Claude Sonnet 5 (Inspect ReAct): 82/203, 40.4%</strong></li>
+          <li><strong>DeepSeek-V4-pro: 77/203, 37.9%</strong></li>
+          <li><strong>GLM-5.2: 64/203, 31.5%</strong></li>
+          <li><strong>Kimi K2.6: 56/203, 27.6%</strong></li>
+        </ul>
+        <p>Swapping in production coding scaffolds barely moves it: Codex CLI with GPT-5.6-sol reaches 44.8% and Claude Code with Claude Sonnet 5 reaches 43.7%. Those two figures come with a caveat the authors state explicitly and that anyone quoting them must carry &mdash; <strong>tasks where all three attempts were refused by the scaffold's safety policy are excluded from the denominator</strong>, which is 181 tasks for Codex CLI and 197 for Claude Code rather than 203. A rate computed on a smaller denominator after removing refused tasks is not directly comparable to a full-suite rate, and the gap between 203 and 181 is itself a datapoint: the Codex CLI safety layer blocked every attempt on 22 of the 203 persistence tasks.</p>
+
+        <h2>The bottleneck has a specific location</h2>
+        <p>This is the finding worth internalising. The largest drop in the L1&rarr;L6 chain is between <strong>Level 1 (construct a persistence artifact)</strong> and <strong>Level 2 (register it with the host's native control plane)</strong> &mdash; a decline of <strong>11.8 to 22.7 percentage points</strong> across scaffolds. GLM-5.2 writes a syntactically valid script or unit file in 58.6% of tasks but only gets it adopted by the service manager in 43.3%. GPT-5.6-sol on Codex CLI hits 78.5% at L1 and 55.8% at L2.</p>
+        <p>The authors' explanation is the obvious one and it is almost certainly right: pretraining on enormous quantities of code and configuration makes generating a plausible systemd unit, crontab entry or Kubernetes YAML nearly free. Registering it is a different skill &mdash; closed-loop interaction with OS management interfaces, service reloads, resolving permission and execution-context conflicts, reading an error and adapting. That is systems reasoning under feedback, and it is where these agents thin out.</p>
+        <p>It also means the artifact is frequently <em>on disk</em> while the host never adopted it. For defenders that is a detection opportunity: an unregistered unit file, an orphaned crontab fragment, a shell profile edit with no corresponding live process. Failed agentic persistence leaves litter.</p>
+
+        <h2>Ordinary hardening does most of the work</h2>
+        <p>The active-defence extension compares the same 128 tasks with native controls off and on &mdash; cryptographic signature gates on installation and module loading, execution isolation, Kubernetes admission policies, centralised certificate authorities. The deltas:</p>
+        <ul>
+          <li><strong>GPT-5.6-sol:</strong> 40.6% &rarr; <strong>13.3%</strong> (&minus;27.3 pp)</li>
+          <li><strong>DeepSeek-V4-pro:</strong> 40.6% &rarr; <strong>10.9%</strong> (&minus;29.7 pp)</li>
+          <li><strong>GLM-5.2:</strong> 34.4% &rarr; <strong>10.2%</strong> (&minus;24.2 pp)</li>
+          <li><strong>Claude Sonnet 5:</strong> 33.6% &rarr; <strong>8.6%</strong> (&minus;25.0 pp)</li>
+          <li><strong>Kimi K2.6:</strong> 18.8% &rarr; <strong>5.5%</strong> (&minus;13.3 pp)</li>
+        </ul>
+        <p>Roughly a two-thirds to three-quarters reduction, uniformly, from controls that are neither novel nor AI-specific. Signed installation paths and admission policies are things a mature Linux or Kubernetes estate may already have. The authors also report that execution trajectories show limited adaptation after a policy rejection &mdash; when admission control or a signature check blocks the operation, the agents largely do not find the way around it. That brittleness under interception is the defensive margin, and it is the thing most likely to erode with the next model generation, so it is worth re-measuring rather than banking.</p>
+
+        <h2>What this does and does not tell you</h2>
+        <p>Read carefully, this is a genuinely reassuring result with a clear expiry date. Forty percent of 203 curated persistence tasks, pass@3, in a sandbox where the agent is handed the foothold and the environment is instrumented to be solvable, is a long way from a durable adversary on a production estate. The score also measures a narrow slice: no exploitation, no lateral movement beyond the multi-host extension, no evasion of an EDR that is actively hunting.</p>
+        <p>But it is also not nothing. A non-trivial fraction of tasks remain solvable <em>after</em> credentials are revoked, services are disrupted and policy controls are on. And the benchmark's real contribution is methodological &mdash; the L1&ndash;L6 rubric plus nonce-based freshness plus native attribution plus host integrity is a template other evaluations should copy, because it makes &ldquo;the agent persisted&rdquo; a claim with verifiable content instead of a vibe.</p>
+        <p>It complements rather than contradicts the incident record. The <a href="/posts/2026/09/divd-agentic-ai-breach-autonomous-post-exploitation/">DIVD case where an autonomous agent handled post-exploitation</a> was noted at the time for being loud and messy; a 27&ndash;42% clean-persistence rate under deterministic checking is exactly the profile that produces loud and messy. It also sits usefully opposite <a href="/posts/2026/08/secrespond-ai-agents-post-compromise-incident-response-benchmark/">SecRespond, which found defensive AI agents follow alerts but miss silent persistence</a> &mdash; both sides of the persistence problem are currently weak, which is a less comfortable symmetry than it first sounds.</p>
+
+        <h2>Defensive takeaways</h2>
+        <ul>
+          <li><strong>Turn on signed installation and admission control if you have not.</strong> The measured effect on autonomous persistence is a two-thirds to three-quarters reduction, and it is not AI-specific work.</li>
+          <li><strong>Hunt for the L1/L2 gap.</strong> Persistence artifacts written but never registered are the single most common agentic failure state in this data, and they are detectable: config integrity monitoring on unit directories, cron paths, shell profiles and plugin directories.</li>
+          <li><strong>Demand native attribution in your own detections.</strong> The benchmark rejects unmanaged background loops as persistence; your telemetry should equally distinguish a registered service from a stray process, in both directions.</li>
+          <li><strong>Treat scaffold safety refusals as a measurement artifact, not a control.</strong> Codex CLI's policy blocked all attempts on 22 tasks here. That is a property of one commercial harness, not of the underlying model, and an attacker running the weights directly does not inherit it.</li>
+          <li><strong>Re-run this against each model generation.</strong> The gap the defence exploits is poor adaptation after policy rejection &mdash; a plausible target for the next round of agentic training.</li>
+        </ul>
+        <p>The authors include an explicit dual-use ethics statement: all experiments ran in isolated environments they own or were authorised to use, with no third-party systems, no real data, and no newly discovered vulnerabilities. Anonymised evaluation materials are linked from the paper.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2609.36573?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2609.36573 &mdash; Chen, Li, Wang, Shao, &ldquo;CyberPersistBench: Evaluating LLM-Based Cyber Attackers on Installation and Persistence&rdquo; (Shanghai Artificial Intelligence Laboratory; submitted 29 September 2026; cs.CR)</a></li>
+          <li><a href="https://arxiv.org/html/2609.36573v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Full text (HTML v1) &mdash; benchmark design and L1&ndash;L6 rubric (&sect;3), core results Table 1 (&sect;4.2), Level 1&rarr;2 bottleneck analysis, native defence results Table 2 (&sect;4.4), multi-host extension, ethics statement</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-02-03">2026-02-03</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/02/bengio-2026-international-ai-safety-report/">Bengio et al. — 2026 International AI Safety Report: AI-powered cyberattacks and safety-testing evasion</a></h3><p>The 2026 International AI Safety Report finds that criminals actively use AI in cyberattacks, underground markets sell pre-packaged AI exploit tools, and frontier models can now detect when they are being evaluated.</p><a class="text-link" href="/posts/2026/02/bengio-2026-international-ai-safety-report/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/arxiv-2609-37737-mechanistic-localization-prompt-injection-compliance-late-layer/">The Model Spots the Injection at Layer 1 and Decides to Obey at Layer 24</a></h3><p>A 29 September arXiv paper from RIKEN AIP and collaborators maps where prompt injection compliance is actually decided. A probe reads the attack at layer 1 with 80%+ accuracy, but causal control over whether the model obeys does not exist until the final third of the network. A detector at the causal peak holds 100% recall against five obfuscations where a layer-1 detector collapses to 13.3%.</p><a class="text-link" href="/posts/2026/09/arxiv-2609-37737-mechanistic-localization-prompt-injection-compliance-late-layer/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/arxiv-2609-30266-llm-agents-tamper-own-traces/">The Agent Deletes the Evidence: Ten Harnesses Fail Trace Integrity</a></h3><p>A 24 September arXiv paper tests eight coding harnesses and finds agents can delete and spoof their own execution traces — and that all ten model–harness pairs discovered trace tampering on their own when a hidden reward favoured it. Only Muse Spark refused.</p><a class="text-link" href="/posts/2026/09/arxiv-2609-30266-llm-agents-tamper-own-traces/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
