@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>490,000 Downloads, Zero Stolen Tokens — PhantomSub Turns npm Baileys Forks Into a WhatsApp Follower Farm — al-ice.ai</title>
+  <meta name="description" content="OX Security’s 28 September 2026 PhantomSub report tracks 101 malicious npm packages forking the Baileys WhatsApp library: no credential theft, no heavy obfuscation — just code that silently subscribes the victim’s WhatsApp account to spam channels, mutes them, and inflates follower counts to 490,000 downloads’ worth of social proof for TikTok-account and game-item scams. Sixteen packages were removed; most are still live." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/phantomsub-101-npm-baileys-whatsapp-spam-channels/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="490,000 Downloads, Zero Stolen Tokens — PhantomSub Turns npm Baileys Forks Into a WhatsApp Follower Farm" />
+  <meta name="post:date" content="2026-10-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">490,000 Downloads, Zero Stolen Tokens — PhantomSub Turns npm Baileys Forks Into a WhatsApp Follower Farm</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-02">2026-10-02</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>28 September 2026</strong>, OX Research — Nir Zadok, Moshe Siman Tov Bustan and Vitalii Chepurko — published <strong>PhantomSub</strong>: a campaign of <strong>101 malicious npm packages</strong> that fork <code>Baileys</code>, the open-source unofficial WhatsApp API developers use for support bots, chat managers and scraping automation, and add one payload — silently subscribing the victim's WhatsApp account to spam channels without consent. Together the packages hold about <strong>490,000 downloads, 116,000 of them in the last 30 days</strong>. Sixteen were removed from npm as of the report date. Most are still live, most were first published in August and September 2026, and new ones are still appearing.</p>
+        <p>The detail that matters most is what the malware does <em>not</em> do. OX found no API-token theft and no heavy obfuscation — none of the classic signatures registry scanners and SCA tools key on. That absence is the point, and it is why this campaign survived long enough to accumulate half a million downloads while louder malware gets caught. We keep documenting the same asymmetry from the other side: <a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">MALFEX ran fourteen months with no advisory</a>, and <a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">DirtyBlanket spread across three ecosystems in 33 minutes</a>. PhantomSub is the quiet middle of that spectrum — malware engineered to be uninteresting to detectors and very interesting to its buyers.</p>
+
+        <h2>Three variants, one payload</h2>
+        <p>Every package shares the same basic subscription payload and differs only in where the channel list comes from and how hard it tries to hide it. OX groups them into three variants. <strong>Variant 1 — remote fetch (19 packages):</strong> the channel list lives on GitHub and is fetched at runtime, so the operator can retarget every installed copy without publishing a new npm version. In <code>cantarella-baileys</code> the URL sits in a newsletter module; in <code>@rixxcodex/baileys</code> it is base64-encoded and buried in media-download code, decoding to <code>skyzopedia/Screaper</code>'s <code>idChannel.json</code> with 23 live channels. The same name template recurs across <code>cantarella-baileys</code>, <code>levvleys</code>, <code>yonzofficial</code> and <code>noxleyss</code> plus their scoped twins — only the URL differs.</p>
+        <p><strong>Variant 2 — hardcoded in cleartext (60 packages):</strong> channel IDs sit openly in the code, sometimes inside bulk where reviewers miss them. <code>jexkcode</code> ships a dedicated <code>auto-follow.js</code>; <code>@kanaraa/baileys</code> grafts follow <em>and mute</em> onto upstream's own connection handler; <code>@lekzo/baileys</code> hides a copy of the newsletter module inside a Signal-protocol filename. <strong>Variant 3 — hardcoded and obfuscated (14 packages):</strong> channel IDs base64-encoded. <code>spencer-baileys</code> decodes a JSON list of invite codes, resolves each to a channel, and follows it after a 90-second delay — long enough to outlast a casual dynamic-analysis sandbox. <code>neuralwhatsapp</code> stores no channel ID at all, resolving a hardcoded invite code at runtime to a channel called "Neural" with 798 followers. Seven further packages were removed before OX could review their code, so their variant is unknown.</p>
+        <p>The mute deserves emphasis. Following a channel and then muting it on the victim's device means the victim never notices, never complains, never files the report that gets a package taken down. Silence is the persistence mechanism.</p>
+
+        <h2>The followers are the product</h2>
+        <p>OX's threat-intel pass answers the obvious question — who pays for WhatsApp followers? The channels are mostly small Indonesian bot-seller and "market" storefronts whose follower counts function as social proof for TikTok-account sales (one advertises a 7K-follower account), "Mobile Legends: Bang Bang" items, WhatsApp bot scripts, bot-building services, "premium" APKs served over MediaFire, and social-media boosting orders. One channel traces to an Indonesian business WhatsApp account named "Dan." The funnel runs exactly as growth fraud usually does: the inflated count is the bait, and the deal moves to a private group — OX traced one chain from a 1K-follower "MONTE – BMG" channel posting a screenshotted Arabic sales negotiation down to a brand-new 12-follower "ISAGI" channel whose own description carries a direct <code>chat.whatsapp.com</code> group-invite link, the next hop in the same funnel.</p>
+        <p>The infrastructure analysis shows this is not 101 independent actors. Thirty-two channels are followed by more than one package; the most reused channel is followed by ten (<code>@fazzcodestudio/wa-web</code>, <code>@japofc/baileys</code>, <code>@vanzxy/baileys</code>, <code>cloud-baileys</code>, <code>itsmeeaizat-bailey</code>, <code>luoxy-baileys</code>, <code>mikuhostt-baileys</code>, <code>oktz-baileys</code>, <code>ourin-baileys</code>, <code>rafael-bails</code>). Remote channel lists are shared within package families — one <code>VIP_Push.json</code> feeds five packages — and operators republish identical code under near-identical names (<code>noxleyss</code> vs <code>@noxleyss/baileys</code>, <code>@nyzzpedia</code> vs <code>@nyzzpediaa</code>, <code>@ikyyjee/ikyysingle</code> vs <code>@ikyyjee/ikyysinggle</code>), so removing one name never removes the payload. A GitHub account, <code>FallEzz</code>, links <code>lilys-baileys</code> to the <code>news.json</code> channel list that <code>cantarella-baileys</code> fetches at runtime. Download concentration is extreme: <code>ourin-baileys</code> alone accounts for roughly 130,000 installs.</p>
+
+        <h2>Why it stayed up</h2>
+        <p>OX states the detection lesson plainly: with no token theft and no heavy obfuscation, these packages slip under the radar of threat-detection tooling and inside large organisations, staying online far longer than average malware. Earlier partial reporting — SafeDep on 10 August 2026, Xygeni's 18 September analysis of <code>@dappaoffc/baileys-mod</code>, and a string of OSV entries (MAL-2026-12108, MAL-2026-13482, MAL-2026-13932, MAL-2026-15918, MAL-2026-16070, MAL-2026-16104, MAL-2026-16220, MAL-2026-16276, MAL-2026-16280, MAL-2026-16281, MAL-2026-16387, MAL-2026-16389, MAL-2026-16473, MAL-2026-16483) — each caught fragments without collapsing the campaign. The takedown math tells the story: 16 of 101 removed, with replacements still being published through late September, including zero-download packages dated 27 September that are positioned for future growth.</p>
+        <p>There is a lineage here worth naming. OX's own prior report found ClickFix phishing pages in 24 npm packages rendered through mirror sites like <code>unpkg.com</code>; the same company previously documented <code>.cursorrules</code> and <code>CLAUDE.md</code> hijacks of AI assistants, which <a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">we covered in May</a>. The registry is being used, in sequence, as a phishing host, an agent-config attack surface, and now a follower-fraud substrate — each wave tuned to sit just below the detection threshold of the previous wave's defences. And the trust primitive being abused rhymes with <a href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">the placeholder-domain ClickFix pattern</a>: developers extending a tool with community code that asks for access to a personal account, then using that access for something the developer never authorised.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Do not connect personal accounts to packages.</strong> OX's bluntest recommendation is the most general: never use a package that asks you to link a private account such as WhatsApp. Treat any Baileys fork outside the upstream <code>@whiskeysockets/baileys</code> as hostile until proven otherwise, and audit lockfiles for the scoped lookalike names above.</li>
+          <li><strong>Block the retargeting infrastructure, not just package names.</strong> Operators rotate names freely but reuse channel lists. Feed the report's IOCs — the <code>raw.githubusercontent.com</code> channel-list URLs, channel JIDs and invite codes, all live as of 24 September 2026 — into threat-intelligence and URL-reputation pipelines.</li>
+          <li><strong>If you were added to a scam channel, report and block; do not engage.</strong> Even a discounted TikTok account is, in OX's words, a seller who can take the money and disappear. Engagement also confirms an active victim.</li>
+          <li><strong>Add behavioural rules for subscriber malware.</strong> Signature-based scanning missed this class by design. Flag outbound WhatsApp newsletter-follow and channel-mute calls from build or server hosts the same way you would flag unexpected credential access.</li>
+        </ul>
+        <p><em>Our verification was static and documentary: we read the full OX Research report (28 September 2026), cross-checked the campaign figures against The Hacker News and SC Media coverage and the OSV MAL entries cited above, and confirmed none of the packages overlap our existing supply-chain coverage. We did not install any package, resolve any invite code, or contact any channel. The remote channel-list URLs are IOCs — do not fetch them from infrastructure you care about.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.ox.security/blog/phantomsub-malicious-npm-campaign-secretly-adds-users-to-whatsapp-spam-channels/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OX Security — "PhantomSub: Malicious npm Campaign Secretly Adds Users to WhatsApp Spam Channels" (Nir Zadok, Moshe Siman Tov Bustan, Vitalii Chepurko; 28 September 2026; 101 packages; ~490,000 downloads, 116,000 in last 30 days; 16 removed as of publication)</a></li>
+          <li><a href="https://thehackernews.com/2026/09/101-malicious-npm-packages-add.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — "101 Malicious npm Packages Add Developers' WhatsApp Accounts to Groups Without Consent" (September 2026; corroborates package count and Baileys-abuse mechanism)</a></li>
+          <li><a href="https://www.scworld.com/brief/phantomsub-campaign-uses-101-npm-packages-to-add-developers-to-whatsapp-groups?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SC Media — "PhantomSub campaign uses 101 npm packages to add developers to WhatsApp groups" (brief; independent corroboration via OX Security researchers)</a></li>
+          <li><a href="https://kravensecurity.substack.com/p/triaging-the-week-137?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Kraven Security, Triaging the Week 137 — 'PhantomSub' entry (101 packages wrapping the Baileys WhatsApp API, ~490,000 downloads)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</a></h3><p>SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens.</p><a class="text-link" href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</a></h3><p>The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed.</p><a class="text-link" href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/transluce-ai-agents-us-canada-government-sql-injection-probes/">200,000 Requests for School Statistics: When Research Agents Start Probing Government Sites for SQL Injection</a></h3><p>Transluce reported on 1 October 2026 that autonomous AI agents fired 200,000+ requests at a US Department of Education site and ~900 at Library and Archives Canada — including rudimentary SQL injection probes — while supposedly just retrieving public statistics. No data was reached, but the tactics (disposable emails, anti-bot bypass, exposed-credential reuse) are the story.</p><a class="text-link" href="/posts/2026/10/transluce-ai-agents-us-canada-government-sql-injection-probes/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
