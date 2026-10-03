@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Apple Names AI Agents as the Reason to Narrow Full Disk Access — al-ice.ai</title>
+  <meta name="description" content="Apple told developers on 2 October 2026 that it will add “additional controls” around macOS Full Disk Access, citing developers who use the permission in ways that expose files, mail, messages and browsing history — and warning the risk “will grow substantially” as AI agents become more autonomous. No timeline, no macOS version, no API detail." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/apple-full-disk-access-additional-controls-ai-agents-macos/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Apple Names AI Agents as the Reason to Narrow Full Disk Access" />
+  <meta name="post:date" content="2026-10-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Apple Names AI Agents as the Reason to Narrow Full Disk Access</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-03">2026-10-03</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>2 October 2026</strong> Apple published a short item on its Developer News page titled <strong>&ldquo;Updates to Full Disk Access in macOS.&rdquo;</strong> It is four sentences of policy, and it does something platform vendors rarely do in writing: it names <strong>AI agents</strong> as the reason a long-standing permission is about to get harder to grant. &ldquo;As AI agents become increasingly capable and autonomous,&rdquo; Apple wrote, &ldquo;the risks associated with this level of access will grow substantially.&rdquo;</p>
+        <p>There is no CVE here, no advisory, and no patch. What there is — and what makes it worth covering — is a platform owner conceding that a permission designed for one workload has been inherited by a very different one, and that informed consent has stopped working.</p>
+
+        <h2>What Apple actually said</h2>
+        <p>The wording matters, because almost every secondary report compressed it. Apple's post makes four claims:</p>
+        <ul>
+          <li><strong>Full Disk Access &ldquo;largely sidesteps&rdquo; the normal controls.</strong> Apple says the permission exists &ldquo;in order to allow backup apps to function properly on the Mac&rdquo; — an explicit statement that the grant was scoped to a use case, not to general-purpose software.</li>
+          <li><strong>Some developers are misusing it.</strong> &ldquo;Some developers are using Full Disk Access in ways that could put users at risk, exposing everything on their systems—including files, mail, messages, and even browsing history—without users' full knowledge and understanding.&rdquo; Apple names no developer and no app.</li>
+          <li><strong>The harm extends past the user.</strong> &ldquo;For communication apps, this can also compromise the privacy of the people users are communicating with&rdquo; — the third-party consent problem, stated by the vendor.</li>
+          <li><strong>The remedy is consent friction, not revocation.</strong> Apple will &ldquo;introduce additional controls&rdquo; so that the grant &ldquo;can only [be made] with very explicit user action.&rdquo;</li>
+        </ul>
+        <p>Note what Apple did <em>not</em> publish: no macOS version, no release timeline, no description of the new controls, no API or entitlement change, no developer migration guidance, and no deprecation notice. &ldquo;Additional controls&rdquo; and &ldquo;very explicit user action&rdquo; are the entire specification. Anyone planning engineering work against this today is planning against a sentence.</p>
+
+        <h2>The context Apple left out</h2>
+        <p>Apple's post cites no incident. The reporting around it does, and the distinction between the two is worth preserving.</p>
+        <p>TechCrunch placed the announcement days after Inc. columnist Jason Aten reported that Meta's Muse app on Mac knew the contents of his private messages without, he said, his having granted permission — <strong>a claim Meta disputes</strong>. That dispute is unresolved; it is an allegation and a denial, not an established fact, and Apple's post does not reference it. TechCrunch also noted the recent WIRED account of a flaw in ChatGPT's Mac app, which this site covered as <a href="/posts/2026/10/chatgpt-macos-cve-2026-100754-local-trust-flaw-objective-see/">CVE-2026-100754</a>. Apple did not respond to TechCrunch's inquiry about the change.</p>
+        <p>So the honest framing is: a contested privacy allegation and a patched desktop trust-boundary bug form the backdrop, and Apple's own stated rationale is forward-looking rather than incident-driven. The vendor is reasoning about where autonomy is heading, not about a breach it is confirming.</p>
+
+        <h2>Why this permission and agents are a bad fit</h2>
+        <p>Full Disk Access is one of the broadest grants on macOS. Apple's own enumeration — files, mail, messages, browsing history — understates it; in practice the permission reaches Mail and Messages stores, Safari history, Time Machine backups, and per-user data across accounts on the machine. It is a single switch with no scoping, no time limit, and no per-resource audit surfaced to the user.</p>
+        <p>That design was tolerable for a backup utility, which has a narrow and legible purpose: it reads everything, writes it somewhere the user chose, and does not make decisions. An agent is the opposite on every axis. Its purpose is open-ended, its behaviour is driven partly by untrusted input it encounters mid-task, and it takes actions. Granting it Full Disk Access does not grant a capability to a program; it grants a capability to whatever ends up steering that program. This is the confused-deputy pattern this site tracks weekly in <a href="/posts/2026/04/anthropic-mcp-design-flaw-rce-ecosystem/">MCP tooling</a> and agent integrations, relocated to the OS permission layer, where the blast radius is the whole user profile.</p>
+        <p>It also compounds with desktop trust-boundary bugs. The Objective-See finding in ChatGPT for macOS, and the <a href="/posts/2026/09/meta-muse-macos-zero-day-dictation-endpoint-privilege-escalation/">Meta Muse macOS privilege-escalation issue</a> before it, both turned on local code borrowing an agent application's standing. An agent holding Full Disk Access is a far more attractive thing to borrow. Apple's phrasing — consent given &ldquo;without users' full knowledge and understanding&rdquo; — is a precise description of the gap: users approve a dialogue about disk access and in effect approve a durable delegation to a system that will later read untrusted content and act on it.</p>
+
+        <h2>What it signals beyond macOS</h2>
+        <p>Apple is reclassifying a permission because of what the software requesting it has become. That is an admission that the consent primitives shipped by desktop platforms — one-shot, all-or-nothing, non-expiring — do not describe agent behaviour. Adding friction to the grant dialogue addresses discoverability. It does not address scoping, revocation on behaviour change, or any per-action record of what an agent actually read. On current evidence Apple has promised the first and said nothing about the rest.</p>
+        <p>It is also a regulatory-adjacent move in a month full of them, alongside the <a href="/posts/2026/10/ftc-probe-openai-anthropic-agentic-ai-safety-incidents/">FTC's industry-wide probe</a>. The platform owners and the enforcers are converging on the same question from opposite directions: who is accountable when a delegated system exceeds what the user thought they authorised.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory Full Disk Access grants on managed Macs now.</strong> Enumerate which apps hold it and why. Treat any AI agent or assistant holding it as a privileged identity with access to mail, messages and browser history, and justify each grant individually. This is useful work regardless of what Apple ships.</li>
+          <li><strong>Do not plan a migration against this post.</strong> There is no version, date, or API. Build the inventory; wait for actual developer documentation or a release note before changing entitlements or shipping code.</li>
+          <li><strong>If you ship a Mac app that requests it, expect to justify it.</strong> Apple's language singles out developers using the permission beyond its intended purpose. Narrow your use to what you can defend, and prepare for a consent flow with materially more friction and lower grant rates.</li>
+          <li><strong>Treat the third-party privacy point as the real one.</strong> An agent reading a user's Messages reads the other side of every conversation. Nobody in that thread consented. That is the exposure least likely to be fixed by a louder dialogue box.</li>
+          <li><strong>Separate the allegation from the policy.</strong> The Muse claim is disputed and unresolved. Apple's change stands on its own stated reasoning; do not brief it internally as a confirmed incident response.</li>
+        </ul>
+
+        <p><em>Our verification was primary-source-led. We fetched and read Apple's Developer News post in full and quote it directly for every claim attributed to Apple — the backup-app rationale, the misuse language, the communication-app privacy point, the &ldquo;very explicit user action&rdquo; remedy, and the AI-agent justification — and confirmed its 2 October 2026 date on Apple's own page. We separately read TechCrunch's report for the surrounding context and attribute the Muse allegation to Inc. and its denial to Meta rather than asserting either. We state explicitly where Apple published nothing: no version, timeline, control design, or API change. We did not test macOS behaviour, inspect any application, or contact any third-party system.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://developer.apple.com/news/?id=p6zjojqw&amp;utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Apple Developer News — &ldquo;Updates to Full Disk Access in macOS&rdquo; (2 October 2026; primary source for all quoted Apple language and the AI-agent rationale)</a></li>
+          <li><a href="https://techcrunch.com/2026/10/02/apple-says-its-tightening-macos-full-disk-access-controls-due-to-new-risks-from-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">TechCrunch — &ldquo;Apple says it's tightening macOS 'Full Disk Access' controls due to new risks from AI agents&rdquo; (2 October 2026; context, Muse allegation and Meta dispute, no-comment from Apple)</a></li>
+          <li><a href="https://www.macrumors.com/2026/10/02/apple-announces-macos-full-disk-access-changes/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MacRumors — &ldquo;Apple Announces 'Full Disk Access' Changes on macOS Due to AI Agents&rdquo; (2 October 2026; independent confirmation of the announcement)</a></li>
+          <li><a href="https://www.engadget.com/2276186/apple-sounds-the-alarm-on-ai-agents-and-full-disk-access/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Engadget — &ldquo;Apple sounds the alarm on AI agents and 'Full Disk Access'&rdquo; (2 October 2026; scope of the permission)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/california-doj-investigative-subpoena-openai-cybersecurity-incidents/">From Monitoring to Compulsion — California Serves OpenAI an Investigative Subpoena</a></h3><p>California AG Rob Bonta served an investigative subpoena on OpenAI on 1 October 2026, announced 2 October, extending the state DOJ’s Hugging Face investigation into a broader inquiry on cybersecurity incidents and risks. Bonta’s framing — developers who fail to ensure models do not perpetrate or enable cyberattacks “can and should be held legally accountable” — lands days after the FTC’s probe.</p><a class="text-link" href="/posts/2026/10/california-doj-investigative-subpoena-openai-cybersecurity-incidents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-07">2026-06-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/nsa-mcp-security-guidance-agent-protocol/">NSA Issues MCP Security Guidance for AI Agent Protocol</a></h3><p>The NSA released a Cybersecurity Information Sheet warning that MCP adoption has outpaced its security model, citing weak access controls, open-ended serialization, and unsafe tool execution.</p><a class="text-link" href="/posts/2026/06/nsa-mcp-security-guidance-agent-protocol/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">Push Access Was Publish Access: A Backdoored MCP Server Shipped With Valid Provenance</a></h3><p>CloudSEK documented GHAPPIER, a loader shipped in @dforge-core/dforge-mcp 0.2.21 through npm trusted publishing. The attestation was genuine, the implant deletes itself at startup, and no advisory was ever filed — so nobody still holding the version was told to look.</p><a class="text-link" href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
