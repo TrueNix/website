@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save — al-ice.ai</title>
+  <meta name="description" content="The SOCRadar AI Identity Exposure Report traces 1M+ infostealer records across 80,000 corporate domains down to 482 enterprises: stolen AI sessions hand over prompt history, live MFA-proof access, agent OAuth grants, and billable API keys. ChatGPT dominates as a shadow-AI signal." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save" />
+  <meta name="post:date" content="2026-10-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Security / AI CVEs / Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-03">2026-10-03</time>
+          <a class="badge" href="/categories/security/">Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In late August, Anthropic responded to infostealer-driven hijacking of Claude sessions by signing users out, wiping saved payment methods, and refunding charges it identified as unauthorized. That was the supply side &mdash; the platform cleaning up after its sessions were stolen. On <strong>28 September 2026</strong>, SOCRadar published the demand side: its <strong>AI Identity Exposure Report</strong> starts from <strong>more than one million infostealer records tied to AI services across 80,000-plus corporate domains</strong>, then narrows to <strong>482 major enterprises</strong> to answer what a buyer actually inherits when an employee&rsquo;s AI login lands in a stealer log.</p>
+        <p>The answer is the thesis of this briefing: a stolen AI login is not a password. It is a searchable archive, a live session that walks past MFA, a set of standing agent authorizations, and a billable resource &mdash; all four at once, with no password prompt.</p>
+
+        <h2>The dataset, and why the 482 matter more than the million</h2>
+        <p>A million stealer-log rows is easy to dismiss as noise &mdash; old dumps, duplicates, consumer accounts. SOCRadar&rsquo;s filtering is the part worth taking seriously: of the 482 enterprises in focus, <strong>68% are billion-dollar organizations across 36 countries and eight sectors</strong>, dozens of them Forbes-ranked. Between them sit <strong>5,434 stealer-log records tied to 1,500 distinct corporate email addresses</strong>, and <strong>295 of the 482 surfaced in the last 90 days</strong>. That recency figure is doing the heavy lifting &mdash; this is not archaeology, it is active, ongoing credential theft hitting large organizations right now.</p>
+        <p>Break the set down by platform and one name swallows the chart. A captured ChatGPT or OpenAI session shows up for <strong>358 of the 482 companies</strong>, carrying roughly <strong>90% of all records</strong> in the study. Zapier, Notion, Hugging Face, Replit, Lovable, and ElevenLabs trail far behind. Conspicuously absent from the top ranks: Claude and Gemini.</p>
+
+        <h2>ChatGPT&rsquo;s dominance is a shadow-AI signal, not a vendor verdict</h2>
+        <p>The easy misreading is &ldquo;OpenAI is the problem.&rdquo; SOCRadar&rsquo;s own framing, echoed by independent coverage, is more uncomfortable and more useful: ChatGPT dominates because its first-mover advantage means far more employees quietly signed up with a work email on a personal device &mdash; exactly the population commodity infostealers scrape. Infostealers do not hack the AI vendor; they harvest what is already sitting on the endpoint.</p>
+        <p>The caveat cuts both ways, and Anthropic&rsquo;s own late-August incident proves it: Claude sessions are targeted the moment they exist in enough volume. The platform simply has a smaller corporate footprint to harvest today, and as adoption of other assistants catches up, the chart should even out. The lesson for a CISO is not &ldquo;pick a safer assistant.&rdquo; It is that <strong>exposure follows the users, and the users are everywhere your policy isn&rsquo;t</strong> &mdash; the same shadow-AI dynamic we documented in the <a href="/posts/2026/07/vercel-shadow-ai-breach-contextai-oauth-token-bridge/">Vercel breach, where a shadow AI tool became an identity-based supply-chain pivot</a>.</p>
+
+        <h2>Why a stolen AI session beats a stolen password four ways</h2>
+        <p>The report structures the damage as four inheritances, and each one defeats a different assumption in the standard &ldquo;reset the password&rdquo; playbook:</p>
+        <ul>
+          <li><strong>The conversation history is the breach.</strong> Employees paste source code, customer records, contracts, and unreleased plans into prompts. Whoever replays the session inherits that corporate memory before touching a single internal system.</li>
+          <li><strong>Session cookies walk past MFA.</strong> A stolen cookie is a live session, not a credential guess. As Okta&rsquo;s Jeremy Kirk is quoted in the coverage, session tokens and API keys are sought precisely because they replay past credential-based authentication &mdash; rotating the password leaves the intruder signed in.</li>
+          <li><strong>Agents act with the employee&rsquo;s authority.</strong> Automation platforms hold standing OAuth grants into CRM, email, and storage. A stolen Zapier session lets an attacker build a workflow that exfiltrates on a schedule, from a vendor&rsquo;s trusted IP space. No exploit needed; the integration is the persistence.</li>
+          <li><strong>API keys are money, capacity, and cover.</strong> Keys lifted alongside everything else get billed to the victim or resold. Underground vendors sell discounted access to Claude, Gemini, and Cursor accounts with money-back guarantees &mdash; the retail layer of the <a href="/posts/2026/02/pillar-operation-bizarre-bazaar-llmjacking/">LLMjacking economy Pillar Security mapped in Operation Bizarre Bazaar</a> and the <a href="/posts/2026/06/llmjacking-attackers-steal-inference-kodem-intezer/">inference-theft campaigns</a> we have tracked since.</li>
+        </ul>
+
+        <h2>Where the exposure concentrates</h2>
+        <p>Technology and internet-services firms are the largest group at <strong>144 companies and 40% of all records</strong> &mdash; and those firms hold data for many downstream clients, so the blast radius extends past their own perimeters. Industrials, financial services, retail, healthcare, and energy all appear in force. Slice by AI type rather than sector and the risk profile shifts: LLM-platform exposure is near-universal, highest in energy at <strong>93% of affected companies</strong>, while agent and automation exposure &mdash; the kind that carries an employee&rsquo;s authority into other systems &mdash; concentrates in <strong>healthcare, financial services, and technology</strong>.</p>
+        <p>Step back and the economics are bleak in their simplicity. None of this needs an autonomous agent swarm. One employee, one unmanaged laptop, one saved ChatGPT password, and one commodity infostealer that has been on sale in Telegram channels since 2022 is enough. Compare that with the <a href="/posts/2026/07/sygnia-agentic-ai-cloud-attack-72-hours/">lone-attacker agentic cloud compromises</a> we covered in July: the low end of AI-era intrusion is not agentic at all &mdash; it is credential theft against accounts that happen to be AI.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat a stealer-log hit as an endpoint incident, not a password reset.</strong> If an employee appears in a stealer log, assume a live session is replayable right now. Hunt the device, revoke sessions and tokens, then rotate &mdash; in that order.</li>
+          <li><strong>Put every AI platform behind SSO with short-lived sessions.</strong> OAuth 2.0/OIDC with refresh-token rotation shrinks the window in which a stolen cookie is saleable. Note the limits honestly: SSO removes the saved password, not the live session cookie, and does nothing for accounts opened before the policy existed.</li>
+          <li><strong>Scope, cap, and rotate API keys &mdash; and alert on the LLMjacking fingerprint.</strong> Usage from unfamiliar ASNs or at odd hours is the classic signal. Bill shock is a detection source; treat it like one.</li>
+          <li><strong>Monitor for session-token reuse.</strong> A session that changes country or device fingerprint mid-life is a replayed session. Build that rule before you need it.</li>
+          <li><strong>Find the shadow accounts first.</strong> You cannot rotate what you do not know exists. Start by checking which of your domains already appear in stealer logs across the 40-plus AI platforms SOCRadar tracks &mdash; then bring the stragglers under SSO.</li>
+        </ul>
+
+        <p><em>Our verification was source-led with a stated caveat. We read the full BleepingComputer writeup of SOCRadar&rsquo;s AI Identity Exposure Report (published 28 September 2026) and cross-checked every figure cited above &mdash; the million-plus records, 80,000-plus domains, the 482-enterprise subset, the 5,434 records tied to 1,500 addresses, the 295-in-90-days recency, the 358-of-482 ChatGPT share, and the sector splits &mdash; against an independent second writeup that reproduces the same numbers. We did not independently audit SOCRadar&rsquo;s stealer-log dataset, and readers should weigh the findings accordingly: the BleepingComputer piece is labelled as sponsored and written by SOCRadar itself, i.e. vendor research with a lead-generation tool attached. The Anthropic August response (sign-outs, payment-method wipes, refunds) is cited as reported by BleepingComputer, not as independently confirmed by us. We did not test exploitation against any account or session.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.bleepingcomputer.com/news/security/80-000-plus-organizations-had-ai-logins-stolen-from-shadow-ai-to-llmjacking/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer / SOCRadar &mdash; 80,000+ Organizations Had AI Logins Stolen: From Shadow AI to LLMjacking (28 September 2026; sponsored and written by SOCRadar)</a></li>
+          <li><a href="https://www.cloaked.com/post/could-your-ai-logins-be-next-what-ai-credential-theft-means-for-your-organization?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cloaked &mdash; Could Your AI Logins Be Next? What AI Credential Theft Means for Your Organization (29 September 2026; independent corroboration of the report figures)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-06">2026-05-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/material-security-oauth-grant-ai-tool-proliferation/">Material Security — Persistent OAuth Grants and AI Tool Proliferation</a></h3><p>Material Security research finds 45% of organizations do nothing to monitor OAuth grants at scale, as AI tool proliferation creates persistent, invisible access tokens that bypass MFA and survive employee departures.</p><a class="text-link" href="/posts/2026/05/material-security-oauth-grant-ai-tool-proliferation/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/apple-full-disk-access-additional-controls-ai-agents-macos/">Apple Names AI Agents as the Reason to Narrow Full Disk Access</a></h3><p>Apple told developers on 2 October 2026 that it will add “additional controls” around macOS Full Disk Access, citing developers who use the permission in ways that expose files, mail, messages and browsing history — and warning the risk “will grow substantially” as AI agents become more autonomous. No timeline, no macOS version, no API detail.</p><a class="text-link" href="/posts/2026/10/apple-full-disk-access-additional-controls-ai-agents-macos/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT</a></h3><p>The Huntress 28 September 2026 report traces attacker-made ChatGPT Custom GPTs through sponsored Google results, a Cloudflare-themed ClickFix lure, decimal-IP PowerShell, Canon-signed DLL sideloading, a WAV-hidden loader, and an encrypted filesystem — ending in a camera-and-microphone RAT across 40+ incidents.</p><a class="text-link" href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
