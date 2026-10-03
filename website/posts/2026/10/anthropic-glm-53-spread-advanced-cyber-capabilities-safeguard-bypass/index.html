@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anyone Can Download What Attackers Could Not Build — Anthropic's GLM-5.3 Cyber Assessment — al-ice.ai</title>
+  <meta name="description" content="Anthropic’s Frontier Red Team reported on 29 September 2026 that Zhipu AI’s open-weight GLM-5.3 matches Claude Mythos Preview at end-to-end exploit development (50/410 vs 56/410 on ExploitBench) while its safeguards fall to trivial bypasses at 64–100%. A $20.40 run turned a public Chrome flaw into a working ARM64 exploit chain." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/anthropic-glm-53-spread-advanced-cyber-capabilities-safeguard-bypass/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Anyone Can Download What Attackers Could Not Build — Anthropic’s GLM-5.3 Cyber Assessment" />
+  <meta name="post:date" content="2026-10-03" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Anyone Can Download What Attackers Could Not Build — Anthropic's GLM-5.3 Cyber Assessment</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-03">2026-10-03</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Five months ago Anthropic announced Claude Mythos Preview, a model that could autonomously build sophisticated end-to-end cyber exploits, and released it only to vetted defenders through Project Glasswing. On <strong>29 September 2026</strong> its Frontier Red Team published <strong>"GLM-5.3 and the spread of advanced cyber capabilities"</strong> with an uncomfortable update: the capability has proliferated, exactly as predicted — into <strong>GLM-5.3</strong>, an open-weight model from Zhipu AI (Z.ai) that anyone can download, and whose safeguards fall to trivial bypasses at rates of <strong>64% to 100%</strong>.</p>
+        <p>This is not a warning about a hypothetical. The report puts numbers on exploit development, safeguard removal, and dollar cost, and its capability findings broadly match an independent assessment NIST's Center for AI Standards and Innovation (CAISI) published on <strong>17 September</strong>. Two separate labs, one conclusion: the most cyber-capable open-weight model released to date is now freely available.</p>
+
+        <h2>Capability: at parity with the restricted frontier</h2>
+        <p>On <strong>ExploitBench</strong>, which measures exploitation of known vulnerabilities in the V8 engine used by Google Chrome, GLM-5.3 developed working end-to-end exploits in <strong>50 of 410 attempts</strong> — against <strong>56 of 410</strong> for Claude Mythos Preview. On Anthropic's internal Binary Exploitation benchmark (100 randomly selected tasks from Google's OSS-Fuzz projects, full credit for a complete control-flow hijack), GLM-5.3 succeeded in <strong>4%</strong> of trials versus <strong>6%</strong> for Mythos Preview. The models it left at zero are the telling part: Claude Opus 4.6 and GLM-5.2 succeeded in none of them. A threshold has been crossed between generations, not within them.</p>
+        <p>The human-in-the-loop results are sharper. A researcher paired with GLM-5.3, working with less than an hour of total human focus, found previously unknown vulnerabilities in a browser JavaScript engine and chained them into a working exploit — a webpage that reads arbitrary files off a visitor's machine, demonstrated stealing an SSH private key. Anthropic says it disclosed those vulnerabilities to the maintainer, and that the same sessions surfaced exploitable flaws in wireless and graphics drivers and network-facing device software, now under review for disclosure. The model also appears alongside Moonshot's Kimi K3 and DeepSeek's V4.1-Flash in the report's scaling charts — this site has tracked both lines of evaluation through <a href="/posts/2026/07/kimi-k3-cyber-capability-evaluation-uk-aisi-caisi/">the UK AISI work on Kimi K3</a> and <a href="/posts/2026/07/unit42-deepseek-hermes-autonomous-cyberattack-campaign/">the DeepSeek Hermes campaign</a>.</p>
+
+        <h2>The $20.40 number that prices the N-day pipeline</h2>
+        <p>The report's most quotable experiment used the smaller <strong>GLM-5.3-Flash</strong> against <strong>CVE-2026-11645</strong>, a recently disclosed Chrome flaw. Given public details of that CVE plus one more known flaw, and no significant direction, the model chained the two into a reliable exploit for an ARM64 target that bypasses pointer-authentication (PAC) hardening. Cost: <strong>20 minutes of human attention, eight hours of model time, $20.40</strong> at Zhipu's API prices.</p>
+        <p>That figure belongs next to the finding in <a href="/posts/2026/09/artificial-analysis-cyber-index-refusals-patching-gap/">the Artificial Analysis Cyber Index</a>, published the day before: models are getting fast at the find-and-fix loop while patch deployment still lags. A $20 N-day-to-exploit pipeline compresses the attacker's side of that gap to hours. Every day a patch sits undeployed is now a day a $20 run can weaponise.</p>
+
+        <h2>Safeguards: three bypasses, all simple, one total</h2>
+        <p>GLM-5.3 ships with refusal-style safeguards — ask for something clearly harmful and it will often refuse. Anthropic tested three ways past them in a simulated environment with overtly malicious requests:</p>
+        <ul>
+          <li><strong>A deceptive prompt</strong> — telling the model it is an autonomous red-team agent on an exercise — engaged it <strong>64%</strong> of the time.</li>
+          <li><strong>Prefilling its thinking tokens</strong> so it appears to have already decided to proceed — <strong>92%</strong>.</li>
+          <li><strong>Abliteration</strong>, the standard refusal-removal edit, possible because the weights are open — <strong>100%</strong>.</li>
+        </ul>
+        <p>None of these worked against safeguarded Claude models in Anthropic's testing: deceptive prompts were blocked, the API offers no thinking-prefill path, and closed weights cannot be abliterated. The abliteration economics are the grimmest detail. Anthropic's team, which had never attempted the technique, did it in about <strong>2,200 GPU hours (~$4,400)</strong> and estimates an experienced team needs ~600 hours (~$1,200). Refusal rates collapsed from above 90% to <strong>3% on JailbreakBench, 2% on HarmBench, 12% on StrongREJECT</strong> — while GPQA-Diamond scores stayed identical, meaning capability survived the edit intact. Several developers published abliterated copies within days of release.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Price N-day exposure in hours, not weeks.</strong> If your patch cycle for browser and edge components is measured in weeks, the $20.40 experiment says the weaponisation side now runs in under a day. Prioritise Chrome/V8 and internet-facing patch queues first.</li>
+          <li><strong>Treat open-weight capability as the attacker's baseline.</strong> CAISI's assessment — most cyber-capable open-weight model to date, roughly four months behind a US frontier attackers cannot readily access — means threat models assuming "attackers lack exploit-development capability" need rewriting.</li>
+          <li><strong>Give defenders the same tools.</strong> Anthropic's own conclusion: defenders should work with frontier models at least as capable as their adversaries'. Project Glasswing's 10,000+ vulnerabilities found by vetted defenders is the template; the report explicitly urges expanding trusted access, including Mythos 5.1-class models, to more entities.</li>
+          <li><strong>Demand independent evaluations.</strong> Without CAISI-quality third-party testing, the report argues, developers will not see the impact of these capabilities until too late. Procurement and policy teams should ask vendors for benchmark-backed cyber-capability and safeguard data, not refusal-rate marketing.</li>
+          <li><strong>Watch the disclosure pipeline.</strong> Anthropic's still-embargoed driver and device-software findings will become patches and then N-days. Track the Frontier Red Team feed the way you track CISA KEV — the second half of this story arrives as CVEs.</li>
+        </ul>
+        <p><em>Our verification was documentary and primary-source-led. We fetched Anthropic's full report page and extracted the ExploitBench (50/410 vs 56/410), Binary Exploitation (4% vs 6%, predecessors at zero), CVE-2026-11645 experiment ($20.40, 20 minutes human, 8 hours model, ARM64 PAC bypass), abliteration economics (2,200 GPU hours, refusal-rate collapses, GPQA-Diamond parity), the three bypass rates (64/92/100%), the CAISI 17 September findings, and the Project Glasswing figures directly from the published text. Secondary coverage was used only to confirm publication date and authorship. We did not run any model, reproduce any bypass, or develop exploit code.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.anthropic.com/research/glm-5-3-and-the-spread-of-advanced-cyber-capabilities?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic Frontier Red Team — "GLM-5.3 and the spread of advanced cyber capabilities" (29 September 2026; ExploitBench, Binary Exploitation, human-in-the-loop zero-days, CVE-2026-11645 experiment, safeguard bypasses, abliteration economics, CAISI comparison, Glasswing)</a></li>
+          <li><a href="https://www.esecurityplanet.com/threats/news-anthropic-glm-5-3-exploit-tests-apac-china?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">eSecurity Planet — Anthropic finds GLM-5.3 nears Mythos Preview in exploit tests (independent summary of benchmark figures)</a></li>
+          <li><a href="https://www.resilientcyber.io/p/resilient-cyber-newsletter-116?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Resilient Cyber Newsletter #116 — GLM-5.3-Flash CVE-2026-11645 chain corroboration ($20.40 figure)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99%</a></h3><p>A 24 September arXiv paper injects malicious scratchpad reasoning into three frontier models across 1,800 AdvBench cases. Reasoning alone scores ~0%. The same reasoning plus a trivial output prefix reaches 99% on Gemini 3 Flash Preview — while Claude Haiku 4.5 never exceeds 1%.</p><a class="text-link" href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-20">2026-07-20</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/nist-caisi-glm-5-2-cyber-safeguards-assessment/">NIST Finds GLM-5.2 Cyber Capability Near Opus 4.6—but Safeguards Allow Exploit Development</a></h3><p>NIST CAISI assessed open-weight GLM-5.2 as comparable to Opus 4.6 on cyber capability while finding mixed safeguards that allowed agentic exploit-development assistance.</p><a class="text-link" href="/posts/2026/07/nist-caisi-glm-5-2-cyber-safeguards-assessment/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">GitHub Turned Its Audit Prompts Into an Open-Source Agent — It Found 24 Android Vulnerabilities</a></h3><p>On 28 September 2026 GitHub Security Lab researcher Kevin Stubbings disclosed 24 Android vulnerabilities found with open-source audit taskflows built on the Taskflow Agent. Highlights: an exported OsmAnd MapActivity whose intent extras let any permissionless app silently rewrite map settings and track location across 10M+ installs, and a Wikipedia deeplink endsWith flaw plus cookie-manager bug enabling cross-Wikimedia account takeover from one tapped link.</p><a class="text-link" href="/posts/2026/09/github-taskflow-agent-24-android-vulns-osmand-wikipedia/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
