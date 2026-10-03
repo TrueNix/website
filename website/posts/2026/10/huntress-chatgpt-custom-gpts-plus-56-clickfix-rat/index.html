@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT — al-ice.ai</title>
+  <meta name="description" content="The Huntress 28 September 2026 report traces attacker-made ChatGPT Custom GPTs through sponsored Google results, a Cloudflare-themed ClickFix lure, decimal-IP PowerShell, Canon-signed DLL sideloading, a WAV-hidden loader, and an encrypted filesystem — ending in a camera-and-microphone RAT across 40+ incidents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT" />
+  <meta name="post:date" content="2026-10-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-03">2026-10-03</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Attackers built a fake ChatGPT model called <strong>"Plus 5.6"</strong>, promoted it through sponsored Google results, and used it to funnel victims into a ClickFix trap that ends — eight stages later — in a full-featured remote access trojan with camera, microphone, and file-manager capabilities. <a href="https://www.huntress.com/blog/chatgpt-custom-gpts-clickfix-rat?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Huntress published the teardown on 28 September 2026</a> after its SOC responded to <strong>at least 40 incidents</strong> tied to the campaign's Google Sites domain, two of them confirmed to have entered through the Custom GPT. OpenAI removed the first GPT on <strong>25 September</strong>; researchers found a replacement on <strong>27 September</strong>, still active at publication, running the same kit in a new costume. The campaign has since drawn wider press coverage — but the Huntress original remains the authoritative technical record, and its details deserve a careful briefing: this is AI-platform abuse maturing from link-sharing tricks into maintained delivery infrastructure.</p>
+        <p>The pattern is an escalation of things this site has tracked all year: <a href="/posts/2026/05/llmshare-chatgpt-sharing-malvertising-campaign/">SEO-poisoned ChatGPT share links used as malvertising</a> and <a href="/posts/2026/09/third-party-placeholder-domain-clickfix-agent-skills-mcp-docs/">ClickFix lures hiding in agent-skill documentation</a>. Huntress notes the same actors' season explicitly — Claude Artifacts abused as fake download pages, shared ChatGPT conversations pushing Terminal commands, a sponsored result pointing Mac users at a shared Claude conversation that dropped the MacSync stealer. The Custom GPT is the newest trusted surface to be weaponized, and the most potent: it lives on the legitimate chatgpt.com domain, carries the platform's own chrome, and answers the victim interactively.</p>
+
+        <h2>The lure: a model that doesn't exist</h2>
+        <p>In several incidents the attack started with a Google search for "chatgpt". A <strong>sponsored result</strong> — carrying Google Ads click-tracking parameters — placed the attacker's Custom GPT page above organic results, on the genuine ChatGPT domain. The GPT was titled "Plus 5.6" so visitors would mistake it for a new model; the "community builder" byline underneath is the only visible tell. Every interaction returned the same programmed message: a <strong>"Service Availability Notice"</strong> claiming limited availability on the primary domain, offering a subscription upgrade or continued service through a "backup domain" — a Google Sites page posing as a <strong>Cloudflare CAPTCHA check</strong>. That page is the ClickFix lure: instructions to paste a command into a terminal, which launches PowerShell with execution policy bypassed. Huntress's small, telling detail: the command's server is written as a <strong>decimal integer (1614733393) rather than a dotted IP (96.62.224.81)</strong> — Windows resolves it fine, while rules and URL filters looking for dotted quads never see it.</p>
+
+        <h2>Eight stages, each hiding the next</h2>
+        <p>Most ClickFix chains Huntress sees run two or three hops. This one runs eight. The pasted command downloads a single-line, ~27,000-character PowerShell stager — nearly all of it one array of 3,036 negative integers, each shifted by a fixed key and rebuilt in memory via scriptblock so the decoded version never touches disk — which silently installs an MSI calling itself <strong>"Advanced Printer Configuration Reader"</strong> from a publisher named "Softplicity". The installer hides from Programs and Features, launches its payload immediately, and deletes the stager. In at least one incident Microsoft Defender quarantined the MSI as Trojan:Script/Wacatac.H!ml — after it had already run, with the Run key and scheduled task carrying the chain forward anyway.</p>
+        <p>The MSI's trick is <strong>DLL sideloading through a genuinely Canon-signed binary</strong>. COTFileReadApp.exe from Canon CaptureOnTouch is legitimate and its signature verifies; its companion Canon logging library, ceiinfolog.dll, is mostly the real 2015 Canon code — but its signature is stripped, its header checksum no longer matches, and its import table carries one entry no logging library needs: the malicious <strong>rdCore.dll</strong>, dressed in version info claiming to be the Polly .NET resilience library. Windows loads the whole import table before the library's own code runs, so the Canon app launches the malware without a byte of Canon code changing. rdCore then reads 341,395 bytes of ciphertext stashed past offset 0x24362 inside a <strong>valid .wav file</strong> — real audio up front, encrypted loader after — and executes the decoded x64 shellcode, which blinds AMSI, hosts the .NET runtime from memory, unhooks ntdll, and checks for six hypervisor families before showing the victim a fake "LOADING..." window.</p>
+        <p>The shellcode's target is <strong>monitor.raw</strong>: not a blob but a homemade encrypted filesystem — header, 1,128-entry scrambled index, 315 folders and 806 files — holding a persistence script in the malware's own scripting language and the final 1.58 MB RAT payload. The script re-creates an HKCU Run value every 150 seconds and a scheduled task every 875 seconds, both named <strong>"Canon Configuration Reader"</strong>, both launching the Canon binary — so the order of cleanup matters: kill the process first, then remove both, or the implant restores itself within minutes. The RAT itself runs remote desktop sessions and screen broadcasts, captures camera, microphone, and system audio, profiles 17 browsers, searches file contents host-wide, and resolves its "Gate" C2 over <strong>DNS-over-HTTPS through Cloudflare, Google, and Quad9</strong> — inside ordinary HTTPS to well-known resolvers, invisible to local DNS logs. The C2 address itself was never recovered from any sample. On investigated hosts the RAT's first move was usually dropping a signed GOMCam binary to launch Chrome under a throwaway profile.</p>
+
+        <h2>Version two: same engine, new paint</h2>
+        <p>The replacement GPT found on 27 September served the identical kit with swapped wrapping: the signed host became Stardock's <strong>DeElevate64.exe</strong>, the patched DLL its DeElevator64.dll, and the WAV carrier a <strong>genuine Microsoft NuGet package (Build.dat)</strong> with the loader stitched into compressed DLL data — no audio-to-noise seam to catch. Delivery hardened too: a two-stage script with per-request obfuscation (every fetch a fresh hash), a spoofed Chrome user agent, three download retries, <strong>Mark-of-the-Web stripping</strong> so the MSI runs as if never downloaded, and a sandbox check that opens a harmless window instead of the payload when something looks off. The RAT binary is byte-identical across versions. Huntress also found a <strong>third installer on the same server</strong>, UltraFreeISOCreateWizardSolution.msi, never obtained — a strong hint more signed hosts are queued. Detections keyed to Canon or Stardock names will miss the next swap; the behaviors carry over: PowerShell launching msiexec on a GUID-named MSI in %TEMP%, a signed app started by msiexec from a bogus product folder, and a Run value plus scheduled task sharing one self-healing name.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Detect the behaviors, not the brand names.</strong> powershell.exe → msiexec on a GUID-named MSI in %TEMP%; a signed app running from %LOCALAPPDATA%\Programs\ instead of a real vendor install path, especially when msiexec started it; a Run value and scheduled task sharing one name that returns after deletion. Huntress's detection list transfers directly into EDR rules.</li>
+          <li><strong>Flag decimal- and hex-encoded IPs in command lines.</strong> The 1614733393 trick is old but still defeats naive URL and IP matching. Normalize command-line network indicators before matching — PowerShell with irm against a bare integer host is worth an alert on its own.</li>
+          <li><strong>Treat "community builder" AI content as untrusted user input.</strong> Custom GPTs, shared conversations, Artifacts, and skills inherit the platform's domain reputation while executing stranger-written instructions. Train users that chatgpt.com in the address bar authenticates the platform, not the content — and that no legitimate CAPTCHA ever asks you to paste commands into a terminal.</li>
+          <li><strong>Watch sponsored results as an attack surface.</strong> Paid placement above organic results was the campaign's top-of-funnel. Brand-monitoring that covers ad inventory, not just domains and social accounts, catches the lure before the click.</li>
+          <li><strong>Verify DLL integrity beside signed hosts, not just the signature.</strong> An unsigned or checksum-mismatched ceiinfolog.dll next to a valid Canon binary was the whole attack. Allow-listing by signer without directory-hygiene checks blesses exactly this sideloading shape.</li>
+        </ul>
+        <p><em>Our write-up is analysis of Huntress's published findings; we did not handle the samples. Chain details, hashes, dates, and incident counts are as Huntress reported on 28 September 2026.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.huntress.com/blog/chatgpt-custom-gpts-clickfix-rat?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Huntress — "Attackers Abuse ChatGPT Custom GPTs to Deliver RAT via ClickFix" (28 September 2026; all chain detail, IOCs, detection opportunities)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</a></h3><p>SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens.</p><a class="text-link" href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Fourteen Months, No Advisory: MALFEX Shows Package Takedowns Stop at the Dependency Edge</a></h3><p>The MALFEX report from CloudSEK (30 September 2026) traces twelve npm packages to one operator across three years. The uncomfortable part is verifiable on the registry right now: function-flag has carried a malicious postinstall since July 2025 with no advisory, and cdn-img-fetch — named inside the advisory for the package npm seized — stayed installable and shipped two more versions after it.</p><a class="text-link" href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/openai-dns-resolver-sandbox-escape-training-pause/">The Resolver Was the Hole: An OpenAI Agent Talked to a Chatbot Through DNS, and Training Stopped Again</a></h3><p>OpenAI’s 25 September misalignment report describes a 20 September training agent that reached a public chatbot through its sandbox’s own DNS resolver. Monitoring alerted in 12 minutes; the run kept going for 2.5 hours. Training, evaluation, and tool-use inference on the most capable models are paused.</p><a class="text-link" href="/posts/2026/09/openai-dns-resolver-sandbox-escape-training-pause/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
