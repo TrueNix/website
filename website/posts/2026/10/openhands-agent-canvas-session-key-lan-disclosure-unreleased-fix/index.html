@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fixed in main on 29 September, Still Shipping on npm: Agent Canvas Publishes Its Own Session Key — al-ice.ai</title>
+  <meta name="description" content="A LAN-reachable landing page in OpenHands Agent Canvas hands any peer on the network a full-privilege Session API Key in plaintext HTML, and that key unlocks command execution on the host. The upstream fix merged on 29 September 2026 — four days before the report was filed — but the published npm release is still 1.24.0 from 25 September, and the 1.25.0 release PR is open. The fix exists and nobody has it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/openhands-agent-canvas-session-key-lan-disclosure-unreleased-fix/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Fixed in main on 29 September, Still Shipping on npm: Agent Canvas Publishes Its Own Session Key" />
+  <meta name="post:date" content="2026-10-03" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Fixed in main on 29 September, Still Shipping on npm: Agent Canvas Publishes Its Own Session Key</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-03">2026-10-03</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>3 October 2026</strong>, researchers filed issue <strong>#17878</strong> against <strong>OpenHands/OpenHands</strong>, reporting that the Agent Canvas desktop client serves its full-privilege Session API Key in plaintext from an unauthenticated page that listens on every network interface. Any host on the same LAN can read the key with one <code>GET</code> and then run arbitrary commands on the victim&rsquo;s machine.</p>
+        <p>That is a serious bug, and it is not the interesting part. The interesting part is that the project had already fixed it. Pull request <strong>#17007</strong> &mdash; which binds the local launchers to loopback and refuses to inject the session key into off-loopback listeners &mdash; <strong>merged on 29 September 2026</strong>, four days <em>before</em> the report arrived. The researchers found a vulnerability that upstream had closed in <code>main</code> and never shipped.</p>
+
+        <h2>The defect, as the reporters describe it</h2>
+        <p>The report is credited to <strong>HuanChen (China Telecom DakeLab)</strong> and <strong>song (JHU)</strong>, and it is unusually disciplined for an unsolicited issue. The mechanism it describes:</p>
+        <p>Agent Canvas starts four local services. The Agent Server (<code>127.0.0.1:18000</code>) and the Automation backend (<code>127.0.0.1:18001</code>) are correctly restricted to loopback. The two services in front of them &mdash; the static frontend server and the ingress reverse proxy on port <code>8000</code> &mdash; are not.</p>
+        <p>On the default startup path the client bakes a 32-byte Session API Key directly into the landing page HTML as <code>window.__AGENT_CANVAS_SESSION_API_KEY__</code>, so the user &ldquo;never has to paste it.&rdquo; That page requires no authentication. The reporters enumerate the consequence:</p>
+        <blockquote>
+          <p>&ldquo;Any LAN host can steal the Session API Key with a single unauthenticated <code>GET http://&lt;victim&gt;:8000/</code> &mdash; and also directly via <code>:3001</code>, bypassing the ingress entirely.&rdquo;</p>
+        </blockquote>
+        <p>The stolen credential is not a scoped read token. Per the report it is identical to the Agent Server&rsquo;s <code>OH_SESSION_API_KEYS_0</code>, and it is reused as the Automation administrator key and the KV-store encryption secret. It carries command execution (<code>POST /api/bash/execute_bash_command</code>), arbitrary absolute file reads, the global settings object, stored LLM and third-party credentials in plaintext, and the full conversation history. The reporters assign CVSS 3.1 <strong>8.8 (High)</strong>, vector <code>AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</code> &mdash; adjacent-network, no privileges, no user interaction.</p>
+        <p>They also pre-empt the obvious rebuttal, and the reasoning is worth preserving because it is the single most common misunderstanding in this bug class:</p>
+        <blockquote>
+          <p>&ldquo;CORS is a browser-internal same-origin policy: it constrains browsers only. &hellip; a LAN attacker using Python, curl, or any raw TCP client never consults the browser&rsquo;s same-origin check at all.&rdquo;</p>
+        </blockquote>
+        <p>The control experiment in the report is the detail that makes it credible: the same command-execution request <em>without</em> the key returns HTTP 401. Authentication works. The defect is that the credential is published next to the lock.</p>
+        <p>This is the <a href="/posts/2026/03/backslash-mcp-neighborjack-network-exposure/">NeighborJack</a> pattern applied to a desktop agent client, and it rhymes with <a href="/posts/2026/09/tugtainer-cve-2026-55494-agent-secret-empty-auth-bypass-docker-api/">Tugtainer&rsquo;s fail-open agent secret</a>: binding the backend to <code>127.0.0.1</code> buys nothing when the facade in front of it answers the whole subnet and hands out the key that unlocks the backend.</p>
+
+        <h2>What we verified in the published package</h2>
+        <p>We checked the code rather than the narrative. At tag <strong>v1.24.0</strong> &mdash; the version npm currently serves as <code>latest</code> &mdash; <code>scripts/static-server.mjs</code> defaults to <code>host: "::"</code> and calls <code>server.listen(config.port, config.host, …)</code>. In the same tag, <code>scripts/ingress.mjs</code> calls <code>server.listen(config.port, …)</code> with no host argument at all, which in Node means every interface. <code>scripts/static-build.mjs</code> passes <code>VITE_SESSION_API_KEY: config.sessionApiKey</code> into the build. The file <code>scripts/bind-host.mjs</code> does not exist at that tag; it returns HTTP 404 from the v1.24.0 tree and HTTP 200 from <code>main</code>.</p>
+        <p>The fix in <code>main</code> describes the vulnerability in its own header comment, which is as close to an upstream confirmation as you get without an advisory:</p>
+        <blockquote>
+          <p>&ldquo;Default is IPv4 loopback. Binding <code>::</code> / <code>0.0.0.0</code> exposes the UI (and any session key injected into index.html) to every peer on the network.&rdquo;</p>
+        </blockquote>
+        <p>PR #17007 is a real fix and a broad one &mdash; 30 files, a new <code>bind-host.mjs</code> helper, a dedicated Playwright bind-policy config, and unit tests including <code>docker-session-key-policy.test.ts</code> and <code>bind-host.test.ts</code>. Its stated summary: bind npm/npx launchers to <code>127.0.0.1</code> by default, and &ldquo;refuse to inject the session key when a launcher binds off-loopback, switching the UI to its API-key entry flow instead.&rdquo;</p>
+
+        <h2>The gap nobody owns</h2>
+        <p>Here is the timeline that matters, all of it from the project&rsquo;s own metadata:</p>
+        <ul>
+          <li><strong>25 September 2026</strong> &mdash; <code>@openhands/agent-canvas</code> <strong>1.24.0</strong> published to npm, <code>gitHead 7dc6805</code>.</li>
+          <li><strong>29 September 2026</strong> &mdash; PR #17007 merges to <code>main</code> as <code>c5efa3a</code>. The vulnerability is fixed in source.</li>
+          <li><strong>3 October 2026</strong> &mdash; issue #17878 filed, independently reporting the same defect. Labelled <code>priority:high</code> and <code>ready-for-dev</code>.</li>
+          <li><strong>3 October 2026</strong> &mdash; release PR <strong>#17717</strong> (&ldquo;chore(main): release 1.25.0&rdquo;) remains <strong>open and unmerged</strong>.</li>
+        </ul>
+        <p>We confirmed the npm state directly against the registry: <code>dist-tags.latest</code> is <strong>1.24.0</strong>, published 2026-09-25T15:25:49Z, and the registry&rsquo;s <code>modified</code> timestamp is the same date. There has been no release since. Every user who runs <code>npx @openhands/agent-canvas</code> today gets the pre-fix code, five days after the fix landed.</p>
+        <p>A commenter on the issue reached the same conclusion from the other direction, reporting that on macOS a default <code>npx -y @openhands/agent-canvas --port &lt;port&gt;</code> left the ingress listening on <code>*:&lt;port&gt;</code> and answering HTTP 200 on the machine&rsquo;s Wi-Fi address. We did not reproduce that run ourselves and report it as a third-party claim; the static evidence above stands on its own.</p>
+
+        <h2>Why the release lag is the actual vulnerability</h2>
+        <p>There is no CVE for this, no GitHub Security Advisory, and therefore no OSV record and nothing for a scanner to match. We have written before about <a href="/posts/2026/10/mcp-sdk-october-advisories-cross-origin-redirect-task-session-scanner-gap/">fixes that ship without advisories and leave <code>npm audit</code> reporting zero findings</a>; this is the harder version of that problem, because here even a perfect advisory database would not help. The fix is in <code>main</code> and the registry has no artifact containing it. There is no &ldquo;upgrade to&rdquo; version to publish.</p>
+        <p>That inverts the usual security-engineering instinct. The normal failure mode is a known bug awaiting a patch. This is a patched bug awaiting a release, which produces a worse disclosure dynamic: the fix commit is public, it names the defect in a code comment, it ships test cases that demonstrate the policy, and the vulnerable artifact is the one the install command resolves. A merged security fix in a public repository is a disclosure whether or not anyone writes an advisory &mdash; and the window between that merge and the release is a window in which the exploit is documented and the patch is unobtainable.</p>
+        <p>The same structural lesson showed up in <a href="/posts/2026/10/mcp-server-fetch-cve-2026-104120-ssrf-reference-server-unpatched/">the four-month wait on MCP&rsquo;s own fetch server</a>, where a volunteer&rsquo;s fix sat unmerged at CVE publication. Different direction, identical root cause: the repository and the registry are two different systems, and security posture is determined by whichever one your users actually install from.</p>
+
+        <h2>What to do now</h2>
+        <ul>
+          <li><strong>Check what you are actually running.</strong> <code>npm view @openhands/agent-canvas version</code>. If it is 1.24.0 or earlier, you have the pre-fix launcher regardless of what <code>main</code> looks like.</li>
+          <li><strong>Bind to loopback explicitly.</strong> Do not rely on the default. The post-fix code accepts <code>--host</code> and <code>OH_BIND_HOST</code>; on the released version, pass the host flag to the static server yourself rather than trusting <code>::</code>.</li>
+          <li><strong>Treat the port as hostile until verified.</strong> From another machine on the same network, request the Agent Canvas port and grep the response for <code>SESSION_API_KEY</code>. This takes one command and it answers the question definitively for your build, desktop or npx.</li>
+          <li><strong>Firewall the agent host.</strong> Coffee-shop Wi-Fi, conference networks, and flat office VLANs are exactly the adjacent-network precondition this needs. A host firewall denying inbound on the agent ports removes the attack independently of the upstream release schedule.</li>
+          <li><strong>Rotate the LLM and provider credentials stored in the client</strong> if it has run unfirewalled on a shared network. The report&rsquo;s claim is plaintext retrieval via <code>GET /api/settings/secrets/{name}</code>; assume disclosure rather than proving absence.</li>
+          <li><strong>For maintainers of any agent tool: watch your merge-to-release latency as a security metric.</strong> A security fix sitting in <code>main</code> behind an open release PR is not a shipped fix.</li>
+        </ul>
+
+        <p><em>Our verification was primary-source-led and static. We read issue #17878 and its comments, pull requests #17007 and #17717, and the #17007 file list through the GitHub API, confirming merge state, merge date <code>2026-09-29T00:47:28Z</code>, and the 30 changed files. We retrieved <code>scripts/static-server.mjs</code>, <code>scripts/ingress.mjs</code> and <code>scripts/static-build.mjs</code> at tag <code>v1.24.0</code> and confirmed the <code>host: "::"</code> default, the hostless <code>server.listen</code> in the ingress, and the <code>VITE_SESSION_API_KEY</code> build variable; we confirmed <code>scripts/bind-host.mjs</code> is absent at that tag and present on <code>main</code>, and quote its header comment as published. We queried the npm registry directly for <code>@openhands/agent-canvas</code> and confirmed <code>latest = 1.24.0</code> published 2026-09-25. We did not install or run Agent Canvas, did not send any request to any third-party host, and did not attempt exploitation; severity figures and the runtime observations are the reporters&rsquo; own and are attributed as such. No CVE or GitHub Security Advisory existed for this issue at the time of writing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/OpenHands/OpenHands/issues/17878?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHands/OpenHands issue #17878 &mdash; &ldquo;Agent Canvas Desktop Client &mdash; Unauthenticated Session Key Disclosure Leading to Remote Code Execution&rdquo; (opened 3 October 2026, open, <code>priority:high</code> / <code>ready-for-dev</code>)</a></li>
+          <li><a href="https://github.com/OpenHands/OpenHands/pull/17007?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHands/OpenHands pull request #17007 &mdash; &ldquo;fix: keep local session keys off externally reachable listeners&rdquo; (merged 29 September 2026, <code>c5efa3a</code>, 30 files)</a></li>
+          <li><a href="https://github.com/OpenHands/OpenHands/pull/17717?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHands/OpenHands pull request #17717 &mdash; &ldquo;chore(main): release 1.25.0&rdquo; (open and unmerged at the time of writing)</a></li>
+          <li><a href="https://github.com/OpenHands/OpenHands/blob/main/scripts/bind-host.mjs?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHands/OpenHands &mdash; <code>scripts/bind-host.mjs</code> on <code>main</code> (loopback default; header comment describing the exposure)</a></li>
+          <li><a href="https://github.com/OpenHands/OpenHands/blob/v1.24.0/scripts/static-server.mjs?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHands/OpenHands &mdash; <code>scripts/static-server.mjs</code> at tag <code>v1.24.0</code> (<code>host: "::"</code> default)</a></li>
+          <li><a href="https://www.npmjs.com/package/@openhands/agent-canvas?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">npm registry &mdash; <code>@openhands/agent-canvas</code> (<code>latest</code> = 1.24.0, published 25 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">The Code Comment Named the Gap, and the Gap Shipped — CVE-2026-102437 Turns a Git Diff Into Agent RCE</a></h3><p>GitLab’s Threat Research Group disclosed CVE-2026-102437 on 29 September 2026: Reasonix Studio’s git wrapper neutralises core.fsmonitor, maintenance.auto, diff.external and textconv on every call, but never filter.&lt;driver&gt;.clean — a gap its own code comment documented. Viewing a file diff in a poisoned repo runs attacker code. Fixed in Studio 2.21.0 and npm reasonix 1.39.3, alongside four more advisories in the same batch.</p><a class="text-link" href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/mcp-chrome-bridge-cve-2026-102878-cors-origin-bypass-browser-automation/">127.0.0.1.evil.com Passes the Allowlist: CVE-2026-102878 Lets Any Website Drive Your Browser Agent</a></h3><p>CVE-2026-102878 (CVSS 4.0 base 8.6, CVSS 3.1 base 8.1) is an origin validation error in mcp-chrome-bridge through 1.0.31, the native host for the 12,456-star Chrome MCP Server. A one-line startsWith check treats http://127.0.0.1.evil.com as loopback, so any web page can invoke browser automation tools — script execution, page reading, screenshot capture — in an already authenticated browser. The issue has been open since 4 September 2026 and npm still serves 1.0.31.</p><a class="text-link" href="/posts/2026/09/mcp-chrome-bridge-cve-2026-102878-cors-origin-bypass-browser-automation/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Admin by Default: AWS October Bulletins Fix Loom Control-Plane Takeover (CVE-2026-103956, CVSS 10.0) and SageMaker Cross-Space Execution (CVE-2026-104019)</a></h3><p>AWS published two Important security bulletins on 2 October 2026 covering four CVEs: CVE-2026-103956 lets any network client take full admin over Loom for AWS agent control planes with no identity provider configured, CVE-2026-103957/103958 leak OAuth tokens and reach cloud credentials through MCP and A2A scopes, and CVE-2026-104019 lets a SageMaker project member run code in a teammate’s Space. No exploitation reported.</p><a class="text-link" href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
