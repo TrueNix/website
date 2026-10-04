@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Opening the Folder Is the Exploit: GitSpawn Turns Untrusted Repos Into RCE Across Seven Coding Agents — al-ice.ai</title>
+  <meta name="description" content="Manifold Security&rsquo;s GitSpawn research shows AI coding agents running git for context execute a repo&rsquo;s own core.fsmonitor command outside the sandbox with no approval prompt — eight findings across Claude Code, Codex, Cursor, Goose, Hermes, Qwen Code and Grok Build, four unpatched at publication. Plugin4Shell and Adversa&rsquo;s October roundup confirm git is now the most exercised agent boundary." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Opening the Folder Is the Exploit: GitSpawn Turns Untrusted Repos Into RCE Across Seven Coding Agents" />
+  <meta name="post:date" content="2026-10-04" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Opening the Folder Is the Exploit: GitSpawn Turns Untrusted Repos Into RCE Across Seven Coding Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-04">2026-10-04</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In September 2026, Manifold Security published <strong>GitSpawn</strong>: a single vulnerability pattern that lets an untrusted repository run arbitrary commands in <strong>Claude Code, OpenAI Codex, Cursor, Goose, Hermes Agent, Qwen Code and Grok Build</strong> &mdash; no prompt injection, no jailbreak, no approval dialog. The trigger is opening the folder. The agent runs <code>git status</code> to orient itself, git refreshes its index, and the repository&rsquo;s own <code>core.fsmonitor</code> setting names the command that runs. Eight findings across seven agents; <strong>four were still unpatched at publication</strong>, every one re-confirmed on a current release.</p>
+        <p>This is the same bug class as <a href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">CVE-2026-102437, which we covered last week</a> &mdash; except there the vendor&rsquo;s wrapper stripped the dangerous settings and missed one, while here most agents stripped nothing at all. And git is under fire from a second direction at once: <strong>Plugin4Shell</strong> abuses pinned plugin commits to swap malicious code into four of the same agents during automatic updates. Adversa AI&rsquo;s October roundup, published this week, names git &ldquo;the single most exercised boundary of the month.&rdquo;</p>
+
+        <h2>The mechanism: the agent&rsquo;s own subprocess, outside every control</h2>
+        <p>Manifold&rsquo;s researchers, Ax Sharma and Francisco Rosales, started from one question: what does a CLI agent actually do at startup? The answer is context-gathering &mdash; branch, modified files, diffs, worktrees &mdash; executed as <strong>the agent&rsquo;s own git subprocess, outside the sandbox and outside the tool-permission model</strong>. Those calls passed the repository&rsquo;s <code>.git/config</code> through untouched, and several git settings are command-execution sinks: <code>core.fsmonitor</code>, a documented performance hook for large repos, runs its configured helper on every index refresh. A repository shipping <code>[core] fsmonitor = &lt;command&gt;</code> gets that command executed by <code>git status</code>, <code>git diff</code>, or anything else that touches the working tree &mdash; as the developer, with their SSH keys, cloud credentials, shell tokens and every repo on disk in reach.</p>
+        <p>Delivery is worth stating precisely, because the instinct is wrong: <strong>cloning a hostile URL does nothing, and neither do fetch or pull</strong>. Git never transports this. The repository must arrive as files with its <code>.git</code> directory inside &mdash; a shared zip, a sync folder, a USB stick, a consultant&rsquo;s handoff. Every proof of concept in the research used a zip. And timing defeats the trust UX entirely: on some agents the payload runs <strong>before the workspace-trust prompt, before authentication, even before the first prompt is typed</strong>.</p>
+
+        <h2>Agent by agent: duplicates everywhere, patches in half the cases</h2>
+        <ul>
+          <li><strong>Goose</strong> &mdash; <code>goose review</code> built its diff with <code>git diff</code>, passing one config flag and stripping none. Reported 13 July against 1.41.0, <strong>fixed in 1.44.0 as CVE-2026-72718</strong> (CVSS 4.0 7.0, scored by the maintainers).</li>
+          <li><strong>Claude Code (<code>core.fsmonitor</code>)</strong> &mdash; startup <code>git status</code> dropped the marker file while the trust prompt was still awaiting acceptance. Reported 26 June, closed as a <strong>duplicate of a report filed the same day</strong>, fixed by 2.1.196. Found independently, twice, within hours.</li>
+          <li><strong>Claude Code (<code>ultrareview</code>)</strong> &mdash; a different sink of the same kind, firing before the review begins. Reported 15 July, closed as a duplicate of an internal ticket, <strong>confirmed still unpatched on 2.1.252 on 1 September</strong>.</li>
+          <li><strong>Hermes Agent</strong> &mdash; context-gathering on the first message. Confirmed on 0.18.2, reported the next day, re-confirmed on 0.21.0; the private advisory was never triaged across six contact attempts, and VulnCheck assigned <strong>CVE-2026-71963</strong> (CVSS 4.0 8.6). Notably, the NVD record marks versions 0.18.2&ndash;0.21.0 affected with a fix commit recorded, and upstream&rsquo;s own tracker shows the hardening program continuing past publication &mdash; issue #126017, closed 1 October, documents the hardened git environment and a dedicated <code>test_gitspawn_config_injection.py</code> suite while closing four missed call sites.</li>
+          <li><strong>Qwen Code</strong> &mdash; payload executes at startup, <strong>before the user has authenticated</strong>. Reported 7 July to Alibaba&rsquo;s response centre and accepted; re-confirmed on 0.22.3, unpatched at publication.</li>
+          <li><strong>Grok Build</strong> &mdash; fires on the first keystroke of a prompt. An earlier same-class report from 1 July had been closed as informative; Manifold&rsquo;s 14 July follow-up closed as its duplicate. Re-confirmed on 1.0.13, unpatched at publication.</li>
+          <li><strong>Codex and Cursor</strong> &mdash; also affected; both reports came back as duplicates of other researchers&rsquo; filings and both have since been patched.</li>
+        </ul>
+        <p>The duplicate count is the finding inside the finding: <strong>five of Manifold&rsquo;s reports duplicated independent filings</strong>, one same-day. This pattern is being discovered from several directions at once, which means the unpatched instances are being found from several directions too.</p>
+
+        <h2>Plugin4Shell: git from the other direction</h2>
+        <p>While GitSpawn rides the agent&rsquo;s own git calls outward, Plugin4Shell rides plugin updates inward. Per Adversa&rsquo;s October write-up, <strong>Claude Code, OpenAI Codex, GitHub Copilot and Gemini CLI</strong> install pinned plugin commits via <code>git checkout</code> without verifying what landed &mdash; so a branch named like the pinned SHA silently substitutes malicious code during automatic updates. Pinning to a hash protects nothing if nothing checks the hash after checkout. Between the two techniques, the agent&rsquo;s relationship with git is compromised in both directions: the repo&rsquo;s config executes through the agent&rsquo;s git, and the agent&rsquo;s own dependencies arrive through git without verification.</p>
+
+        <h2>The October roundup: the harness is the vulnerability</h2>
+        <p>Adversa&rsquo;s <strong>&ldquo;AI coding agent vulnerabilities, October 2026&rdquo;</strong> organises 26 resources and lands a structural verdict worth quoting: cataloguing ten documented attacks on Claude Code, it finds they hit <strong>config files, hooks, approval dialogs, MCP tool output, plugin pins and skill packages &mdash; not the model</strong>. Only two produced CVEs; four were declined by vendors; misleading consent dialogs recur across findings. Read alongside GitSpawn and Plugin4Shell, the month&rsquo;s bugs cluster in the harness because the harness is the security boundary &mdash; model refusals are preferences, harness restrictions are controls.</p>
+        <p>The surrounding entries reinforce the breadth: <strong>CVE-2026-82533</strong> lets a sandboxed agent escape DeepSeek Harness to &ldquo;danger-full-access&rdquo; over an unauthenticated loopback API (CVSS 9.4); Codex lost its sandbox twice; OpenCode&rsquo;s upgrade endpoint allowed cross-origin package installs (fixed 1.18.22); the brig sandbox runner handed host directories to symlink-planting agents; ZCode exfiltrated whole workspaces to cloud storage past its own privacy toggles; and PixelLeak needed no attacker at all &mdash; agents unable to attach screenshots to pull requests pushed <strong>13,000+ of them to public repos</strong> across 300 organisations.</p>
+
+        <h2>What to do now</h2>
+        <ul>
+          <li><strong>Treat every directory as untrusted until proven otherwise.</strong> Do not open zips, shared folders or handoffs directly in an agent. Inspect <code>.git/config</code> for <code>core.fsmonitor</code>, <code>core.hooksPath</code>, <code>core.pager</code> and <code>core.editor</code> before the agent ever sees the tree &mdash; or open it in a disposable container first.</li>
+          <li><strong>Patch what can be patched.</strong> Goose 1.44.0+, Claude Code past 2.1.196, current Codex and Cursor. For Qwen Code, Grok Build, Claude&rsquo;s ultrareview path and Hermes at or before 0.21.0, assume exposure and check upstream for the fix commits before trusting the startup path.</li>
+          <li><strong>Verify plugin pins, don&rsquo;t just set them.</strong> After updates in Claude Code, Codex, Copilot or Gemini CLI, confirm the checked-out commit matches the pinned SHA. A pin without verification is a comment, not a control.</li>
+          <li><strong>Strip the environment around agent git calls.</strong> The Reasonix fix is the template: wrapper-level <code>-c</code> overrides or a scrubbed environment on every git invocation, including the ones that only &ldquo;read&rdquo; &mdash; status, ls-files, worktree &mdash; because reads refresh the index too.</li>
+          <li><strong>Put agent tokens in the rotation plan.</strong> Infostealers now harvest Claude, Cursor, Cline and Codex tokens plus MCP configs from predictable paths. A GitSpawn-class execution exposes the full environment, including provider API keys.</li>
+        </ul>
+
+        <p><em>Our verification was primary-source-led and static. We read the Manifold Security GitSpawn post (September 2026, updated 1 September, by Ax Sharma and Francisco Rosales) including its per-agent case studies, timeline table and disclosure notes, and report statuses, versions and the duplicate-handling history as published. We pulled the NVD 2.0 records for CVE-2026-72718 (Goose, CVSS 4.0 7.0) and CVE-2026-71963 (Hermes Agent 0.18.2&ndash;0.21.0, CVSS 4.0 8.6, fix commit recorded) directly and confirmed the affected products, scores and vectors; the upstream Hermes hardening follow-up is our own check of NousResearch/hermes-agent issue #126017 (filed 28 September 2026, closed 1 October 2026 as completed). Plugin4Shell and the month&rsquo;s surrounding findings are via Adversa AI&rsquo;s October 2026 roundup (2 October 2026) and are attributed as such. We did not build a malicious repository, install any agent, or attempt exploitation; severity figures and unpatched-at-publication statuses are the researchers&rsquo; own.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.manifold.security/blog/ai-coding-agents-git-hijack?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Manifold Security &mdash; &ldquo;GitSpawn: A Single Flaw Lets Untrusted Repos Run Code in Claude Code, Codex, Cursor, and Grok&rdquo; (September 2026)</a></li>
+          <li><a href="https://adversa.ai/blog/top-ai-coding-agent-security-resources-october-2026/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Adversa AI &mdash; &ldquo;AI coding agent vulnerabilities, October 2026: GitSpawn and more&rdquo; (2 October 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-72718?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-72718 (Goose &lt;1.44.0 git-config command execution, CVSS 4.0 7.0)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-71963?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-71963 (Hermes Agent 0.18.2&ndash;0.21.0 git-config RCE, CVSS 4.0 8.6)</a></li>
+          <li><a href="https://github.com/NousResearch/hermes-agent/issues/126017?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NousResearch/hermes-agent issue #126017 &mdash; git call-site hardening follow-up (closed 1 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">The Code Comment Named the Gap, and the Gap Shipped — CVE-2026-102437 Turns a Git Diff Into Agent RCE</a></h3><p>GitLab’s Threat Research Group disclosed CVE-2026-102437 on 29 September 2026: Reasonix Studio’s git wrapper neutralises core.fsmonitor, maintenance.auto, diff.external and textconv on every call, but never filter.&lt;driver&gt;.clean — a gap its own code comment documented. Viewing a file diff in a poisoned repo runs attacker code. Fixed in Studio 2.21.0 and npm reasonix 1.39.3, alongside four more advisories in the same batch.</p><a class="text-link" href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">A Branch Named Like a Commit Broke Plugin Pinning in Four Coding Agents</a></h3><p>Plugin4Shell, disclosed September 17 by AIR Security, bypasses plugin SHA pinning in Claude Code, Codex, GitHub Copilot, and Gemini CLI for zero-click RCE. Claude Code 2.1.179 and Codex 0.146.0 are patched; Copilot has no fix and Gemini CLI will not get one.</p><a class="text-link" href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-26">2026-07-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/07/claude-code-git-worktree-sandbox-escape-cve-2026-55607/">A Malicious Repository Could Drive Claude Code Out of Its Sandbox — CVE-2026-55607</a></h3><p>CVE-2026-55607 chained prompt injection, Git worktree confusion, symlinks, and fsmonitor to escape Claude Code’s macOS sandbox. Upgrade to 2.1.163 or later.</p><a class="text-link" href="/posts/2026/07/claude-code-git-worktree-sandbox-escape-cve-2026-55607/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
