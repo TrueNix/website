@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Looking at a Model Ran Its Code: Unsloth Studio’s Picker Was Arbitrary Code Execution, and No CVE Was Issued — al-ice.ai</title>
+  <meta name="description" content="Pillar Security disclosed on 29 September 2026 that selecting a model in Unsloth Studio’s picker executed Python shipped inside that Hugging Face repository — triggered by a config.json metadata read, before any weights loaded. Fixed in 2026.6.9, but the maintainers declined to publish an advisory on beta grounds and no CVE was assigned, leaving the fourth member of the trust_remote_code CVE family invisible to scanners." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/unsloth-studio-model-picker-arbitrary-code-execution-no-cve/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Looking at a Model Ran Its Code: Unsloth Studio’s Picker Was Arbitrary Code Execution, and No CVE Was Issued" />
+  <meta name="post:date" content="2026-10-04" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Looking at a Model Ran Its Code: Unsloth Studio’s Picker Was Arbitrary Code Execution, and No CVE Was Issued</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-04">2026-10-04</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>29 September 2026</strong>, Pillar Security researcher <strong>Ariel Fogel</strong> published a finding whose most interesting property is how little the victim has to do. In the affected versions of <strong>Unsloth Studio</strong> &mdash; the browser front end that ships inside the widely installed <code>unsloth</code> fine-tuning package &mdash; <em>selecting</em> a model in the picker caused the backend to download and execute Python shipped inside that model&rsquo;s Hugging Face repository. Not loading it. Not training on it. Not running inference. Reading the repository&rsquo;s <code>config.json</code> was enough.</p>
+        <p>The maintainers shipped a fix, which Pillar independently re-tested against <strong>2026.6.9</strong> and confirmed closed. But they declined to publish an advisory on the grounds that Studio was labelled beta, and <strong>no CVE was assigned</strong>. That second half is the part worth your attention: this is the fourth well-documented instance of the same defect pattern in 2026, the previous three all carry CVE identifiers, and this one does not &mdash; which means no scanner in your pipeline will ever tell you about it.</p>
+
+        <h2>The mechanism: <code>auto_map</code> turns configuration into code</h2>
+        <p>The underlying capability is not a bug and is not Unsloth&rsquo;s. Hugging Face&rsquo;s <code>transformers</code> library deliberately lets a model repository ship its own Python. A repo&rsquo;s <code>config.json</code> can declare an <code>auto_map</code> block pointing <code>AutoConfig</code>, <code>AutoModel</code>, or the tokenizer at custom modules stored next to the weights; when a caller passes <code>trust_remote_code=True</code> to <code>from_pretrained</code>, those modules are imported and run. Pillar is careful to note this is load-bearing for the ecosystem &mdash; IBM&rsquo;s Granite Speech and Granite Vision models, DeepSeek-OCR, ChatGLM, and the original Qwen releases all need it &mdash; so a blanket ban on the feature is not a viable defence.</p>
+        <p>What converts that capability into a vulnerability is <em>who decides</em>. Pillar&rsquo;s framing is the right one: does the tool run a repository&rsquo;s code because the operator knowingly asked, or as an invisible side effect of something that reads as harmless? Unsloth Studio did the latter, through three compounding details documented against commit <code>d91183d</code> (pinned to the 2026.5.10 release) in <code>studio/backend/utils/models/model_config.py</code>:</p>
+        <ul>
+          <li><strong>The sink defaulted to dangerous.</strong> <code>load_model_config(...)</code> declared <code>trust_remote_code: bool = True</code> &mdash; the unsafe value was the default, not an opt-in.</li>
+          <li><strong>The calling path never overrode it.</strong> The vision and capability probe called <code>load_model_config(model_name, use_auth=True, token=hf_token)</code> with no <code>trust_remote_code</code> argument, inheriting <code>True</code>. A separate transformers-5 subprocess branch hardcoded <code>kwargs = {"trust_remote_code": True}</code> outright.</li>
+          <li><strong>The probe was reachable over HTTP.</strong> <code>GET /api/models/config/{model_name:path}</code> and <code>GET /api/models/check-vision/{model_name:path}</code> expose the capability inspection directly.</li>
+        </ul>
+        <p>The sequencing is what makes this sharper than its predecessors. <code>AutoConfig.from_pretrained</code> exists to parse declarative metadata, so execution happened during <em>capability inspection</em> &mdash; before the backend fetched weights, long before any forward pass, and before the user&rsquo;s own <code>trust_remote_code</code> control, which defaults to <code>False</code>, was ever consulted. The operator&rsquo;s stated intent lost to an internal convenience path they could not see. Pillar&rsquo;s proof of concept is deliberately inert: a tainted repo whose module opens the OS calculator and writes a marker file to the home directory.</p>
+
+        <h2>Why &ldquo;it&rsquo;s beta&rdquo; and &ldquo;Hugging Face scans&rdquo; do not close this</h2>
+        <p>Unsloth disputed the assessment on two grounds, and both are worth examining because anyone building tooling on <code>transformers</code> will reach for the same arguments.</p>
+        <p>The first is distribution. Studio was described as beta &mdash; but per Pillar, the affected code shipped in the <strong>standard <code>unsloth</code> package</strong>, reachable through an ordinary <code>pip install unsloth</code> with no prerelease flag and no opt-in. &ldquo;Beta&rdquo; described the UI&rsquo;s maturity, not its distribution channel. A label on a feature does not narrow the population that received it.</p>
+        <p>The second is that Hugging Face&rsquo;s malware scanning would catch a hostile repo. Pillar&rsquo;s rebuttal is the strongest technical passage in the writeup: Hub scanning is, by its own documentation, best-effort and explicitly not a guarantee, with responsibility placed on the user. The scanners in play (PickleScan, ModelScan) are largely blocklists aimed at unsafe serialisation and known-bad functions, and the bypass literature is long &mdash; 7z containers instead of ZIP, <code>bdb.Bdb.run</code> instead of <code>exec</code>, payloads positioned before the parse breaks. More to the point, <strong>Pillar&rsquo;s own PoC repository was not flagged</strong>, because its code is not malicious at rest. It opens a calculator. An <code>auto_map</code> module can pass every scan cleanly and fetch its real payload at execution time. Outsourcing your execution-safety boundary to someone else&rsquo;s best-effort blocklist is a reasonable layer and an unreasonable perimeter.</p>
+        <p>A third objection &mdash; that the backend binds to loopback by default rather than <code>0.0.0.0</code> &mdash; misreads the threat model. The primary victim is the authenticated, trusted operator choosing a model on their own machine. That is local arbitrary code execution and it works perfectly on <code>127.0.0.1</code>. Network binding changes the blast radius, not the existence of the bug. The same applies to Studio&rsquo;s password: authentication governs who reaches the backend, not what the backend does with a repository the logged-in operator selects.</p>
+        <p>What an attacker gets, if they land it, is the machine that by definition holds the valuable things: Hugging Face tokens, SSH keys and cloud credentials reachable by the Studio process; the ability to tamper with weights and with training or inference outputs; and a foothold on a host chosen for its GPUs. An internal experimentation box serves no production traffic and still holds production secrets.</p>
+
+        <h2>The pattern now has four members and three identifiers</h2>
+        <p>This site has covered each earlier instance of the same defect as it landed, and the NVD records line up precisely:</p>
+        <ul>
+          <li><strong><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-46432?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2026-46432</a> (LMDeploy)</strong> &mdash; hardcoded <code>trust_remote_code=True</code> across multiple model-loading call sites in 0.12.3 and prior. CVSS 3.1 <strong>7.8 High</strong>, CWE-94, published 10 June 2026, with no public patch at publication. Same sink.</li>
+          <li><strong><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-4944?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2026-4944</a> (vLLM)</strong> &mdash; hardcoded <code>trust_remote_code=True</code> in two model implementation files, bypassing the operator&rsquo;s explicit <code>--trust-remote-code=False</code>. CVSS 3.0 <strong>8.8 High</strong>, published 28 May 2026, and itself recorded as an incomplete fix for two earlier CVEs. Same aggravator.</li>
+          <li><strong><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-6859?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">CVE-2026-6859</a> (InstructLab)</strong> &mdash; hardcoded <code>trust_remote_code=True</code> in a training script, giving code execution from a crafted Hub model. CVSS 3.1 <strong>8.8 High</strong>, CWE-829. Same class.</li>
+        </ul>
+        <p>Unsloth Studio combined the LMDeploy sink with the vLLM aggravator and then moved the trigger <em>earlier</em>, to a step no operator reads as dangerous. By severity logic it belongs in the same band as its siblings. By catalogue logic it does not exist. Nothing in an SCA scan, a dependency alert, or an OSV query will surface it, because there is no record to match &mdash; the only signal is a vendor blog post, and the only remediation instruction is a version number buried in it.</p>
+        <p>One timing detail is worth stating precisely, since the two dates in circulation differ: Pillar reports the maintainers shipped the fix on <strong>18 June 2026</strong>, and the version they re-tested, <strong>2026.6.9</strong>, was uploaded to PyPI on <strong>22 June 2026</strong>. If you are pinning, pin to 2026.6.9 or later rather than to a date.</p>
+
+        <h2>What to do with this now</h2>
+        <ul>
+          <li><strong>Upgrade Unsloth to 2026.6.9 or later if you ran Studio.</strong> There is no advisory and no CVE, so no tool will raise this for you. Check installed versions by hand across notebooks, Colab instances, shared GPU boxes, and container images &mdash; anywhere <code>pip install unsloth</code> happened without a version pin.</li>
+          <li><strong>Treat an unpatched Studio host as a credential exposure, not a hygiene item.</strong> If an unpatched instance selected models from repositories you do not control, rotate the Hugging Face tokens, SSH keys, and cloud credentials reachable from that process, and review training and export artifacts produced on it.</li>
+          <li><strong>Audit your own code for the sink.</strong> Grep your ML tooling for <code>trust_remote_code=True</code> as a default parameter value or a hardcoded literal. The pattern that keeps producing CVEs is specifically an internal path setting it where the user-facing control says otherwise &mdash; the user&rsquo;s setting should be the only one that can turn it on.</li>
+          <li><strong>Draw the boundary at inspection, not at loading.</strong> The lesson that distinguishes this case from its three predecessors is that metadata reads can be execution. Any operation your tooling presents as &ldquo;just looking&rdquo; &mdash; listing capabilities, probing vision support, rendering a model card &mdash; must not reach a path that can import repository code.</li>
+          <li><strong>Do not count Hub scanning as a control.</strong> It is best-effort by design and blind to staged loaders that are benign at rest. Treat model repositories as untrusted code, and assume a clean scan means nothing about what runs at execution time.</li>
+          <li><strong>Note the gap, not just the bug.</strong> &ldquo;Beta&rdquo; components distributed inside GA packages are a recurring blind spot in vulnerability management. If a maintainer declines an advisory for something that shipped to everyone via the standard install, your inventory is the only place that fact can be recorded.</li>
+        </ul>
+
+        <h2>Sources</h2>
+        <ul>
+          <li><a href="https://www.pillar.security/blog/look-dont-load-model-inspection-in-unsloth-studio-leads-to-critical-arbitrary-code-execution?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Pillar Security &mdash; &ldquo;Look, Don&rsquo;t Load: Model Inspection in Unsloth Studio Leads to Critical Arbitrary Code Execution&rdquo;</a> (Ariel Fogel, 29 September 2026; code locations in <code>model_config.py</code> at commit d91183d, HTTP probe endpoints, PoC <code>auto_map</code> config, maintainer response, fix shipped 18 June 2026, re-tested on 2026.6.9, no CVE assigned)</li>
+          <li><a href="https://pypi.org/project/unsloth/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">PyPI &mdash; <code>unsloth</code> project</a> (release history; 2026.6.9 uploaded 22 June 2026 &mdash; the version Pillar re-tested)</li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-46432?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD &mdash; CVE-2026-46432</a> (LMDeploy; CVSS 3.1 7.8 High; CWE-94; 0.12.3 and prior; published 10 June 2026)</li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-4944?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD &mdash; CVE-2026-4944</a> (vLLM 0.14.1; CVSS 3.0 8.8 High; bypasses <code>--trust-remote-code=False</code>; published 28 May 2026)</li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-6859?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">NVD &mdash; CVE-2026-6859</a> (InstructLab <code>linux_train.py</code>; CVSS 3.1 8.8 High; CWE-829)</li>
+          <li><a href="https://thehackernews.com/2026/10/threatsday-ai-powered-zero-day-chain.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">The Hacker News &mdash; ThreatsDay bulletin</a> (Ravie Lakshmanan, 1 October 2026; independent summary of the Unsloth Studio finding and the 2026.6.9 fix)</li>
+          <li><a href="/posts/2026/05/vllm-cve-2026-4944-hardcoded-trust-remote-code-rce/">al-ice.ai &mdash; vLLM&rsquo;s hardcoded trust_remote_code RCE</a> (May 2026; the aggravator pattern)</li>
+          <li><a href="/posts/2026/05/lmdeploy-cve-2026-46517-trust-remote-code-hardcoded/">al-ice.ai &mdash; LMDeploy&rsquo;s hardcoded trust_remote_code</a> (May 2026; the sink pattern)</li>
+          <li><a href="/posts/2026/04/red-hat-rhel-ai-instructlab-cves-path-traversal-trust-remote-code/">al-ice.ai &mdash; Red Hat RHEL AI and InstructLab CVEs</a> (April 2026)</li>
+          <li><a href="/posts/2026/06/cve-2026-4372-huggingface-transformers-config-injection-rce/">al-ice.ai &mdash; Hugging Face transformers config-injection RCE</a> (June 2026; the config-as-code surface)</li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/openhands-agent-canvas-session-key-lan-disclosure-unreleased-fix/">Fixed in main on 29 September, Still Shipping on npm: Agent Canvas Publishes Its Own Session Key</a></h3><p>A LAN-reachable landing page in OpenHands Agent Canvas hands any peer on the network a full-privilege Session API Key in plaintext HTML, and that key unlocks command execution on the host. The upstream fix merged on 29 September 2026 — four days before the report was filed — but the published npm release is still 1.24.0 from 25 September, and the 1.25.0 release PR is open. The fix exists and nobody has it.</p><a class="text-link" href="/posts/2026/10/openhands-agent-canvas-session-key-lan-disclosure-unreleased-fix/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">The Code Comment Named the Gap, and the Gap Shipped — CVE-2026-102437 Turns a Git Diff Into Agent RCE</a></h3><p>GitLab’s Threat Research Group disclosed CVE-2026-102437 on 29 September 2026: Reasonix Studio’s git wrapper neutralises core.fsmonitor, maintenance.auto, diff.external and textconv on every call, but never filter.&lt;driver&gt;.clean — a gap its own code comment documented. Viewing a file diff in a poisoned repo runs attacker code. Fixed in Studio 2.21.0 and npm reasonix 1.39.3, alongside four more advisories in the same batch.</p><a class="text-link" href="/posts/2026/10/gitlab-reasonix-cve-2026-102437-filter-clean-git-config-agent-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/gtig-vulnerability-discovery-exploitation-trends-ai-era/">Half of What AI Finds Is RCE — Inside Google’s Doubled Disclosure Year</a></h3><p>A 1 October 2026 report from Google Threat Intelligence Group finds monthly CVE disclosures doubled from 5,045 in January to 10,740 in August 2026, while only 0.23% of disclosures were ever exploited. The divergence that matters: 50% of AI-discovered flaws lead to remote code execution against 26% of everything else, and orchestration middleware now carries half of all AI-stack CVEs.</p><a class="text-link" href="/posts/2026/09/gtig-vulnerability-discovery-exploitation-trends-ai-era/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
