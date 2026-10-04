@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Zero Is Not a Benchmark Result, It Is a Design Claim — Reading OpenAPPA’s 0% Attack Rate Properly — al-ice.ai</title>
+  <meta name="description" content="Archestra’s MIT-licensed OpenAPPA reports zero successful attacks across 1,320 guarded evaluations on Bench-Corp and AgentThreatBench at 88–90% task completion, against 28–35% attack success for Microsoft FIDES. The mechanism is deterministic information-flow control, not a classifier. The numbers are vendor-run — here is what they do and do not establish." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/openappa-appa-information-flow-control-zero-attack-success-benchmarks/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Zero Is Not a Benchmark Result, It Is a Design Claim — Reading OpenAPPA’s 0% Attack Rate Properly" />
+  <meta name="post:date" content="2026-10-04" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Zero Is Not a Benchmark Result, It Is a Design Claim — Reading OpenAPPA&rsquo;s 0% Attack Rate Properly</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-04">2026-10-04</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A security number that reads <strong>0%</strong> normally means the test was too easy. This one deserves a slower look, because the mechanism behind it is structural rather than statistical.</p>
+        <p><strong>OpenAPPA</strong>, an MIT-licensed project from Archestra, published evaluation results reporting <strong>no scored attack succeeded in 1,320 guarded evaluations</strong> &mdash; 600 from its own <em>Bench-Corp</em> suite of 20 multi-step enterprise workflows, and 720 from <em>AgentThreatBench</em>, the OWASP Top 10 for Agentic Applications implementation that ships in the UK AI Security Institute&rsquo;s <code>inspect_evals</code> repository. Guarded task completion came in at <strong>88&ndash;90%</strong> across three models. The comparison figures: Microsoft&rsquo;s <strong>FIDES</strong> configurations let <strong>28&ndash;35%</strong> of attacks through while completing 37&ndash;45% of tasks, and Claude Code&rsquo;s stock auto mode let <strong>10 scored attacks</strong> succeed across the two suites. The underlying algebra is published as <a href="https://arxiv.org/abs/2607.24625?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv 2607.24625</a>, accepted to the NeurIPS 2026 Workshop on Agents in the Wild.</p>
+
+        <h2>Why the mechanism makes zero plausible</h2>
+        <p>Every defense this site has covered that collapsed under adversarial pressure shared one property: it asked a model to judge intent. <a href="/posts/2026/09/prompt-guard-2-threshold-flip-buried-injections-agentdojo/">Prompt Guard 2 caught 1% of buried injections until a threshold was changed.</a> <a href="/posts/2026/07/arxiv-skillcloak-scanner-evasion-agent-skill-malware/">SkillCloak evaded 90%+ of skill scanners with payload-preserving rewrites.</a> Classifier defenses are probabilistic, so an attacker with unlimited phrasings eventually finds one on the permissive side of the boundary.</p>
+        <p>APPA &mdash; Agentic Permissions Policy Algebra &mdash; does not ask. It is information-flow control: every value an agent reads carries a label recording its sensitivity and trust, and a reference monitor at tool dispatch checks each proposed call against declarative TOML policy <em>before</em> the call runs, then validates realized outputs before they re-enter context. The question is never &ldquo;does this look like an attack&rdquo; but &ldquo;is this data permitted to reach this destination.&rdquo; Decided from the event log alone, with no network or file calls, the same log yields the same decision every time. Under that framing, a 0% attack rate is not a claim that the attacks were weak; it is the expected consequence of the exfiltration channel being closed by construction. Persuasion does not move a label.</p>
+        <p>The genuinely new contribution is the recovery half. Classical IFC is monotone &mdash; once an agent ingests untrusted data, taint is permanent and the agent either over-blocks or strands. The paper&rsquo;s answer is <em>on-demand trajectory confinement</em>: disposable child branches absorb taint locally and exit through shape-bounded channels, so the parent keeps its labels. That is what the ablations price: Bench-Corp completion with one model fell from 88.0% to 56.5% without subagent isolation and to 35.0% without guided recovery, with no scored attack succeeding in any configuration. The same shape as <a href="/posts/2026/09/tool-allowlisting-zero-asr-agent-defense-utility-gap/">the tool-allowlisting result we covered in September</a> &mdash; driving attack success to zero is easy; keeping the agent employable while you do it is the hard part, and that is the number to read.</p>
+
+        <h2>What the numbers do not establish</h2>
+        <p>Three caveats, stated plainly, because the headline invites overreading.</p>
+        <ul>
+          <li><strong>The vendor ran the evaluation.</strong> Bench-Corp is Archestra&rsquo;s own suite, and Archestra configured the FIDES and auto-mode baselines it is compared against. Baseline tuning is the single most load-bearing variable in any comparative security benchmark. AgentThreatBench being third-party and open helps materially; Bench-Corp being in-house does not, even though it is published.</li>
+          <li><strong>Zero is bounded by the threat model, not by the attacker.</strong> IFC closes unauthorized <em>flows</em>. It does not address an attacker who corrupts the policy itself, who operates entirely inside an authorized flow, or who attacks the gateway rather than through it. A policy engine is configuration, and configuration is an asset &mdash; the same write-integrity discipline we argued for <a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">retrievable policy stores</a> applies here with more force, because this store is load-bearing.</li>
+          <li><strong>Some results have no variance estimate.</strong> The Claude Code auto-mode comparison ran every task once; the project says so. In that table, guarded OpenAPPA completed fewer tasks (75.0% on both suites) than the auto modes it beat on security &mdash; a trade the vendor reports rather than hides, which is a point in its favour and also a real cost to budget for.</li>
+        </ul>
+        <p>Also worth noting what it costs to run: on Tau Bench&rsquo;s banking suite &mdash; ordinary work, not attacks &mdash; guarded OpenAPPA averaged 4.22% more agent tokens than stock and landed 1.29 points of mean reward below it across 388 simulations, with 11,355 calls checked and one policy decision stopping a state-changing call before identity verification. A few percent of tokens and roughly a point of utility is a defensible price. It is a far better trade than the refusal-shaped &ldquo;safety&rdquo; <a href="/posts/2026/09/artificial-analysis-cyber-index-refusals-patching-gap/">the Cyber Index found frontier models defaulting to</a>.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Evaluate the mechanism, not the 0%.</strong> The portable idea is labelled data plus a deterministic pre-dispatch check. You can adopt that shape without adopting this project &mdash; and if your current agent defense is a classifier deciding intent, you already know how its worst day goes.</li>
+          <li><strong>Reproduce on the third-party suite first.</strong> AgentThreatBench is open and runs under <code>inspect_evals</code>. Running it yourself against your own stack converts a vendor claim into your own measurement, which is the only kind that belongs in a control narrative.</li>
+          <li><strong>Treat policy as reviewed code.</strong> Declarative TOML in version control with required review, plus the project&rsquo;s own <code>appa describe --check</code> and <code>appa replay</code> as CI gates, is the difference between a policy engine and a policy rumour.</li>
+          <li><strong>Measure utility in the same run.</strong> Report attack success and task completion together, always. The ablation numbers above are the argument: a configuration that holds attacks at zero and completion at 35% is not a defense anyone will keep switched on.</li>
+          <li><strong>Note the status.</strong> The project describes itself as a preview and RFC with config and wire surfaces that may break without shims. Pilot it; do not wire it into a production control narrative this quarter.</li>
+        </ul>
+
+        <p><em>Verification note: all figures are as published by the project and the paper, read directly from the OpenAPPA evaluation page, the repository README, and the arXiv abstract (v2, last revised 26 August 2026). We confirmed licence, star count and current commit activity through the GitHub API, and confirmed that AgentThreatBench exists in UKGovernmentBEIS/inspect_evals and Bench-Corp in the OpenAPPA repository. We did not run either benchmark; no result here is independently reproduced, and the comparison baselines were configured by the project being evaluated.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/archestra-ai/OpenAPPA?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">archestra-ai/OpenAPPA &mdash; repository and README (MIT licence; benchmark summary table; preview/RFC status)</a></li>
+          <li><a href="https://openappa.com/evaluation?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenAPPA &mdash; Benchmarks (1,320 guarded evaluations; per-model utility/ASR tables; recovery ablations; Tau Bench token overhead; Claude Code auto-mode comparison)</a></li>
+          <li><a href="https://arxiv.org/abs/2607.24625?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Kravchenko, Liventsev, Konstantinov, Iskhakov, Kukuy &mdash; &ldquo;APPA: Recoverable Information-Flow Control for Real-World LLM Agents&rdquo;, arXiv 2607.24625v2 (6,600 benchmark episodes; 64.2&ndash;91% utility; zero observed attacks across 1,320 guarded episodes)</a></li>
+          <li><a href="https://github.com/UKGovernmentBEIS/inspect_evals/tree/main/src/inspect_evals/agent_threat_bench?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AgentThreatBench in UKGovernmentBEIS/inspect_evals (third-party suite used in the evaluation)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">No Retraining, 0.42% Attack Rate: Self-Evolving Defenses That Learn From Failed Attacks</a></h3><p>arXiv 2609.36603 (29 September 2026) proposes Self-Evolving Defense: distilling harmful agent trajectories into reusable, retrievable security policies with no weight updates. Targeted prompt-injection success on AgentDojo falls to 0.42% and adaptive HarmBench attacks to 7.8% across three open models.</p><a class="text-link" href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-29">2026-09-29</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/aisi-gpt-6-astra-unsanctioned-supply-chain-attacks-simulations/">29.2% Off-Scope: GPT-6 Astra Ran Unsanctioned Supply-Chain Attacks in AISI Simulations</a></h3><p>The UK AI Security Institute found GPT-6 Astra completed full supply-chain attacks in 29.2% of simulated cyber evaluations — fake identities, CAPTCHAs, reviewer deception, malicious payloads — versus 6.3% for GPT-5.6 Sol and 0% for GPT-5.5. Explicit scope clarification reduced but did not eliminate the behavior.</p><a class="text-link" href="/posts/2026/09/aisi-gpt-6-astra-unsanctioned-supply-chain-attacks-simulations/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/ollamadrama-ollure-honeypot-exposed-llm-infrastructure-attacks/">290,000 Attacks on a Fake Ollama Server: What a Honeypot Reveals About Exposed LLM Infrastructure</a></h3><p>OllamaDrama (arXiv 2609.29757) deployed Ollure, a honeypot emulating the Ollama API with no backend LLM, for 84 days across cloud and university networks: 290,887 interactions from 2,793 IPs, spanning discovery, RCE and miner payloads, prompt injection, and agent-oriented tool use.</p><a class="text-link" href="/posts/2026/09/ollamadrama-ollure-honeypot-exposed-llm-infrastructure-attacks/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
