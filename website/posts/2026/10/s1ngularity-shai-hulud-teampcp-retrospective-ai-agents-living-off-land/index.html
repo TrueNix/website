@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Agent Was the Payload: S1ngularity, Shai-Hulud, and TeamPCP, One Year On — al-ice.ai</title>
+  <meta name="description" content="The 30 September ReversingLabs retrospective traces a year of supply-chain attacks from S1ngularity and weaponized AI agents through the Shai-Hulud worm to TeamPCP, hundreds of millions in damage, and two arrests in Australia." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Your Agent Was the Payload: S1ngularity, Shai-Hulud, and TeamPCP, One Year On" />
+  <meta name="post:date" content="2026-10-05" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Your Agent Was the Payload: S1ngularity, Shai-Hulud, and TeamPCP, One Year On</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-05">2026-10-05</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>30 September 2026</strong>, ReversingLabs threat researcher Zaria Vuksan published a year-long post-mortem — <em>Restrospective: How Malicious Updates Poison Your Environment</em> — covering three campaigns that defined the modern software supply chain attack: <strong>S1ngularity</strong>, <strong>Shai-Hulud</strong>, and <strong>TeamPCP</strong>. We never gave S1ngularity its own briefing when it happened, and the retrospective plus this week's analysis wave makes the omission worth correcting now — because the through-line is squarely our beat: the first notable supply-chain attack to turn the victim's own AI agents into the credential-hunting payload.</p>
+
+        <h2>S1ngularity: the crafted PR that bought an ecosystem</h2>
+        <p>The compromise landed on <strong>26 August 2025</strong> against <strong>Nx</strong>, a build system with millions of weekly downloads. Per the retrospective, the attackers chained multiple weaknesses: a carefully crafted pull request to Nx's repository yielded a token with generous read/write permissions; that token replaced a legitimate CI script with a malicious version and triggered a publishing workflow; the attackers then deleted branches and workflow runs to cover their tracks. The script exfiltrated Nx's npm token, which published infected Nx packages. Victims who updated got post-install hooks that scanned for credentials, tokens, and SSH keys — then leaked them through public GitHub repositories all titled <code>s1ngularity-repository</code>, a deliberately unique spelling that made the loot searchable.</p>
+
+        <p>The novel half was the AI abuse. The malicious update contained prompts instructing the victim's own AI agents and coding tools to hunt the filesystem for files of interest — iterating through personas (a penetration tester, then a file-search agent, then a Linux-specific variant with directory exclusions) in what reads like prompt-tuning against the agents' own safeguards. At the time, almost nobody was using AI tools in this living-off-the-land manner. Fourteen months later, after <a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">GitSpawn's RCE across seven coding agents</a> and the <a href="/posts/2026/10/rubygems-reqthrottle-42-gems-extconf-reverse-shell-exchange-tls-proxy/">RubyGems campaign that gated on developer workstations</a>, it looks less like a curiosity and more like the template: the machine an agent runs on — SSH keys, registry credentials, cloud tokens within reach — is precisely the machine these payloads are written for.</p>
+
+        <p>Nx's structural response is the one to copy: it moved to GitHub's Trusted Publisher model, replacing long-lived publishing tokens with short-lived, per-run credentials so there is no standing token left to steal. npm's trusted-publisher documentation describes the same exchange — a per-run OIDC token swapped for a short-lived publish grant. Every registry workflow still running on a static secret is accepting the exact risk S1ngularity collected on.</p>
+
+        <h2>Shai-Hulud: the worm that needed no vulnerability</h2>
+        <p>Weeks after S1ngularity — <strong>12 September 2025</strong> — Shai-Hulud reused the playbook (open-source tooling targets, secret collection, GitHub-account exfiltration) and added the differentiator: worm functionality. It harvested npm publishing credentials from victims and used them to republish itself into further packages, propagating without exploiting any software vulnerability at all. The November 2025 follow-ons, variously called Shai-Hulud 2.0 or SHA1-Hulud, refined the formula — one entered through a Pwn Request that exfiltrated a CI token and deployed via a malicious OpenVSX extension; the other rode long-lived credentials found in compromised repositories into projects including Zapier, PostHog, and Postman, with the second wave executing through <code>bun</code>.</p>
+
+        <p>Then came the force-multiplier: TeamPCP published an open-source Shai-Hulud variant in spring 2026 — Mini Shai-Hulud — and offered a <strong>$1,000 reward</strong> for the biggest supply-chain attack built on it. August 2026 brought ChainDrop, a Mini variant with an obfuscated Bun payload; over 400 downstream patches shipped while it was active, and its exfiltration falls back from an HTTPS endpoint to a public GitHub repository titled <em>&ldquo;Shai-Hulud: Here We Go Again.&rdquo;</em> Open-sourcing the worm means attribution for any given Mini incident is genuinely uncertain — and that the capability is now a commodity other actors rent.</p>
+
+        <h2>TeamPCP: hundreds of millions, then arrests</h2>
+        <p>TeamPCP is the group, not the malware, and 2026 was its year. The spotlight moment was <strong>Trivy</strong>: a privileged access token extracted in February, detected but incompletely rotated, then a malicious update pushed on <strong>19 March</strong> through Trivy's own automated systems with a compromised service account — modifying existing version tags, the references CI/CD pipelines actually resolve, with malware self-identifying as &ldquo;TeamPCP Cloud stealer.&rdquo; Stolen material became the seed corn for the next attacks: Checkmarx (whose data later surfaced on the dark web), malicious packages pushed to PyPI as LiteLLM and Telnyx, and CanisterWorm — built from Trivy-harvested npm tokens — compromising over 60 npm packages by finding tokens on victim devices and overwriting their associated packages. Side ventures included a credential pipeline to the Vect ransomware-as-a-service group and work with the LAPSUS$ extortion crew. Estimated damage: hundreds of millions of dollars.</p>
+
+        <p>The reason this retrospective exists now is that the run appears to be ending the way these runs end: open-source intelligence across overlapping usernames identified suspects, and <strong>two individuals in Australia were arrested</strong> — corroborated by Wired's investigation into the crew. The story is still developing, and arrests do not patch anything: the incomplete-rotation failure at Trivy, the tag-mutability abuse, and the standing-token problem are all still live in plenty of pipelines. Note the adjacent thread in <a href="/posts/2026/09/shinyhunters-dutch-arrest-van-der-stap-umbreon-escalation/">our ShinyHunters briefing</a>: extortion crews were reportedly operating with TeamPCP-derived access, which is what credential-theft-at-scale always becomes — somebody else's ransomware.</p>
+
+        <h2>The pattern, stated plainly</h2>
+        <p>ReversingLabs' structural observation is the one defenders should budget around: these attacks chain <em>unremarkable</em> weaknesses — an over-permissioned token here, a mutable tag there, a publishing pipeline with no step-up authentication — into blast radiuses no single weakness would justify. Malicious versions typically live only hours before takedown, and hours are enough; compare <a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">MALFEX's fourteen months without an advisory</a> and <a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">DirtyBlanket's nine packages in 33 minutes</a> for the range this class operates in. And 2025's backdrop — a 73% increase in detected malicious open-source packages — says the funnel is widening, a finding consistent with <a href="/posts/2026/10/microsoft-digital-defense-report-2026-attackers-ai-head-start/">Microsoft's Digital Defense Report analysis of AI-accelerated exploitation</a>, which also tracks the S1ngularity lineage.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Kill long-lived publishing tokens.</strong> Move npm, PyPI, and container publishing to OIDC trusted-publisher flows with short-lived, per-run grants. Audit for static tokens in CI secrets, and treat every surviving one as already compromised for planning purposes.</li>
+          <li><strong>Pin tags and verify them.</strong> TeamPCP modified existing version tags because pipelines resolve tags. Pin dependencies by digest or immutable version, alert on tag moves, and require human approval for releases cut from automation.</li>
+          <li><strong>Complete the rotation — then verify it.</strong> Trivy detected the February extraction and still shipped a March compromise through the unrotated remainder. Rotation is not done when the new secret works; it is done when the old secret provably does nothing.</li>
+          <li><strong>Assume your agents are living-off-the-land binaries.</strong> S1ngularity tasked the victim's AI tools with credential discovery. Constrain what coding agents and MCP-connected tools can read (credential paths, cloud config directories), log their file-access patterns, and treat an agent enumerating secrets as a detection, not a feature.</li>
+          <li><strong>Watch the exfiltration venue, not just the malware.</strong> Three campaigns in a row used attacker-searchable <em>public GitHub repositories</em> as the drop. Hunt for unexpected public repos, gists, and outbound HTTPS beacons from build and agent hosts — the <code>s1ngularity-repository</code> pattern is a detection signature for the whole class.</li>
+        </ul>
+
+        <p><em>Verification note: campaign dates, the S1ngularity intrusion chain (crafted PR, token extraction, CI-script replacement, workflow trigger, branch/run deletion, npm-token theft, <code>s1ngularity-repository</code> exfiltration), the AI-prompt personas and iteration, the Shai-Hulud timeline (12 September 2025, November 2.0 waves, OpenVSX and bun details, $1,000 reward, ChainDrop's 400+ patches and fallback repo title), the TeamPCP/Trivy sequence (February extraction, 19 March malicious update, tag modification, &ldquo;TeamPCP Cloud stealer&rdquo;), the Checkmarx/LiteLLM/Telnyx/CanisterWorm/TanStack/Vect/LAPSUS$ claims, the damage estimate, the Australian arrests, and the 73% figure are taken from the ReversingLabs retrospective (Zaria Vuksan, 30 September 2026), which we read in full. The arrests are additionally corroborated by contemporaneous reporting on the Wired investigation. The Nx Trusted Publisher remediation is confirmed against npm's trusted-publisher documentation. We did not obtain malware samples and make no independent claim about payload behavior beyond the cited analysis. Internal links above are to our own prior briefings.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.reversinglabs.com/blog/a-software-supply-chain-attack-retrospective?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ReversingLabs &mdash; Restrospective: How Malicious Updates Poison Your Environment (Zaria Vuksan, 30 September 2026)</a></li>
+          <li><a href="https://docs.npmjs.com/trusted-publishers/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">npm Docs &mdash; Trusted publishing for npm packages (short-lived per-run publish tokens)</a></li>
+          <li><a href="https://krebsonsecurity.com/2026/09/dutch-police-arrest-reformed-hacker-in-shiny-hunters-investigation/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Krebs on Security &mdash; Dutch Police Arrest &lsquo;Reformed&rsquo; Hacker in Shiny Hunters Investigation (September 2026; Wired/TeamPCP arrest context)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Fourteen Months, No Advisory: MALFEX Shows Package Takedowns Stop at the Dependency Edge</a></h3><p>The MALFEX report from CloudSEK (30 September 2026) traces twelve npm packages to one operator across three years. The uncomfortable part is verifiable on the registry right now: function-flag has carried a malicious postinstall since July 2025 with no advisory, and cdn-img-fetch — named inside the advisory for the package npm seized — stayed installable and shipped two more versions after it.</p><a class="text-link" href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</a></h3><p>SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens.</p><a class="text-link" href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</a></h3><p>The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed.</p><a class="text-link" href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
