@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>42 Gems in One Hour, and a Root CA for 30 Exchanges — al-ice.ai</title>
+  <meta name="description" content="On 5 October 2026 a RubyGems account published 42 malicious gems in about an hour. The payload hides in extconf.rb, runs during bundle install, refuses to execute in CI, and ships a second stage with its own root certificate and per-exchange TLS keys for binance.com, coinbase.com, kraken.com and 27 more. The account now reads 0 gems and 7,295 downloads." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/rubygems-reqthrottle-42-gems-extconf-reverse-shell-exchange-tls-proxy/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="42 Gems in One Hour, and a Root CA for 30 Exchanges" />
+  <meta name="post:date" content="2026-10-05" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">42 Gems in One Hour, and a Root CA for 30 Exchanges</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-05">2026-10-05</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 October 2026</strong>, a RubyGems account named <code>reqthrottle_3474</code> &mdash; profile display name <em>&ldquo;Ghost Dev&rdquo;</em> &mdash; published <strong>42 malicious gems in roughly one hour</strong>. Two independent analyses landed the same day: SafeDep&rsquo;s writeup by Kunal Singh, and an OpenSourceMalware report tagged <code>#rubygems-btc-shell</code>. They agree on the account, the payload file, the command-and-control host, and the delay. Where they differ is instructive, and we will come to that.</p>
+
+        <p>The naming strategy is two-layered. Twenty-six gems are plausible-sounding crypto developer utilities that never existed &mdash; <code>eth-keystore-utils</code>, <code>bip39-wordlist-utils</code>, <code>btc-wallet-tools</code>, <code>hdkey-derive-helper</code>, <code>lightning-invoice-utils</code>, <code>merkle-proof-lite</code>. The last sixteen are typosquats of real gems: <code>bitcion</code>, <code>bitciin</code>, <code>bitcoij-ruby</code>, <code>etheremu.rb</code>, <code>etherdum.rb</code>, <code>kecack</code>, <code>keccka</code>, <code>solaan-ruby</code>, and three mutations each of <code>lightning-invoice</code> and <code>crypto-toolbox</code>. Four more pose as rate-limiting middleware (<code>req-throttle-mini</code>, <code>throttle-requests</code>, <code>rate-limit-mini</code>, <code>request-guard</code>), which is where the account name comes from and what the malicious extension directory is called: <code>ext/req_throttle_mini/</code>.</p>
+
+        <h2>The install hook nobody audits</h2>
+        <p>Ruby has an install-time execution path that gets far less scrutiny than npm&rsquo;s <code>preinstall</code> and <code>postinstall</code>, and it is not optional in the same way. A gemspec may declare a native extension; during <code>gem install</code> or <code>bundle install</code>, RubyGems runs that extension&rsquo;s <code>extconf.rb</code> through the Ruby interpreter to produce a Makefile. All 42 gems declare one:</p>
+        <blockquote><p><code>extensions:<br />- ext/req_throttle_mini/extconf.rb</code></p></blockquote>
+
+        <p>The file ends with ordinary-looking <code>mkmf</code> and <code>create_makefile</code> calls, so the build succeeds and the install completes without a visible error. Everything above those lines is the attack. This is the same trust boundary we described in the <a href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Angular typosquat wave</a> and the <a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">DirtyBlanket Express worm</a>: adding the dependency <em>is</em> the exploit. No import, no code path reached, no build step of your own. And unlike npm, where <code>--ignore-scripts</code> disables the class wholesale, a Ruby native extension is a legitimate and common thing for a gem to have.</p>
+
+        <h2>It checks whether you are worth attacking</h2>
+        <p>What makes this campaign more than ordinary squatting is the gating. Per OpenSourceMalware&rsquo;s analysis, before doing anything the payload tests whether it is running in CI, in a sandbox, in a directory that looks like analysis infrastructure, or under a generated-looking test username. If any of those match, it does nothing. It then looks for the opposite signal &mdash; evidence of a real workstation: SSH keys, a Git configuration, npm credentials, RubyGems credentials, Bundler data. Only if that passes does it fork into the background, detach from the terminal, and sleep for <strong>20 to 40 minutes</strong>.</p>
+
+        <p>Three consequences follow, and they are the practical story:</p>
+        <ul>
+          <li><strong>Your scanner is the intended audience for the silence.</strong> A CI-based dependency check, a sandboxed install in a container, or an automated malware pipeline sees a gem that builds cleanly and exits. Benign-by-observation is now a deliberate output, not an absence of evidence. SafeDep states this plainly: the gems do nothing in CI or in a sandbox.</li>
+          <li><strong>The delay breaks causal attribution.</strong> By the time a reverse shell opens, the developer has installed other things, run a test suite, switched branches. Nothing in the process tree points back at <code>bundle install</code>.</li>
+          <li><strong>The workstation checks are also a value filter.</strong> A machine with SSH keys, Git config and registry credentials is a machine worth a shell. The detection logic and the targeting logic are the same code.</li>
+        </ul>
+
+        <h2>Two variants, one C2</h2>
+        <p>Eleven gems carry a base64-encoded reverse shell. It connects to <strong>45.138.12[.]177</strong>, attaches the socket to <code>/bin/sh</code>, and retries every 30 seconds on failure. Here the two reports diverge on a detail worth recording rather than smoothing over: SafeDep lists <strong>ports 8089 and 8090</strong>, OpenSourceMalware describes port <strong>8090</strong> only. Either both ports are in use across the eleven samples or one report generalised from a subset; we did not obtain the gem artefacts to adjudicate, and we are not going to guess. Block both.</p>
+
+        <p>The other thirty-one are downloaders. The payload stores its URL as a hex string XOR-encoded with a four-byte key, which both reports publish in decoded form; it resolves to <code>hxxp://45.138.12[.]177:8092/wgkit.tar.gz</code>. The fetch is a plain <code>curl</code> into <code>/tmp/.w1.tgz</code>, extracted to <code>/tmp/.w1/</code>, with <code>wg_install.sh</code> executed under bash and the files deleted afterward.</p>
+
+        <p>Two environment variables in that code are the tell of a working operator rather than a copy-paste kit: <code>WG_KIT_URL</code> overrides the download URL, and <code>WG_FAST</code> cuts the sleep from 20&ndash;40 minutes to two seconds. Those exist so the author can test the malware without waiting half an hour. They are also, usefully, high-fidelity detection strings.</p>
+
+        <h2>The second stage is a TLS interception kit</h2>
+        <p>SafeDep states that the contents of <code>wg_install.sh</code> are not known to them. OpenSourceMalware unpacked the archive and published its file listing, and this is the part that reframes the campaign. The archive contains <code>inject_proxy.py</code>, a local HTTP/HTTPS interception proxy bound to <code>127.0.0.1:8899</code>; <code>_grab.py</code>, which collects wallet material, scans user files and monitors the clipboard; a browser extension (<code>manifest.json</code>, <code>content.js</code>, <code>background.js</code>); a root certificate, <code>wg-ca.crt</code>; and a <code>tls/</code> directory holding roughly thirty per-host certificates.</p>
+
+        <p>That certificate list is the design document. It includes <code>binance.com</code>, <code>coinbase.com</code>, <code>kraken.com</code>, <code>bybit.com</code>, <code>okx.com</code>, <code>kucoin.com</code>, <code>bitfinex.com</code>, <code>gate.io</code>, <code>gemini.com</code>, <code>crypto.com</code>, <code>upbit.com</code>, <code>bitget.com</code>, <code>htx.com</code>, <code>mexc.com</code>, <code>lbank.com</code>, <code>bitstamp.net</code>, <code>bitbank.cc</code>, <code>coinone.co.kr</code>, <code>bit2me.com</code>, <code>bitoasis.net</code>, several smaller venues, plus <code>localhost</code> and <code>127.0.0.1</code>. Install the root CA into the local trust store, point traffic at the local proxy, and the browser shows a valid padlock on an exchange page whose withdrawal address has been rewritten in flight. The stated objective is exactly that: swap withdrawal addresses while the victim-facing page looks untouched, and sweep seed phrases, private keys and wallet files on the side.</p>
+
+        <p>So the gem is not the malware. The gem is a delivery mechanism for a man-in-the-middle appliance that happens to run on the victim&rsquo;s own machine, and the trust it needs is granted by a certificate it installs itself.</p>
+
+        <h2>What we verified ourselves, and what it means</h2>
+        <p>We queried RubyGems.org directly. The gem APIs for <code>bitcion</code>, <code>req-throttle-mini</code>, <code>eth-keystore-utils</code>, <code>kecack</code> and <code>wallet-backup-tool</code> all return <strong>HTTP 404</strong>; the owner API for <code>reqthrottle_3474</code> returns an empty array. The public profile for the account is still live and reports <strong>Total gems: 0</strong> alongside <strong>Total downloads: 7,295</strong>.</p>
+
+        <p>Those two numbers next to each other are the whole incident-response question. The gems are gone, which closes new installs. The download counter does not reset on yank, and RubyGems does not break it out per gem for removed packages. We therefore cannot say how many of those 7,295 were human developers versus mirrors, registry crawlers, security scanners and the researchers who analysed the campaign &mdash; and given that two vendors plus an automated detection engine pulled these samples the same day, a meaningful share is certainly automated. What we will not do is round it down to zero. A campaign that deliberately refuses to run in CI, waits half an hour, and ships exchange certificates was not built to harvest crawler traffic.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Search for the indicators, not the names.</strong> Grep lockfiles, <code>Gemfile.lock</code>, shell history, and host telemetry for <code>45.138.12.177</code>, <code>wgkit.tar.gz</code>, <code>/tmp/.w1</code>, <code>wg_install.sh</code>, <code>WG_KIT_URL</code>, <code>WG_FAST</code> and the extension path <code>ext/req_throttle_mini/extconf.rb</code>. Names are disposable; these are not.</li>
+          <li><strong>Audit your local trust store, now.</strong> This is the step most teams will skip. Enumerate non-standard root certificates on developer machines and look for anything resembling <code>wg-ca.crt</code>, plus any process listening on <code>127.0.0.1:8899</code>. A rogue root CA survives removing the gem.</li>
+          <li><strong>Treat a reverse-shell hit as full credential compromise.</strong> SafeDep&rsquo;s guidance is correct and worth repeating: if a workstation installed one of these, the machine and every credential on it are compromised. Rotate SSH keys, registry tokens, cloud keys and &mdash; because the kit explicitly hunts them &mdash; move any wallet seed material to hardware that never touched the host.</li>
+          <li><strong>Stop treating a clean sandbox result as a verdict.</strong> Environment-aware malware inverts the meaning of &ldquo;nothing happened.&rdquo; Pair dynamic analysis with static review of install-time hooks, and flag gems that declare native extensions they have no plausible need for &mdash; a BIP-39 wordlist library does not require a C compiler.</li>
+          <li><strong>For agent and coding-agent fleets, assume resolution is execution.</strong> An agent that installs a gem it inferred from a README or an error message runs <code>extconf.rb</code> with the agent&rsquo;s privileges on a host that, by construction, has SSH keys and registry credentials sitting right where the payload looks for them. That is the same install-time boundary behind <a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">GitSpawn&rsquo;s RCE across seven coding agents</a>, and these gates were written for exactly the machine an agent runs on.</li>
+        </ul>
+
+        <p><em>Verification note: we read the SafeDep analysis (Kunal Singh, 5 October 2026) and the OpenSourceMalware report (5 October 2026) in full, taking the account name, gem list and versions, the <code>extconf.rb</code> extension path, the decoded downloader payload, the C2 address, the 20&ndash;40 minute delay, the environment-check behaviour and the second-stage archive listing from those two primary analyses. We independently queried the RubyGems.org API for five of the 42 gem names (all HTTP 404), the owner API for <code>reqthrottle_3474</code> (empty), and the account&rsquo;s public profile page, from which the &ldquo;Ghost Dev&rdquo; display name, 0 gems and 7,295 total downloads are taken directly. We did not download, unpack or execute any gem, the <code>wgkit.tar.gz</code> archive, or any payload, and we make no claim beyond the published analyses about what the second stage does at runtime. The port discrepancy between the two reports (8089/8090 versus 8090) is reproduced as found and not resolved. Defanged indicators are written in bracket notation deliberately.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://safedep.io/rubygems-crypto-gems-install-time-reverse-shell/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SafeDep &mdash; 42 Malicious RubyGems Open a Reverse Shell at Install Time (Kunal Singh, 5 October 2026; full package table, decoded downloader, IOCs)</a></li>
+          <li><a href="https://opensourcemalware.com/blog/malicious-crypto-shell?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenSourceMalware &mdash; Malicious Crypto Shell Packages Target RubyGems (5 October 2026; environment checks, second-stage archive listing, per-exchange TLS certificates)</a></li>
+          <li><a href="https://rubygems.org/profiles/reqthrottle_3474?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">RubyGems.org &mdash; profile of reqthrottle_3474 (queried 5 October 2026; 0 gems, 7,295 total downloads)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</a></h3><p>SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens.</p><a class="text-link" href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Fourteen Angular Typosquats in Four Hours, All Piping Code Through web.archive.org</a></h3><p>Between 23:17 UTC on 4 October and 03:33 UTC on 5 October 2026, OSV published malware advisories for fourteen npm packages impersonating @angular/core, @angular/cli and @angular/router. Thirteen share one install-time payload: curl piped into node, fetched from a gitflic.ru account through a web.archive.org proxy.</p><a class="text-link" href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Fourteen Months, No Advisory: MALFEX Shows Package Takedowns Stop at the Dependency Edge</a></h3><p>The MALFEX report from CloudSEK (30 September 2026) traces twelve npm packages to one operator across three years. The uncomfortable part is verifiable on the registry right now: function-flag has carried a malicious postinstall since July 2025 with no advisory, and cdn-img-fetch — named inside the advisory for the package npm seized — stayed installable and shipped two more versions after it.</p><a class="text-link" href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
