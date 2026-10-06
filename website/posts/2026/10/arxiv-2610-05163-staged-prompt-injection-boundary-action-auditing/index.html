@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary — al-ice.ai</title>
+  <meta name="description" content="A 4 October 2026 paper attacks Claude Code and Codex in their native runtimes with staged prompt injection across eight workflows, seven goals and six injection surfaces, then argues the only viable intervention point is immediately before each consequential action. Its training-free auditor reaches 86% block recall at a 6–8% false-block rate." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary" />
+  <meta name="post:date" content="2026-10-07" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-07">2026-10-07</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Most prompt-injection research assumes a shape of attack that is becoming obsolete: one poisoned document, one hijacked response, one measurable failure. <strong>arXiv:2610.05163</strong> — <em>"Blocking at the Boundary: Auditing Long-Horizon Agents against Staged Prompt Injection,"</em> submitted <strong>4 October 2026</strong> by Jingkai Liu, Yufei Han, Xiaoting Lyu, Wei Wang and Ting Yu — starts from the other end, with the agents people actually run, and the finding is less comfortable.</p>
+
+        <p>The authors name the threat <strong>staged prompt injection</strong>: an injection that exploits task-specific context, propagates across causally connected stages of a workflow, alters one consequential action, and <em>lets the workflow carry on</em>. Nothing crashes. The run completes. Somewhere in the middle, one tool call did something it should not have.</p>
+
+        <h2>They ran it against the real products</h2>
+        <p>This is not a simulated agent on a toy harness. The authors built an automated, feedback-guided attack-generation pipeline and pointed it at <strong>Claude Code and Codex in their native runtimes</strong>. The confirmed attacks span <strong>eight workflow scenarios, seven attack goals and six injection surfaces</strong>. The authors' conclusion, stated plainly in the abstract: production agents are vulnerable to context-aware, multi-step injection over long horizons.</p>
+
+        <p>That sentence is worth separating from the defence contribution, because it stands on its own and it is the part most readers should act on. Two coding agents that a very large number of engineering teams now run against untrusted repositories, issue trackers and web content were successfully attacked by an automated pipeline, repeatedly, across a wide matrix of surfaces. We have covered the <a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">single-shot version of this problem</a> — opening a hostile repository as direct RCE. Staged injection is the quieter sibling: no escape, no shell, just one altered action inside a run you will later read as successful.</p>
+
+        <h2>The argument about where to intervene</h2>
+        <p>The paper's structural claim is sharper than its attack results, and it is aimed squarely at how most deployed defences are wired.</p>
+
+        <p><strong>Input screening cannot work</strong>, because at ingestion time the injected content has not yet been composed with the context that makes it consequential. The text that will eventually steer a destructive tool call does not look like an attack when it arrives.</p>
+
+        <p><strong>Completed-run evaluation cannot work</strong>, because by the time the trajectory is scorable, the effect has landed. You get an accurate post-mortem of a push you already made.</p>
+
+        <p>Neither, in the authors' phrasing, can <em>locate the intervention point</em>. And existing pre-action methods are not directly comparable to each other because they use incompatible units and labels — some judge messages, some judge tool calls, some judge steps. So the authors formulate the problem properly: <strong>boundary action auditing</strong>. Given the initial context, a trajectory prefix, and a fully specified pending message or tool call, an auditor returns Pass or Block <em>before the effect occurs</em>. One decision, one well-defined unit, immediately before each consequential action.</p>
+
+        <p>To evaluate it they pair attacked and benign executions, which yields a <strong>479-pair, 3,112-unit benchmark</strong>. Pairing matters: it means the false-block rate is measured on the <em>same</em> workflows that produce the true blocks, rather than on a separate benign corpus that may differ in difficulty.</p>
+
+        <h2>Path-Aligned Attribution</h2>
+        <p>Their proposed auditor, <strong>PAA</strong>, is <em>training-free</em> — which, given what the last fortnight of evaluation research has established, is a design choice with real evidential value and not just an engineering convenience. PAA decomposes a pending action into its operative elements and traces, for each one, what supplied the value and what guided the decision. It blocks only when the model attributes an unwarranted, material effect on an element to an attacker-reachable source that either provides unqualified steering or conflicts with visible evidence.</p>
+
+        <p>That is a narrow and auditable condition. It is not "does this look suspicious." It is a provenance question about a specific argument of a specific call, with three conjunctive requirements — unwarranted, material, attacker-reachable — before a block fires.</p>
+
+        <h2>The numbers</h2>
+        <p>Under full-benchmark fail-open scoring with <strong>Claude Sonnet 5</strong> as the backend:</p>
+        <ul>
+          <li><strong>PAA: 86% Block recall at a 6–8% false-block rate.</strong></li>
+          <li><strong>ARGUS: 44–47% recall at a 16–33% false-block rate.</strong></li>
+        </ul>
+        <p>Roughly double the catch rate at a fraction of the interruption cost. On the subset of tool calls that all three auditors natively support, and with the same backend, the authors report PAA has higher recall and lower false-block rate than both <strong>VIGIL</strong> and <strong>ARGUS</strong>, with all paired 95% confidence intervals excluding zero.</p>
+
+        <p>Two things deserve credit here. The first is <strong>fail-open scoring</strong>: an auditor that errors, times out or returns nothing is counted as having passed the action. That is the honest choice, and it is the opposite of the convention that quietly inflates numbers by treating a crash as a block. The second is reporting paired confidence intervals at all, which remains rare in this literature.</p>
+
+        <h2>Reading it against the last two weeks</h2>
+        <p>We have now covered three papers in eight days that each undermine a different assumption behind published agent-security scores. <a href="/posts/2026/10/arxiv-2610-03448-injection-detector-benchmark-rank-transfer-training-overlap/">arXiv:2610.03448</a> showed injection-detector rankings collapsing once training-split overlap was controlled — 95.1 on one suite, 2.1 on another. <a href="/posts/2026/10/arxiv-2610-03585-threat-preserving-representation-sensitivity-agent-benchmarks/">arXiv:2610.03585</a> moved attack success by 11–13 points by renaming a tool, with a token-matched neutral control reproducing most of the shift. This paper adds a third: the <em>unit of evaluation</em> has been wrong, and pre-action defences have not been compared on a common one.</p>
+
+        <p>Those three findings interlock in a way that should make anyone cautious about the 86% figure too. A training-free auditor is structurally immune to the 03448 objection — there is no training split to overlap with. It is <em>not</em> immune to the 03585 objection, because PAA is a model-driven judgement over an action's surface representation, and a benchmark built by one team's attack pipeline carries that team's phrasing conventions. The right reading is that the comparison against VIGIL and ARGUS on this benchmark is credible and well-controlled, and that none of the absolute numbers should be carried into a different attack distribution without re-measuring.</p>
+
+        <p>It is also the third training-free or self-supervised approach this month to beat trained defences on their own ground, after <a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">Self-Evolving Defense's retrieval of distilled policies</a>. A pattern is forming, and it is not subtle: training-time defences keep paying for robustness with capability, while inference-time structure keeps not doing that. Whether that holds under adaptive attack is the question none of these papers can answer yet.</p>
+
+        <h2>What to take from it</h2>
+        <ul>
+          <li><strong>If your agent defence sits at ingestion, it is in the wrong place for this threat class.</strong> That is the paper's central claim and the argument for it is strong: context-dependent injections are not identifiable before the context exists.</li>
+          <li><strong>Instrument the action boundary, even without an auditor.</strong> The minimum viable version of this is logging the fully specified pending call with its argument provenance before execution. You cannot audit what you do not capture, and most agent logs today record the call after the fact.</li>
+          <li><strong>Demand fail-open numbers from vendors.</strong> Ask explicitly how an auditor error is scored. If a timeout counts as a block, the published recall is not measuring what you need.</li>
+          <li><strong>Watch the false-block rate as a deployment number, not a benchmark column.</strong> ARGUS's 16–33% is the interesting figure here: an auditor that interrupts a third of legitimate actions will be switched off within a week, which makes its recall irrelevant in practice.</li>
+          <li><strong>Treat the Claude Code and Codex results as current, not historical.</strong> These are live products on fast release cycles; the attacks were confirmed against their native runtimes, and the paper does not claim vendor remediation.</li>
+        </ul>
+
+        <p><em>Verification note: all figures — eight workflow scenarios, seven attack goals, six injection surfaces, the 479-pair / 3,112-unit benchmark, PAA at 86% block recall and 6–8% false-block rate, ARGUS at 44–47% recall and 16–33% false-block rate, the Claude Sonnet 5 backend, the fail-open scoring and the paired 95% confidence intervals — are taken from the abstract of arXiv:2610.05163 (v1, submitted 4 October 2026; 29 pages, 10 figures, 20 tables), retrieved by us directly from the arXiv API. We have not reproduced the experiments. This is a preprint with no peer review indicated at the time of writing, and the authors list an anonymised artifact repository rather than a named one. The comparison to arXiv:2610.03448 and arXiv:2610.03585 is our own analysis and is not a claim made by any of these authors. We have not independently confirmed the attack results against Claude Code or Codex, and we did not attempt to.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.05163?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.05163 — Liu, Han, Lyu, Wang, Yu, "Blocking at the Boundary: Auditing Long-Horizon Agents against Staged Prompt Injection" (4 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-29">2026-05-29</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-prompt-injection-resume-screening/">arXiv: Real-World Prompt Injection Attacks in LLM-Based Resume Screening</a></h3><p>New arXiv paper measures prompt injection attacks in production LLM resume screening systems, testing prevention, detection, and localization defenses across real-world HR workflows.</p><a class="text-link" href="/posts/2026/05/arxiv-prompt-injection-resume-screening/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-04">2026-10-04</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">Opening the Folder Is the Exploit: GitSpawn Turns Untrusted Repos Into RCE Across Seven Coding Agents</a></h3><p>Manifold Security&amp;rsquo;s GitSpawn research shows AI coding agents running git for context execute a repo&amp;rsquo;s own core.fsmonitor command outside the sandbox with no approval prompt — eight findings across Claude Code, Codex, Cursor, Goose, Hermes, Qwen Code and Grok Build, four unpatched at publication. Plugin4Shell and Adversa&amp;rsquo;s October roundup confirm git is now the most exercised agent boundary.</p><a class="text-link" href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-04-19">2026-04-19</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/04/clawguard-runtime-security-framework-tool-augmented-agents/">ClawGuard — Runtime Security Framework for Tool-Augmented LLM Agents</a></h3><p>arXiv:2604.11790 introduces ClawGuard, a runtime security framework that enforces deterministic rule-based controls at every tool-call boundary to block indirect prompt injection across web, MCP, and skill-file attack vectors.</p><a class="text-link" href="/posts/2026/04/clawguard-runtime-security-framework-tool-augmented-agents/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
