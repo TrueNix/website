@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Color Theme Should Not Ship a Downloader: GlassWorm-Linked Extensions in the VS Code Marketplace and Open VSX — al-ice.ai</title>
+  <meta name="description" content="Socket's 3 October 2026 'Pretty Themes, Hidden Loaders' research links a cluster of VS Code color themes across the Marketplace and Open VSX to GlassWorm: two confirmed-malicious extensions, an obfuscated downloader phoning fingercakes4sale.store, AES-256-CBC loaders resolved through Solana transaction memos, and two high-install themes Microsoft has since removed." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/glassworm-vscode-color-themes-hidden-loaders-marketplace-open-vsx/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Color Theme Should Not Ship a Downloader: GlassWorm-Linked Extensions in the VS Code Marketplace and Open VSX" />
+  <meta name="post:date" content="2026-10-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Color Theme Should Not Ship a Downloader: GlassWorm-Linked Extensions in the VS Code Marketplace and Open VSX</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-06">2026-10-06</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>3 October 2026</strong>, Socket researchers published <em>&ldquo;Pretty Themes, Hidden Loaders&rdquo;</em>: a cluster of VS Code color-theme extensions spanning the Visual Studio Marketplace and the Open VSX registry, with a high-confidence link to <strong>GlassWorm</strong> &mdash; the developer-targeting botnet that CrowdStrike and Google <a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">moved against in May</a>. Four extensions on the Marketplace, six extension identities on Open VSX. <strong>Two are confirmed malicious.</strong> Two more collected over 8,000 Marketplace installs before Microsoft removed the reported extensions, and the most-downloaded Open VSX member sits near 39,000 downloads.</p>
+
+        <p>The reason this matters beyond one more marketplace cleanup is architectural, and Socket states it plainly: a color theme only needs to change how the editor looks, yet VS Code lets themes ship JavaScript and offers <strong>no fine-grained permission controls</strong> that would confine them. That gap is what turns a theme into a loader, and it is the same gap <a href="/posts/2026/07/socket-ai-coding-agents-supply-chain-blind-spot/">Socket flagged in July when it mapped AI coding agents as the supply chain&rsquo;s blind spot</a> &mdash; the editor and its extensions are trusted code running on the machine that holds the keys.</p>
+
+        <h2>The two confirmed-malicious extensions</h2>
+        <p><strong>Aurora Nocturne Night Theme</strong> is the cruder of the pair and the more instructive. The threat actor published it under the <code>microsoft</code> publisher identity to masquerade as a Microsoft extension, and its public repository showed ordinary theme functionality. The distributed package was a different animal: a roughly 59&nbsp;KB single-line JavaScript blob using randomized names, hexadecimal escapes and zero-width Unicode encoding to hide its payload. After decoding, it contacted <code>fingercakes4sale[.]store/dsyuC</code>, downloaded attacker-controlled content, saved it as <code>%TEMP%\temp_batch.cmd</code>, and launched it through <code>cmd.exe</code> with the window hidden. Repository-review-as-vetting fails exactly here: <strong>the repo was clean and the package was not</strong>.</p>
+
+        <p><strong>Cosmic Nebula Themes</strong> is the one that ties the cluster to GlassWorm technically rather than circumstantially. Its Marketplace build decrypted embedded JavaScript with <strong>AES-256-CBC</strong> and executed the recovered code through <code>eval()</code>, with later stages running in memory under Node.js capabilities. The loader checked language and timezone settings and <strong>exited on Russian-locale systems</strong>, then queried a Solana transaction memo as a dead drop to resolve follow-on payload infrastructure &mdash; a lookup that lets operators rotate delivery servers without publishing a new extension version. Socket reports the same Solana address, encryption key and execution pattern previously documented in GlassWorm activity, and attributes the analyzed build to GlassWorm with high confidence. The extension&rsquo;s source repository was <code>vovanloc2234-sudo/Cosmic-Nebula-Themes</code>.</p>
+
+        <h2>The high-risk middle: 8,000 installs, no payload &mdash; yet</h2>
+        <p><strong>Coca-Cola Christmas</strong> and <strong>Aurora Borealis Studio Theme</strong> collected more than 8,000 Marketplace installs between them, and the analyzed versions contained no active malicious payload. Socket classified them as high-risk anyway, and the reasoning is worth adopting as policy: both shipped unnecessary executable JavaScript, and both shared development links with the confirmed malware &mdash; overlapping Git commit identities, nearly identical theme definitions, shared welcome-page code and recurring Russian-language comments across the Coca-Cola Christmas, Aurora Nocturne and Aurora Borealis projects. An unweaponized extension that shares a codebase, a publisher graph and an update channel with a weaponized one is one publish action away from becoming the weapon. Microsoft removed the reported extensions after receiving Socket&rsquo;s findings.</p>
+
+        <p>Open VSX deserves equal attention because it usually gets none. Socket found six cluster-linked extension identities there, including versions of Coca-Cola Christmas (~39,000 downloads) and Charcoal Mint (~10,000). Cursor, Windsurf and other VS Code forks default to Open VSX, so a cleanup on the Marketplace alone does not clear the ecosystem. And the honest caveat, stated in the secondary reporting: download totals measure <strong>potential exposure, not confirmed infections</strong>, since several analyzed versions lacked active payloads.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory installed themes across both registries.</strong> Marketplace <em>and</em> Open VSX, including on machines running VS Code forks. Look for <code>holiday-themes.theme-coca-cola-christmas</code>, <code>lohsebhipolg2s.theme-aurora-borealis</code>, <code>aurora-them-creator.theme-aurora-nocturne</code>, <code>cosmic-themes.theme-cosmic-nebula</code>, <code>charcoal-mint-studio.theme-charcoal-mint</code> and <code>solidity-syntax.deep-focus</code>.</li>
+          <li><strong>Inspect the package, not the repository.</strong> Check <code>package.json</code>, activation events, JavaScript entry points, runtime decryption, network requests and process execution in the distributed <code>.vsix</code>. Aurora Nocturne proved the repo can be theater.</li>
+          <li><strong>If Aurora Nocturne was installed, hunt the artifacts:</strong> DNS or proxy hits to <code>fingercakes4sale[.]store</code>, <code>%TEMP%\temp_batch.cmd</code>, and <code>cmd.exe</code> shells parented by VS Code. Treat the host as compromised until cleared.</li>
+          <li><strong>Treat executable code in a theme as a finding in itself.</strong> A color theme has no legitimate need for <code>eval()</code>, AES-decrypted stages, locale checks or blockchain lookups. Flag any of those in theme extensions the way you would in a document macro.</li>
+          <li><strong>Watch the Solana dead-drop address</strong> <code>BjVeAjPrSKFiingBn4vZvghsGj9KCE8AJVtbc9S8o8SC</code> in transaction-memo telemetry if you have that visibility &mdash; it is the infrastructure-rotation mechanism for this cluster.</li>
+        </ul>
+
+        <p><em>Verification note: cluster composition, dates, install and download counts, IoCs (domain, URL path, file path, hashes, Solana address, repository and extension IDs), TTPs and the Microsoft-removal outcome are drawn from Socket&rsquo;s &ldquo;Pretty Themes, Hidden Loaders&rdquo; research of 3 October 2026 as reproduced in full, cross-checked against CyberPress&rsquo;s 5 October write-up (install counts, hidden-window execution, brandjacking detail, exposure-not-infection caveat) and GBHackers&rsquo; Open VSX coverage. We did not independently detonate the packages or contact the registries before publication.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.hendryadrian.com/pretty-themes-hidden-loaders-glassworm-linked-extensions-span-vs-code-marketplace-and-open-vsx/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Socket research: &ldquo;Pretty Themes, Hidden Loaders&rdquo; (3 October 2026) &mdash; cluster composition, both malicious loaders, IoCs, MITRE mapping</a></li>
+          <li><a href="https://cyberpress.org/vscode-themes-conceal-glassworm/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CyberPress: &ldquo;Malicious VS Code Themes Hide GlassWorm Malware&rdquo; (5 October 2026) &mdash; 8,000+ installs, <code>microsoft</code>-identity brandjacking, Microsoft removal</a></li>
+          <li><a href="https://gbhackers.com/glassworm-supply-chain/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers: &ldquo;GlassWorm Supply Chain Attack Hides Malware Inside VS Code Color Themes&rdquo; &mdash; Open VSX identities, ~39,000 / ~10,000 download counts</a></li>
+          <li><a href="https://securityonline.info/glassworm-vscode-themes/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SecurityOnline: permission-model gap &mdash; themes ship JavaScript with no fine-grained controls</a></li>
+          <li><a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">al-ice.ai: GlassWorm developer-targeting botnet takedown (May 2026) &mdash; campaign background</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/california-doj-investigative-subpoena-openai-cybersecurity-incidents/">From Monitoring to Compulsion — California Serves OpenAI an Investigative Subpoena</a></h3><p>California AG Rob Bonta served an investigative subpoena on OpenAI on 1 October 2026, announced 2 October, extending the state DOJ’s Hugging Face investigation into a broader inquiry on cybersecurity incidents and risks. Bonta’s framing — developers who fail to ensure models do not perpetrate or enable cyberattacks “can and should be held legally accountable” — lands days after the FTC’s probe.</p><a class="text-link" href="/posts/2026/10/california-doj-investigative-subpoena-openai-cybersecurity-incidents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/gitlab-incoming-email-token-account-wide-push-ci-bypass/">GitLab’s Issue Email Is an Account-Wide Credential That Ignores Your IP Allowlist</a></h3><p>Aikido found GitLab’s incoming-email addresses embed an account-wide glimt- token: anyone holding one leaked address can push code, open merge requests, and run CI jobs across every project the account can reach — bypassing IP restrictions. GitLab calls it intended behavior.</p><a class="text-link" href="/posts/2026/09/gitlab-incoming-email-token-account-wide-push-ci-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">A Branch Named Like a Commit Broke Plugin Pinning in Four Coding Agents</a></h3><p>Plugin4Shell, disclosed September 17 by AIR Security, bypasses plugin SHA pinning in Claude Code, Codex, GitHub Copilot, and Gemini CLI for zero-click RCE. Claude Code 2.1.179 and Codex 0.146.0 are patched; Copilot has no fix and Gemini CLI will not get one.</p><a class="text-link" href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
