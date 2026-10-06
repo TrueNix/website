@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rename the Tool, Move the Score: Agent Security Benchmarks Measure Wording as Much as Robustness — al-ice.ai</title>
+  <meta name="description" content="arXiv 2610.03585 holds the task, harmful action, policy, environment and grading criteria fixed and changes only how threatening the tool name sounds. On Agent Security Bench the committed attack success rate moves 11.67 points on GPT-5-mini and 13.21 on Claude Haiku 4.5 — and a length-matched neutral name reproduces most of the shift." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/arxiv-2610-03585-threat-preserving-representation-sensitivity-agent-benchmarks/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Rename the Tool, Move the Score: Agent Security Benchmarks Measure Wording as Much as Robustness" />
+  <meta name="post:date" content="2026-10-06" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Rename the Tool, Move the Score: Agent Security Benchmarks Measure Wording as Much as Robustness</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-06">2026-10-06</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>If you have ever chosen a model or a defence on the strength of an attack success rate, this paper is an invoice. <strong>arXiv:2610.03585</strong>, &ldquo;Threat-Preserving Representation Sensitivity in Agent-Security Benchmarks&rdquo; &mdash; submitted 2 October 2026 by Neeraj Karamchandani, Piyush Nagasubramaniam, Xinhong Xie, Sencun Zhu and Dinghao Wu &mdash; asks a question that is embarrassingly simple and had apparently not been controlled for: how much of a benchmark&rsquo;s ASR is a property of the agent&rsquo;s security, and how much is a property of how the benchmark happened to <em>word</em> the scenario?</p>
+
+        <p>The method is the whole contribution. The authors define <strong>threat-preserving representation sensitivity (TPRS)</strong>: the change in ASR when you alter only the agent-visible representation while holding <em>everything</em> else fixed &mdash; the underlying task, the harmful action, the security policy, the ground truth, the environment, and the evaluation criteria. Nothing about the security problem changes. Only how it reads to the model.</p>
+
+        <h2>The numbers</h2>
+        <p>On <strong>Agent Security Bench (ASB)</strong>, replacing threat-related tool names with threat-neutral ones <em>raises</em> the committed attack success rate by <strong>11.67 percentage points on GPT-5-mini</strong> and <strong>13.21 points on Claude Haiku 4.5</strong>. The attack is identical; the tool is simply no longer called something that sounds alarming, and the models commit to it substantially more often.</p>
+
+        <p>The experiment runs in the other direction too, which is what makes it convincing rather than anecdotal. On <strong>MCPTox</strong> &mdash; the MCP tool-poisoning benchmark we <a href="/posts/2026/04/mcptox-tool-poisoning-benchmark-mcp-agents/">covered in April</a> &mdash; the original tool names are already neutral. Swapping in an explicitly threat-related name <em>lowers</em> ASR by <strong>11.00 points on GPT-5-mini</strong> and <strong>4.11 points on Claude Haiku 4.5</strong>. Same direction of effect, opposite sign, because the baseline wording sat on the other side of the line.</p>
+
+        <p><strong>AgentDojo</strong> behaves differently and the authors report it honestly: adding threat-related wording to the attack-relevant tool shifts ASR by only <strong>0.50 points on GPT-4o-mini</strong>. But the cost lands somewhere else &mdash; <strong>benign utility falls 5.36 points</strong> on tasks that require that tool. The wording did not make the agent safer; it made the agent worse at its job while leaving the attack roughly as successful as before. That is the failure mode every over-tuned guardrail eventually produces, isolated here as a measurement.</p>
+
+        <h2>The control that rules out the obvious explanation</h2>
+        <p>The intuitive reading of the ASB result is reassuring in a way: the models are reading the tool name, noticing it sounds dangerous, and refusing more often. Shallow, but at least it is <em>semantic</em> &mdash; something like threat awareness.</p>
+
+        <p>The authors tested that. On MCPTox they constructed a threat-neutral name <strong>matched on token count, length and casing</strong>, and found it reproduces <strong>most of the shift</strong> produced by the threat-explicit name &mdash; <strong>8.54 of the 11.00 points on GPT-5-mini</strong>. Roughly four-fifths of an effect that looked like threat recognition survives when the threatening meaning is removed and only the surface form is held constant. Whatever is moving these scores is operating substantially below the level of understanding that the word &ldquo;robustness&rdquo; implies.</p>
+
+        <h2>What this does to the leaderboard</h2>
+        <p>The authors&rsquo; conclusion is measured: a security score obtained under one representation may not generalise across threat-preserving representations of the same problem, so robustness claims should be supported by performance across a controlled set of representations rather than a single representation-dependent number.</p>
+
+        <p>Stated less gently: double-digit ASR gaps are the normal currency of model and defence comparisons, and this paper produces double-digit gaps from renaming a function. Any ranking whose margin is smaller than its TPRS is not measuring what its axis label says. Nobody currently reports TPRS, so for most published comparisons the question cannot be settled from the paper.</p>
+
+        <p>This is the second structural problem in agent-security evaluation to land in a week. <a href="/posts/2026/10/arxiv-2610-03448-injection-detector-benchmark-rank-transfer-training-overlap/">arXiv:2610.03448</a>, covered here yesterday, showed prompt-injection detector rankings failing to transfer across benchmarks once training-split overlap was accounted for &mdash; detectors scoring 95.1 on one suite and 2.1 on another. The two findings are complementary and point at the same hole: 2610.03448 says the <em>test set</em> may be measuring familiarity, and 2610.03585 says the <em>phrasing within</em> the test set may be measuring surface form. Both leave the published number intact and the inference drawn from it unsupported. Our reading of <a href="/posts/2026/10/openappa-appa-information-flow-control-zero-attack-success-benchmarks/">OpenAPPA&rsquo;s 0% attack success rate</a> made the related point from the design side: a benchmark result and a security property are different kinds of claim.</p>
+
+        <h2>What to take from it</h2>
+        <ul>
+          <li><strong>Treat any single-representation ASR as a lower bound with unknown error bars.</strong> On these results, 10&ndash;13 points of movement is available for free from naming alone.</li>
+          <li><strong>Discount model and defence rankings whose margin is in single digits.</strong> If the gap is smaller than the demonstrated representation sensitivity, the ordering is not established.</li>
+          <li><strong>If you run internal agent-security evals, add the control yourself.</strong> Re-run a slice with tool names rewritten neutrally and threateningly, token-matched, and record the spread. It is a cheap diff and it tells you how much of your score you actually own.</li>
+          <li><strong>Watch the utility column, not just ASR.</strong> The AgentDojo result &mdash; 0.50 points of ASR movement against 5.36 points of benign utility loss &mdash; is the shape of a guardrail that costs more than it buys.</li>
+          <li><strong>Do not read this as &ldquo;benchmarks are useless.&rdquo;</strong> It is a call for a reported sensitivity measure alongside the headline score, which is a fixable gap in methodology rather than a reason to stop measuring.</li>
+        </ul>
+
+        <p><em>Verification note: all figures &mdash; the 11.67 and 13.21 point ASB shifts, the 11.00 and 4.11 point MCPTox shifts, the 0.50 point AgentDojo ASR change against 5.36 points of benign utility loss, and the 8.54-of-11.00 token-matched control &mdash; are taken from the abstract of arXiv:2610.03585 (v1, submitted 2 October 2026, 12 pages, 2 figures), which we read directly on arXiv. We have not independently reproduced the experiments, and the paper is a preprint with no peer review indicated at the time of writing. Model identifiers (GPT-5-mini, Claude Haiku 4.5, GPT-4o-mini) are as stated by the authors. The comparison to arXiv:2610.03448 is our own analysis, not a claim made by either set of authors.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.03585?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.03585 &mdash; Karamchandani, Nagasubramaniam, Xie, Zhu, Wu, &ldquo;Threat-Preserving Representation Sensitivity in Agent-Security Benchmarks&rdquo; (2 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">No Retraining, 0.42% Attack Rate: Self-Evolving Defenses That Learn From Failed Attacks</a></h3><p>arXiv 2609.36603 (29 September 2026) proposes Self-Evolving Defense: distilling harmful agent trajectories into reusable, retrievable security policies with no weight updates. Targeted prompt-injection success on AgentDojo falls to 0.42% and adaptive HarmBench attacks to 7.8% across three open models.</p><a class="text-link" href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-04">2026-10-04</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/openappa-appa-information-flow-control-zero-attack-success-benchmarks/">Zero Is Not a Benchmark Result, It Is a Design Claim — Reading OpenAPPA’s 0% Attack Rate Properly</a></h3><p>Archestra’s MIT-licensed OpenAPPA reports zero successful attacks across 1,320 guarded evaluations on Bench-Corp and AgentThreatBench at 88–90% task completion, against 28–35% attack success for Microsoft FIDES. The mechanism is deterministic information-flow control, not a classifier. The numbers are vendor-run — here is what they do and do not establish.</p><a class="text-link" href="/posts/2026/10/openappa-appa-information-flow-control-zero-attack-success-benchmarks/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Fake Reasoning Alone Does Nothing. Add Four Words and It Hits 99%</a></h3><p>A 24 September arXiv paper injects malicious scratchpad reasoning into three frontier models across 1,800 AdvBench cases. Reasoning alone scores ~0%. The same reasoning plus a trivial output prefix reaches 99% on Gemini 3 Flash Preview — while Claude Haiku 4.5 never exceeds 1%.</p><a class="text-link" href="/posts/2026/09/arxiv-2609-29775-output-prefix-attacks-reasoning-channel/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
