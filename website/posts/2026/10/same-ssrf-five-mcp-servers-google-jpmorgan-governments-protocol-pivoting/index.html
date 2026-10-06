@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Same SSRF in Five MCP Servers — Google, JPMorgan and Two Governments Fixed One Researcher’s Finding — al-ice.ai</title>
+  <meta name="description" content="Independent researcher Syed Anas Mohiuddin found the same SSRF shape in MCP servers at Google (CVE-2026-14540, CVSS 8.0), Anthropic, Microsoft, Weaviate, JPMorgan, France’s DINUM and an Indonesian city government — and reports five US federal MCP servers, including VA benefits claims, are still unfixed. Plus “protocol pivoting”: MCP tool output shaped as A2A tasks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/same-ssrf-five-mcp-servers-google-jpmorgan-governments-protocol-pivoting/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Same SSRF in Five MCP Servers — Google, JPMorgan and Two Governments Fixed One Researcher’s Finding" />
+  <meta name="post:date" content="2026-10-06" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Same SSRF in Five MCP Servers &mdash; Google, JPMorgan and Two Governments Fixed One Researcher&rsquo;s Finding</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-06">2026-10-06</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>29 September 2026</strong>, independent AI security researcher <strong>Syed Anas Mohiuddin</strong> published a write-up with an unusual claim: over the first nine months of 2026 he had found <em>the same bug shape</em> in MCP servers shipped by <strong>Google, Anthropic, Microsoft and Weaviate</strong> &mdash; four codebases, four languages and frameworks, one shared assumption. This week, in an October research update covered by <em>The Next Web</em> and <em>Ars Technica</em>, the list grew: <strong>JPMorgan Chase</strong>, <strong>France&rsquo;s interministerial digital directorate (DINUM)</strong> and the city government of <strong>Tangerang, Indonesia</strong> each fixed the same flaw class on his reports, <strong>Rapid7</strong> fixed a different bug he found, and <strong>five US federal MCP servers</strong> &mdash; including one handling Veterans Affairs benefits claims &mdash; are still carrying open findings in triage.</p>
+
+        <p>The May prediction is what makes this more than a bug roundup. Mohiuddin argued the problem was <strong>structural</strong>: if independent teams sharing no code and no owner all produce the same SSRF, the flaw is in the protocol&rsquo;s trust model, not in any one implementation. &ldquo;Watching the same mistake come back from a hyperscaler, a bank, and a national government, one report at a time, is the moment the May argument stopped being a guess,&rdquo; he wrote. He will present the findings at <strong>MCPCon North America in San Jose on 23 October</strong>.</p>
+
+        <h2>The four original cases</h2>
+        <p><strong>Google: the redirect nobody checked.</strong> The MCP Toolbox for Databases built its HTTP client with Go&rsquo;s default redirect-following and no target validation &mdash; no <code>CheckRedirect</code> hook, no IP classification. The operator-configured base URL was treated as the whole trust decision, and redirects inherited that trust. Google assigned <strong>CVE-2026-14540</strong> (published 31 July 2026, <strong>CVSS v4.0 8.0 High</strong>, CWE-918), affecting versions <strong>0.3.0 through 1.4.0</strong>; the fix landed in June and shipped as <strong>v1.5.0</strong>, adding redirect and target validation plus a DNS-rebinding guard, with Mohiuddin credited as finder.</p>
+
+        <p><strong>Anthropic and Microsoft: the fetch that skips its own guard.</strong> The reference <code>mcp-server-fetch</code> and Microsoft&rsquo;s <code>playwright-mcp</code> both take a URL from the model with no allowlist and no block on loopback, link-local or private ranges. The sharper detail: the fetch server <em>does</em> contain a safeguard, <code>check_may_autonomously_fetch_url()</code> &mdash; but the <code>get_prompt</code> handler calls <code>fetch_url()</code> directly and never invokes it. The guard exists; a secondary path walks around it. Mohiuddin published both issues on the Full Disclosure list on <strong>25 May 2026</strong> at <strong>CVSS 7.5</strong>, writing that he could not confirm fixes as of disclosure. The reference server&rsquo;s SSRF later received <strong>CVE-2026-104120</strong>, which <a href="/posts/2026/10/mcp-server-fetch-cve-2026-104120-ssrf-reference-server-unpatched/">we covered separately on 3 October</a>.</p>
+
+        <p><strong>Weaviate: the field that dodged two hardening passes.</strong> Weaviate had already fixed this bug &mdash; twice, in March and June, across 21 URL builders &mdash; but both passes were scoped to the field named <code>baseURL</code>. The Google-backed modules spell theirs <code>apiEndpoint</code>, so it sailed through untouched. Worse, the field was settable at query time with ordinary read access, and under <code>USE_GOOGLE_AUTH=true</code> the module attaches a live GCP OAuth token scoped to <code>cloud-platform</code> &mdash; meaning a read-access user could point the module at their own host and receive the operator&rsquo;s cloud credential. Reported via HackerOne, fixed in September in <strong>stable/v1.37</strong>.</p>
+
+        <p>This is the same structural failure as <a href="/posts/2026/10/grafana-mcp-k6-cve-2026-89039-prompt-argument-arbitrary-file-read/">the Grafana prompt-handler file read we covered yesterday</a>: the security control was correctly written and attached to one path into a sink that had two. Mohiuddin names the general shape explicitly &mdash; controls get added to the primary tool-call path while prompts, resources and completions, written by someone else on a different day, never route through them.</p>
+
+        <h2>The October additions</h2>
+        <p><strong>JPMorgan Chase</strong> runs an open-source documentation-search MCP server with two tools that fetch content. One checked domains against an allowlist; its sibling fetched any caller-supplied URL. JPMorgan had forked the component from an AWS project that never fetched the caller&rsquo;s URL at all &mdash; the vulnerability was introduced in the fork, not inherited. The bank&rsquo;s Responsible Disclosure team confirmed the finding and deployed a fix; Mohiuddin rates it medium severity.</p>
+
+        <p><strong>DINUM&rsquo;s</strong> official MCP server for France&rsquo;s open-data platform fetched URLs supplied by data producers, which could point at internal or cloud-metadata addresses. Its fix, titled &ldquo;harden SSRF on external APIs,&rdquo; opens with &ldquo;Reported by Syed Anas Mohiuddin.&rdquo; In <strong>Tangerang&rsquo;s</strong> Wazuh MCP server, a tool advertised SSRF protection but only rejected literal IP addresses &mdash; it never resolved hostnames &mdash; drawing a high-severity advisory in early September. <strong>Rapid7</strong> fixed a different bug he reported, <strong>CVE-2026-97228</strong>, a GraphQL injection reachable within the operator&rsquo;s own access that Rapid7 rates low at <strong>2.7</strong> &mdash; a reminder that a researcher auditing one flaw class keeps tripping over others.</p>
+
+        <h2>Still open: five federal servers and Japan</h2>
+        <p>On <strong>2 September</strong>, Mohiuddin privately reported issues in <strong>five MCP servers under the US General Services Administration&rsquo;s Technology Transformation Services</strong>: Veterans Affairs benefits claims, CMS Blue Button, regulations.gov, USASpending and CDC PLACES. All five remain in triage. The Veterans Affairs case carries an additional data-handling concern: the server logs full, unredacted error responses from the benefits API, which can contain a veteran&rsquo;s name, Social Security number, date of birth and address. His report on <strong>Japan&rsquo;s Digital Agency grants server</strong>, which had no authentication, also remains open. He is withholding code-level detail until maintainers patch &mdash; the correct call, and one that puts quiet pressure on the triage queues.</p>
+
+        <h2>&ldquo;Protocol pivoting&rdquo;: MCP output becomes A2A input</h2>
+        <p>The update also names a wider attack class. An attacker plants text in content an MCP tool returns, shaped like a task for Google&rsquo;s agent-to-agent (A2A) protocol. An orchestrating agent hands it to a subagent, which executes it because it trusts the orchestrator. &ldquo;Every piece in that chain did exactly what it was designed to do, which is what makes this so tricky to catch,&rdquo; Rapid7&rsquo;s Douglas McKee told <em>Ars Technica</em>. X41 D-Sec&rsquo;s Markus Vervier classifies the technique as a form of indirect prompt injection &mdash; which means the cross-protocol hop inherits every unsolved defence problem of prompt injection, now with two protocols&rsquo; worth of confused deputies.</p>
+
+        <h2>Why the same mistake keeps shipping</h2>
+        <p>Line the cases up and the shared assumption is visible: <strong>a URL crossed a trust boundary and nobody was standing at the boundary.</strong> In a classic web app the attacker types the URL into a form, and every security team knows to distrust it. In an MCP server the attacker plants text somewhere a model will read, and the model types the URL &mdash; so the server sees a request from its own trusted model and never asks where the idea came from. The model is not a trusted caller. It is a proxy for every untrusted input it has ever seen, and every URL parameter an MCP server accepts is attacker-controlled by definition.</p>
+
+        <p>The fixes that work all share one property: they enforce containment where the request is actually made, not where it is first seen. Google&rsquo;s redirect-and-target validation, Weaviate&rsquo;s field-level scoping, hostname resolution before classification rather than literal-IP string checks &mdash; and, from our own earlier coverage, <a href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">re-validating every redirect hop</a>. Mohiuddin found the pattern with tooling, not just eyeballs: <strong>mcp-safeguard</strong>, his open-source static-analysis scanner for MCP servers, published on PyPI under MIT. If one independent researcher with a scanner can collect a hyperscaler, a bank and two governments in nine months, the servers nobody has scanned yet are not fine &mdash; they are unexamined.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade Google&rsquo;s MCP Toolbox for Databases to v1.5.0 or later</strong> if you run the HTTP source type; versions 0.3.0 through 1.4.0 carry CVE-2026-14540.</li>
+          <li><strong>Treat every URL parameter on every MCP surface as attacker-controlled</strong> &mdash; tools, prompts <em>and</em> resources. Audit the secondary paths; the guard on the primary path does not cover them by osmosis.</li>
+          <li><strong>Resolve hostnames before classifying, and re-validate each redirect hop.</strong> Literal-IP rejection without resolution is theatre, and a base-URL allowlist that redirects inherit is a suggestion.</li>
+          <li><strong>Scope hardening to behaviour, not field names.</strong> Weaviate hardened <code>baseURL</code> twice while <code>apiEndpoint</code> did the same job unguarded. Grep for what a field <em>does</em>, not what it is called.</li>
+          <li><strong>Never log full upstream error responses unredacted</strong> on servers fronting benefits, health or identity APIs &mdash; the VA logging detail turns an SSRF-adjacent finding into a PII exposure.</li>
+          <li><strong>Watch cross-protocol trust.</strong> If your orchestrator passes tool output into subagents over A2A, that handoff is an injection boundary &mdash; validate or sandbox it like one.</li>
+        </ul>
+
+        <p><em>Verification note: we read the researcher&rsquo;s own write-up (DEV Community, 29 September 2026, originally published on his personal site) for the four-vendor analysis, fix references and severity details, and The Next Web&rsquo;s 6 October 2026 report for the October update (JPMorgan, DINUM, Tangerang, Rapid7 CVE-2026-97228, the five GSA TTS servers, Japan&rsquo;s Digital Agency, protocol pivoting and MCPCon). Ars Technica&rsquo;s contemporaneous report corroborates the disclosure. We did not test any of the servers and did not contact the researcher or the vendors before publication; the federal findings are attributed to the researcher&rsquo;s reports as covered by TNW.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://dev.to/syedanas01/four-vendors-one-bad-assumption-ssrf-in-mcp-servers-48ii?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Syed Anas Mohiuddin &mdash; Four vendors, one bad assumption: SSRF in MCP servers (DEV Community, 29 September 2026)</a></li>
+          <li><a href="https://thenextweb.com/news/mcp-flaw-ssrf-google-jpmorgan-dinum-protocol-pivoting?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Next Web &mdash; Google, JPMorgan and two governments fixed the same MCP flaw (6 October 2026)</a></li>
+          <li><a href="https://arstechnica.com/security/2026/10/vulnerability-in-agents-from-google-and-others-exposes-structural-flaw-in-mcp/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Ars Technica &mdash; Vulnerability in agents from Google and others exposes structural flaw in MCP (October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">UTCP Patched the Same SSRF Four Times — and the Redirect Hop Was Still Open</a></h3><p>NVD published five CVEs for the Universal Tool Calling Protocol on 27 September 2026. Three are incomplete-fix variants of an SSRF class first patched in May: the redirect hop, the loopback manual, and the GraphQL prefix check each bypassed the previous mitigation.</p><a class="text-link" href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/langflow-cve-2026-105697-105740-mcp-stdio-sink-two-fixed-versions/">Two 9.9s, One Sink, Three Different “Fixed In” Versions — Langflow’s MCP Stdio RCE</a></h3><p>CVE-2026-105697 and CVE-2026-105740 landed 30 minutes apart on 5 October 2026, both CVSS 9.9, both the same Langflow MCP stdio command injection. One says fixed in 1.9.0; the other says 1.10.3. We read the code at four tags: the 1.9.0 allowlist guarded the REST model only, and the execution sink stayed unvalidated through 1.10.2.</p><a class="text-link" href="/posts/2026/10/langflow-cve-2026-105697-105740-mcp-stdio-sink-two-fixed-versions/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">No Login, One Request, Any File: FortiMail 9.8 Path-Traversal Zero-Day Was Already Being Exploited</a></h3><p>Fortinet disclosed CVE-2026-104286 (FG-IR-26-175) on 1 October 2026: a CVSS 9.8 unauthenticated path-traversal plus null-byte flaw in the FortiMail management interface that allows arbitrary file writes via crafted HTTP/HTTPS requests. Exploited in the wild, in CISA KEV the same day with an October 4 federal deadline — and no patch yet for the 7.4, 7.6, or 8.0 branches.</p><a class="text-link" href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
