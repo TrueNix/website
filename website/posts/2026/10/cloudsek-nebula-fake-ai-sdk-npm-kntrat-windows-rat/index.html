@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The AI SDK Was the Dropper: CloudSEK NEBULA Campaign Hid a No-DLL Windows RAT in Seven Fake npm Packages — al-ice.ai</title>
+  <meta name="description" content="CloudSEK 8 October 2026 NEBULA report tracks seven fake NebulaAI SDK packages across four burner npm accounts. A legit-looking nebula.js client fronts an obfuscated preinstall.cjs dropper that plants a syscall-only KNTRAT variant — empty IAT, hidden-desktop control, camera/mic surveillance — with two packages still installable." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/cloudsek-nebula-fake-ai-sdk-npm-kntrat-windows-rat/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The AI SDK Was the Dropper: CloudSEK NEBULA Campaign Hid a No-DLL Windows RAT in Seven Fake npm Packages" />
+  <meta name="post:date" content="2026-10-08" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+            <article class="post">
+        <h1 class="post-title">The AI SDK Was the Dropper: CloudSEK NEBULA Campaign Hid a No-DLL Windows RAT in Seven Fake npm Packages</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-08">2026-10-08</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In late September 2026, a single operator stood up a fake AI vendor &mdash; &ldquo;NebulaAI&rdquo; &mdash; and published <strong>seven malicious npm packages</strong> posing as its software development kit. CloudSEK, which tracks the activity as <strong>NEBULA</strong> in an <strong>8 October 2026</strong> report, ties all seven packages to one actor working through <strong>four sequential burner accounts</strong> (<code>nebulallms</code> through <code>nebulallms4</code>). The lure is aimed squarely at AI developers: a convincing client library pointing at <code>api.nebulaai.dev</code>. The payload is a customised <strong>KNTRAT</strong> Windows remote-access trojan engineered to dodge exactly the hooks defenders rely on &mdash; it issues syscalls directly and leaves an <strong>empty Import Address Table</strong>. Two packages, <code>api-nebula</code> and <code>llm-nebula</code>, were still downloadable from the registry at report time.</p>
+
+        <h2>The facade imports clean; the hook does not</h2>
+        <p>Each package couples two faces. The imported entry point, <code>nebula.js</code>, behaves like a legitimate AI client &mdash; the thing a hurried developer evaluates in a REPL and approves. The actual threat never waits for an import: it lives in <code>preinstall.cjs</code>, an <strong>obfuscated dropper that executes during <code>npm install</code></strong>. CloudSEK found two delivery paths inside the hook &mdash; an embedded inline payload (base64- and zlib-encoded) and an install-time network fetch &mdash; either of which writes an executable to <code>%LOCALAPPDATA%\Microsoft\Conhost\conhost.exe</code>, masquerading as the legitimate Windows console host process. The package is the lure; the installation hook is the execution. Nobody has to <code>require()</code> anything, and no agent has to run.</p>
+        <p>The uncomfortable detail is dwell time in plain sight. CloudSEK notes <code>api-nebula</code> sat active and unflagged for days before its formal categorisation as <strong>MAL-2026-17531 on 5 October 2026</strong> &mdash; and remained installable afterward. Feed entries that document these drops in isolation, the report argues, miss the operational link: a four-account burner sequence distributing one fake SDK. For defenders this is the same lesson as <a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">the MALFEX campaign&rsquo;s fourteen unadvised months</a> &mdash; registry presence is not a safety signal, and takedown lags are measured in victim installs.</p>
+
+        <h2>A RAT built for the EDR era</h2>
+        <p>The deployed implant is a customised variant of KNTRAT, the open-source Windows RAT, configured against <strong>65.87.7.132</strong> with the user-agent <code>kntrat/0xB15B00B6</code>. Its signature trait is how little it asks the operating system through normal channels: it operates <strong>exclusively through direct NT and win32k syscalls, bypassing standard DLL imports</strong>, which empties the IAT and starves import-table–based detection. The feature set is full surveillance &mdash; <strong>hidden-desktop remote control (HVNC), camera and microphone monitoring over Kernel Streaming, and Winlogon Shell persistence</strong>. Static analysis had to carry the investigation because the implant <strong>suppressed beaconing through a twelve-minute sandbox detonation</strong>, consistent with embedded anti-analysis provisions. Twelve minutes outlasts a meaningful share of automated detonation windows.</p>
+        <p>The operator&rsquo;s repository hygiene is also worth noting: the RAT&rsquo;s source stayed private for the whole campaign and went public only after it ended &mdash; renamed from <code>kntrat-e</code> to <code>kntrat</code> on <strong>6 October 2026</strong>. Private-during, public-after is the pattern of an actor who understands that public code gets signatured.</p>
+
+        <h2>AI tooling is now the watering hole</h2>
+        <p>NEBULA lands the same week as <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">the TensorLake SDK compromise</a>, and the pairing matters: one campaign hijacked a real AI SDK, the other counterfeited one. Both bet that developers building with AI install fast and audit slowly &mdash; and both were right enough to ship. Combined with CloudSEK&rsquo;s earlier <a href="/posts/2026/10/cloudsek-azazel-gentlemen-mcp-exec-in-session-c2-channel/">Gentlemen/Azazel findings around MCP execution channels</a>, the direction of travel is clear: the AI developer workstation, with its npm tokens, cloud credentials and agent configs, is the watering hole, and fake AI tooling is the bait that keeps working.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Block installs of <code>api-nebula</code> and <code>llm-nebula</code></strong> and hunt manifests, lockfiles and build logs for all seven NebulaAI packages. Assume any host that ran the preinstall hook is fully compromised, not merely dirty.</li>
+          <li><strong>Block egress to 65.87.7.132</strong> and alert on the custom user-agent <code>kntrat/0xB15B00B6</code>, writes to a <code>Conhost</code> directory under <code>%LOCALAPPDATA%</code>, unexpected named-pipe constructions, and hidden-desktop artefacts.</li>
+          <li><strong>Extend sandbox detonations past the twelve-minute mark</strong> for suspect installers where feasible, and treat a silent sample as suspicious rather than clean &mdash; this implant&rsquo;s anti-analysis posture means absence of beaconing is the expected malicious behaviour.</li>
+          <li><strong>Vet AI SDKs before install:</strong> check publisher history (four sequential burner accounts is the tell here), pin versions, and disable lifecycle scripts for unvetted packages. The facade file will always look fine &mdash; audit the hooks.</li>
+        </ul>
+
+        <p><em>Verification note: the seven-package / four-account structure, the burner account names, the api-nebula / llm-nebula installable status, the MAL-2026-17531 categorisation date, the nebula.js facade and api.nebulaai.dev endpoint, the preinstall.cjs dropper with inline and network delivery paths, the Conhost masquerade path, the KNTRAT customisation, the 65.87.7.132 C2 address and kntrat/0xB15B00B6 user-agent, the syscall-only / empty-IAT design, the HVNC, Kernel Streaming and Winlogon Shell capabilities, the twelve-minute sandbox silence, and the 6 October kntrat-e to kntrat rename were all read directly from CloudSEK&rsquo;s 8 October NEBULA report. We have not independently analysed any package or payload; secondary write-ups (Gridinsoft, The IT Nerd) corroborate the campaign shape but add no independently verified facts relied on here.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cloudsek.com/blog/nebula-fake-ai-sdk-npm-packages-windows-rat?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CloudSEK &mdash; NEBULA: Seven Fake AI SDK Packages on npm Install a Windows RAT That Needs No DLL (8 October 2026)</a></li>
+          <li><a href="https://blog.gridinsoft.com/nebula-fake-ai-sdk-windows-rat/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GridinSoft &mdash; NEBULA: Fake AI SDKs Install a Hidden Windows RAT (8 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&amp;rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware</a></h3><p>Joint advisory JCSA-20261006-01 (6 October 2026) warns the FortiBleed credential campaign against FortiGate firewalls and SSL VPNs is still active: 86,644 verified device credentials across 194 countries, attacker-created admin accounts, victim lockouts, and access sold on to INC/Lynx and Payload ransomware affiliates. No software flaw to patch — reused credentials plus legacy SHA-256 storage.</p><a class="text-link" href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Fourteen Months, No Advisory: MALFEX Shows Package Takedowns Stop at the Dependency Edge</a></h3><p>The MALFEX report from CloudSEK (30 September 2026) traces twelve npm packages to one operator across three years. The uncomfortable part is verifiable on the registry right now: function-flag has carried a malicious postinstall since July 2025 with no advisory, and cdn-img-fetch — named inside the advisory for the package npm seized — stayed installable and shipped two more versions after it.</p><a class="text-link" href="/posts/2026/10/malfex-npm-fourteen-month-postinstall-unadvised-dependency-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Fourteen Angular Typosquats in Four Hours, All Piping Code Through web.archive.org</a></h3><p>Between 23:17 UTC on 4 October and 03:33 UTC on 5 October 2026, OSV published malware advisories for fourteen npm packages impersonating @angular/core, @angular/cli and @angular/router. Thirteen share one install-time payload: curl piped into node, fetched from a gitflic.ru account through a web.archive.org proxy.</p><a class="text-link" href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
