@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware — al-ice.ai</title>
+  <meta name="description" content="Joint advisory JCSA-20261006-01 (6 October 2026) warns the FortiBleed credential campaign against FortiGate firewalls and SSL VPNs is still active: 86,644 verified device credentials across 194 countries, attacker-created admin accounts, victim lockouts, and access sold on to INC/Lynx and Payload ransomware affiliates. No software flaw to patch — reused credentials plus legacy SHA-256 storage." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware" />
+  <meta name="post:date" content="2026-10-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-07">2026-10-07</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>6 October 2026</strong> the FBI and the U.S. Secret Service published joint advisory <strong>JCSA-20261006-01</strong>, &ldquo;FortiBleed Operations Continue Targeting Exposed Systems Leading to Reports of Lockouts.&rdquo; The headline numbers: <strong>more than 86,644 compromised FortiGate devices across 194 countries</strong>, verified by SOCRadar, in what the agencies describe as an active global credential-compromise campaign against internet-facing Fortinet FortiGate firewalls and SSL VPN gateways. Attackers are still scanning exposed firewalls with previously stolen credentials, victims are discovering they have been <strong>locked out of their own appliances</strong>, and the access is being wholesaled onward &mdash; the advisory names <strong>INC/Lynx and Payload ransomware affiliates</strong> as downstream customers of the initial-access pipeline.</p>
+
+        <p>The single most important sentence in the advisory is the one that reframes the entire campaign: FortiBleed &ldquo;exploits reused or leaked credentials and a legacy SHA-256 password storage, enabling threat actors to harvest and crack authentication data at scale.&rdquo; There is no FortiBleed CVE. There is no firmware that fixes it. The campaign industrializes two unglamorous weaknesses &mdash; passwords that appear in earlier leak dumps and infostealer logs, and FortiOS credential hashes stored in a fast, unsalted-legacy SHA-256 form that a GPU cluster eats for breakfast &mdash; into a credential supply chain with its own reconnaissance, cracking, validation and resale stages.</p>
+
+        <h2>An end-to-end operation, exposed by its own opsec failure</h2>
+        <p>The advisory&rsquo;s technical section reads like a post-mortem the attackers wrote about themselves, because in a sense they did: the operators <strong>unintentionally exposed their own backend server</strong>, and the open directory laid out the whole pipeline. Automated scripts scan the internet for reachable FortiGate SSL VPN portals. Credential-stuffing and password-spraying runs draw on prior Fortinet leak dumps and infostealer logs. Dumped FortiOS user databases and session tokens flow into a <strong>GPU-accelerated cracking cluster orchestrated with Hashcat and Hashtopolis</strong>. Cracked credentials are enriched, filtered against honeypots, mapped to organizations and prioritized &mdash; reportedly by revenue and network structure &mdash; before being validated and used. Persistence is created directly on the appliance: <strong>new administrative accounts are added to the firewall</strong>, and in some intrusions the original accounts are deleted or their passwords changed, which is how a victim ends up locked out of hardware it owns.</p>
+
+        <p>The advisory publishes the defenders&rsquo; cut of that backend: infrastructure IPs (including a C2 at <code>45.154.12.132</code>, proxy nodes and a Hashtopolis host), a table of addresses observed brute-forcing or successfully authenticating, and a list of rogue account names found on victim systems &mdash; <code>adminin</code>, <code>fortiAdmin</code>, <code>forticloud-sync</code>, <code>fgtsecure</code>, <code>pakedge</code>, <code>districtadmin</code>, <code>system_config</code>, <code>roadmin</code>, <code>Technical_support</code>, <code>adminsslvpn</code>, <code>my_admin</code>, <code>support_fortinet</code>, <code>fgtsec</code>, among others. With verified credentials the operators move into the LAN: Active Directory enumeration, more password spraying, lateral movement &mdash; and then the packaging stage, with working VPN configurations and target lists sold to downstream actors. The MITRE ATT&amp;CK mapping in the advisory runs from resource development (rented GPU infrastructure, T1583) through impact (account access removal, T1531).</p>
+
+        <h2>From June dataset to October ransomware on-ramp</h2>
+        <p>The trajectory matters. In mid-June 2026 researcher Volodymyr &ldquo;Bob&rdquo; Diachenko surfaced a dataset of valid FortiGate administrative and SSL VPN credentials; CISA followed on 18 June urging Fortinet customers to harden devices after reports of credential exposure covering roughly 74,000 devices, and Fortinet published its own analysis on 19 June. Four months later the count is 86,644 and the campaign has graduated from credential harvesting to <strong>lockouts and ransomware staging</strong>. The June guidance &mdash; terminate sessions, reset passwords, enforce phishing-resistant MFA, move to PBKDF2 storage &mdash; is repeated almost verbatim in the October advisory, which tells you how many organizations did not act on it. Credentials, unlike vulnerabilities, do not age out when you ignore them; they get cracked, validated, enriched and resold.</p>
+
+        <p>Note the structural parallel with the week&rsquo;s other edge-infrastructure stories: <a href="/posts/2026/10/sonicwall-sma1000-cve-2026-102255-pre-auth-ssrf/">SonicWall&rsquo;s pre-auth SSRF on the SMA1000 login portal</a> and the NetScaler SAML flaws are bugs you patch. FortiBleed is a condition you remediate &mdash; sessions, passwords, hashes, accounts, API keys &mdash; and the advisory is blunt that remediation goes &ldquo;beyond standard patching and password resets&rdquo; once the attackers hold admin on the box.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Lock down management access in tiers: trusted hosts at minimum, a local-in policy preferably, no internet administration ideally.</strong> The advisory ranks these good, better, best &mdash; and every internet-facing management interface is currently being scanned with valid credentials, not exploits, so a WAF will not see it.</li>
+          <li><strong>Terminate all admin and VPN sessions and reset every Fortinet password, then enforce phishing-resistant MFA on all remote and admin accounts.</strong> Assume session tokens harvested alongside passwords are live; a password reset without session termination leaves the attacker logged in.</li>
+          <li><strong>Confirm PBKDF2 storage for administrator credentials and purge legacy hashes</strong> (Fortinet documents the enforcement path for FortiOS 7.2.11 and later). Fast SHA-256 hashes are the reason stolen databases convert to plaintext at GPU speed.</li>
+          <li><strong>Hunt for the advisory&rsquo;s IOCs: the published IPs, the rogue account names, and unknown REST API keys.</strong> Validate firewall and VPN user lists against a known-good configuration, review auth and domain-controller logs for lateral movement, and treat any unfamiliar API key as compromise until proven otherwise.</li>
+          <li><strong>If you find evidence of intrusion, scope before you evict</strong> &mdash; the advisory points responders at CISA&rsquo;s Playbook-NG/COUN7ER eviction tooling &mdash; and report to IC3 or a local FBI or Secret Service field office. Do not pay ransomware; the agencies repeat the standing guidance that payment guarantees nothing.</li>
+        </ul>
+
+        <p><em>Verification note: the 6 October 2026 publication date, the JCSA-20261006-01 identifier, the 86,644-devices/194-countries figures (SOCRadar-verified), the reused-credentials-plus-legacy-SHA-256 mechanism, the ongoing scanning with previously obtained credentials, the lockout mechanism (deleted/changed original accounts, T1531), the exposed-backend discovery, the Hashcat/Hashtopolis GPU cluster, the honeypot filtering and revenue-based prioritization, the INC/Lynx and Payload ransomware connection, the infrastructure IPs, the rogue account names, the REST API key warning, the PBKDF2/FortiOS 7.2.11 guidance, and the full mitigation list were read directly from the FBI/USSS joint advisory PDF (TLP:CLEAR, 11 pages, retrieved from ic3.gov). The June timeline &mdash; Diachenko dataset, CISA 18 June alert (~74,000 devices), Fortinet 19 June analysis &mdash; is from secondary reporting and the vendors&rsquo; own publications as cited below. We tested nothing, contacted no agency, and reproduced only a sample of the IOCs; defenders should work from the advisory itself.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.ic3.gov/CSA/2026/261006.pdf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">FBI / U.S. Secret Service — Joint Cybersecurity Advisory JCSA-20261006-01, FortiBleed Operations Continue Targeting Exposed Systems Leading to Reports of Lockouts (6 October 2026, PDF)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/fbi-warns-fortibleed-remains-active.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — FBI Warns FortiBleed Remains Active After Amassing 86,644 Fortinet Device Credentials (7 October 2026)</a></li>
+          <li><a href="https://therecord.media/fortibleed-warning-fbi-secret-service?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Record — FBI, Secret Service add to warnings of FortiBleed credential stealing campaign (7 October 2026)</a></li>
+          <li><a href="https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — CISA Urges Hardening Fortinet Devices After Reports of Credential Exposure (18 June 2026)</a></li>
+          <li><a href="https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Fortinet PSIRT Blog — Analysis of Reported Credential Compromise of FortiGate Devices (19 June 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/dell-dsu-cve-2026-86360-dsa-2026-324-optional-release-advisory-gap/">The Patch Was Already There, Marked Optional: Dell&amp;rsquo;s 9.6 DSU Flaw and the 65-Day Advisory Gap</a></h3><p>DSA-2026-324 (1 October 2026) discloses five flaws in Dell System Update, including CVE-2026-86360 at CVSS 9.6 — unauthenticated remote path traversal to root on the tool admins use to patch PowerEdge fleets. The fixed build shipped 28 July, labelled Optional.</p><a class="text-link" href="/posts/2026/10/dell-dsu-cve-2026-86360-dsa-2026-324-optional-release-advisory-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/phantomsub-101-npm-baileys-whatsapp-spam-channels/">490,000 Downloads, Zero Stolen Tokens — PhantomSub Turns npm Baileys Forks Into a WhatsApp Follower Farm</a></h3><p>OX Security’s 28 September 2026 PhantomSub report tracks 101 malicious npm packages forking the Baileys WhatsApp library: no credential theft, no heavy obfuscation — just code that silently subscribes the victim’s WhatsApp account to spam channels, mutes them, and inflates follower counts to 490,000 downloads’ worth of social proof for TikTok-account and game-item scams. Sixteen packages were removed; most are still live.</p><a class="text-link" href="/posts/2026/10/phantomsub-101-npm-baileys-whatsapp-spam-channels/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty</a></h3><p>GitGuardian reports the GhostAction GitHub Actions supply-chain campaign pushed a secret-stealing workflow to 772 public repositories between 31 August and 30 September 2026, exfiltrating 26 secrets from 13 repos. Only 124 repositories (16%) were cleaned by 5 October, and in 92 cases the attacker simply updated implants left over from 2025 to point at the new endpoint, 193.32.204.199.</p><a class="text-link" href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

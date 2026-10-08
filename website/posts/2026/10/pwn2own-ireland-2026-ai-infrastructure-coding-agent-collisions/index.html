@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Argument Injection Beat Codex; Oracle’s AI Database Took a Seven-Bug Chain — Pwn2Own Ireland’s AI Track — al-ice.ai</title>
+  <meta name="description" content="Across the first two days of Pwn2Own Ireland 2026, eleven attempts targeted AI Infrastructure and the new Coding Agent category. Nine succeeded, paying $215,500. OpenAI Codex fell to a single argument injection bug; Oracle’s Autonomous AI Database needed five and then seven. Four of the nine wins were discounted for collisions or N-days — including a Chroma exploit built on bugs that were already public." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/pwn2own-ireland-2026-ai-infrastructure-coding-agent-collisions/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Argument Injection Beat Codex; Oracle’s AI Database Took a Seven-Bug Chain — Pwn2Own Ireland’s AI Track" />
+  <meta name="post:date" content="2026-10-08" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Argument Injection Beat Codex; Oracle’s AI Database Took a Seven-Bug Chain — Pwn2Own Ireland’s AI Track</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-08">2026-10-08</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Pwn2Own Ireland 2026 opened in Cork on <strong>6 October</strong> with more than 60 entries, and for the first time the schedule carries a standalone <strong>Coding Agent</strong> category alongside <strong>AI Infrastructure</strong>. Day three is still running as we publish, so the final leaderboard is not settled. The first two days are settled, and they say something precise about where the cheap bugs are.</p>
+
+        <p>Eleven of the scheduled attempts across days one and two targeted AI software: LiteLLM, Chroma, NVIDIA Dynamo and Oracle Autonomous AI Database in AI Infrastructure, plus OpenAI Codex in Coding Agent. Nine of the eleven landed. Together they paid <strong>$215,500</strong> — of the $388,500 ZDI awarded on day one, <strong>$135,000 came from the AI track alone</strong>.</p>
+
+        <h2>The cost asymmetry</h2>
+        <p>The two headline results from day one sit at opposite ends of the exploitation-cost curve, and they were demonstrated roughly two hours apart.</p>
+
+        <p>At 4:15 PM, VinSOC — Nam Nguyen, Thanh Vu and Tin Huynh — <strong>combined five bugs</strong> to take the Oracle Autonomous AI Database for the full $40,000. At 6:00 PM, Ikotas Labs used <strong>a single argument injection bug</strong> to exploit OpenAI Codex, also for $40,000. ZDI’s write-up of the Codex demo is one sentence long, because there is only one bug in it.</p>
+
+        <p>That is the same primitive class we covered when <a href="/posts/2026/10/aws-security-agent-mcp-server-cve-2026-97662-base-ref-argument-injection/">AWS shipped a fix in August and the advisory in October for CVE-2026-97662</a>, where a Git ref flowed into a command line and became a file write. Argument injection keeps surfacing in agent tooling for a structural reason: a coding agent’s entire job is to assemble argument vectors for other programs from text it did not write. A traditional database has to be reached through a network stack, a parser and a privilege boundary — hence five bugs, then seven. An agent exposes the command line as a feature.</p>
+
+        <p>Oracle’s target absorbed three separate rounds over two days and got progressively more expensive to break, exactly as a hardened product should:</p>
+
+        <ul>
+          <li><strong>Round one</strong> (day one) — VinSOC, 5 bugs, <strong>$40,000</strong> and 4 Master of Pwn points.</li>
+          <li><strong>Round two</strong> (day two) — Taisic Yun of Xint, <strong>3 collisions and 2 unique zero-days</strong>, net <strong>$14,000</strong> and 3 points.</li>
+          <li><strong>Round three</strong> (day two) — Ikotas Labs, a <strong>seven-bug chain</strong> ending in a use-after-free and a type confusion, <strong>$10,000</strong> and 4 points.</li>
+        </ul>
+
+        <p>The declining cash is contest mechanics, not a judgement on the research: Pwn2Own pays the full pot to the first successful demo against a target and discounts subsequent rounds. ZDI states the rule plainly elsewhere in the same posts — McCaulay Hudson’s Canon imageFORCE win is described as a “2nd round win” netting $10,000 against a $20,000 target, and Sina Kheirkhah’s Lexmark result on day one is described the same way. Seven chained bugs for a third-round $10,000 is the single most expensive piece of work on the AI track.</p>
+
+        <h2>The collision rate is the uncomfortable number</h2>
+        <p>A “collision” at Pwn2Own means the bug was already known to the vendor or already public. Four of the nine successful AI-track demos were discounted for collisions or N-days:</p>
+
+        <ul>
+          <li><strong>LiteLLM</strong> — Out of Bounds (HaeJung Yang, ByungYoung Yi) used 4 bugs, <strong>2 previously known</strong>. Net $15,000.</li>
+          <li><strong>Oracle Autonomous AI Database</strong> — Xint, 3 of 5 collisions. Net $14,000.</li>
+          <li><strong>Chroma</strong> — Team MAMMOTH (seven researchers), <strong>2 collisions and 1 zero-day</strong>. Net $12,000 but only 1.25 Master of Pwn points.</li>
+          <li><strong>Chroma</strong> — Alessandro Fanio Gonzalez, <strong>2 N-days and 1 collision</strong>. Net $4,500.</li>
+        </ul>
+
+        <p>Read the last one again. ZDI describes Gonzalez’s successful exploit as containing <em>two N-days</em> — bugs that were already publicly disclosed — and a collision. A competition-grade exploit against a widely deployed vector database, assembled in October 2026 partly out of material that was already in public. We wrote about <a href="/posts/2026/05/chromadb-cve-2026-45829-unpatched-rce-vector-db/">an unpatched ChromaDB RCE in May</a>; the contest result suggests the gap between “disclosed” and “not reachable anymore” in this corner of the stack is still wide enough to drive an exploit chain through.</p>
+
+        <p>Chroma was also the hardest target to hit cleanly. Two teams failed on it outright — VinSOC ran out of time on day one, and Eugene (<code>@k3vg3n</code>) ran out of clock on day two with, in ZDI’s words, “seconds left.” The two teams that did succeed both did so with heavily discounted chains. That is not a picture of a robust target; it is a picture of a flaky one where the reliable bugs are already spoken for.</p>
+
+        <h2>LiteLLM, again</h2>
+        <p>LiteLLM drew two attempts and fell to both. Taisic Yun of Xint took the full $40,000 on the first, using an <strong>improper input validation bug plus code injection to land a reverse shell</strong>. Out of Bounds followed with a four-bug chain, half of it already known.</p>
+
+        <p>LiteLLM is now a recurring fixture here. It is the project whose MCP auth bypass became <a href="/posts/2026/09/litellm-cve-2026-59822-mcp-auth-bypass-kev-first/">the first MCP flaw in CISA’s KEV catalog</a>, and whose <a href="/posts/2026/09/litellm-cve-2026-93355-jwt-email-fallback-account-takeover/">unverified-email-to-permanent-admin flaw was still unpatched at the end of September</a>. Appearing as a Pwn2Own target at all is a sign of how central the AI gateway layer has become; falling twice in one morning is a sign that the target selection was correct.</p>
+
+        <p>NVIDIA Dynamo, new to the target list this year, fell once — HaeJung Yang of Out of Bounds, $40,000 and 4 points, with no collision recorded. ZDI has not published the bug class.</p>
+
+        <h2>What defenders should take from this</h2>
+        <ul>
+          <li><strong>Treat the Coding Agent category as a 90-day clock that has already started.</strong> ZDI disclosed the Codex bug to OpenAI under the standard contest terms; the bug class — argument injection — is public, the vendor is named, the affected versions are not. Until a fix ships, assume any Codex-equivalent agent that constructs shell arguments from repository or web content is reachable the same way.</li>
+          <li><strong>Do not read the dollar figures as severity.</strong> The $10,000 seven-bug Oracle chain is harder research than the $40,000 single-bug Codex win. Pwn2Own prices novelty and ordering, not impact. For risk purposes, bug count is the better proxy: one bug means one mistake stands between an attacker and your agent.</li>
+          <li><strong>Inventory the AI infrastructure tier as infrastructure.</strong> LiteLLM, Chroma, Dynamo and managed AI databases are now contest targets with named, time-boxed exploitation. They belong in the same patch cadence as your reverse proxies, not in a “new tooling” backlog. Several of these components are deployed by data teams outside the usual asset inventory.</li>
+          <li><strong>Assume your vector database has public N-days you have not applied.</strong> The Chroma result is the direct evidence. Pull the changelog, not the advisory feed — not every fix in this ecosystem gets a CVE.</li>
+          <li><strong>Watch for the CVEs, not the headlines.</strong> ZDI publishes contest results immediately and vulnerability details after vendor coordination. Last year’s equivalents, including <a href="/posts/2026/05/pwn2own-berlin-2026-openai-codex-ai-coding-assistant/">the Codex exploitation at Pwn2Own Berlin in May</a>, took months to surface as identifiers. Set a reminder rather than waiting for a notification.</li>
+        </ul>
+
+        <p><em>Verification note: every result, researcher name, bug count, collision count, dollar figure and Master of Pwn score in this briefing was read directly from the Zero Day Initiative’s own day-one and day-two result posts and the published Pwn2Own Ireland 2026 schedule. The $388,500 day-one total and the “32 unique 0-days” figure are ZDI’s. The $215,500 and $135,000 AI-track subtotals are our arithmetic over ZDI’s per-attempt figures and are not published by ZDI. Day three was still in progress at the time of writing and is excluded. ZDI has not published bug classes, affected versions or CVE identifiers for any of these entries beyond the short descriptions quoted; where we have not quoted a mechanism, none was published. We tested nothing and exploited nothing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.zerodayinitiative.com/blog/2026/10/6/pwn2own-ireland-2026-day-one-results?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zero Day Initiative — Pwn2Own Ireland 2026, Day One Results (Dustin Childs, 6 October 2026)</a></li>
+          <li><a href="https://www.zerodayinitiative.com/blog/2026/10/7/pwn2own-ireland-2026-day-two-results?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zero Day Initiative — Pwn2Own Ireland 2026, Day Two Results (7 October 2026)</a></li>
+          <li><a href="https://www.zerodayinitiative.com/blog/2026/10/5/pwn2own-ireland-2026-the-full-schedule?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zero Day Initiative — Pwn2Own Ireland 2026, The Full Schedule (target list, categories and pot sizes)</a></li>
+          <li><a href="https://pwn2own.zerodayinitiative.com/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pwn2Own — live leaderboard and running totals</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/hackers-exploit-32-zero-days-on-first-day-of-pwn2own-ireland/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — Hackers exploit 32 zero-days on first day of Pwn2Own Ireland</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/pwn2own-hackers-32-zeroday/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine — Pwn2Own Hackers Find 32 Zero-Day Vulnerabilities on Day One</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-18">2026-05-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/pwn2own-berlin-2026-openai-codex-ai-coding-assistant/">Pwn2Own Berlin 2026 — OpenAI Codex Exploited, $1.29M in 47 Zero-Days</a></h3><p>Pwn2Own Berlin 2026 concluded with $1.29M awarded for 47 zero-days, including a successful exploit against OpenAI Codex AI coding assistant.</p><a class="text-link" href="/posts/2026/05/pwn2own-berlin-2026-openai-codex-ai-coding-assistant/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-15">2026-05-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/openai-tanstack-breach-code-signing-certificates-rotated/">OpenAI Breached in TanStack Supply Chain — Code-Signing Certificates Rotated, macOS Users Must Update</a></h3><p>OpenAI confirms two employee devices were compromised in the Mini Shai-Hulud TanStack supply-chain attack, forcing rotation of macOS code-signing certificates for ChatGPT, Codex, and Atlas apps.</p><a class="text-link" href="/posts/2026/05/openai-tanstack-breach-code-signing-certificates-rotated/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Six CVEs for an Unknown Number of Bugs: Cisco’s October NX-OS Hardening Release and the Frontier-Model Footnote</a></h3><p>On 7 October 2026 Cisco published a batch of advisories including four CWE-bucketed “security hardening” releases for NX-OS, APIC, Meraki and License On-Prem. Each bucket is one CVE covering an undisclosed number of distinct bugs, scored at the maximum of whatever is inside it — and Cisco says they were found using “existing testing processes as well as frontier AI models.”</p><a class="text-link" href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
