@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AA26-281A: Ten-Nation Advisory Names a Chinese Contractor, and Five Decade-Old Bugs Enter KEV the Same Day — al-ice.ai</title>
+  <meta name="description" content="A ten-nation joint advisory published 8 October 2026 attributes Flax Typhoon-linked intrusions to Integrity Technology Group, documenting 1,300+ scanning scripts, SoftEther VPN persistence and Exchange password spraying. Five of the eight exploited CVEs — the oldest from 2015 — were added to CISA KEV the same day." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/aa26-281a-integrity-tech-flax-typhoon-softether-kev-additions/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="AA26-281A: Ten-Nation Advisory Names a Chinese Contractor, and Five Decade-Old Bugs Enter KEV the Same Day" />
+  <meta name="post:date" content="2026-10-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">AA26-281A: Ten-Nation Advisory Names a Chinese Contractor, and Five Decade-Old Bugs Enter KEV the Same Day</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-09">2026-10-09</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>8 October 2026</strong>, CISA published <strong>AA26-281A</strong>, a joint cybersecurity advisory on Chinese government-linked intrusion activity enabled by a named commercial entity: <strong>Integrity Technology Group</strong>. The authoring list is unusually broad — <strong>ten countries' agencies</strong>: the FBI, CISA and NSA from the US, alongside NCSC-UK, Australia's ASD/ACSC, the Canadian Centre for Cyber Security, Japan's National Police Agency and National Cybersecurity Office, New Zealand's NCSC, and Spain's Centro Nacional de Inteligencia.</p>
+        <p>The advisory states that its technical content comes from evidence recovered during <strong>multiple FBI investigations</strong> into Integrity Tech, and that the enabled actors use TTPs consistent with activity publicly tracked as <strong>Flax Typhoon</strong>, <strong>Ethereal Panda</strong>, and <strong>Red Juliett</strong> — while cautioning that vendor naming is not a 1:1 match to the US government's own grouping. Targeting spans US government services and facilities, critical manufacturing, healthcare and public health, and IT, plus law enforcement, education and religious organisations, and victims across Southeast Asia, Africa and North America.</p>
+
+        <h2>The detail most defenders will miss: five KEV additions, dated the same day</h2>
+        <p>Appendix B lists eight CVEs that the actors <em>successfully exploited</em>, recovered from penetration-testing scripts. Five carry an asterisk marking them as newly added to CISA's Known Exploited Vulnerabilities catalog. We checked the KEV catalog directly to confirm the dates rather than relying on the asterisks:</p>
+        <ul>
+          <li><strong>CVE-2015-3306</strong> — ProFTPD 1.3.5, improper access control (CWE-284), unauthorized read. <strong>KEV-added 8 October 2026.</strong></li>
+          <li><strong>CVE-2015-5477</strong> — ISC BIND 9.x before 9.9.7-P2 / 9.10.2-P3, denial of service. <strong>KEV-added 8 October 2026.</strong></li>
+          <li><strong>CVE-2016-3081</strong> — Apache Struts 2.3.19–2.3.28 ranges, command injection (CWE-77), RCE. <strong>KEV-added 8 October 2026.</strong></li>
+          <li><strong>CVE-2021-3199</strong> — ONLYOFFICE DocumentServer 5.1.5–5.6.2, path traversal, unauthorized write. <strong>KEV-added 8 October 2026.</strong></li>
+          <li><strong>CVE-2023-22894</strong> — Strapi up to 4.5.5, cleartext storage of sensitive information (CWE-312). <strong>KEV-added 8 October 2026.</strong></li>
+        </ul>
+        <p>The other three were already catalogued: CVE-2019-11510 (Pulse Connect Secure) and CVE-2021-22205 (GitLab) since 3 November 2021 — both flagged for known ransomware campaign use — and CVE-2014-6278 (GNU Bash) since 2 October 2025. The KEV catalog we read was version 2026.10.08, released 8 October 2026 at 20:09 UTC with 1,739 entries; these five were five of the nine additions made in October so far.</p>
+        <p>That is the operationally sharp fact in this advisory. <strong>A vulnerability disclosed in 2015 entered the federal must-patch catalog in October 2026 because an FBI investigation recovered proof it was still working.</strong> KEV inclusion triggers remediation deadlines for US federal civilian agencies and is widely used as a prioritisation input in the private sector, so five records that most risk-scoring pipelines had long since aged out of relevance just reappeared at the top of the queue. If your prioritisation is EPSS- or CVSS-weighted with a recency bias, a ProFTPD bug from 2015 is exactly the kind of finding it will have buried.</p>
+
+        <h2>Scanning at industrial scale, with a product behind it</h2>
+        <p>The reconnaissance section describes an open-source toolkit — BBScan, dirsearch, Fscan, ksubdomain, masscan, NMAP, OneForAll, ShuiZe, wpscan — focused on ports 21, 22, 53, 80, 443 and 1080, enumerating PHP and ASP pages. The advisory's own reading of that choice is worth quoting in substance: reliance on commodity GitHub tooling "suggests the threat actors tend to look for more vulnerable targets." This is breadth-first opportunism, not precision targeting.</p>
+        <p>Behind it sits <strong>MicroScan</strong>, described as a Python-based web application in use <strong>since as early as 2017</strong> containing <strong>over 1,300 penetration-testing scripts</strong>, with an account dashboard displaying detected vulnerabilities. Targets named include OpenSSL, Oracle WebLogic, Rejetto, WordPress, Juniper ScreenOS, Jenkins and Apache Struts. A multi-tenant scanning platform with a login and a findings dashboard is a <em>product</em>, and that framing is the advisory's point: Integrity Tech is characterised as a <strong>for-profit company</strong> that acquires or builds tooling, hosts infrastructure, and compromises networks — contract offence with a customer-facing UI.</p>
+
+        <h2>Living off legitimate software: SoftEther as the persistence layer</h2>
+        <p>The persistence tradecraft is the part defenders can act on immediately. Rather than deploying custom implants, the actors install <strong>SoftEther VPN clients</strong> on victim devices, configured to reconnect automatically at startup, with installers renamed <code>conhost.exe</code> or <code>dllhost.exe</code> to pass as normal Windows binaries (T1036.003). Delivery is PowerShell or LOTL binaries on Windows, <code>curl</code> or <code>wget</code> on Linux/Unix. The advisory is explicit about why this works: endpoint detection is less likely to flag SoftEther <em>because it is legitimate VPN software</em>.</p>
+        <p>Credential access follows the same logic. <strong>EBurst</strong>, an open-source Python tool, sprays and guesses passwords against Microsoft Exchange and Office 365 across ten interfaces — ECP, EWS, OAB, OWA, RPC, API, MAPI, PowerShell, Autodiscover and Microsoft-Server-ActiveSync. The advisory specifically instructs defenders to cover all ten, which is a pointed correction to the common pattern of monitoring OWA and leaving Autodiscover or ActiveSync unwatched. Domain-wide credential theft comes from <code>DC.exe</code> performing DCSync (T1003.006) over RPC against the domain controller.</p>
+        <p>Collection is similarly unglamorous and effective: a PHP bot built from <code>Curlc4.txt</code> that drives the Exchange Web Services API directly to pull mail, calendars and contacts, renames its child process to <code>crypto</code>, searches a fixed list of directories for a writeable staging location, and compresses — sometimes RC4- or AES-128-CBC-encrypting — before upload. A Linux binary called <code>office-cli</code> automates Outlook 365 exfiltration from <code>client_id</code>, <code>tenant_id</code> and <code>secret</code> config files, which the advisory notes evades detection precisely because it uses legitimate access methods. Stolen mail is then served through a custom web application that lets third parties retrieve specific accounts' content by URL arguments — the access-resale end of the business model. In some cases, the advisory says, access to exfiltrated data was restricted to IP addresses in <strong>Xiamen, China</strong>.</p>
+
+        <h2>Why this belongs on an AI-security site</h2>
+        <p>There is no AI component in AA26-281A, and we are not inventing one. It matters here for a structural reason. The same week <a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">Anthropic launched a program</a> premised on frontier models compressing vulnerability discovery, a ten-nation investigation documented a decade-long campaign that needed none of it: commodity scanners, a 1,300-script library accumulated since 2017, legitimate VPN software for persistence, and bugs from 2015 that still land. The constraint on this adversary was never discovery capability. It was the long tail of unpatched, internet-exposed infrastructure — and that tail is unaffected by how fast anyone's model finds new bugs.</p>
+        <p>The second connection is the service model. Integrity Tech is described as a for-profit intermediary selling scanning, hosting and intrusion as capability to a state ecosystem. That is the same wholesale-capability structure now forming around AI-assisted offence, and it is the layer where attribution gets hard: the advisory itself warns that vendor cluster names do not map cleanly onto the US government's understanding, precisely because a shared contractor serves multiple consumers.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Re-run your KEV delta against the 8 October catalog.</strong> Five additions in one advisory, four of them from 2015–2016 and one from 2021. Age-weighted prioritisation will have deprioritised all of them. Check ProFTPD, BIND, Struts, ONLYOFFICE DocumentServer and Strapi exposure explicitly by version, using the ranges in Appendix B.</li>
+          <li><strong>Hunt for SoftEther, not for malware.</strong> Look for VPN clients configured to auto-reconnect at startup that nobody provisioned, and for <code>conhost.exe</code> or <code>dllhost.exe</code> running from non-system paths. A legitimate-software persistence channel will not trip signature-based EDR.</li>
+          <li><strong>Extend Exchange brute-force monitoring to all ten EBurst interfaces.</strong> Autodiscover, ActiveSync, MAPI, OAB and RPC are the ones most often left out of password-spray detection logic that was written around OWA.</li>
+          <li><strong>Alert on unexpected Active Directory replication.</strong> The advisory names this as a specific mitigation, and DCSync from a non-DC host is one of the highest-signal detections available against this tradecraft.</li>
+          <li><strong>Audit OAuth applications with mailbox access.</strong> <code>office-cli</code> works from <code>client_id</code>/<code>tenant_id</code>/<code>secret</code> tuples, which means revoking a user password does not evict it. Enumerate connected applications that can read mail and prune the ones nobody can account for.</li>
+          <li><strong>Pull the machine-readable IOCs.</strong> CISA publishes AA26-281A indicators as STIX in both JSON and XML; load them rather than transcribing the nine SoftEther domains and <code>natcloudservice[.]com</code> infrastructure by hand.</li>
+        </ul>
+
+        <p><em>Verification note: the advisory's release date and alert code, the ten authoring organisations, the Integrity Technology Group attribution and its stated Flax Typhoon / Ethereal Panda / Red Juliett overlap, the targeted sectors and regions, the scanning toolset and port list, MicroScan's 2017 timeframe and 1,300+ script count, the SoftEther persistence tradecraft and renamed installers, the EBurst interface list, the Curlc4/DC.exe/office-cli tooling descriptions, the Xiamen access restriction, the Appendix B CVE table with vendor/version/vulnerability-type columns, and the recommended mitigations were read by us directly from CISA's published advisory page. All five KEV addition dates, the three prior KEV dates, the catalog version 2026.10.08 and its 1,739-entry count were independently confirmed against CISA's machine-readable KEV JSON feed on 9 October 2026 rather than inferred from the advisory's asterisk notation. We did not retrieve or analyse the STIX IOC bundles, and the comparison to AI-assisted vulnerability discovery in the section above is our editorial assessment, not a claim made in the advisory.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-281a?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA &mdash; AA26-281A: Chinese Government-linked Cyber Threat Actors Combine Automated and Hands-on Hacking Tools to Steal Sensitive Data (8 October 2026)</a></li>
+          <li><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA &mdash; Known Exploited Vulnerabilities Catalog (version 2026.10.08)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-08">2026-10-08</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Splunk Shipped Both Formats on One Day: 17 Described Bugs, 5 Buckets, and a 9.8 With No Vector</a></h3><p>On 7 October 2026 Splunk published SVD-2026-1001 with 17 individually described CVEs — including CVE-2026-76268, an unauthenticated 9.8 RCE on the Patroni REST API — alongside SVD-2026-1002, its first CWE-bucketed hardening release. Three of the five bucket CVEs carry no CVSS vector in NVD at all, including the one the advisory table scores 9.8.</p><a class="text-link" href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">No Login, One Request, Any File: FortiMail 9.8 Path-Traversal Zero-Day Was Already Being Exploited</a></h3><p>Fortinet disclosed CVE-2026-104286 (FG-IR-26-175) on 1 October 2026: a CVSS 9.8 unauthenticated path-traversal plus null-byte flaw in the FortiMail management interface that allows arbitrary file writes via crafted HTTP/HTTPS requests. Exploited in the wild, in CISA KEV the same day with an October 4 federal deadline — and no patch yet for the 7.4, 7.6, or 8.0 branches.</p><a class="text-link" href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-catalyst-sd-wan-manager-cve-2026-76504-uri-encoding-auth-bypass-kev/">One Percent-Encoded Character Makes You Admin: Cisco’s SD-WAN Manager Bypass Was Found in a Support Case</a></h3><p>Cisco published CVE-2026-76504 on 30 September 2026: a CVSS 9.8 pre-auth bypass in Catalyst SD-WAN Manager where encoding one character in the request URI slips past the authentication rule. Already exploited, in CISA KEV the same day with a three-day due date, no workarounds, and the only honest detection is grepping your own access logs for %6a.</p><a class="text-link" href="/posts/2026/10/cisco-catalyst-sd-wan-manager-cve-2026-76504-uri-encoding-auth-bypass-kev/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
