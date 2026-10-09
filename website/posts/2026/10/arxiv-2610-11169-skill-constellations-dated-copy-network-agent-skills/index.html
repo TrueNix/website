@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Only 20.9% of Agent Skills Follow Their Source: arXiv:2610.11169 Dates 2.2 Million Copies and Finds Stars Point the Wrong Way &mdash; al-ice.ai</title>
+  <meta name="description" content="Skill Constellations reconstructs the first dated copy network of agent skills from git history — 2,193,119 adoptions across GitHub. Only 20.9% of copies follow a later edit of their source, 11.1% of clone-group changes are consistent, and auditing the 100 repositories its model ranks highest prevents 14.9% of later high-risk adoptions against 0.5% for the 100 most starred." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/arxiv-2610-11169-skill-constellations-dated-copy-network-agent-skills/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Only 20.9% of Agent Skills Follow Their Source: arXiv:2610.11169 Dates 2.2 Million Copies and Finds Stars Point the Wrong Way" />
+  <meta name="post:date" content="2026-10-09" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Only 20.9% of Agent Skills Follow Their Source: arXiv:2610.11169 Dates 2.2 Million Copies and Finds Stars Point the Wrong Way</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-09">2026-10-09</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>We have covered malicious agent skills, scanners for agent skills, and skill-injection attacks. What nobody had measured is the thing that decides whether any of it matters: when a skill is fixed, does the fix reach the copies? <strong>arXiv:2610.11169</strong>, &ldquo;Skill Constellations: Tracing the Supply Chain of Agent Skills on GitHub,&rdquo; submitted <strong>8 October 2026</strong> by <strong>Fahd Seddik</strong> (University of British Columbia, Okanagan), answers it with a number: <strong>20.9%</strong>.</p>
+
+        <p>That figure is the paper&rsquo;s centre of gravity. Skills are <code>SKILL.md</code> files and scripts that Claude Code, Codex and Cursor execute with the permissions of their user, and developers distribute them by copying. Copying without a registry means no version to pin and no channel to push a fix through. Seddik reconstructs what the ecosystem lacks — a dated, directed graph of who copied what from whom — from the git history of every <code>SKILL.md</code> in the GitSkills dataset, covering <strong>2,193,119 skill adoptions</strong>.</p>
+
+        <h2>Why a snapshot cannot answer the question</h2>
+
+        <p>Prior work, as the paper puts it, studies skills &ldquo;in a snapshot, one skill or one pair of skills at a time.&rdquo; A snapshot records which repositories hold a skill. It cannot tell you which held it first, which copied from which, or when. For clone detection that is adequate; for supply-chain reasoning it is useless, because every question that matters is about direction and time.</p>
+
+        <p>The reconstruction works from first-commit dates per <code>SKILL.md</code> path, bounded below by repository creation date, restricted to non-fork repositories with files first committed on or after 1 October 2025. A commit adding ten or more <code>SKILL.md</code> files counts as a <em>copy event</em> when a single earlier adopter held at least half of its existing lineages; that adopter is the source. The cascade of a single skill — its adopters as nodes, dated transmissions as edges — is a <em>constellation</em>. One example in the paper, <code>web-design-guidelines</code>, reached <strong>972 adopters over 12 generations</strong> of copies.</p>
+
+        <h2>The fix-propagation numbers</h2>
+
+        <p>This is the section security teams should read twice.</p>
+
+        <ul>
+          <li><strong>Only 20.9% of skill copies follow a later edit of their source.</strong> The paper benchmarks this against ordinary copied code files, which adopt upstream security fixes in <strong>47% to 84%</strong> of cases. Skills propagate fixes roughly half as well as copy-pasted source code — itself not a high bar.</li>
+          <li><strong>Only 11.1% of changes to a clone group are consistent</strong> — meaning every repository holding one exact version moves to the same next version. The result holds at every observation window.</li>
+          <li><strong>Only 4.0% of genealogies ever change consistently</strong> at all.</li>
+          <li><strong>Consistency collapses across owners.</strong> A single owner raises the odds of a consistent change <strong>3.32-fold</strong>, controlling for group size, platform and content. Within one owner&rsquo;s repositories, updates roughly track; across owners, they do not.</li>
+        </ul>
+
+        <p>The practical reading: patching a skill at its origin is close to a no-op for the population already running it. There is no dependency graph to walk, no version to compare, and no notification path. The fix lands in one repository and stays there.</p>
+
+        <p>A methodological finding compounds this. A snapshot <em>understates</em> the follow rate by 3.3-fold, because an updated copy is indistinguishable from a fresh copy of the new version. So the already-poor 20.9% is the corrected figure — snapshot-based studies would have reported something far worse, and been right by accident for the wrong reason.</p>
+
+        <h2>Copies gain command execution without anyone editing them</h2>
+
+        <p>The capability finding is the one that reframes the threat model. Modified copies <strong>gain command execution more often than they lose it</strong> — and that gain does not come from the edits of their owners, which add and remove capabilities about equally often. It comes from <em>adopting another version of the skill</em>.</p>
+
+        <p>So a skill&rsquo;s privilege level drifts upward through the copy network without any individual developer deciding to grant it more power. The repository that re-copies a skill to get an improvement also inherits whatever capabilities that version accumulated. Nobody reviewed the change, because from the adopter&rsquo;s perspective there was no change — they copied a skill, the same as last time.</p>
+
+        <p>Two further findings sharpen the review burden:</p>
+
+        <ul>
+          <li><strong>A third of copies between agent folders now cross platforms.</strong> Skills copied into the folders of other agents &ldquo;often name tools that only Claude Code provides&rdquo; — all 56 manually checked cases were correct. A skill written against one agent&rsquo;s tool surface is being executed by another, with no adaptation.</li>
+          <li><strong>Flagged skills spread <em>less</em> than chance would predict</strong> — reaching 28.6% of repositories against 41.1% under a uniform permutation null. High-risk skills are not the viral ones. The ecosystem is not primarily propagating malware; it is propagating ordinary skills that quietly acquire capabilities.</li>
+        </ul>
+
+        <h2>GitHub stars are the wrong signal, and the paper proves it</h2>
+
+        <p>Stars are &ldquo;nearly uninformative&rdquo; about out-degree in the dated network, and the paper notes they are manipulable, citing the ICSE 2026 study of roughly six million suspected fake stars. Dating also corrects attribution: <strong>only 7 of the 20 repositories with the highest static out-degree remain in the top 20</strong> once credited solely for skills they held first. The rest are late adopters that a snapshot mistakes for sources. Most unstarred top sources are ordinary projects, not curated catalogs.</p>
+
+        <p>The replacement signal is simple. Ranked before 1 April 2026, <strong>current copy out-degree identifies 4.0 times as many later transmissions as stars</strong>, with PageRank and skill count performing comparably.</p>
+
+        <h2>The intervention result, with its ceiling stated</h2>
+
+        <p>Seddik fits a conditional logit model of which earlier adopter a copy event chooses as its source, then evaluates it on a temporal split — ranking repositories using only the training period and measuring prevented high-risk adoptions in the held-out period. Auditing a repository removes its flagged skills, preventing its later high-risk adoptions and every copy descending from them.</p>
+
+        <ul>
+          <li><strong>Top 100 by the source-choice model: 14.9%</strong> of later high-risk adoptions prevented.</li>
+          <li><strong>Top 100 by stars: 0.5%.</strong> A roughly thirtyfold difference.</li>
+          <li>The ordering holds at splits of 1 March and 1 May, under the lenient flag, and is reproduced independently in a calibrated simulation. A quarter of prevented adoptions are indirect copies.</li>
+          <li><strong>A ranking chosen in hindsight prevents only about a quarter</strong> of them, because roughly half arrive as new skills. This is the honest ceiling: no repository-ranking strategy, however perfect, addresses more than a fraction.</li>
+        </ul>
+
+        <p>One finding is unambiguously good news for defenders: <strong>reviewers have weeks rather than hours</strong>, because a new skill reaches few of its eventual adopters in its first week. Unlike a compromised npm package that propagates in hours — the tempo we documented in the <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">GhostAction October burst</a> — skill diffusion is slow enough for human review to matter, if anyone is reviewing.</p>
+
+        <h2>Where the method is soft, per the author</h2>
+
+        <p>The validation section is unusually forthcoming, and the central caveat deserves to be stated rather than buried. Against 1,534 folders whose skill installer recorded the copy source and date:</p>
+
+        <ul>
+          <li>The reconstructed date lies within seven days of the record in <strong>94.6%</strong> of cases — dating is solid.</li>
+          <li>The recorded source held the skill earlier in <strong>99.1%</strong> of cases — direction is solid.</li>
+          <li>But the rule names that same source in <strong>only 26.7%</strong> of cases, because it credits the earlier adopter of the most lineages, which is usually a catalog.</li>
+        </ul>
+
+        <p>The author draws the correct conclusion in one sentence: &ldquo;Source-level measures therefore describe distribution rather than authorship.&rdquo; The paper measures who a skill flows <em>through</em>, not who wrote it. For audit targeting that is the right quantity — you want the distribution chokepoints — but it is not an attribution claim, and the paper does not make one.</p>
+
+        <p>Two further limits. The risk flags &ldquo;mark capability rather than malice,&rdquo; with precision 98.3% and recall 80.9% against 200 labelled skills, which makes every risk count a lower bound. And the labelling of repository types and skill risks was performed by <strong>Claude Opus 5.5 and Claude Sonnet 5.5</strong> through <code>claude -p</code> against a written codebook, with the two models agreeing at Cohen&rsquo;s &kappa; of 0.77 on repository types and 0.66&ndash;1.00 on skill questions; all 18 repository and 28 skill disagreements were resolved manually, and Opus reached &kappa; = 0.91 against that reference before labelling the remaining 1,507 source repositories. The author flags the inflation himself — those values favour Opus, because the reference retains every answer the two models shared. An earlier manual labelling pass using only repository name, description and skill names agreed with Opus at &kappa; = 0.41, which is what prompted adding README and file-tree context. Model-assisted labelling at this scale is defensible and disclosed; it is still model-assisted labelling, and the same caution we applied to <a href="/posts/2026/10/arxiv-2610-08773-advsim2real-co-evolved-injection-adversary-web-world-model/">AdvSim2Real&rsquo;s judge-model robustness figures</a> applies here.</p>
+
+        <h2>What to do with this</h2>
+
+        <ul>
+          <li><strong>Stop treating a skill fix as deployed.</strong> If you maintain a skill others copy, publishing a fix reaches roughly a fifth of copies. Notify downstream adopters directly, or accept that the vulnerable version is still running.</li>
+          <li><strong>Inventory your copied skills and re-check them.</strong> A skill you copied months ago has not followed its source. Whatever was fixed upstream is still broken in your tree, and the paper says that is the normal case, not the exception.</li>
+          <li><strong>Rank by copy out-degree, not stars.</strong> If you maintain an allowlist or review queue, the 4.0x and the 14.9%-vs-0.5% results both say the same thing: popularity is the wrong ordering. Network position is the right one.</li>
+          <li><strong>Diff on re-copy, every time.</strong> Capability gain arrives through adopted versions, not local edits. Re-copying a skill to pick up an improvement is the moment command execution enters your tree. Treat it as a code change requiring review, because that is what it is.</li>
+          <li><strong>Check that a skill names only the tools of the agent that loads it.</strong> A third of cross-folder copies cross platforms, and skills referencing Claude Code tools are running under other agents today.</li>
+          <li><strong>Use the weeks you have.</strong> Slow diffusion is the one structural advantage defenders hold here. It is worth nothing if nobody reviews in that window.</li>
+        </ul>
+
+        <p>The author&rsquo;s own recommendation is the structural fix, and it is correct: platform vendors should distribute skills as <strong>versioned references rather than copies</strong>. Every finding above is downstream of the decision to ship instructions by duplication. Scanners like <a href="/posts/2026/07/nvidia-skillspector-ai-agent-skill-scanner/">NVIDIA&rsquo;s SkillSpector</a> can tell you whether a skill is dangerous today; none of them can tell you whether the copy in your repository is the version that was fixed. That requires provenance the format does not currently have.</p>
+
+        <p><em>Verification note: we read the paper from the arXiv listing and the full HTML text of arXiv:2610.11169v1 (submitted 8 October 2026, cs.SE with cs.CR and cs.SI cross-lists, CC BY 4.0, single author Fahd Seddik, University of British Columbia Okanagan), and confirmed title, author, submission date, categories and abstract against the arXiv API metadata record. All figures quoted here — 2,193,119 adoptions, 20.9%, 11.1%, 4.0%, 3.32-fold, 3.3-fold, 28.6% vs 41.1%, 14.9% vs 0.5%, 4.0x, 94.6%, 99.1%, 26.7%, 98.3%/80.9%, the &kappa; values, the 972-adopter and 12-generation cascade, the 56 manually checked cross-platform cases, and the 47&ndash;84% comparison figure the author cites from other work — are taken verbatim from that paper, as are the quoted sentences. This is a preprint: we found no peer-review record, no venue acceptance and no third-party replication at the time of writing, and we imply none. We did not run the released code, rebuild the copy network, or reproduce any measurement, and we did not independently verify the GitSkills dataset the reconstruction is built on.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.11169?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.11169 &mdash; &ldquo;Skill Constellations: Tracing the Supply Chain of Agent Skills on GitHub&rdquo; (Fahd Seddik; submitted 8 October 2026; cs.SE, cs.CR, cs.SI)</a></li>
+          <li><a href="https://arxiv.org/html/2610.11169v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Full text (v1) &mdash; data and method, RQ1&ndash;RQ4 results, validation, ethics, limitations</a></li>
+          <li><a href="https://github.com/FahdSeddik/Skill-Constellations?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Skill-Constellations &mdash; code and the dated copy network (release data-v1.0)</a></li>
+          <li><a href="https://fahdseddik.github.io/Skill-Constellations/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Interactive constellation viewer</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary</a></h3><p>A 4 October 2026 paper attacks Claude Code and Codex in their native runtimes with staged prompt injection across eight workflows, seven goals and six injection surfaces, then argues the only viable intervention point is immediately before each consequential action. Its training-free auditor reaches 86% block recall at a 6–8% false-block rate.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/overact-proactive-over-authorization-tool-calling-agents-arxiv-2610-01508/">It Fetched More Than You Asked: OverAct Measures Proactive Over-Authorization in Tool-Calling Agents</a></h3><p>arXiv:2610.01508 (1 October 2026) names a privacy failure mode — proactive over-authorization — benchmarks it in eight privacy domains across seven models from four families, and shows a zero-shot SelfAudit filter cutting excess calls 43%. Every model exceeded its authorized scope.</p><a class="text-link" href="/posts/2026/10/overact-proactive-over-authorization-tool-calling-agents-arxiv-2610-01508/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-03585-threat-preserving-representation-sensitivity-agent-benchmarks/">Rename the Tool, Move the Score: Agent Security Benchmarks Measure Wording as Much as Robustness</a></h3><p>arXiv 2610.03585 holds the task, harmful action, policy, environment and grading criteria fixed and changes only how threatening the tool name sounds. On Agent Security Bench the committed attack success rate moves 11.67 points on GPT-5-mini and 13.21 on Claude Haiku 4.5 — and a length-matched neutral name reproduces most of the shift.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-03585-threat-preserving-representation-sensitivity-agent-benchmarks/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
