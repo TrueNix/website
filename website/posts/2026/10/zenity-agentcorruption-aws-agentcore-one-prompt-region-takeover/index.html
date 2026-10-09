@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Prompt, Every Agent in the Region: Zenity's AgentCorruption Turns IMDS Access Into Full AgentCore Takeover — al-ice.ai</title>
+  <meta name="description" content="Zenity Labs disclosed AgentCorruption on 8 October 2026 at SecTor: a single prompt to one public-facing Bedrock AgentCore agent yielded live STS execution-role credentials, and an overbroad default IAM role extended them to every AgentCore agent in the account and region — conversations, memories, source code, Secrets Manager credentials, and persistent memory poisoning. AWS closed the IMDS entrance in February but the role stayed overbroad until between June and September." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Prompt, Every Agent in the Region: Zenity’s AgentCorruption Turns IMDS Access Into Full AgentCore Takeover" />
+  <meta name="post:date" content="2026-10-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Prompt, Every Agent in the Region: Zenity's AgentCorruption Turns IMDS Access Into Full AgentCore Takeover</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-09">2026-10-09</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>8 October 2026</strong>, Zenity Labs disclosed <strong>AgentCorruption</strong> at SecTor 2026 in Toronto: a chain of flaws in <strong>Amazon Bedrock AgentCore</strong> that let researchers take over <strong>every AgentCore agent in an AWS account and region starting from a single prompt to one public-facing agent</strong>. The entry was almost embarrassingly direct — ask the agent, in plain language, to fetch the Instance Metadata Service — and the blast radius was everything: private conversations, long-term memories, agent source code, Secrets Manager credentials, and persistent behavioural hijack via poisoned memory. Zenity describes the flaws as <strong>systemic to AgentCore, affecting any agent equipped with built-in tooling</strong>.</p>
+
+        <h2>The ask that worked</h2>
+        <p>The attack began with a prompt to a public-facing agent carrying a commonly used tool capable of outbound requests, instructing it to reach the <strong>AWS Instance Metadata Service (IMDS)</strong> at its link-local address. AgentCore's infrastructure let the request through, and the agent returned a <strong>full set of live temporary STS credentials — access key ID, secret access key, and session token</strong> — belonging to its execution role. Zenity exported the credentials onto its own machine, outside AgentCore entirely, and confirmed they were live. Those credentials did not belong to one sandbox. They belonged to a <strong>default IAM role whose permissions spanned all AgentCore agents in the same account and region</strong>, so one customer-service agent became a lateral-movement springboard into the internal finance agent next door: invoke it, read its data and tools, take its credentials and its private conversations.</p>
+        <p>Zenity's point about the fix most teams would reach for first is worth quoting: removing the raw HTTP tool changes nothing, because <strong>the isolation failure sits at the platform level, not the tool level</strong> — anything that can generate outbound traffic reaches IMDS the same way. The team reproduced the identical result through several tools, including Strands' built-in shell tool.</p>
+
+        <h2>Enumeration at machine speed</h2>
+        <p>From that foothold the researchers chained enumerability weaknesses and internal APIs into region-wide compromise. AgentCore names each agent's container repository after the agent (<code>bedrock-agentcore-&lt;agent_name&gt;</code>), and the execution role carried ECR read — so an automated tool pulled <strong>every agent's container image in the region within seconds</strong>, yielding source code, dependencies, and baked-in secrets, inspected as root. The role's READ, WRITE and DELETE reach across AgentCore and regional AWS services delivered the rest: <strong>all private conversations and long-term memories across users and sessions, API keys and OAuth tokens from Secrets Manager and environment variables</strong> (credentials agents use against enterprise resources and third parties beyond AWS), and destructive actions within the region.</p>
+        <p>Then came persistence. AgentCore's memory functionality accepted attacker-written entries, so the researchers <strong>planted malicious memories that redirected all future conversations to an attacker-controlled destination</strong> and quietly hijacked agent goals across sessions. Users would keep talking to what looked like a trusted enterprise agent while it operated under outside instructions. Memory is state, and state the attacker can write is a backdoor that survives the session.</p>
+
+        <h2>The timeline is the second finding</h2>
+        <p>Zenity found most of this in <strong>late 2025</strong> and disclosed to AWS on <strong>25 December 2025</strong>. AWS moved the entrance first: <strong>IMDSv2-only became the default for AgentCore on 14 February 2026</strong>. But when Zenity re-checked on <strong>22 June 2026, the default execution role's permissions were unchanged</strong> — the keys to every agent in the region were still sitting behind a narrower door. AWS removed the dangerous grants (invoking other agents, reading conversations, Secrets Manager access) <strong>between 22 June and 29 September</strong>, and Zenity confirmed the environment fixed as of 8 October. The February patch closed the entrance vector; the actual privilege problem lived on for months afterward. That is the pattern defenders should internalise: <strong>the metadata call was the headline, the role was the vulnerability</strong>, and fixing the first without the second left the takeover intact.</p>
+        <p>AWS, for its part, told press the research mischaracterises expected and documented behaviour as a vulnerability. That dispute matters less than the outcome both sides agree on: the defaults changed — IMDSv2 enforced, the execution role cut down. Whatever the behaviour was documented as, AWS does not document it that way anymore.</p>
+
+        <h2>AWS's year of agent holes</h2>
+        <p>AgentCorruption is the third AgentCore credential problem in twelve months, and the three rhyme. In <strong>April</strong>, Palo Alto Networks' Unit 42 alerted AWS to a regression in which the AgentCore Runtime's <strong>microVM Metadata Service (MMDS) lacked session-token enforcement</strong>, exposing credentials to plain SSRF. In <strong>September</strong>, Unit 42 reported that <strong>default AgentCore Harness configurations let prompt injection steer agents into exfiltrating plaintext credentials from AgentCore Identity</strong> — the harness's built-in shell tool, enabled by default and running as root, reaching into the same memory space where credentials resolve — which AWS closed as merely informative under its shared-responsibility model, as <a href="/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/">we covered at the time</a>. Three different doors, one room: the agent's credentials are reachable from the agent's workload, and every fix so far has closed one path while the design keeps offering others. The <a href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">October Loom control-plane takeover (CVE-2026-103956, CVSS 10.0)</a> showed the same overprivileged-default disease in SageMaker's agent stack the same week.</p>
+        <p>Zenity CTO Michael Bargury frames it as structural, not a bug count: cloud security is segmentation and least privilege, agents need creative space to be useful, and mixing the two is an inherent conflict every enterprise deploying cloud agents will have to adjudicate. &ldquo;Enterprises should be mindful of that inherent conflict, and plan their security controls accordingly.&rdquo;</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Verify you are on the fixed defaults, not just a recent version.</strong> Confirm AgentCore deployments enforce IMDSv2 and that execution roles no longer carry cross-agent invoke, conversation-read, or Secrets Manager grants. The June re-check proved version recency was not the same as fixed.</li>
+          <li><strong>Scope one execution role per agent, minimum privilege, and split trust tiers across accounts or regions.</strong> Customer-facing and internal agents sharing a region under one broad role is the exact topology AgentCorruption weaponised. A finance agent should never be invokable with a support agent's credentials.</li>
+          <li><strong>Treat agent memory as writable attacker state.</strong> Audit long-term memories for instructions no legitimate workflow wrote, and alert on memory writes that reference external destinations. A poisoned memory outlives every session fix.</li>
+          <li><strong>Rotate everything reachable.</strong> Any API key, OAuth token, or secret an agent could read during the exposure window — including third-party credentials outside AWS — should be treated as compromised, and ECR pull patterns reviewed for bulk image retrieval.</li>
+          <li><strong>Block and alert on IMDS-shaped egress from agent workloads</strong> where your platform allows it, and assume any tool with outbound traffic is an IMDS client until the platform proves otherwise.</li>
+        </ul>
+
+        <p><em>Verification note: the SecTor disclosure date and venue, the single-prompt-to-regional-takeover chain, the IMDS-to-STS credential path (access key ID, secret, session token, exported and confirmed live), the default-role overbreadth, the ECR repository naming and seconds-scale region-wide image pull, the conversations/memories/Secrets Manager/env-var impacts, the malicious-memory persistence mechanism, the platform-not-tool isolation-failure finding with Strands reproduction, the December/February/June/September timeline, Bargury's quoted framing, and AWS's documented-behaviour response were read directly from Zenity Labs' 8 October press release and CSO Online's 8 October technical coverage. The April MMDS and September Harness Unit 42 findings are as CSO reported Unit 42's accounts; we did not re-test any AgentCore environment.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://zenity.io/press-release/zenity-labs-discloses-agentcorruption-a-chain-of-aws-agentcore-flaws?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zenity Labs &mdash; AgentCorruption: A Chain of AWS AgentCore Flaws (press release, 8 October 2026)</a></li>
+          <li><a href="https://www.csoonline.com/article/4232054/awss-repeated-problems-with-ai-agent-controls-illustrates-the-autonomous-agent-dilemma.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CSO Online &mdash; AWS&rsquo;s Repeated Problems With AI Agent Controls Illustrates the Autonomous Agent Dilemma (8 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/">The Vault Had a Heap-View: Prompt Injection Pulled Plaintext Credentials Out of AgentCore</a></h3><p>Unit 42 showed a poisoned support ticket could steer AWS AgentCore Harness into scanning its own process memory and exfiltrating an Identity-vault JWT in plaintext. AWS closed the report as informative; the default shell tool stays on.</p><a class="text-link" href="/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Fourteen Angular Typosquats in Four Hours, All Piping Code Through web.archive.org</a></h3><p>Between 23:17 UTC on 4 October and 03:33 UTC on 5 October 2026, OSV published malware advisories for fourteen npm packages impersonating @angular/core, @angular/cli and @angular/router. Thirteen share one install-time payload: curl piped into node, fetched from a gitflic.ru account through a web.archive.org proxy.</p><a class="text-link" href="/posts/2026/10/angular-typosquat-wave-web-archive-proxy-preinstall-node-pipe/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Admin by Default: AWS October Bulletins Fix Loom Control-Plane Takeover (CVE-2026-103956, CVSS 10.0) and SageMaker Cross-Space Execution (CVE-2026-104019)</a></h3><p>AWS published two Important security bulletins on 2 October 2026 covering four CVEs: CVE-2026-103956 lets any network client take full admin over Loom for AWS agent control planes with no identity provider configured, CVE-2026-103957/103958 leak OAuth tokens and reach cloud credentials through MCP and A2A scopes, and CVE-2026-104019 lets a SageMaker project member run code in a teammate’s Space. No exploitation reported.</p><a class="text-link" href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
