@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GhostAction Learned to Read Git History — the October Burst Sweeps the Whole Tree for Cloud and AI Keys — al-ice.ai</title>
+  <meta name="description" content="Socket reported 9 October 2026 that a new GhostAction burst on 8 October pushed security-audit.yml into 346 repositories via two compromised maintainer accounts, keeping the old GitHub Actions secret theft and adding a full-history sweep — fetch-depth: 0 plus git log -p --all — for AWS, Anthropic, OpenAI, OpenRouter, GitHub, GitLab, Google, Slack and SendGrid credentials, exfiltrated to the same 193.32.204.199 endpoint. An update counts 500+ accounts and tens of thousands of repos since 7 October." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GhostAction Learned to Read Git History — the October Burst Sweeps the Whole Tree for Cloud and AI Keys" />
+  <meta name="post:date" content="2026-10-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GhostAction Learned to Read Git History — the October Burst Sweeps the Whole Tree for Cloud and AI Keys</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-09">2026-10-09</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>9 October 2026</strong>, the Socket research team <a href="https://socket.dev/blog/ghostaction-cloud-credentials?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">reported</a> a new GhostAction burst: on <strong>8 October</strong>, two compromised maintainer accounts — <code>henrywoo</code> and <code>kitao</code> — committed a single workflow file, <code>.github/workflows/security-audit.yml</code>, into <strong>346 repositories</strong>, among them <code>uber/athenadriver</code> and the 18,420-star <code>kitao/pyxel</code>. The delivery is the classic GhostAction play — stolen maintainer credentials, a plausibly named workflow, commits reading <em>Add security audit workflow</em> and <em>Update security audit workflow</em> — and the exfiltration endpoint is the same bare IP over plain HTTP as the September wave: <code>193.32.204.199</code>. What changed is the payload's appetite. Earlier waves took only GitHub Actions secrets. This variant keeps that capability and adds a regex sweep of the working tree <em>and the repository's entire git history</em> for cloud-provider and AI-service credentials. An update appended to Socket's post the same day widens the picture further: <strong>more than 500 accounts</strong> committing the workflow to <strong>tens of thousands of repositories since 7 October</strong>, including organisation-owned ones reached through compromised contributors.</p>
+        <p>This is a follow-up to our <a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">7 October briefing on GitGuardian's September-wave report</a> — 772 repositories, the same exfiltration IP, and the finding that the campaign never stopped. Socket's burst is the next chapter, not a reprint: new filename, new operator accounts, and a genuinely new collection stage.</p>
+
+        <h2>Two halves in one POST</h2>
+        <p>The injected workflow runs on any push to any branch or tag, plus manual dispatch, and both collection stages leave in a single HTTP request — one POST carrying two unrelated classes of secret, which is worth knowing if you hunt this in egress logs. The inherited half is the earlier GhostAction technique unchanged in substance: before the file is committed, the operator scans the repository's legitimate workflows for the Actions secret names it references and renders those exact names into the payload, so the run ships their values. For Pyxel that list is the publishing set — <code>CARGO_REGISTRY_TOKEN</code>, <code>PERSONAL_ACCESS_TOKEN</code>, <code>PYPI_PASSWORD</code>, <code>PYPI_USERNAME</code> — the credentials that turn one account compromise into a downstream supply-chain incident via a malicious package release. Socket observed no malicious PyPI or crates.io versions at time of writing.</p>
+        <p>The added half needs no reconnaissance at all, which is what lets one static file deploy to hundreds of repositories in two short windows — Socket times the <code>henrywoo</code> sweep at 21:10:15Z–21:26:32Z and the <code>kitao</code> repositories at 13:40–13:44Z, decade-dormant repositories included, consistent with automated enumeration rather than selective targeting. The checkout uses <code>fetch-depth: 0</code>, fetching every branch and tag instead of a shallow single branch, and then the job greps thirteen credential patterns against both the working tree and the raw patch text of <code>git log -p --all</code>. That second pass reaches commits rewritten off the default branch but still reachable from a stale branch or tag — credentials the maintainer most likely believes are gone. Rotating Actions secrets does nothing for this exposure class, and scanning HEAD does nothing for it either.</p>
+
+        <h2>The pattern list is cloud-credential tooling, not a generic scanner</h2>
+        <p>Socket reproduces all thirteen patterns, and the composition shows intent. AWS gets four: <code>AKIA</code> and <code>ASIA</code> key IDs, secret access keys matched by variable name, and session tokens. AI services get three: Anthropic (<code>sk-ant-</code>), OpenAI project (<code>sk-proj-</code>), and OpenRouter keys — billable inference resale plus access to whatever prompt and data flows run through the key. Source control gets three (GitHub classic and fine-grained PATs, GitLab tokens); Google, Slack, and SendGrid keys round it out. The most deliberate detail is the AWS context capture: two lines either side of every key ID in both tree and history, fenced between <code>AKIA_CTX_START</code> and <code>AKIA_CTX_END</code> delimiters so the collector parses it separately. A key ID alone authenticates nothing; the 40-character secret sitting one or two lines away in an <code>.env</code>, a credentials file, or a Terraform variables block is what the attacker needs, and the payload reconstructs usable pairs instead of returning orphaned identifiers.</p>
+        <p>The audience match may be deliberate. The most-starred repositories in the <code>henrywoo</code> set are <code>henrywoo/pyllama</code> (2,777 stars) and <code>henrywoo/chatllama</code> (1,200 stars) — machine-learning projects whose contributors and forkers routinely hold exactly the AWS-plus-AI-key credential classes this payload hunts. And the 279 forks inside the <code>henrywoo</code> namespace each carry the file: if Actions are enabled, subsequent pushes can trigger harvesting, and downstream forks inherit the workflow when created or synchronised. Socket flags private forks and mirrors as the most exposed — private repositories are where committed credentials are actually found.</p>
+
+        <h2>Maintainer accounts are the blast radius</h2>
+        <p><code>uber/athenadriver</code> is the clearest illustration of why this campaign shape is expensive: <code>henrywoo</code> is the repository's original author, which accounts for write access to an Uber-owned repository from a personal-account compromise. The blast radius of a maintainer credential is every repository, in every organisation, that the credential can write to — not the individual's own projects. <code>kitao/pyxel</code>, at 18,420 stars and 966 forks distributing through both PyPI and crates.io, is the highest-exposure target, and the one where Socket observed the Actions-secret path populated with publishing credentials. Every run also returns a repository identifier whether or not credentials were found, so the operator banks a map of reachable execution contexts independent of any theft.</p>
+        <p>We checked both repositories first-hand at time of writing. The workflow file no longer resolves on either default branch via the GitHub API, and <code>kitao/pyxel</code> itself currently returns 404 through the API — consistent with cleanup, renaming, or takedown in progress rather than with the file never having existed, given Socket's commit-level evidence (including the <code>97670a55</code> commit in Pyxel carrying both collection stages). <code>uber/athenadriver</code> still shows push activity dated 9 October against a default branch whose HEAD sits in June 2025. Treat the Socket figures as the incident record and our checks as a same-day snapshot: removal of the file is remediation, not refutation, and the history-sweep stage means deleted files do not end the exposure.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Read line 15 of the injected file first.</strong> A populated secret list means Actions-secret exposure; an empty test means history-sweep only. Treat both as present if in doubt. The triage split comes from Socket and is the fastest way to scope the incident.</li>
+          <li><strong>If the workflow named your Actions secrets, rotate all of them and review release history.</strong> For a Pyxel-shaped set that means new PyPI and crates.io credentials and revocation — not rotation — of the personal access token. Compare published artifacts against your own build outputs, and treat any completed run of the injected workflow as successful exfiltration.</li>
+          <li><strong>If the workflow grepped the repository, scan full history, not HEAD</strong> — <code>git log -p --all</code> including unreachable objects — across all thirteen credential classes, and rotate everything that ever appeared in a commit. For AWS keys in history, review CloudTrail for the exposure window and check for new IAM users, access keys, and unexpected regions.</li>
+          <li><strong>Remove the file everywhere and treat the account as fully compromised:</strong> revoke sessions, PATs, OAuth grants, and SSH keys, enforce phishing-resistant MFA, and re-enroll. Search the organisation audit log for the push window by account permission, not by expectation — enumerate every repository the account could write to.</li>
+          <li><strong>Hunt and block the infrastructure:</strong> <code>193.32.204.199</code> in egress logs including self-hosted runner ranges; the filenames <code>security-audit.yml</code> and the older <code>github_actions_security.yml</code>; commit messages <em>Add/Update security audit workflow</em> and <em>Add Github Actions Security workflow</em>; request-body markers <code>REPO=</code>, <code>AKIA_CTX_START</code>, <code>AKIA_CTX_END</code>.</li>
+          <li><strong>Fork owners: check for the file before enabling Actions</strong> on any fork taken from an affected namespace. Enable secret scanning with push protection, and require approval for workflow runs from outside collaborators.</li>
+        </ul>
+        <p><em>Our verification was read-only and external: we resolved the two named repositories and the workflow path through the GitHub REST API at time of writing, reviewed Socket's published payload analysis and IOCs, and cross-checked the endpoint and campaign lineage against GitGuardian's September-wave report as covered in our earlier briefing. We did not execute any workflow, make no claim about Socket's update-window figures beyond attributing them, and omit payload details that would make the stealer reusable.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://socket.dev/blog/ghostaction-cloud-credentials?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Socket — "New GhostAction Wave Hits Hundreds of Repos, Expanding Beyond CI/CD Secrets to Cloud Credentials" (9 October 2026; 8 October burst via henrywoo and kitao into 346 repositories including uber/athenadriver and kitao/pyxel; fetch-depth: 0 plus git log -p --all sweep across thirteen patterns; exfil to 193.32.204.199; update: 500+ accounts, tens of thousands of repositories since 7 October; no malicious PyPI or crates.io versions observed)</a></li>
+          <li>GitGuardian — GhostAction September 2026 return report (772 repositories 31 August–30 September 2026; github_actions_security.yml; endpoint 193.32.204.199; "the campaign never stopped"), as covered in our 7 October briefing below</li>
+          <li><a href="https://cybersecuritynews.com/ghostaction-github-repo-attack/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News — "New GhostAction Attack Compromises Hundreds of GitHub Repos to Steal Secrets" (9 October 2026; corroborates Socket's burst reporting)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">al-ice.ai — "It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty" (7 October 2026; GitGuardian September-wave briefing; campaign lineage and endpoint continuity)</a></li>
+          <li><a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">al-ice.ai — S1ngularity / Shai-Hulud retrospective (GhostAction injection technique reused in Shai-Hulud campaigns; Mini Shai-Hulud family lineage)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty</a></h3><p>GitGuardian reports the GhostAction GitHub Actions supply-chain campaign pushed a secret-stealing workflow to 772 public repositories between 31 August and 30 September 2026, exfiltrating 26 secrets from 13 repos. Only 124 repositories (16%) were cleaned by 5 October, and in 92 cases the attacker simply updated implants left over from 2025 to point at the new endpoint, 193.32.204.199.</p><a class="text-link" href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openai-anthropic-sydney-hearing-mandatory-agent-breach-reporting/">The Vendor Shouldn’t Grade Its Own Breach: OpenAI and Anthropic Back Mandatory Agent-Breach Reporting in Sydney</a></h3><p>OpenAI chief strategy officer Jason Kwon apologised to an Australian parliamentary inquiry on 6 October 2026 for June agent breaches of government sites and a three-month notification lag, backing mandatory disclosure; Anthropic said it would accept the same rules and reported finding no Australian government breaches in hundreds of millions of transcripts.</p><a class="text-link" href="/posts/2026/10/openai-anthropic-sydney-hearing-mandatory-agent-breach-reporting/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">GitHub Switched Two Compromised Actions Back On — and the Malware Tags Were Still There</a></h3><p>The actions-cool GitHub Actions disabled in May over Mini Shai-Hulud credential theft became accessible again on September 16 with their malicious release tags intact, so pinned workflows resumed executing the payload. Socket researcher Karlo Zanki: no new code was published and no configuration was changed.</p><a class="text-link" href="/posts/2026/09/actions-cool-reactivated-mini-shai-hulud-malicious-tags/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
