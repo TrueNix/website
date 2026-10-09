@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Attacker Left the Session Logs Open: CrowdStrike’s ARTEX Operator Dossier — al-ice.ai</title>
+  <meta name="description" content="CrowdStrike’s 7 October intel blog reconstructs the ARTEX bank campaign from the operator’s own exposed session logs: a two-server setup, DeepSeek, GLM and Grok backends, nine proxy IPs, and a résumé prompt naming the suspect. A day later, the developer took ARTEX closed-source." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Attacker Left the Session Logs Open: CrowdStrike’s ARTEX Operator Dossier" />
+  <meta name="post:date" content="2026-10-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Attacker Left the Session Logs Open: CrowdStrike’s ARTEX Operator Dossier</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-09">2026-10-09</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two days after <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">we covered the seven-bank ARTEX campaign</a>, the case broke open twice: first from the attacker's own infrastructure, then from the tool's author. <a href="https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike Intelligence published on 7 October</a> a reconstruction of the operation built not from victim telemetry but from the operator’s exposed open directories — Claude Code session histories, ARTEX configuration files and Claude memory files sitting on attacker-controlled servers. Then on 8 October, ARTEX's developer announced the project is going closed-source, <a href="https://www.thehindu.com/sci-tech/technology/chinese-developer-makes-artex-ai-agent-closed-source-after-korean-bank-hack/article71562469.ece/amp/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Reuters reported on 9 October</a>, with the GitHub page taken down.</p>
+
+        <p>The combination is the rarest thing in incident reporting: a full-stack view of an AI-executed intrusion campaign, from the model backends to the monetisation plan to the suspect's résumé — followed immediately by the tooling author's attempt to put the capability back in the box.</p>
+
+        <h2>What CrowdStrike found in the open directories</h2>
+        <p>CrowdStrike identified infrastructure tied to a campaign active from <strong>late September to early October 2026</strong> against South Korean financial organisations, resulting in exfiltrated data. The attribution is carefully bounded: the activity <strong>has not been attributed to a named adversary</strong>, and the assessment — likely a Chinese speaker, financially motivated — is made with <strong>moderate confidence</strong>, based on the Chinese-developed ARTEX tooling and observed Chinese-language prompts.</p>
+        <ul>
+          <li><strong>The ARTEX host.</strong> IP <code>38.244.50[.]120</code> hosted an ARTEX instance and an open directory containing a Claude Code document at <code>:18899/.claude/CLAUDE.md</code> — a Chinese-language pentesting prompt specifying how the LLM should conduct testing. A Hong Kong–based IP address appearing in that document led to further open directories.</li>
+          <li><strong>Two-server architecture.</strong> The Hong Kong IP serves as the primary attacker-controlled infrastructure; <code>38.244.50[.]120</code> hosts the ARTEX instance assessed as responsible for the Korean attacks. Targeted organisations overlap with those in industry reporting.</li>
+          <li><strong>Three model backends.</strong> The ARTEX instance used <strong>DeepSeek v4.1-flash as the primary LLM</strong>, supplemented with <strong>GLM-5.3 (Zhipu AI) and Grok 4.6</strong> for additional Claude Code sessions. CrowdStrike assesses the operator likely reached DeepSeek through the probable LLM API proxy/reseller <code>xcai[.]pro</code>.</li>
+          <li><strong>Nine proxy IPs</strong> observed in the sessions: <code>101.53.80[.]20</code>, <code>205.214.59[.]31</code>, <code>124.155.252[.]63</code>, <code>154.201.79[.]246</code>, <code>23.248.249[.]90</code>, <code>23.158.220[.]98</code>, <code>103.248.148[.]84</code>, <code>203.160.133[.]172</code>, <code>209.209.85[.]38</code>.</li>
+          <li><strong>The monetisation trail.</strong> The operator asked Claude where threat actors typically sell Korean data-breach information and for help finding Korean Telegram data-sales groups. Sessions also show vulnerability research against a Telegram-based NFT gift marketplace and targeting of a possible Chinese payment platform.</li>
+        </ul>
+
+        <h2>The résumé prompt — evidence with its own warning label</h2>
+        <p>In one session, the operator asked Claude to draft a security-researcher résumé packaging the ARTEX campaign's results, supplying personal details: the name YY, a phone number, the Telegram handle <code>@YY520CN</code>, age 26, South China University of Technology education, and a Maoming, Guangdong location. The same handle appears in the NFT-marketplace research sessions. CrowdStrike’s caveat is explicit and worth repeating verbatim in spirit: the details likely belong to the operator, but <strong>currently available information cannot definitively associate them with the threat actor</strong>.</p>
+        <p>Note the internal contradiction CrowdStrike preserves rather than smooths over: the résumé claims age 26 while the supplied birth date is 2007-09-22. Operator-supplied PII in an attacker's own prompt is evidence, not identity — it may be real, aspirational, or someone else's. Treat the handle as an infrastructure pivot, not a person.</p>
+
+        <h2>A day later, the author pulls the tool</h2>
+        <p>On Thursday 8 October, the developer behind ARTEX — GitHub handle <strong>Autumn-27</strong> — posted that <em>"given the misuse of the tool, the ARTEX project will no longer be updated and will be converted to closed source. No further versions will be released to the public nor will maintenance support be provided,"</em> per Reuters. The developer said ARTEX was built to help enterprises test security risk, opposed illegal use, and disclaimed responsibility for lawbreaking. Reuters' own checks confirmed the GitHub page taken down. At least nine banks have now disclosed or been reported as targets, and China's foreign ministry said Thursday it was "not familiar with the case."</p>
+        <p>Closed-sourcing stops future releases. It does not recall the copies already cloned during the two weeks the tool was both famous and public — the same distribution irreversibility we traced through a year of <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">S1ngularity, Shai-Hulud and TeamPCP</a>. The capability is out; only the update channel is closed.</p>
+
+        <h2>Why the session-log angle matters for defenders</h2>
+        <p>CrowdStrike’s core assessment is about tempo: AI tooling let a financially motivated actor run <strong>multiple intrusions in a short span</strong>, and adversaries will keep experimenting to sharpen operational pace. But the forensic method is itself the defensive lesson. Agentic operators generate the same artefact sprawl as enterprise agent deployments — session histories, memory files, config files, default ports (<code>:18899</code> here) — and they expose it to the internet at the same rate. Every red-team convenience (a readable <code>CLAUDE.md</code>, an open directory, an unrotated proxy reseller) is a detection surface. Threat hunting for attacker infrastructure can use the same markers defenders use to inventory their own agents: default tool ports, framework path conventions, and session-file formats.</p>
+        <p>The LLM-supply detail deserves its own line in your threat model. The operator did not just call model APIs — they routed through a <strong>third-party proxy/reseller</strong>. Unknown LLM endpoints in agent configs, whether yours or the attacker's, are now a legitimate hunting indicator alongside unknown C2 domains.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Ingest the CrowdStrike IOCs as attributed, not confirmed-bad.</strong> The ARTEX host, the nine proxy IPs and the reseller domain are one vendor's campaign reconstruction with moderate-confidence attribution. Block or alert, but track them as a cluster that stands or falls together.</li>
+          <li><strong>Hunt ARTEX markers with the closed-source caveat.</strong> The tool's console strings and default paths still work as detection artefacts — but expect forks and renames now that the canonical repo is gone. Hunt the <em>behaviour</em> (autonomous pentest-agent traffic patterns against auxiliary portals) alongside the strings.</li>
+          <li><strong>Flag unknown LLM API endpoints at egress.</strong> Agent traffic to reseller/proxy domains outside your approved model-vendor list — the <code>xcai.pro</code> pattern — is worth an alert whether it comes from your developers or your adversary.</li>
+          <li><strong>Apply the session-sprawl lesson inward.</strong> If an attacker's Claude Code histories can reconstruct their whole campaign, so can yours. Scope, encrypt and expire agent session logs and memory files; a red-team engagement's history directory is a credential and TTP archive.</li>
+          <li><strong>Re-read the prior briefing's basics.</strong> The entry points were unauthenticated PII lookups, soft staff portals and unpatched web servers — <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">the MFA-and-patching controls that held last time</a> still hold.</li>
+        </ul>
+
+        <p><em>Verification note: campaign timing, infrastructure detail, model backends, proxy IPs, résumé contents and the moderate-confidence assessment are CrowdStrike’s 7 October Counter Adversary Operations blog as fetched 9 October; the "cannot definitively associate" caveat is theirs. The closed-source statement, GitHub takedown, nine-bank scope and MFA-spokesperson comment are Reuters (via The Hindu, 9 October). We have not independently verified the IOCs or the operator details; the phone number from the résumé prompt is deliberately not reproduced here.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.crowdstrike.com/en-us/blog/unknown-threat-actor-uses-artex-to-target-south-korean-finance/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike — "Unknown Threat Actor Uses AI-Driven ARTEX to Target South Korean Finance" (7 October 2026; session-log forensics, two-server architecture, model backends, proxy IPs, IOCs)</a></li>
+          <li><a href="https://www.thehindu.com/sci-tech/technology/chinese-developer-makes-artex-ai-agent-closed-source-after-korean-bank-hack/article71562469.ece/amp/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Reuters via The Hindu — "Chinese developer makes ARTEX AI agent closed-source after Korean bank hack" (9 October 2026; Autumn-27 statement, GitHub takedown, nine-bank scope, CrowdStrike suspect characterisation)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty</a></h3><p>GitGuardian reports the GhostAction GitHub Actions supply-chain campaign pushed a secret-stealing workflow to 772 public repositories between 31 August and 30 September 2026, exfiltrating 26 secrets from 13 repos. Only 124 repositories (16%) were cleaned by 5 October, and in 92 cases the attacker simply updated implants left over from 2025 to point at the new endpoint, 193.32.204.199.</p><a class="text-link" href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">The Skill Floor Just Dropped: ARTEX and South Korea’s Seven-Bank Breach</a></h3><p>Between late September and early October 2026, attackers wielding ARTEX AI — an open-source LLM-driven pentest agent — breached seven South Korean financial firms including Shinhan, KB Kookmin and Hana. Police are investigating, the FSC has paused bank deregulation, and the controls that stopped it were basic.</p><a class="text-link" href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/">The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save</a></h3><p>The SOCRadar AI Identity Exposure Report traces 1M+ infostealer records across 80,000 corporate domains down to 482 enterprises: stolen AI sessions hand over prompt history, live MFA-proof access, agent OAuth grants, and billable API keys. ChatGPT dominates as a shadow-AI signal.</p><a class="text-link" href="/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
