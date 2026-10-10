@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ten Advisories, One Release, Zero Version Numbers: nginx-ui's 9 October Batch Points at Git Hashes — al-ice.ai</title>
+  <meta name="description" content="On 9 October 2026, ten advisories landed against nginx-ui (11,500+ stars) — one critical RCE, eight high, one moderate, from nine separate reporters. Every fix shipped in July or September. Not one advisory names a release tag: all ten point at Go pseudo-versions. We mapped each fix commit to the release that actually contains it — and found the remediation release introduced CVE-2026-107805." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/nginx-ui-ten-advisories-pseudo-versions-remediation-release-new-cve/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Ten Advisories, One Release, Zero Version Numbers: nginx-ui’s 9 October Batch Points at Git Hashes" />
+  <meta name="post:date" content="2026-10-10" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Ten Advisories, One Release, Zero Version Numbers: nginx-ui&rsquo;s 9 October Batch Points at Git Hashes</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-10">2026-10-10</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>9 October 2026</strong>, ten security advisories were published against <strong>nginx-ui</strong>, the Go web management interface for nginx that carries <strong>11,582 stars</strong> and 891 forks. One is critical, eight are high, one is moderate. They come from <strong>nine different credited reporters</strong>, cover nine distinct CWE classes, and were all published within a four-hour window.</p>
+        <p>Every one of them was already fixed. Eight of the ten fixes were committed on <strong>28 July 2026</strong> — most of them within a four-minute span — and shipped the next day. The remaining two were fixed on 1 and 4 September. The disclosure gap is roughly ten weeks for the July cluster, and that is the ordinary part of the story.</p>
+        <p>The disorienting part is that <strong>not one of the ten advisories names a version a human would recognise</strong>. Every <code>first_patched_version</code> field is a Go pseudo-version: strings like <code>1.9.10-0.20260728074146-a467ed652591</code>. nginx-ui has never published a <code>v1.9.10</code>. The real fixed release is <strong>v2.5.0</strong>, and nothing in the advisory metadata says so.</p>
+
+        <h2>The batch, and who found it</h2>
+        <p>The critical one is <strong>CVE-2026-107806</strong> (GHSA-p393-cf76-4jmr, CWE-94), reported by <strong>mamdouhmahfouz</strong>. An authenticated nginx-ui user calls <code>POST /api/restore</code> with a forged encrypted backup. The restore handler derives the manifest signing key <em>from the attacker-supplied AES key</em>, so the attacker signs their own archive, and <code>restoreNginxUIConfig</code> copies the restored <code>app.ini</code> over the live config — including protected nginx command settings such as <code>TestConfigCmd</code> that the settings API will not let you write. A follow-up <code>POST /api/nginx/test</code> then runs that command in the nginx-ui runtime context. GitHub scores it <strong>CVSS 4.0 9.0</strong> in its own metadata and <strong>9.4</strong> in the vector NVD carries; both are secondary scores, and NVD has the record as <strong>Undergoing Analysis</strong> with no independent rating.</p>
+        <p>The other nine, by CVE:</p>
+        <ul>
+          <li><strong>CVE-2026-107810</strong> (8.1, CWE-59/CWE-61, <em>Vincent550102</em>) — backup restore follows crafted symlinks into the live nginx configuration path <em>before</em> restore flags are applied. Same fix commit as the critical.</li>
+          <li><strong>CVE-2026-107807</strong> (8.8, CWE-312/CWE-598, <em>captain99hook</em>) — node secret exposed in a URL query parameter, where it lands in logs and referrers.</li>
+          <li><strong>CVE-2026-107811</strong> (8.8, CWE-200/CWE-862, <em>PLpaPLpa</em>) — <code>/api/nodes</code> leaks cluster node tokens, enabling cross-node impersonation as <code>initUser</code>.</li>
+          <li><strong>CVE-2026-107813</strong> (8.8, CWE-862, <em>arpitjain099</em>) — explicitly an <strong>incomplete fix</strong> of a prior advisory (GHSA-5v7c-xpfp-p65m / CVE-2026-84315). The earlier patch wrapped the nginx, cert, dns, backup, site and stream mutation routers in <code>middleware.RequireSecureSession()</code> and added reload/restart to the MCP sensitive-tool list — but never touched the physically separate <code>api/cluster</code> package, which registers the same class of sensitive operations on the bare authenticated group. A stolen JWT with no fresh step-up still performs cluster node CRUD, reads and rewrites node token secrets, and triggers cluster-wide nginx reload.</li>
+          <li><strong>CVE-2026-107809</strong> (8.8, CWE-352, <em>1491342590</em>) — the <code>AuthRequired</code> token cookie fallback enables CSRF against management APIs.</li>
+          <li><strong>CVE-2026-107808</strong> (8.1, CWE-287/CWE-305/CWE-308, <em>Voilater</em>) — a 2FA bypass with a precise shape: <code>Enabled2FA()</code> returns true if <em>either</em> TOTP or a passkey is configured, but <code>POST /api/login</code> only enforces a second factor when <code>EnabledOTP()</code> is true. An account with a passkey and no TOTP displays as 2FA-protected in the UI and is admitted on password alone. The passkey is never requested.</li>
+          <li><strong>CVE-2026-107812</strong> (7.5, CWE-494, <em>novice-22</em>) — self-upgrade fetches the release tarball <em>and</em> its digest from the same endpoint and verifies only that they match, with no signature. Whoever controls that path substitutes both and gets code execution as the nginx-ui user, typically root. The <code>github_proxy</code> setting also accepts <code>http://</code>.</li>
+          <li><strong>CVE-2026-107805</strong> (7.5, CWE-400, <em>lujiefsi</em>) — unauthenticated signed-request body staging writes an attacker-controlled body to a temp file and <code>fsync</code>s it <em>before</em> validating the digest and signature.</li>
+          <li><strong>CVE-2026-107804</strong> (5.3, CWE-346, <em>lujiefsi</em>) — the bundled reverse proxy does not preserve external client identity, so management requests look like loopback and can pass the loopback exception in an IP allowlist; failed logins from everywhere collapse onto one address and share a login-ban threshold.</li>
+        </ul>
+        <p>Nine reporters, ten bugs, one day. The advisories themselves show no sign of a coordinated campaign — different CWEs, different subsystems, different disclosure paths — which reads more like a maintainer clearing a queue than like a single audit landing.</p>
+
+        <h2>The pseudo-version problem</h2>
+        <p>Go advisories identify versions by module semantics, and for a repository whose module path still declares <code>v1.9.10</code> while its releases are tagged <code>v2.x</code>, the result is that every fixed version renders as a timestamp plus a commit hash. Here is what an operator actually gets, and what it means:</p>
+        <ul>
+          <li><code>…20260728074146-a467ed652591</code> → commit <strong>a467ed65</strong>, &ldquo;fix: harden backup restore trust boundaries&rdquo;, 28 July 07:41:46Z (CVE-2026-107806, CVE-2026-107810)</li>
+          <li><code>…20260728074433-a3999bd78a3b</code> → <strong>a3999bd7</strong>, &ldquo;feat: add signed node authentication&rdquo;, 07:44:33Z (CVE-2026-107807, CVE-2026-107809, CVE-2026-107813)</li>
+          <li><code>…20260728074558-95cd21b70814</code> → <strong>95cd21b7</strong>, &ldquo;fix: enforce passkey-only login&rdquo;, 07:45:58Z (CVE-2026-107808)</li>
+          <li><code>…20260728091109-0ecbd106c37b</code> → <strong>0ecbd106</strong>, &ldquo;feat: automate node credential lifecycle&rdquo;, 09:11:09Z (CVE-2026-107811)</li>
+          <li><code>…20260728114330-580585516dd8</code> → <strong>58058551</strong>, &ldquo;fix: verify signed upgrade artifacts&rdquo;, 11:43:30Z (CVE-2026-107812)</li>
+          <li><code>…20260901043436-8c9b9a1aff21</code> → <strong>8c9b9a1a</strong>, 1 September (CVE-2026-107805)</li>
+          <li><code>…20260904075558-e30e331303fc</code> → <strong>e30e3313</strong>, 4 September (CVE-2026-107804)</li>
+        </ul>
+        <p>We resolved each of those commits against the published release tags using the repository&rsquo;s own compare endpoint. <strong>Eight of the ten fixes first appear in v2.5.0</strong> (published 29 July 2026, 08:42:28Z). <strong>Two — CVE-2026-107805 and CVE-2026-107804 — first appear in v2.6.0</strong> (14 September 2026). That mapping is the single most useful piece of information for anyone running this software, and it does not exist anywhere in the ten advisories.</p>
+        <p>Two advisory texts do carry the real answer in prose: the GHSA descriptions for CVE-2026-107805 and CVE-2026-107804 both say &ldquo;Upgrade to Nginx UI 2.6.0 or later.&rdquo; The other eight leave you with the hash. Automated tooling reads the structured field, not the prose.</p>
+
+        <h2>The remediation release shipped a new bug</h2>
+        <p>Here is where the two September fixes stop being a footnote. <strong>CVE-2026-107805 was introduced by v2.5.0 itself.</strong></p>
+        <p>The advisory states the affected range as &ldquo;2.5.0 through 2.5.x&rdquo; and the OSV range opens at the pseudo-version <code>…20260729084040-acb59fdd81db</code>. We resolved that commit: it is <strong>acb59fdd</strong>, dated 29 July 2026 at 08:40:40Z, with the message <strong>&ldquo;chore: prepare v2.5.0&rdquo;</strong> — two minutes before the v2.5.0 release was published. The flaw lives in the signed-node-request path that <strong>a3999bd7 added on 28 July as the fix for three other advisories in this very batch</strong>. The new signature-authentication machinery staged the request body to disk before it verified the signature.</p>
+        <p>So an operator who did exactly the right thing on 29 July — upgraded promptly to the release that closed eight advisories — acquired an unauthenticated storage-exhaustion bug in the process, and had to wait until 14 September for v2.6.0 to close it. This is the same shape we documented in <a href="/posts/2026/10/netscaler-cve-2026-107406-saml-rce-fixed-build-now-affected/">NetScaler&rsquo;s CVE-2026-107406</a>, where the fixed build from one bulletin sat inside the affected range of the next. Defensive patching has a cost that advisory metadata never shows, and it is not zero.</p>
+
+        <h2>What the scanners see</h2>
+        <p>The ten advisories are in OSV and in GitHub&rsquo;s database, so Dependabot and OSV-backed scanners will flag a Go module that depends on nginx-ui. But nginx-ui is overwhelmingly deployed as a <em>binary or container</em>, not imported as a module, and that is the population at risk. Dependency scanning does not see a running nginx-ui on port 8080.</p>
+        <p>The Go vulnerability database is a step behind as well. The <code>golang/vulndb</code> triage issue for CVE-2026-107806 (issue 6741) was opened on <strong>10 October 2026 at 00:03:04Z</strong> and still carries the <code>NeedsTriage</code> label, with no GO-ID assigned — so <code>govulncheck</code>, which reads <code>vuln.go.dev</code>, returns nothing for this advisory at the time of writing. We checked that issue directly; we did not survey triage status for the other nine.</p>
+        <p>None of the ten CVEs is in CISA&rsquo;s Known Exploited Vulnerabilities catalog — we queried the published JSON feed (catalogVersion 2026.10.08, 1,739 entries) on 10 October and all ten are absent. Only CVE-2026-107806, CVE-2026-107804 and CVE-2026-107805 have NVD publication timestamps so far; the other seven are GitHub-reviewed advisories whose NVD records had not appeared when we checked.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade to v2.6.0 at minimum; v2.8.4 is current.</strong> v2.5.0 closes eight of the ten and opens one. We confirmed by commit ancestry that the current release, <strong>v2.8.4</strong> (7 October 2026), contains all ten fixes. If you are on any 2.5.x, you are still exposed to CVE-2026-107805 and CVE-2026-107804.</li>
+          <li><strong>Read the v2.5.0 release notes before you assume upgrading is sufficient.</strong> The maintainer&rsquo;s own notice is explicit: if an installation ever ran 2.3.6 or earlier, or restored a backup from one, upgrading alone does not invalidate already-exposed credentials. Rotate <code>[node] Secret</code> and <code>[app] JwtSecret</code> on every instance, confirm each cluster node shows <code>Paired signature</code> first, and do <em>not</em> hand-replace <code>Crypto.Secret</code> — it protects persisted encrypted data and needs a supported migration.</li>
+          <li><strong>Check whether any account has a passkey but no TOTP.</strong> CVE-2026-107808 silently downgrades exactly those accounts to password-only while the UI reports them as 2FA-enabled. The reassuring badge is the bug.</li>
+          <li><strong>Audit the upgrade channel.</strong> If <code>github_proxy</code> is set to a custom mirror — or to anything over <code>http://</code> — CVE-2026-107812 makes that mirror a root-code-execution path on the next self-upgrade. Pin it to a source you control or disable self-upgrade.</li>
+          <li><strong>Do not rely on dependency scanning for this class of software.</strong> Management UIs deployed as containers need version inventory from the running fleet, not from a lockfile.</li>
+          <li><strong>Treat &ldquo;incomplete fix&rdquo; advisories as a signal about structure.</strong> CVE-2026-107813 exists because a middleware requirement was applied per-router rather than centrally. Whenever a fix enumerates call sites, ask what the eleventh call site is.</li>
+        </ul>
+
+        <p><em>Verification note: the ten advisories, their CVE IDs, severities, CVSS vectors, CWE lists, credited reporters, affected ranges, fixed pseudo-versions and publication timestamps were read directly from the GitHub Advisory API and cross-checked against an OSV package query for <code>github.com/0xJacky/Nginx-UI</code> (42 total records, 10 published in October 2026). Fix-commit dates and messages, the &ldquo;chore: prepare v2.5.0&rdquo; introducing commit for CVE-2026-107805, the full release list and the repository metrics (11,582 stars, 891 forks) came from the GitHub REST API on 10 October 2026. The mapping from each fix commit to its first containing release was computed with the repository&rsquo;s compare endpoint, not inferred from dates; v2.8.4 was confirmed to contain all ten. The NVD status for CVE-2026-107806 (Undergoing Analysis, CVSS 4.0 9.4 secondary) came from the NVD 2.0 API. The <code>golang/vulndb</code> triage state was read from issue 6741. KEV absence was checked against CISA&rsquo;s published JSON feed (catalogVersion 2026.10.08, 1,739 entries). The parent advisory GHSA-5v7c-xpfp-p65m returns 404 from the global advisory API, so the incomplete-fix relationship is reported as the CVE-2026-107813 advisory text describes it. The reading that the batch resembles a maintainer clearing a queue rather than a single coordinated audit is our editorial assessment. We ran no exploit code and tested nothing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/advisories/GHSA-p393-cf76-4jmr?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — GHSA-p393-cf76-4jmr / CVE-2026-107806 (critical; backup restore app config overwrite RCE)</a></li>
+          <li><a href="https://github.com/advisories/GHSA-h246-wpgf-vmq5?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — GHSA-h246-wpgf-vmq5 / CVE-2026-107813 (incomplete fix of CVE-2026-84315; api/cluster router)</a></li>
+          <li><a href="https://github.com/advisories/GHSA-j3hg-9rp3-5hw9?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — GHSA-j3hg-9rp3-5hw9 / CVE-2026-107805 (affected from 2.5.0; fixed in 2.6.0)</a></li>
+          <li><a href="https://github.com/advisories/GHSA-45gv-9wjv-xh7p?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Advisory — GHSA-45gv-9wjv-xh7p / CVE-2026-107808 (passkey-without-TOTP 2FA bypass)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-107806?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-107806 (published 9 October 2026, Undergoing Analysis)</a></li>
+          <li><a href="https://github.com/0xJacky/nginx-ui/releases/tag/v2.5.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">nginx-ui — v2.5.0 release notes (29 July 2026; credential-rotation notice)</a></li>
+          <li><a href="https://github.com/0xJacky/nginx-ui/commit/a467ed652591fc0cd1b466a1ec751b493faef9f7?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">nginx-ui — commit a467ed65, &ldquo;harden backup restore trust boundaries&rdquo; (28 July 2026)</a></li>
+          <li><a href="https://github.com/golang/vulndb/issues/6741?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">golang/vulndb — issue 6741, triage for GHSA-p393-cf76-4jmr (NeedsTriage as of 10 October 2026)</a></li>
+          <li><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — Known Exploited Vulnerabilities catalog (2026.10.08, 1,739 entries; none of the ten listed)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI: 24 Advisories in 33 Hours Point at a Fixed Version That Was Never Published to PyPI</a></h3><p>Between 7 and 8 October 2026, 24 GitHub advisories covering 25 CVEs landed against PraisonAI. Every one names a fixed version — 4.6.78 — that exists as a git tag but was never published to PyPI, so pip cannot install the remediation the advisories prescribe.</p><a class="text-link" href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Six CVEs for an Unknown Number of Bugs: Cisco’s October NX-OS Hardening Release and the Frontier-Model Footnote</a></h3><p>On 7 October 2026 Cisco published a batch of advisories including four CWE-bucketed “security hardening” releases for NX-OS, APIC, Meraki and License On-Prem. Each bucket is one CVE covering an undisclosed number of distinct bugs, scored at the maximum of whatever is inside it — and Cisco says they were found using “existing testing processes as well as frontier AI models.”</p><a class="text-link" href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
