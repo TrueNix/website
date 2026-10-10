@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens — al-ice.ai</title>
+  <meta name="description" content="Gen Threat Labs attributes the CallbackBeaver Rust infostealer to Warden Stealer: a malware-as-a-service operation with its own loader, a built-in crypto clipper, and official collection of AI coding-agent tokens, MCP credentials, and prompt histories since v1.9. No CVE and no patch — this is endpoint theft, and your agent config directory is a credential store." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens" />
+  <meta name="post:date" content="2026-10-10" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-10">2026-10-10</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>8 October 2026</strong>, Gen Threat Labs researchers <strong>Vojtěch Krejsa and Jan Rubín</strong> published a 33-minute technical breakdown that does two things at once: it attributes a Rust infostealer they had been tracking as <strong>CallbackBeaver</strong> to the malware-as-a-service brand <strong>Warden Stealer</strong>, and it documents that stealer as one of the first infostealer families to go after AI agent data as a first-class target — configuration files and local data belonging to <strong>Claude, Codex, Grok, and Cursor</strong>. Depending on the agent, that means access and refresh tokens, credentials stored in MCP configurations, prompt histories, conversation databases, and traces of the projects a developer has been working on. As Gen puts it, that haul gives an attacker both the means to access an account and the context needed to understand what valuable data sits behind it.</p>
+        <p>The timeline matters. Warden has been promoted on underground forums only since <strong>August 2026</strong>, with first builds tracked to early <strong>May 2026</strong> — yet Gen already ranks it among the most prevalent infostealers in its user base, alongside Vidar, Amatera, and Remus. The authors claim about <strong>110 active customers</strong>. AI agent collection started as custom operator rules, then became official product: <strong>version 1.9, announced 29 September 2026</strong>, formally advertised the collection of AI coding-agent tokens — and raised prices sharply at the same time, with Premium jumping from $499 to $800 a month and a new $1,500 Enterprise tier. Somebody is paying for this capability.</p>
+
+        <h2>Why Warden is not just another stealer build</h2>
+        <p>Most MaaS infostealers ship a payload and leave operators to handle delivery and evasion. Warden bundles its own <strong>dedicated loader</strong> and a <strong>built-in cryptocurrency clipper</strong> — a combination Gen calls uncommon, and a plausible explanation for the rapid uptake. The clipper originally covered six networks (BTC, ETH, TRX, XMR, SOL, TON) and added four more in v1.7 (LTC, XRP, ADA, BCH); Gen verified the exact network list — in the same order — inside extracted build configurations, which is part of the attribution case. The loader, which Gen assesses with high confidence is built in-house, runs in three modes: <strong>injection</strong> (the default — reconstruct the payload in memory and inject it into a living process, currently whatever owns the <code>Shell_TrayWnd</code> taskbar window, normally <code>explorer.exe</code>), <strong>sideload</strong> (DLL next to a legitimately signed EXE), and <strong>standalone</strong>.</p>
+        <p>The evasion engineering is the product's headline feature — marketed, in Gen's translation, as the &ldquo;only true morpher on the market (not just an obfuscator), built upon AST code parsing and LLVM IR passes.&rdquo; Each build uses its own <strong>custom Base64-like alphabet</strong> (not mere permutations — different character sets entirely) plus a custom LZSS layer for strings and payload blobs, lazy string decoding, dynamic API resolution, indirect control flow, TLS-callback-driven constant recovery (the namesake of the old CallbackBeaver label), MBA expressions, and opaque predicates. Loader binaries are additionally inflated with <strong>massive PE overlays</strong> designed to make scanners, sandboxes, and cloud upload pipelines choke on file size. Anti-VM checks span SMBIOS firmware tables, a 27-signature cpuid blacklist plus substring markers, <code>Virtio</code>-prefixed uninstall entries, and virtual display adapters — and on detection the malware pops a Russian-language joke dialog titled DEBUG and aborts its reporting worker.</p>
+
+        <h2>The ABE bypass, and what it says about browser-data theft in 2026</h2>
+        <p>Chromium's <strong>Application-Bound Encryption (ABE)</strong> was supposed to raise the cost of cookie and password theft. Warden's bypass is a three-step routine Gen describes as a novel combination of techniques seen in Vidar and Remus, implemented independently: scan the browser's memory for the four-byte <code>v20\x00</code> tag that marks the <code>v20_master_key</code> entry in Chromium's <code>KeyRing</code> map, validate candidates against the expected in-memory layout of the key vector (handling both pointer-based and size-based <code>libc++</code> representations), then hijack a browser thread to run a shellcode stub calling <code>CryptUnprotectMemory</code> with <code>CRYPTPROTECTMEMORY_SAME_PROCESS</code> and poll the buffer for changed bytes. The validation heuristics — pointer alignment, a 32-byte size check, capacity bounds — are the kind of detail that only comes from reading the implementation rather than the marketing. The defensive takeaway is blunt: ABE forces stealers to do in-process surgery, and the current generation of stealers does it routinely.</p>
+
+        <h2>The agent-data angle is the story</h2>
+        <p>Gen is explicit that this trend did not start with Warden — their <strong>8 September 2026</strong> post, &ldquo;Infostealers Have Found a New Target: Your AI Agent,&rdquo; found agent-data collection rules across the landscape, naming Amatera, Remus, and what they then called CallbackBeaver. What changed is institutionalisation: an operator curiosity became a versioned, advertised, price-hiked feature within weeks, and it now appears in a substantial subset of Warden builds. The stealer's C2 protocol — HTTPS, per-build XOR, LZNT1 framing with a 16-byte build marker, 1–5 hardcoded fallback domains, system fingerprinting on registration, dynamic per-build configuration — also supports downloading and executing second stages via <code>certutil.exe</code> into <code>%TEMP%</code> launched hidden through COM <code>ShellExecute</code>. Gen publishes an extensive IoC list (hashes, C2 domains such as <code>backtoblack7[.]com</code>, <code>skibidistealer[.]team</code>, and <code>web03-azureupdate[.]com</code>) on its GitHub.</p>
+        <p>Two clarifications the research supports and we endorse. First, <strong>this is not a vulnerability in Claude, Codex, Grok, or Cursor</strong> — it is endpoint theft after a Windows host is compromised, delivered through ClickFix lures, malvertising, cracked software, and fake game cheats. Patching your agent does nothing; cleaning the endpoint does everything. Second, the proximity to our recent coverage is the point: the <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">Tensorlake npm compromise</a> poisoned the machines people build agents on, the <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">GhostAction burst</a> planted credential stealers in tens of thousands of repos — and Warden harvests what those footholds leave behind: the tokens, MCP credentials, and conversation histories sitting in plaintext on developer workstations.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat AI agent config directories as credential stores.</strong> <code>~/.claude</code>, Codex/Cursor config paths, and MCP server configs hold tokens, refresh tokens, and saved credentials. Restrict permissions, exclude them from backups that leave the trust boundary, and never paste their contents into tickets, gists, or shared docs.</li>
+          <li><strong>Scope and rotate what the stealer would find.</strong> Short-lived tokens, least-privilege API keys per project, and MCP servers that reference secrets from a vault rather than embedding them turn a total compromise into a bounded one. Rotate anything that lived on a host you cannot vouch for.</li>
+          <li><strong>Hunt the loader's behaviours, not its hash.</strong> Morphing defeats static signatures by design. Watch for <code>certutil.exe -urlcache</code> downloads to <code>%TEMP%</code>, remote-thread injection into <code>explorer.exe</code>, oversized binaries with giant overlays, and outbound HTTPS to newly registered domains.</li>
+          <li><strong>Assume breach cleanup for infected developer machines.</strong> A stealer that exfiltrates prompt history and project context compromises more than credentials — it hands the attacker a map of your codebase, infrastructure, and internal hosts. Reimage, rotate every secret the host ever touched, and review what the stolen context exposes.</li>
+        </ul>
+
+        <p><em>Verification note: the attribution (CallbackBeaver to Warden), timeline (forum promotion since August 2026, first builds early May, public availability 21 July 2026, v1.9 AI-token announcement 29 September 2026), pricing, loader modes, obfuscation and anti-VM details, ABE bypass mechanics, C2 protocol description, and IoC references were read first-hand from the Gen Threat Labs blog HTML (Krejsa and Rubín, 8 October 2026) fetched on 10 October 2026. Distribution vectors (ClickFix, malvertising, cracked software, game cheats) and the early-May-to-August activity arc are from Cyber Security News and GBHackers coverage of the same research, fetched the same day, and are attributed accordingly. The September precursor post is Gen&rsquo;s own linked prior work. We tested nothing and exploited nothing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.gendigital.com/blog/insights/research/warden-stealer-rust-infostealer-analysis?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Gen Digital — Warden Stealer: The Rapid Rise of an Infostealer with an Appetite for AI Agent Data (8 October 2026; primary research, attribution, technical breakdown, IoCs)</a></li>
+          <li><a href="https://www.gendigital.com/blog/insights/research/infostealers-your-ai-agent?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Gen Digital — Infostealers Have Found a New Target: Your AI Agent (8 September 2026; precursor landscape analysis)</a></li>
+          <li><a href="https://cybersecuritynews.com/warden-stealer/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News — Warden Stealer Spreads Through ClickFix, Malvertising, Cracked Software and Game Cheats (9 October 2026; distribution vectors)</a></li>
+          <li><a href="https://gbhackers.com/warden-stealer-malware/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers — Warden Stealer Malware Targets Claude, Codex, Grok and Cursor to Steal AI Agent Data (9 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/anthropic-distillation-seven-labs-beijing-cac-probe/">190 Million Stolen Exchanges: The Anthropic Distillation Accusation — and the Beijing Probe of Its Own Labs</a></h3><p>Anthropic September 2026 threat report accuses seven China-based labs of industrial-scale distillation of Claude — roughly 190 million exchanges — and the Beijing internet regulator has now opened a probe into DeepSeek and Moonshot over the allegations.</p><a class="text-link" href="/posts/2026/09/anthropic-distillation-seven-labs-beijing-cac-probe/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Fiddler AI — AI Coding Agent Threat Models and Controls</a></h3><p>Fiddler AI maps the full coding-agent attack surface — prompt injection, supply-chain poisoning, credential leaks, MCP spoofing — and proposes runtime guardrails.</p><a class="text-link" href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-30">2026-06-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/djinn-stealer-simplehelp-cve-2026-48558-mcp-credential-theft/">Djinn Stealer — SimpleHelp CVE-2026-48558 Exploit Targets MCP Configs and AI Dev Credentials</a></h3><p>New Djinn Stealer deployed via SimpleHelp RMM exploit specifically harvests MCP configs, AI coding assistant tokens, and cloud credentials from developer machines.</p><a class="text-link" href="/posts/2026/06/djinn-stealer-simplehelp-cve-2026-48558-mcp-credential-theft/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
