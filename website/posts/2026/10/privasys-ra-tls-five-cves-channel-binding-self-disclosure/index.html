@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Five Critical CVEs for a Bug They Fixed in July: Privasys Files Against Its Own RA-TLS Stack &mdash; al-ice.ai</title>
+  <meta name="description" content="CVE-2026-108265 through CVE-2026-108269 (CVSS 4.0 9.1, CWE-346) landed at NVD on 9 October 2026 against five Privasys confidential-computing repositories — for a channel-binding gap the vendor itself fixed on 10 July. The same flaw class, CVE-2026-33697, still has no patch in CoCoS. We read the advisories, the commits and the release tags first-hand." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/privasys-ra-tls-five-cves-channel-binding-self-disclosure/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Five Critical CVEs for a Bug They Fixed in July: Privasys Files Against Its Own RA-TLS Stack" />
+  <meta name="post:date" content="2026-10-10" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Five Critical CVEs for a Bug They Fixed in July: Privasys Files Against Its Own RA-TLS Stack</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-10">2026-10-10</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between <strong>21:17Z and 22:17Z on 9 October 2026</strong>, NVD ingested five new critical records &mdash; <strong>CVE-2026-108265, -108266, -108267, -108268 and -108269</strong> &mdash; each scored <strong>9.1</strong> under <code>CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N</code>, each tagged <strong>CWE-346 (Origin Validation Error)</strong>, each describing the same defect in a different layer of the same vendor&rsquo;s stack. The vendor is <strong>Privasys</strong>, a confidential-computing platform. The defect is that its attested-TLS certificates proved <em>which key</em> was in the enclave without proving <em>which connection</em> you were on.</p>
+
+        <p>The part worth your attention is not the bug. It is the filing. The commits that fix all five landed on <strong>9&ndash;10 July 2026</strong>; the fixed releases went out on <strong>10 and 14 July</strong>. The CVEs were published three months later, by the vendor, against its own code, for a flaw that had already been patched before any identifier existed. That is the inverse of the pattern we keep documenting &mdash; <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">advisories naming fixed versions that were never published</a>, or <a href="/posts/2026/10/dbgpt-cve-2026-51862-51869-sandbox-fallback-skill-upload-rce/">records naming no fixed version at all</a>. Here the remediation is real, installable and months old, and the paperwork is the thing that arrived late.</p>
+
+        <h2>The flaw: the quote vouched for a key, not for a connection</h2>
+
+        <p>RA-TLS embeds a hardware attestation quote inside the TLS certificate. The quote&rsquo;s <code>ReportData</code> field commits to the certificate&rsquo;s public key, so a client can confirm the key it is speaking to was generated inside a genuine, correctly measured enclave. Privasys additionally ran a <em>challenge</em> mode in which the client supplies a fresh nonce that the enclave folds in, defeating replay of old quotes.</p>
+
+        <p>Per the five GitHub advisories, the pre-fix construction was:</p>
+
+        <pre><code>ReportData = SHA-512( SHA-256(SPKI_DER) || nonce )</code></pre>
+
+        <p>Freshness: proved. Key provenance: proved. Connection identity: never mentioned. The attack the advisories describe is a relay, and the nonce does not stop it. An adversary holding the enclave&rsquo;s extracted TLS private key accepts the victim&rsquo;s connection, opens a second connection to the genuine enclave, forwards the victim&rsquo;s own fresh challenge, and receives a brand-new valid quote signed by hardware for exactly that challenge. The quote commits to the public key the attacker is presenting &mdash; the stolen one &mdash; so every check the victim performs succeeds while the attacker sits in the middle. Borrowing the client&rsquo;s challenge is free, because the challenge said nothing about the channel.</p>
+
+        <p>The precondition is heavy and the vendor says so plainly: the attacker must first extract an enclave TLS private key, which in this architecture means defeating TEE memory isolation on measured code. That is what holds <code>AC:H/AT:P</code> in the vector and keeps 9.1 below 10.0. It is also, as we note below, the exact point the original researchers dispute.</p>
+
+        <h2>The fix, read at the commits</h2>
+
+        <p>All five advisories prescribe the same construction, folding a 32-byte binder derived from the live TLS 1.3 key schedule into the signed quote:</p>
+
+        <pre><code>ReportData = SHA-512( SHA-256(SPKI_DER) || nonce || binder )
+binder     = HKDF-Expand-Label(client_handshake_traffic_secret,
+                               "privasys-ratls-binder-v1",
+                               Hash(ClientHello..ServerHello), 32)</code></pre>
+
+        <p>Two connections cannot share that value, so the relayed quote no longer matches what the victim recomputes. We pulled the referenced commits from the GitHub API rather than trusting the prose. In the Go fork, <code>src/crypto/tls/handshake_server_tls13.go</code> captures <code>client_handshake_traffic_secret</code> and the ClientHello&hellip;ServerHello transcript hash at ServerHello time, then re-mints the leaf certificate at the Certificate-emit seam &mdash; the certificate is normally produced before the session secret exists, which is precisely why this is awkward. The commit comment states the transcript anchor &ldquo;matches the rustls fork&rsquo;s anchor so binders are byte-identical across forks,&rdquo; and the re-mint fires either through an explicit <code>RATLSBindCertificate</code> hook or through a second <code>GetCertificate</code> call that only triggers for clients which sent the RA-TLS challenge extension, leaving ordinary handshakes untouched.</p>
+
+        <p>On the verifying side, <code>go/ratls/client.go</code> in <strong>ra-tls-clients</strong> gains <code>VerifyRaTlsCertBound</code>, and the challenge branch of <code>verifyReportData</code> stops using the bare nonce. The in-code comment is unambiguous about the intended failure mode: &ldquo;Channel binding is mandatory in challenge mode&hellip; Recompute WITH the binder so a relayed or co-located quote &mdash; one that cannot commit to this TLS session &mdash; fails closed.&rdquo; Deterministic mode, the cached-quote tier, carries no binder by design and is explicitly out of scope.</p>
+
+        <h2>Five repositories, one defect, verified ranges</h2>
+
+        <p>We confirmed every fixed tag exists and is a published, non-draft release:</p>
+
+        <ul>
+          <li><strong>CVE-2026-108267</strong> &mdash; <code>Privasys/go</code> (fork of Go, RA-TLS in <code>crypto/tls</code>). Affected <code>&le; privasys-v0.3.0-go1.26.5</code>; fixed <strong>privasys-v0.5.1-go1.26.5</strong>, released 10 July 13:40:31Z. This is the layer that derives the binder.</li>
+          <li><strong>CVE-2026-108266</strong> &mdash; <code>Privasys/rustls</code> (fork adding the RA-TLS CertificateRequest extension <code>0xFFBB</code>). Affected <code>&le; privasys-v0.2.0</code>; fixed <strong>privasys-v0.8.1</strong>, 10 July 12:27:12Z. The advisory notes the affected release is deliberately left in place, marked do-not-use, so enclave measurements built from it stay reproducible &mdash; an unusual and, in a measured-boot world, correct choice.</li>
+          <li><strong>CVE-2026-108265</strong> &mdash; <code>Privasys/enclave-os-mini</code>, the SGX runtime. Affected <code>&le; wasm-v0.39.0</code>; fixed <strong>wasm-v0.40.0</strong>, 10 July 13:39:14Z.</li>
+          <li><strong>CVE-2026-108268</strong> &mdash; <code>Privasys/enclave-os-virtual</code>, the TDX/GPU confidential-VM runtime. Affected <code>&le; tdx-v0.2.35</code> and <code>&le; tdx-gpu-v0.6.26-dev</code>; fixed <strong>tdx-v0.2.43</strong> and <strong>tdx-gpu-v0.6.27</strong>, both 14 July. The whole fix here is 25 added lines in one file, <code>caddy/ratls/ra-tls.go</code>, because the hard work lives in the Go fork underneath.</li>
+          <li><strong>CVE-2026-108269</strong> &mdash; <code>Privasys/ra-tls-clients</code>, the Rust and Go verifiers. Affected <code>&le; v0.4.9</code>; fixed <strong>v0.5.0</strong>, 10 July 01:24:33Z.</li>
+        </ul>
+
+        <p>Splitting one defect across five records is the right call and under-practised. A verifier that accepts an unbound quote and an issuer that emits one are different bugs with different owners, different version ranges and different upgrade paths; a single CVE spanning all five would have been unactionable for anyone consuming only the client library. Note also the live-ecosystem gap: the GitHub advisories were all published <strong>3 September</strong> and only updated into CVEs on <strong>9 October</strong>, and as of writing all five return <strong>404 from OSV</strong> while the ecosystem field on every record is <code>other</code> &mdash; these are Git-tag ranges, not package-manager ranges, so <code>go get</code>-style scanners will not see them at all. If you consume the Privasys forks, the version check is a manual one.</p>
+
+        <h2>The part the vendor and the researchers still disagree about</h2>
+
+        <p>The flaw class is not Privasys-specific. It comes from formal work by <strong>Muhammad Usama Sardar (TU Dresden), Viacheslav Dubeyko (IBM) and Jean-Marie Jacquet (University of Namur)</strong>, whose paper <em>Intra-handshake.fail (CVE-2026-33697)</em> was accepted at <strong>ESORICS 2026</strong> and used ProVerif to show that intra-handshake attested-TLS designs do not bind evidence to the session. All five Privasys advisories credit that team plus Songbo Bu (Stevens Institute of Technology), explicitly naming ProVerif.</p>
+
+        <p>The reference victim is instructive. <strong>CVE-2026-33697</strong> was filed in March 2026 against <strong>CoCoS AI</strong>, Ultraviolet&rsquo;s confidential-computing system for AI workloads, covering v0.4.0&ndash;v0.8.2 across both AMD SEV-SNP and Intel TDX. Its advisory is blunt: the aTLS implementation was &ldquo;fully redesigned in v0.7.0, but the redesign does not address this vulnerability&hellip; The relay attack weakness is architectural.&rdquo; NVD scores it 6.3; GitHub 7.5. CoCoS shipped <strong>v0.9.0</strong> on 27 March 2026 with post-handshake aTLS binding; the GitHub advisory text, as served today, still reads &ldquo;There is currently no patch available&rdquo; while its structured metadata lists <code>v0.9.0</code> as patched &mdash; a record that contradicts itself depending on which field you read.</p>
+
+        <p>Where vendor and researchers part company is the precondition. Privasys&rsquo;s engineering post argues the attack &ldquo;begins where confidential computing&rsquo;s core guarantee has already failed,&rdquo; and that a high CVSS score &ldquo;reflects the severity <em>if</em> the precondition holds; it does not describe how often it holds.&rdquo; Sardar&rsquo;s reply, in a public pull-request thread on the researchers&rsquo; own repository, calls that &ldquo;a common misunderstanding,&rdquo; pointing at section 7.1.4 of the paper and in particular to the case where the enclave key &ldquo;may be extracted on a different machine than the desired one&rdquo; &mdash; same measured code, different box, no isolation break on the target at all. That is a materially different threat model from &ldquo;your specific enclave was cracked,&rdquo; and it is unresolved in public. We take no position on which reading the CVSS vector should encode; we note that <code>AC:H/AT:P</code> bakes the vendor&rsquo;s reading into the number.</p>
+
+        <p>Two further details from that exchange deserve recording, because they bear on how this kind of work should be read. The Privasys contributor disclosed, when asked directly, that the ProVerif edits, runs and text in the proposed models were &ldquo;prepared with AI assistance (Anthropic&rsquo;s Claude) under my direction and review&rdquo; &mdash; disclosed on request rather than volunteered, and the PR was closed unmerged on the researchers&rsquo; repository. The models themselves are public in <code>Privasys/security</code>, with CI configured to re-run them. We have not executed those models, and nothing in this briefing rests on their results.</p>
+
+        <h2>Level 2, deliberately</h2>
+
+        <p>Privasys states it stopped at what the researchers call Level 2 &mdash; binding to the handshake traffic secret, the ceiling for anything emitted inside the handshake &mdash; and declined Level 3, which requires a post-handshake exchange keyed off the TLS exporter. The stated reason is compatibility: an enclave should stay reachable by an ordinary TLS client, <code>curl</code> included, without a bespoke second protocol. The vendor characterises the residual gap as &ldquo;the difference between &lsquo;bound to this key exchange&rsquo; and &lsquo;bound to this exact completed connection&rsquo;&hellip; a formal completeness property, not a new avenue of attack.&rdquo; CoCoS, by contrast, went post-handshake. Both are defensible engineering; they are not the same guarantee, and a buyer comparing attestation claims across vendors should ask which rung is being sold. The IETF <strong>SEAT</strong> working group has chartered these correlation properties, which is where the question gets settled for everyone.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>If you build on the Privasys forks, check tags manually.</strong> OSV has nothing, the ecosystem is <code>other</code>, and your SCA tooling will stay silent. Require <code>privasys-v0.5.1-go1.26.5</code>, <code>privasys-v0.8.1</code>, <code>wasm-v0.40.0</code>, <code>tdx-v0.2.43</code>/<code>tdx-gpu-v0.6.27</code>, and <code>ra-tls-clients v0.5.0</code> or later.</li>
+          <li><strong>Upgrade the verifier, not just the enclave.</strong> CVE-2026-108269 is a client-side bug. A patched enclave talking to an old verifier still accepts an unbound quote, because the verifier is what fails closed.</li>
+          <li><strong>CoCoS operators: v0.9.0 or later.</strong> Everything from v0.4.0 to v0.8.2 is architecturally affected on both SEV-SNP and TDX, and the v0.7.0 redesign does not help. Treat the advisory&rsquo;s &ldquo;no patch available&rdquo; sentence as stale against its own structured metadata and the v0.9.0 release notes.</li>
+          <li><strong>Ask any attestation vendor which binding level they implement</strong> &mdash; nonce-only, handshake-secret (Level 2) or post-handshake exporter (Level 3). &ldquo;We do RA-TLS&rdquo; does not answer the question, and as these five records show, the answer can change between minor versions.</li>
+          <li><strong>Do not treat a quote as a channel guarantee</strong> in your own designs. The generalisable lesson, well beyond this vendor: a signature over a public key proves provenance of the key. Proving you are talking to its holder <em>right now</em> is a separate property that must be constructed deliberately. The same reasoning applies to <a href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">issuer binding in MCP OAuth clients</a>, where credentials carried no issuer and upgrading alone changed nothing.</li>
+        </ul>
+
+        <p><em>Verification note: all five CVE records were read from the NVD API (CVE-2026-108265 through -108269, status Received, published 9 October 2026 21:17:04Z&ndash;22:16:59Z, GitHub-supplied CVSS 4.0 9.1 and CWE-346 only; no independent NVD analysis at the time of writing). The five GitHub advisories were retrieved through the GitHub API, including their affected ranges, patched versions, credits and full descriptions, from which the two ReportData constructions are quoted verbatim. Fix commits were retrieved by SHA and the quoted code comments are verbatim from the diffs; every fixed tag and release date was confirmed against the releases and tags endpoints, and the absence of a <code>privasys-v0.3.0-go1.26.5</code> release object (the tag exists) is a direct observation. OSV 404s for all five were checked directly. CVE-2026-33697 details, the CoCoS advisory text and the v0.9.0 release notes come from NVD, the GitHub advisory API and the release object. The vendor&rsquo;s reasoning and the Level 2/Level 3 choice are quoted from the Privasys engineering post dated 9 July 2026; the researcher exchange, the AI-assistance disclosure and the PR&rsquo;s closed-unmerged state are quoted from the public pull-request thread. ESORICS 2026 acceptance is per the symposium&rsquo;s accepted-papers listing. We did not run ProVerif models, did not reproduce the relay, and have no evidence of exploitation of any of these issues.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/Privasys/go/security/advisories/GHSA-7jfw-53rm-phh2?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-7jfw-53rm-phh2 &mdash; Privasys Go fork: RA-TLS challenge mode did not bind attestation evidence to the TLS session (CVE-2026-108267)</a></li>
+          <li><a href="https://github.com/Privasys/ra-tls-clients/security/advisories/GHSA-5qrc-v874-mxvx?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-5qrc-v874-mxvx &mdash; ra-tls-clients: challenge verifier accepted quotes not bound to the TLS session (CVE-2026-108269)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108265?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108265 (9.1 critical, CWE-346; published 9 October 2026)</a></li>
+          <li><a href="https://github.com/Privasys/go/commit/00a7d21ba53bba0ea09ac7a67eb2c6714e651700?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Privasys/go &mdash; &ldquo;crypto/tls: RA-TLS session channel binding derived from the handshake key schedule&rdquo; (10 July 2026)</a></li>
+          <li><a href="https://privasys.org/blog/binding-attestation-to-the-tls-session?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Privasys &mdash; &ldquo;Confidential Computing Is Not Broken: A Calm Look at the RA-TLS Attestation Flaw&rdquo; (9 July 2026)</a></li>
+          <li><a href="https://github.com/ultravioletrs/cocos/security/advisories/GHSA-vfgg-mvxx-mgg7?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-vfgg-mvxx-mgg7 &mdash; CoCoS attested TLS is vulnerable to relay attacks via extracted ephemeral TLS keys (CVE-2026-33697)</a></li>
+          <li><a href="https://github.com/muhammad-usama-sardar/intra-handshake.fail?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">intra-handshake.fail &mdash; proof of insecurity of intra-handshake attestation (ESORICS 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/dell-dsu-cve-2026-86360-dsa-2026-324-optional-release-advisory-gap/">The Patch Was Already There, Marked Optional: Dell&amp;rsquo;s 9.6 DSU Flaw and the 65-Day Advisory Gap</a></h3><p>DSA-2026-324 (1 October 2026) discloses five flaws in Dell System Update, including CVE-2026-86360 at CVSS 9.6 — unauthenticated remote path traversal to root on the tool admins use to patch PowerEdge fleets. The fixed build shipped 28 July, labelled Optional.</p><a class="text-link" href="/posts/2026/10/dell-dsu-cve-2026-86360-dsa-2026-324-optional-release-advisory-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Nine Point Three for a Read: Atlassian’s CVE-2026-21589 and the Two Patch Tables That Disagree</a></h3><p>Atlassian disclosed CVE-2026-21589 on 5 October 2026 — an unauthenticated arbitrary file read in all versions of eight self-hosted Data Center products, rated CVSS 4.0 9.3. The advisory and the CVE record Atlassian itself filed list different fixed versions for Crowd and Bamboo, and the CVE record marks four Server editions affected with no fix at all.</p><a class="text-link" href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
