@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Gateway Holds the Keys: One Researcher’s 11 October Batch Reads Credentials Out of Seven Agent Platforms &mdash; al-ice.ai</title>
+  <meta name="description" content="Thirteen advisories landed at NVD on 11 October 2026, all credited to one researcher. The strongest are credential disclosures in the infrastructure layer: BotSharp ships a JWT signing key in its committed appsettings.json (CVE-2026-108860, 9.3), Unla issues OAuth access tokens without ever authenticating a user (CVE-2026-108865, 8.8), and Plano binds Envoy’s admin port to 0.0.0.0 where config_dump returns provider API keys (CVE-2026-108863, 8.7). We read every file. None of the seven has a fixed version." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/agent-gateway-credential-disclosure-cluster-botsharp-unla-plano-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Gateway Holds the Keys: One Researcher’s 11 October Batch Reads Credentials Out of Seven Agent Platforms" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Gateway Holds the Keys: One Researcher&rsquo;s 11 October Batch Reads Credentials Out of Seven Agent Platforms</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Nobody needed to attack a model. On <strong>11 October 2026</strong>, between 14:17:03Z and 14:17:06Z, NVD published a batch of advisories assigned by <strong>VulnCheck</strong> and credited, every one of them, to a single researcher: <strong>hieuPenguinnn</strong>. We covered the two strongest separately — <a href="/posts/2026/10/hyper-mcp-cve-2026-108698-108699-cosign-toctou-any-signer-wasm-plugins/">hyper-mcp&rsquo;s pair of cosign bypasses</a>. This is the rest, and the rest has a theme.</p>
+
+        <p>Seven of these findings end in the same place: an attacker reads a credential belonging to someone else out of the agent platform&rsquo;s own infrastructure. Not out of a prompt, not out of a model&rsquo;s weights, not out of a tool result. Out of a config file, an admin port, a log line, or an authorization table. The LLM is not a participant in any of them.</p>
+
+        <h2>Three places a key goes, and all three leak</h2>
+
+        <p>Sorted by mechanism rather than by score, the batch resolves into three classes. The first is the oldest bug in software, wearing a new logo.</p>
+
+        <p><strong>CVE-2026-108860</strong> &mdash; <strong>BotSharp</strong>, <strong>9.3 critical</strong>, CWE-321, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N</code>. BotSharp is a .NET framework for building LLM agents, 3,111 stars and 650 forks. We read <code>src/WebStarter/appsettings.json</code> at the commit the advisory pins, and the JWT block is four lines of plaintext:</p>
+
+        <pre><code>"Jwt": {
+  "Issuer": "botsharp",
+  "Audience": "botsharp",
+  "Key": "31ba6052aa6f4569901facc3a41fcb4adfd9b46dd00c40af8a753fbdc2b89869"
+},</code></pre>
+
+        <p>A 64-character hex HMAC secret, in the repository, alongside a fixed issuer and a fixed audience. In <code>BotSharpOpenApiExtensions.cs</code> that value is read straight into the validation parameters:</p>
+
+        <pre><code>ValidIssuer = config["Jwt:Issuer"],
+ValidAudience = config["Jwt:Audience"],
+IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"])),</code></pre>
+
+        <p>Every deployment that starts from the shipped starter project and never rotates that key accepts bearer tokens signed by anyone who has read the repository. Issuer and audience are not secrets and are not deployment-specific, so there is nothing left to guess: an attacker mints a token for any known username, including an administrator, and presents it to <code>[Authorize]</code>-protected routes. VulnCheck&rsquo;s description says exactly this, and the code agrees.</p>
+
+        <p>One detail we noticed that the advisory does not mention, and we raise it as an observation rather than a second finding. The same function takes an <code>enableValidation</code> boolean, and when it is false the code installs a replacement signature validator:</p>
+
+        <pre><code>o.TokenValidationParameters.SignatureValidator = (string token, TokenValidationParameters parameters) =&gt;
+    new JsonWebToken(token);</code></pre>
+
+        <p>That callback parses the token and returns it. It does not verify anything. In that mode the hard-coded key is irrelevant because no signature is checked at all — an unsigned token is accepted. Whether any deployment runs that way depends on the caller, which we did not trace through every host project, so we make no claim about prevalence. We note only that the committed key is the <em>better</em> of the two configurations.</p>
+
+        <h2>An OAuth server with nowhere to record the user</h2>
+
+        <p><strong>CVE-2026-108865</strong> &mdash; <strong>AmoyLab Unla</strong>, <strong>8.8 high</strong>, CWE-287, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N</code>. Unla is an MCP gateway: it fronts MCP servers behind a prefix, applies auth, and proxies to upstream APIs with injected credentials. 2,240 stars. The advisory says its OAuth2 server &ldquo;never authenticates a resource owner.&rdquo; That phrasing undersells it.</p>
+
+        <p>We read <code>Authorize</code> in <code>internal/auth/oauth.go</code> at v0.10.0 end to end. It reads <code>client_id</code>, <code>redirect_uri</code>, <code>response_type</code>, <code>scope</code>, <code>state</code> and the PKCE parameters from the query string. It rejects a missing client ID, redirect URI or response type. It rejects a response type that is not <code>code</code>. It looks up the client and rejects an unregistered one. It validates the redirect URI against the client&rsquo;s registered list, and validates the PKCE method if a challenge was supplied. Then it generates an authorization code and returns it.</p>
+
+        <p>Every check in that list is a check on the <em>client</em>. At no point is a human asked to log in, and at no point is a session consulted. The decisive evidence is not in the handler, though — it is in the data model. Here is the record the handler persists, from <code>internal/auth/storage/store.go</code>:</p>
+
+        <pre><code>type AuthorizationCode struct {
+	Code                string   `json:"code"`
+	ClientID            string   `json:"client_id"`
+	RedirectURI         string   `json:"redirect_uri"`
+	Scope               []string `json:"scope"`
+	CodeChallenge       string   `json:"code_challenge,omitempty"`
+	CodeChallengeMethod string   `json:"code_challenge_method,omitempty"`
+	ExpiresAt           int64    `json:"expires_at"`
+	CreatedAt           int64    `json:"created_at"`
+}</code></pre>
+
+        <p>There is no user field. No subject, no owner, no principal. The struct has no place to put the answer to &ldquo;who authorised this?&rdquo;, which means the question was never asked anywhere upstream of it. This is not a missing check that a reviewer skimmed past; it is a type that cannot express the thing OAuth exists to express. An authorization code grant where the code is unbound to a resource owner is a key-issuing endpoint.</p>
+
+        <p>The exploitation path follows from the MCP specification&rsquo;s own requirements. Dynamic client registration means an attacker registers a client of their own, requests a code at <code>/authorize</code>, exchanges it at <code>/token</code>, and holds a token that <code>handleRoot</code> will accept — we read the gate, and it does nothing more than call <code>isValidAccessToken</code> when the prefix is configured for OAuth2. What that token unlocks is the gateway&rsquo;s whole purpose: OAuth2-protected MCP prefixes, proxied upstream APIs, and the credentials Unla injects on the way out. The attacker never sees those credentials, and does not need to. They get their use.</p>
+
+        <h2>The admin port that was never meant to be reachable</h2>
+
+        <p><strong>CVE-2026-108863</strong> &mdash; <strong>Katanemo Plano</strong>, <strong>8.7 high</strong>, CWE-306, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N</code>. Plano is an Envoy-based LLM gateway with 7,084 stars — the most-starred project in the batch. The entire defect is the first three lines of <code>config/envoy.template.yaml</code>:</p>
+
+        <pre><code>admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }</code></pre>
+
+        <p>Envoy&rsquo;s admin interface has no authentication by design; the upstream documentation is explicit that it must not be exposed. Bound to <code>0.0.0.0</code>, port 9901 answers to anything that can route to the container. <code>/config_dump</code> returns the running configuration, and because Plano implements its routing logic as a WASM filter whose configuration carries the LLM provider credentials, the dump contains those API keys in plaintext.</p>
+
+        <p>This one is worth separating from the others because the bug is not in Plano&rsquo;s code at all. It is a default in a template, and the capability it exposes is a property of a dependency behaving exactly as documented. There is nothing to exploit — <code>curl</code> is the exploit. It is also the easiest to mitigate without a patch: bind the admin socket to <code>127.0.0.1</code> and stop publishing 9901.</p>
+
+        <p><strong>CVE-2026-108862</strong> &mdash; <strong>APIPark</strong>, <strong>6.0 medium</strong>, CWE-639, 1,818 stars. The same outcome through the ordinary application path. Authenticated users holding authorization-view permission on one application can supply another application&rsquo;s authorization UUID and receive its plaintext API keys. We read <code>module/application-authorization/iml.go</code> at v1.9.7-beta: <code>Info</code> validates the service it was asked about, fetches the authorization by UUID, unmarshals the stored config, and returns it — with no check that the authorization belongs to the service. The <code>HideCredential</code> flag is returned as a field of the response rather than applied to it, which is the whole bug in miniature: a display preference where an access control should be.</p>
+
+        <h2>Secrets in the telemetry</h2>
+
+        <p>The third class is the quietest, and in our view the most under-rated of the batch, because the credential is not exposed to the network at all — it is written down.</p>
+
+        <p><strong>CVE-2026-108857</strong> &mdash; <strong>Hugging Face Text Embeddings Inference</strong>, <strong>4.8 medium</strong>, CWE-532, 5,077 stars. TEI accepts an <code>--api-key</code> to require a bearer token on its embedding and rerank endpoints. The argument is declared in the router&rsquo;s <code>Args</code> struct with no redaction attribute:</p>
+
+        <pre><code>/// Set an api key for request authorization.
+#[clap(long, env)]
+api_key: Option&lt;String&gt;,</code></pre>
+
+        <p>And <code>main</code> logs the parsed struct wholesale, immediately after initialising telemetry:</p>
+
+        <pre><code>tracing::info!("{args:?}");</code></pre>
+
+        <p>Derived <code>Debug</code> prints every field. The key that protects the service is written to the router&rsquo;s first log line at <code>info</code> level on every start. Anyone with container output, a log aggregator, or — because <code>init_logging</code> is wired to <code>otlp_endpoint</code> on the line above — an OTLP trace backend, recovers it. 4.8 is a fair score for the direct impact and understates the blast radius, since logs and traces routinely cross trust boundaries that the service itself never would.</p>
+
+        <p><strong>CVE-2026-108858</strong> &mdash; <strong>Predibase LoRAX</strong>, <strong>6.8 medium</strong>, CWE-532, 3,837 stars. The same class, worse provenance. LoRAX accepts a per-request <code>api_token</code> in the body of <code>POST /generate</code> so callers can load private adapters, and that field is part of an instrumented span, so it reaches router logs and OTLP backends. The difference from TEI is whose secret it is: TEI logs the operator&rsquo;s own key, LoRAX logs its <em>users&rsquo;</em> tokens. An operator reading their own logs is reading other people&rsquo;s credentials for third-party model repositories. The repository was last pushed <strong>28 May 2026</strong>, roughly four and a half months before disclosure.</p>
+
+        <h2>The ACL that did not follow the data into the tool</h2>
+
+        <p>Two findings in the batch invert the pattern, and they are the ones with the clearest agent-security content. Both are MCP interfaces bolted onto mature applications that already had working permission models.</p>
+
+        <p><strong>CVE-2026-108861</strong> &mdash; <strong>Odoo MCP</strong> 1.0.0 through 1.3.2, <strong>5.3 medium</strong>, CWE-200. The server enforces a field-level ACL on its purpose-built tools, and also exposes a generic <code>execute_method</code> tool. Calling <code>read</code> or <code>search_read</code> through <code>execute_method</code> and naming denied fields returns them unredacted. The advisory explicitly names <strong>&ldquo;prompt-injected agents&rdquo;</strong> alongside human attackers — a CNA writing injection into the threat model of a data-access CVE, which remains rare enough to be worth noting.</p>
+
+        <p><strong>CVE-2026-108851</strong> &mdash; <strong>phpMyFAQ</strong> through 4.1.10, <strong>4.8 medium</strong>, CWE-862. The MCP server&rsquo;s <code>faq_search</code> tool reaches <code>Search::searchDatabase()</code>, which never applies the user or group permission checks the web application applies. Any client connected to the MCP server retrieves the full text of FAQs restricted to specific users or groups.</p>
+
+        <p>Neither is an AI vulnerability in any interesting sense. Both are the consequence of adding a second front door to an application whose authorisation logic lived in the first one. We made the same argument at greater length about <a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">JeecgBoot&rsquo;s AI module</a>, where twenty-two of seventy-six missing-authorization CVEs landed in the newest feature set. The pattern is now well enough attested to state plainly: when a mature product grows an MCP surface, the permission model does not come along by default, and the newest code reliably has the thinnest coverage.</p>
+
+        <h2>And one in the transport</h2>
+
+        <p><strong>CVE-2026-108859</strong> &mdash; <strong>mcp-go</strong> through 1.2.1, <strong>8.7 high</strong>, CWE-770, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N</code>. This one does not fit the credential theme but is the highest-reach item in the batch by a wide margin: mark3labs/mcp-go has <strong>9,155 stars and 901 forks</strong> and is the dominant Go implementation of MCP. The defect is three lines in <code>StreamableHTTPServer.ServeHTTP</code>:</p>
+
+        <pre><code>var body []byte
+var bodyErr error
+if r.Method == http.MethodPost &amp;&amp; r.Body != nil {
+	body, bodyErr = io.ReadAll(r.Body)
+}</code></pre>
+
+        <p>No <code>http.MaxBytesReader</code>, no length check, and it happens before any validation — including before authentication, since the read is at the top of the handler. An unauthenticated client sends a very large or merely numerous concurrent POST bodies and the process is OOM-killed. The comment above those lines explains the design reason honestly: the body is read up front so the transport-agnostic core never holds an <code>io.Reader</code> across an SSE upgrade. That is a reasonable architectural choice that happens to require a bound nobody added.</p>
+
+        <p>The timing is the part to sit with. <strong>v1.2.1 was released on 9 October 2026 at 09:28:16Z</strong>, and the advisory&rsquo;s affected range is &ldquo;through 1.2.1&rdquo; — the CVE describes the newest release, published two days earlier. Every Go MCP server built on the streamable HTTP transport inherits this, and almost none of them will learn about it from their own advisory feed, because the finding is against a library they depend on rather than against them. We have made this point about <a href="/posts/2026/03/mcp-go-sdk-cross-site-tool-execution-cve-2026-33252/">this SDK before</a>, and it has not become less true.</p>
+
+        <h2>What nobody can patch to</h2>
+
+        <p>We checked the release history of every repository in this batch against each advisory&rsquo;s affected ceiling. The result is uniform, and it is the finding we would lead with if we had to pick one:</p>
+
+        <ul>
+          <li><strong>BotSharp</strong> &mdash; newest release <code>r5.2-image-composition</code>, <strong>17 October 2025</strong>. Properly a year old; the advisory covers &ldquo;through 5.2.0&rdquo;.</li>
+          <li><strong>Unla</strong> &mdash; newest release <strong>v0.10.0, 4 August 2026</strong>. The advisory covers through v0.10.0. Repository last pushed 27 August 2026.</li>
+          <li><strong>Plano</strong> &mdash; newest release <strong>0.4.37, 28 September 2026</strong>. The advisory covers through 0.4.37.</li>
+          <li><strong>mcp-go</strong> &mdash; newest release <strong>v1.2.1, 9 October 2026</strong>. The advisory covers through v1.2.1.</li>
+          <li><strong>APIPark</strong>, <strong>TEI</strong>, <strong>LoRAX</strong>, <strong>Odoo MCP</strong>, <strong>phpMyFAQ</strong> &mdash; affected ranges likewise terminate at the current version.</li>
+        </ul>
+
+        <p>Not one of these advisories has a version to upgrade to. That is thirteen records published on a single day against actively maintained projects with a combined thirty-odd thousand stars, and the remediation advice available to every reader of every one of them is &ldquo;wait.&rdquo; We have now written this paragraph about <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI</a>, <a href="/posts/2026/10/openpdc-openhistorian-icsa-26-281-02-fixed-version-no-release/">openPDC</a> and <a href="/posts/2026/10/argo-cd-october-2026-six-advisories-repo-server-no-cve/">Argo CD</a> within a fortnight, and the mechanism is consistent: a third-party CNA with a disclosure calendar meets a maintainer without one.</p>
+
+        <p>The compensating detail is that most of this batch is configuration-reachable. Bind Envoy&rsquo;s admin socket to loopback. Rotate <code>Jwt:Key</code> and change the issuer and audience away from <code>botsharp</code>. Put a <code>MaxBytesReader</code> or a reverse-proxy body limit in front of an mcp-go server. Pass TEI&rsquo;s key through an environment variable and keep the router&rsquo;s logs out of shared telemetry. Do not front an MCP server with Unla&rsquo;s OAuth2 mode at all until the authorization code learns who a user is — and that one, uniquely, cannot be configured around, because the fix is a schema change.</p>
+
+        <h2>The shape of it</h2>
+
+        <p>Thirteen advisories, one researcher, one afternoon, and the model never comes up. What these systems have in common is not that they run inference; it is that they sit between a caller and a credential, which is the definition of a gateway. Every finding here is a failure of the gateway to keep the two apart — through a committed key, an unbound token, an open admin port, a missing ownership check, a log line, or a tool that outranks its own application&rsquo;s ACL.</p>
+
+        <p>The infrastructure built to stop agents leaking secrets is, at the moment, the most reliable place to find them. That is not a prompt injection problem and no amount of model-layer defence addresses it. It is 2010-era web application security, applied late, to a layer that accumulated credentials faster than it accumulated review.</p>
+
+        <p><em><strong>Verification note.</strong> All CVE identifiers, CVSS 4.0 base scores and vectors, CWE assignments, publication timestamps (14:17:03Z&ndash;14:17:06Z on 11 October 2026), NVD status values and the assigning source (<code>disclosure@vulncheck.com</code>) were read first-hand from the NVD 2.0 API. Severity labels, advisory dates and the credit to hieuPenguinnn were read from the individual VulnCheck advisory pages; we confirmed the same credit on all thirteen. Every source excerpt in this briefing &mdash; BotSharp&rsquo;s <code>appsettings.json</code> and <code>BotSharpOpenApiExtensions.cs</code>, Unla&rsquo;s <code>Authorize</code> handler, the <code>AuthorizationCode</code> struct and the <code>handleRoot</code> auth gate, Plano&rsquo;s <code>envoy.template.yaml</code>, APIPark&rsquo;s <code>iml.go</code>, TEI&rsquo;s <code>Args</code> struct and <code>main</code>, and mcp-go&rsquo;s <code>ServeHTTP</code> &mdash; was read directly from the referenced repository at the tag or commit the advisory pins, and is quoted verbatim. Release tags and dates, star and fork counts and last-push timestamps came from the GitHub API and were checked against each affected range individually. The three-class grouping, the observation about BotSharp&rsquo;s alternate signature-validator path, the reading of Unla&rsquo;s struct as structural rather than an omitted check, the comparison of TEI and LoRAX by whose credential is logged, and the closing argument are our editorial analysis, not vendor or advisory statements. We found no evidence of exploitation of any of these and do not imply any. No request was sent to any third-party instance of any product named here, and no proof-of-concept was executed.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.vulncheck.com/advisories/botsharp-through-5.2.0-authentication-bypass-via-hard-coded-jwt-signing-key?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; BotSharp through 5.2.0 authentication bypass via hard-coded JWT signing key (CVE-2026-108860, 9.3 critical, CWE-321)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/amoylab-unla-through-0.10.0-oauth2-authentication-bypass-via-authorize?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; AmoyLab Unla through 0.10.0 OAuth2 authentication bypass via /authorize (CVE-2026-108865, 8.8 high, CWE-287)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/katanemo-plano-through-0.4.37-missing-authentication-on-envoy-admin-interface?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Katanemo Plano through 0.4.37 missing authentication on the Envoy admin interface (CVE-2026-108863, 8.7 high, CWE-306)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mcp-go-through-1.2.1-denial-of-service-via-unbounded-post-body-buffering?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; mcp-go through 1.2.1 denial of service via unbounded POST body buffering (CVE-2026-108859, 8.7 high, CWE-770)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/hugging-face-text-embeddings-inference-through-1.9.4-cleartext-api-key-logging?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Hugging Face Text Embeddings Inference through 1.9.4 cleartext API key logging (CVE-2026-108857, 4.8 medium, CWE-532)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/predibase-lorax-through-0.12.1-api-token-exposure-via-router-logs?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Predibase LoRAX through 0.12.1 API token exposure via router logs (CVE-2026-108858, 6.8 medium, CWE-532)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/odoo-mcp-1.0.0-through-1.3.2-information-disclosure-via-execute-method-tool?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Odoo MCP 1.0.0 through 1.3.2 information disclosure via the execute_method tool (CVE-2026-108861, 5.3 medium, CWE-200)</a></li>
+          <li><a href="https://github.com/SciSharp/BotSharp/blob/a11ee0317cab5c619df1cb5d0c4fc39d1b6e30b4/src/WebStarter/appsettings.json?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">BotSharp &mdash; <code>src/WebStarter/appsettings.json</code>, the committed <code>Jwt</code> block</a></li>
+          <li><a href="https://github.com/AmoyLab/Unla/blob/v0.10.0/internal/auth/oauth.go?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Unla &mdash; <code>internal/auth/oauth.go</code> at v0.10.0, the <code>Authorize</code> handler</a></li>
+          <li><a href="https://github.com/katanemo/plano/blob/0.4.37/config/envoy.template.yaml?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Plano &mdash; <code>config/envoy.template.yaml</code> at 0.4.37, the admin socket binding</a></li>
+          <li><a href="https://github.com/mark3labs/mcp-go/blob/90d247ed8d45cbb7d71d9a95e112789b78760443/server/streamable_http.go?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">mcp-go &mdash; <code>server/streamable_http.go</code>, the unbounded <code>io.ReadAll</code> in <code>ServeHTTP</code></a></li>
+          <li><a href="https://github.com/huggingface/text-embeddings-inference/blob/e80ef225ed0e6cb1717ce632a6a84b6cf211bb67/router/src/main.rs?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Text Embeddings Inference &mdash; <code>router/src/main.rs</code>, the unredacted <code>api_key</code> field and the <code>Debug</code> log of <code>Args</code></a></li>
+          <li><a href="https://www.envoyproxy.io/docs/envoy/latest/operations/admin?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Envoy documentation &mdash; the admin interface and its exposure warning</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-04">2026-10-04</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/r2r-cve-2026-105147-105148-hardcoded-jwt-secret-admin-forgery-api-base-ssrf/">The Signing Key Is in the Repository: CVE-2026-105147 Lets Anyone Mint an R2R Admin Token</a></h3><p>CVE-2026-105147 and CVE-2026-105148, published to NVD on 4 October 2026, cover SciPhi-AI R2R through 3.6.6: an HS256 JWT secret hardcoded in the public source tree that the official Docker env files leave active, and a client-controlled api_base on the unauthenticated completion API that forwards the server’s provider key to an attacker URL. VulDB scores both 7.3; the researcher’s own advisory scores the first 9.8. The repository has 8,013 stars, no release since August 2025, and no published fix.</p><a class="text-link" href="/posts/2026/10/r2r-cve-2026-105147-105148-hardcoded-jwt-secret-admin-forgery-api-base-ssrf/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mcp-sdk-october-advisories-cross-origin-redirect-task-session-scanner-gap/">Three Advisories, No CVE, Zero Findings: The MCP SDKs Patched Redirects and npm audit Says You Are Fine</a></h3><p>On 2 October 2026 the MCP TypeScript and Python SDKs published three security advisories: cross-origin redirects carrying API keys and OAuth refresh tokens, and experimental tasks not bound to a session. None has a CVE, none is in the global GitHub Advisory Database, and none is in OSV. We ran npm audit against the vulnerable version: zero findings.</p><a class="text-link" href="/posts/2026/10/mcp-sdk-october-advisories-cross-origin-redirect-task-session-scanner-gap/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
