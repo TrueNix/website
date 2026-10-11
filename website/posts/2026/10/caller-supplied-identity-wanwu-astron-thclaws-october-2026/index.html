@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Caller Chooses the Owner: Eight Agent-Platform CVEs in Three Minutes &mdash; al-ice.ai</title>
+  <meta name="description" content="Eight more VulnCheck advisories from the 11 October 14:17 UTC batch, all credited to hieuPenguinnn: four WanWu tenant-isolation flaws including AppKey minting on other users’ MCP servers, an Astron cross-app workflow resume, a thClaws workspace symlink escape, an unauthenticated PDF SSRF and a chat-rendering XSS. Six of the eight have no fixed version." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/caller-supplied-identity-wanwu-astron-thclaws-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Caller Chooses the Owner: Eight Agent-Platform CVEs in Three Minutes" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Caller Chooses the Owner: Eight Agent-Platform CVEs in Three Minutes</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>This morning we covered <a href="/posts/2026/10/agent-gateway-credential-disclosure-cluster-botsharp-unla-plano-october-2026/">thirteen advisories from the 11 October 14:17 UTC batch</a> &mdash; the credential-disclosure half, all assigned by VulnCheck and all credited to one researcher, <strong>hieuPenguinnn</strong>. These are the remaining eight verifiable agent-platform findings from the same three-minute window, and they share a theme of their own: in every one, <strong>the server lets the caller name the owner</strong>. An application ID, a key ID, an event ID, a file path, a report body, a chat message &mdash; each arrives from the caller, and each is trusted as an ownership decision.</p>
+
+        <p>Two records from the same window are deliberately excluded. CVE-2026-108697 is a CoreShop e-commerce authorization flaw, out of scope for this site. The four CowAgent records (CVE-2026-108681 through 108683 and CVE-2026-108768) are thin VulnDB-sourced denial-of-service entries from a different disclosure pipeline, with no pinned source to verify against. Everything below was read first-hand: NVD records, VulnCheck advisories, researcher notes, and the referenced repositories at the pinned tags.</p>
+
+        <h2>WanWu: four CVEs, two fixed, two open &mdash; and the open two are the worse two</h2>
+
+        <p><strong>UnicomAI WanWu</strong> (2,362 stars) is a self-hosted, multi-tenant AI agent platform &mdash; agents, RAG apps, workflows, MCP servers &mdash; and it accounts for half of this briefing. The four CVEs split cleanly into a fixed pair and an open pair, and the split itself is the story.</p>
+
+        <p><strong>CVE-2026-108853</strong> &mdash; <strong>7.2 high</strong>, CWE-639, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:N/VI:H/VA:H/SC:N/SI:N/SA:N</code>, affecting versions before 0.6.3. <code>DELETE /v1/appspace/app</code> with a caller-supplied <code>appId</code> permanently deletes other tenants&rsquo; agent, RAG, workflow or chatflow applications &mdash; conversations and data included &mdash; with sequential assistant IDs as the only discovery requirement. We read <code>DeleteAppSpaceApp</code> at v0.6.2, and the ownership gap is structural: the function signature accepts <code>userId</code> and <code>orgId</code>, then never consults either before issuing the destructive downstream calls, which take only the caller&rsquo;s <code>appId</code> and <code>appType</code>:</p>
+
+        <pre><code>func DeleteAppSpaceApp(ctx *gin.Context, userId, orgId, appId, appType string) error {
+    // delete publish app
+    _, err := app.DeleteApp(ctx.Request.Context(), &amp;app_service.DeleteAppReq{
+        AppId:   appId,
+        AppType: appType,
+    })</code></pre>
+
+        <p><strong>CVE-2026-108854</strong> &mdash; <strong>5.3 medium</strong>, CWE-639, before 0.6.3. The same class one layer down: <code>DELETE /v1/appspace/app/key</code> with a numeric <code>apiId</code> revokes other users&rsquo; legacy AppKeys across organizations. The advisory pins the pre-fix ORM lines, where the delete filtered by primary key alone.</p>
+
+        <p>Both are genuinely fixed. Commit <code>13d0b22</code> (30 July 2026, &ldquo;fix(security): mitigate IDOR on delete operations across all services&rdquo;) describes the defect class in its own message &mdash; delete-path ORM filters keyed only on the primary key, with no <code>user_id</code>/<code>org_id</code> ownership predicate &mdash; and adds the ownership filters across six services and fourteen delete entry points. One documentation wrinkle worth recording precisely: the NVD range says &ldquo;before 0.6.3&rdquo;, the <code>v0.6.3</code> tag exists, but the repository&rsquo;s releases page has no v0.6.3 entry &mdash; it jumps from v0.6.4 to v0.6.2. The fix is tagged, not released with notes.</p>
+
+        <p>The open pair is worse, and both are open at the newest release, <strong>v0.6.5</strong> (18 September 2026) &mdash; we diffed both files against main HEAD and they are identical, so there is no branch fix either. <strong>CVE-2026-108855</strong> &mdash; <strong>5.3 medium</strong>, CWE-862 &mdash; runs through the <em>unpublish</em> endpoint: supply a victim&rsquo;s <code>appId</code> and <code>appType</code> from the exploration marketplace, and <code>UnPublishApp</code> deletes every other user&rsquo;s API-key rows for that application. The code comments its own behaviour, in Chinese: &ldquo;取消发布的时候删除其他用户的ApiKey&rdquo; &mdash; when unpublishing, delete other users&rsquo; ApiKeys:</p>
+
+        <pre><code>if err := sqlopt.SQLOptions(
+        sqlopt.WithAppID(appId),
+        sqlopt.WithAppType(appType),
+        sqlopt.WithExcludeUserID(userId),
+).Apply(tx).Delete(&amp;model.ApiKey{}).Error; err != nil {</code></pre>
+
+        <p><code>WithExcludeUserID</code> is the tell: the delete set is defined as <em>everyone except the caller</em>, keyed to a caller-chosen application. Any enabled user can cut off every other tenant&rsquo;s MCP and OpenAPI clients for any marketplace app.</p>
+
+        <p><strong>CVE-2026-108856</strong> &mdash; <strong>2.3</strong>, CWE-639, <code>CVSS:4.0/AV:N/AC:H/AT:N/PR:L/UI:N/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N</code> &mdash; mints an AppKey bound to <em>another user&rsquo;s MCP server</em> via <code>POST /v1/appspace/app/key</code>, then uses it to open MCP sessions and invoke that server&rsquo;s tools under the victim&rsquo;s upstream authentication. We traced all six links first-hand. The route sits in the <code>common</code> group (<code>JWTUser</code> plus <code>CheckUserEnable</code> only &mdash; no object-level permission handler, unlike the resource groups). The request body&rsquo;s validation is literally nothing:</p>
+
+        <pre><code>func (g GenAppKeyRequest) Check() error {
+    return nil
+}</code></pre>
+
+        <p>The BFF service forwards the caller-chosen <code>AppId</code> with the caller&rsquo;s own identity, gRPC passes it through, and the ORM inserts the row with no <code>SELECT</code> before the <code>Create</code> &mdash; nothing ever loads the referenced application to ask who owns it. On the consumption side, all four MCP routes (<code>/mcp/server/sse</code>, <code>/mcp/server/message</code>, both <code>streamable</code> variants) are guarded solely by <code>AuthAppKeyByQuery</code>, which compares only the key&rsquo;s <code>AppType</code> and then copies the stored <code>AppId</code> into the request context. The server&rsquo;s identity is the only barrier, and the attacker supplied it at key creation.</p>
+
+        <p>A note on the 2.3: the score&rsquo;s <code>AC:H</code> prices in the need to know the victim&rsquo;s MCP server UUID. That is a real prerequisite &mdash; but the sibling finding in the same batch shows application IDs in this platform are guessable sequential values, and the unpublish finding shows the marketplace itself as the ID source. Whether UUIDs specifically are enumerable is unproven either way; the score assumes they are not. The researcher&rsquo;s own write-up (linked from the NVD references, source-reviewed rather than runtime-tested, as is ours) reaches the same six-link chain we independently traced, which is a useful cross-check on the reading if not on the exploitability.</p>
+
+        <h2>Astron: the resume endpoint adopts the victim&rsquo;s identity</h2>
+
+        <p><strong>CVE-2026-108864</strong> &mdash; iFlytek <strong>Astron Agent</strong>, <strong>2.3</strong>, CWE-639, 8,890 stars. <code>POST /workflow/v1/resume</code> with another application&rsquo;s <code>event_id</code> resumes that application&rsquo;s paused workflow: the attacker injects resume content into the victim&rsquo;s workflow and reads its continuation output stream. We read <code>resume_open</code> at v1.1.2 end to end. The lookup is <code>EventRegistry().get_event(event_id=event_id)</code> straight from the request body, and three lines later the handler <em>becomes</em> the victim event:</p>
+
+        <pre><code>span.app_id = event.app_id
+span.uid = event.uid
+span.chat_id = event.chat_id</code></pre>
+
+        <p>No comparison between the caller&rsquo;s application and the event&rsquo;s application exists anywhere in the handler. The Snowflake event-ID predictability the advisory relies on is the advisory&rsquo;s claim, not something we tested &mdash; but the missing ownership check is unconditional once an ID is known. This is the sequel to the <a href="/posts/2026/10/astron-agent-cve-2026-108263-unsandboxed-code-node-cross-tenant-rce/">unsandboxed code-node RCE</a> (CVE-2026-108263) we covered earlier in the week, which was fixed at v1.1.2. The new finding affects <em>through</em> v1.1.2 &mdash; and v1.1.2, released 7 September, is still the newest release. The code-execution hole was closed one release ago; the cross-tenant isolation hole is open in that same release.</p>
+
+        <h2>thClaws: the string says inputs/, the filesystem says otherwise</h2>
+
+        <p><strong>CVE-2026-108839</strong> &mdash; <strong>thClaws</strong>, <strong>2.3</strong>, CWE-59. thClaws is a Rust AI-agent harness (GUI, CLI, headless and webapp from one binary; MCP, skills, agent teams), 1,239 stars &mdash; and v0.141.0 was released at 01:18:57Z on the morning of disclosure day. The <code>POST /v1/inputs</code> handler stages files into a worker&rsquo;s workspace ahead of a dispatch &mdash; the code comments describe the coder-to-reviewer handoff explicitly &mdash; and it validates each requested path as a string:</p>
+
+        <pre><code>fn path_allowed(rel: &amp;str, prefixes: &amp;[String]) -&gt; bool {
+    if rel.is_empty()
+        || rel.starts_with(&#x27;/&#x27;)
+        || rel.contains(&quot;..&quot;)
+        ...
+    prefixes.iter().any(|p| p == &quot;*&quot; || rel.starts_with(p.as_str()))</code></pre>
+
+        <p>Empty, absolute, parent-traversal, dot-directories: all rejected. Then the write:</p>
+
+        <pre><code>let dest = ws.join(&amp;f.path);
+...
+std::fs::write(&amp;dest, &amp;bytes).map_err(io_err)?;</code></pre>
+
+        <p><code>ws.join</code> plus <code>fs::write</code> follows symlinks. A path like <code>inputs/evil</code> passes the string check &mdash; it starts with <code>inputs/</code> &mdash; while resolving wherever a pre-planted <code>inputs/evil</code> symlink points, with daemon privileges, truncating or overwriting files outside the workspace. There is no <code>canonicalize</code>, no <code>symlink_metadata</code>, no <code>O_NOFOLLOW</code> anywhere on the path. The check validates the name; the kernel resolves the file. v0.141.0 is both the pinned version and the newest release, published roughly thirteen hours before the NVD record &mdash; no fixed version.</p>
+
+        <h2>The output surfaces: an unauthenticated SSRF and a chat-rendering XSS</h2>
+
+        <p>The last two are not tenant-isolation flaws but they belong to the same batch and the same theme: caller-supplied content the server renders as something more powerful than text.</p>
+
+        <p><strong>CVE-2026-108850</strong> &mdash; <strong>company-research-agent</strong>, <strong>6.9 medium</strong>, CWE-918, 2,298 stars. The <code>/generate-pdf</code> endpoint is reachable with no authentication &mdash; the application file imports no auth dependency, only CORS middleware &mdash; and forwards the request body straight through:</p>
+
+        <pre><code>@app.post(&quot;/generate-pdf&quot;)
+async def generate_pdf(data: PDFGenerationRequest):
+    &quot;&quot;&quot;Generate a PDF from markdown content and stream it to the client.&quot;&quot;&quot;
+    try:
+        success, result = pdf_service.generate_pdf_stream(data.report_content, data.company_name)</code></pre>
+
+        <p><code>generate_pdf_stream</code> hands the markdown to <code>generate_pdf_from_md</code>, which converts markdown links into ReportLab <code>&lt;link&gt;</code> markup and appends raw line text into <code>Paragraph</code> objects before <code>doc.build</code>. The only sanitization in the entire chain is applied to <code>company_name</code> &mdash; for use in a filename. The report content itself is never escaped, so inline ReportLab markup including <code>&lt;img&gt;</code> elements reaches the renderer, and the server fetches the referenced hosts &mdash; internal or external &mdash; embedding responses in the returned PDF. The fetch mechanics are the advisory&rsquo;s stated mechanism; what we verified is the unauthenticated, unescaped path that delivers attacker markup to the renderer. Newest release v2.2.0 (21 September) is the affected ceiling: no fix. This is an agent that researches companies and the report pipeline phones home to whoever the requester names.</p>
+
+        <p><strong>CVE-2026-108852</strong> &mdash; <strong>Deep Chat</strong>, <strong>2.1</strong>, CWE-79, 3,729 stars. The entire defect is one line in <code>remarkableConfig.ts</code> at 2.5.1, executed by every renderer instance the component creates:</p>
+
+        <pre><code>public static createNew(customConfig?: RemarkableOptions) {
+    const remarkable = RemarkableConfig.instantiate(customConfig);
+    RemarkableConfig.addPlugins(remarkable, customConfig);
+    remarkable.inline.validateLink = () =&gt; true;
+    return remarkable;
+}</code></pre>
+
+        <p>Link validation unconditionally returns true, so <code>javascript:</code> URLs in markdown links survive rendering. The injection points the advisory names are what make this an AI-security item rather than a generic stored-XSS note: crafted links arrive in <em>AI responses</em>, in <code>addMessage</code> content, or in loaded history &mdash; the chat component renders model output as privileged markup in the embedding page, and a click executes script. Newest release 2.5.1 (27 August) is the ceiling here too.</p>
+
+        <h2>Six of eight with nowhere to go</h2>
+
+        <p>The fix-status ledger: WanWu&rsquo;s delete pair is fixed (tag <code>v0.6.3</code>, with the release-notes gap noted above). Everything else &mdash; the WanWu key pair at v0.6.5, Astron at v1.1.2, thClaws at v0.141.0, company-research-agent at v2.2.0, Deep Chat at 2.5.1 &mdash; describes the newest release of its project. Six of eight records offer the reader &ldquo;wait,&rdquo; the same closing line as <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI</a>, <a href="/posts/2026/10/openpdc-openhistorian-icsa-26-281-02-fixed-version-no-release/">openPDC</a> and yesterday&rsquo;s <a href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">JeecgBoot second wave</a>.</p>
+
+        <p>What is configurable without a patch: unpublish no key cascade you can switch off, so treat WanWu&rsquo;s marketplace apps as untrusted input to your key inventory and audit <code>api_key</code> rows for keys you did not mint; do not expose Astron&rsquo;s resume endpoint across application trust boundaries; confine thClaws workspaces so a symlink escape lands somewhere boring, and do not widen <code>THCLAWS_INPUTS_PREFIXES</code> past <code>inputs/</code>; keep the research agent&rsquo;s PDF endpoint off the network or behind auth; and treat Deep Chat&rsquo;s rendered history as untrusted content until link validation is restored.</p>
+
+        <p>The shape of it: twenty-one advisories in three minutes from one researcher against the agent stack&rsquo;s middle layer, and the model never comes up. Gateways, key issuers, workflow registries, workspace stagers, report renderers, chat components &mdash; the infrastructure that decides <em>whose</em> something is, implemented as string comparisons against caller-supplied values. The permission model does not come along by default, and the newest surfaces have the thinnest coverage. We have now written that sentence about MCP servers, JeecgBoot&rsquo;s AI module, and four more platforms in a single day. It keeps being true.</p>
+
+        <p><em><strong>Verification note.</strong> All CVE identifiers, CVSS 4.0 base scores and vectors, CWE assignments, publication timestamps (14:17:03Z&ndash;14:17:06Z on 11 October 2026), NVD status values and the assigning source (<code>disclosure@vulncheck.com</code>) were read first-hand from the NVD 2.0 API. The credit to hieuPenguinnn was read from the VulnCheck advisory pages we opened; the HackMD researcher notes are linked from the NVD references and were used as cross-checks on mechanism, not as sources for scores or affected ranges. Every source excerpt &mdash; WanWu&rsquo;s <code>DeleteAppSpaceApp</code>, <code>GenAppKeyRequest</code>, BFF and gRPC <code>GenAppKey</code>, <code>UnPublishApp</code>, the <code>common</code> route group and middleware init, the openapi MCP routes and <code>AuthAppKeyByQuery</code>, Astron&rsquo;s <code>resume_open</code>, thClaws&rsquo; <code>path_allowed</code> and <code>post_inputs</code>, company-research-agent&rsquo;s <code>generate_pdf</code> chain, and Deep Chat&rsquo;s <code>createNew</code> &mdash; was read directly from the referenced repository at the pinned tag and is quoted verbatim; main-HEAD comparisons for the two open WanWu findings were computed with <code>diff</code>. Release tags and dates, star counts and push timestamps came from the GitHub API. The exclusions (CoreShop, CowAgent) and the closing argument are our editorial analysis. We found no evidence of exploitation of any of these and do not imply any. No request was sent to any third-party instance of any product named here, and no proof-of-concept was executed.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.vulncheck.com/advisories/unicomai-wanwu-before-0.6.3-idor-via-delete-v1-appspace-app?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; UnicomAI Wanwu before 0.6.3 IDOR via DELETE /v1/appspace/app (CVE-2026-108853, 7.2 high, CWE-639)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/wanwu-before-0.6.3-idor-appkey-deletion-via-delete-v1-appspace-app-key?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Wanwu before 0.6.3 IDOR AppKey deletion via DELETE /v1/appspace/app/key (CVE-2026-108854, 5.3 medium, CWE-639)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/unicomai-wanwu-through-0.6.5-missing-authorization-via-delete-v1-appspace-app-publish?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; UnicomAI Wanwu through 0.6.5 missing authorization via DELETE /v1/appspace/app/publish (CVE-2026-108855, 5.3 medium, CWE-862)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/unicomai-wanwu-through-0.6.5-authorization-bypass-via-v1-appspace-app-key-appkey-minting?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; UnicomAI Wanwu through 0.6.5 authorization bypass via AppKey minting (CVE-2026-108856, 2.3 low, CWE-639)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/iflytek-astron-agent-through-1.1.2-authorization-bypass-via-workflow-v1-resume-endpoint?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; iFlytek Astron Agent through 1.1.2 authorization bypass via workflow resume (CVE-2026-108864, 2.3 low, CWE-639)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/thclaws-through-0.141.0-symlink-following-file-write-via-post-v1-inputs?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; thClaws through 0.141.0 symlink-following file write via POST /v1/inputs (CVE-2026-108839, 2.3 low, CWE-59)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/company-research-agent-through-2.2.0-ssrf-via-generate-pdf-reportlab-markup?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Company Research Agent through 2.2.0 SSRF via generate-pdf ReportLab markup (CVE-2026-108850, 6.9 medium, CWE-918)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/deep-chat-through-2.5.1-xss-via-markdown-link-validation-bypass?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Deep Chat through 2.5.1 XSS via markdown link validation bypass (CVE-2026-108852, 2.1 low, CWE-79)</a></li>
+          <li><a href="https://github.com/UnicomAI/wanwu/blob/v0.6.2/internal/bff-service/service/appspace.go?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Wanwu &mdash; <code>internal/bff-service/service/appspace.go</code> at v0.6.2, the ownership-free <code>DeleteAppSpaceApp</code></a></li>
+          <li><a href="https://github.com/UnicomAI/wanwu/blob/v0.6.5/internal/app-service/client/orm/app.go?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Wanwu &mdash; <code>internal/app-service/client/orm/app.go</code> at v0.6.5, the <code>UnPublishApp</code> key cascade</a></li>
+          <li><a href="https://github.com/iflytek/astron-agent/blob/v1.1.2/core/workflow/api/v1/chat/open.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Astron Agent &mdash; <code>core/workflow/api/v1/chat/open.py</code> at v1.1.2, the identity-adopting <code>resume_open</code></a></li>
+          <li><a href="https://github.com/thClaws/thClaws/blob/v0.141.0/crates/core/src/api_v1/artifacts.rs?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">thClaws &mdash; <code>crates/core/src/api_v1/artifacts.rs</code> at v0.141.0, the string-checked, symlink-following <code>post_inputs</code></a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">One Hundred Records in Two Days: JeecgBoot’s Second Wave Turns to Enterprise Messaging Integrations</a></h3><p>NVD published 24 more JeecgBoot CVEs on 11 October 2026 (CVE-2026-108866 through 108888 plus 108891), all VulnCheck, all through 3.9.5, all with no fixed version. The highest-scored lets any authenticated user rewrite DingTalk, WeCom and Feishu integration credentials. Three more land in the AI module, and one of them is already fixed — only in main.</p><a class="text-link" href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">One Researcher, Seven Agent CVEs in a Day: HaiND’s VulnCheck Batch Maps the Trust Boundaries Agents Keep Redrawing</a></h3><p>On 10 October 2026 NVD published seven CVEs from one researcher, HaiND, via VulnCheck, all in AI agent and MCP software: Suna, zotero-mcp, Argo CD MCP, 1MCP Agent, mini-swe-agent, Phi, and open-multi-agent. Six have no patch. Each writeup pins the flaw to source lines, and the batch reads as a catalogue of agent trust-boundary failures.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</a></h3><p>On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

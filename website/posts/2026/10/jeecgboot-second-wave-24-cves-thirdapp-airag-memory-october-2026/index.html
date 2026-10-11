@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Hundred Records in Two Days: JeecgBoot’s Second Wave Turns to Enterprise Messaging Integrations &mdash; al-ice.ai</title>
+  <meta name="description" content="NVD published 24 more JeecgBoot CVEs on 11 October 2026 (CVE-2026-108866 through 108888 plus 108891), all VulnCheck, all through 3.9.5, all with no fixed version. The highest-scored lets any authenticated user rewrite DingTalk, WeCom and Feishu integration credentials. Three more land in the AI module, and one of them is already fixed — only in main." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Hundred Records in Two Days: JeecgBoot’s Second Wave Turns to Enterprise Messaging Integrations" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Hundred Records in Two Days: JeecgBoot&rsquo;s Second Wave Turns to Enterprise Messaging Integrations</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Yesterday we documented <a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">seventy-six contiguous JeecgBoot CVEs</a>, CVE-2026-108605 through CVE-2026-108680, all missing-authorization findings against version 3.9.5 with no fixed version anywhere. Today NVD published the second wave: <strong>twenty-four more</strong>, CVE-2026-108866 through CVE-2026-108888 contiguous plus CVE-2026-108891, all timestamped <strong>11 October 2026 between 15:16:53Z and 15:16:56Z</strong>. That brings the two-day total against this one product to <strong>one hundred CVE records</strong>. The ranges are disjoint and the methodology is identical, so this is a continuation of the same disclosure, not a coincidence of numbering.</p>
+
+        <p>The shape is unchanged. Every record carries <code>disclosure@vulncheck.com</code> as its source and <code>Received</code> as its NVD status. Twenty-three of the twenty-four are CWE-862 missing authorization at CVSS 4.0 <strong>5.3</strong> (<code>CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N</code> and close variants); the twenty-fourth is the highest-scored of the batch and the one we lead with. The affected ceiling on all twenty-four is &ldquo;through 3.9.5&rdquo;. The newest JeecgBoot release is still <strong>v3.9.5, published 27 August 2026</strong>, and the repository&rsquo;s main branch was last pushed on <strong>22 September</strong>. There is still no version to upgrade to.</p>
+
+        <h2>The highest score redirects the company&rsquo;s chat integrations</h2>
+
+        <p><strong>CVE-2026-108883</strong> &mdash; <strong>7.1 high</strong>, CWE-862, <code>CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N</code>. The <code>editThirdAppConfig</code> handler lets any authenticated user modify third-party application configurations: the client ID, client secret, agent ID and corporate ID of the <strong>DingTalk, WeCom and Feishu</strong> integrations. An attacker replaces those values with ones pointing at an attacker-controlled application, and directory synchronisation plus messaging traffic for those platforms follows. This is the integrity-heavy finding of the batch, and the score reflects it &mdash; it is the only record of the twenty-four above 5.3.</p>
+
+        <p>Its neighbours show what &ldquo;missing authorization&rdquo; means when it lands on identity infrastructure rather than on content. <strong>CVE-2026-108866</strong> exposes <code>queryUserAuths</code>: supply an arbitrary <code>userId</code> and receive that account&rsquo;s complete permission set, which doubles as an administrator-enumeration oracle. <strong>CVE-2026-108867</strong> does the same for role assignments via <code>getUserRoleSetById</code>, explicitly without the <code>system:user:queryUserRole</code> permission the endpoint&rsquo;s own name implies. <strong>CVE-2026-108870</strong> and <strong>CVE-2026-108871</strong> go one step further and let a low-privileged caller <em>overwrite</em> role and department data rules &mdash; clearing the row-level filters that decide which records other roles can read. And <strong>CVE-2026-108891</strong> returns other users&rsquo; details wholesale: real names, usernames, emails, phone numbers, birthdays, employee numbers, department paths and posts.</p>
+
+        <p>We read <code>queryUserAuths</code> first-hand at the pinned release commit <code>e3b9dc0a</code>, the v3.9.5 tag the advisories reference:</p>
+
+        <pre><code>@GetMapping(&quot;/queryUserAuths&quot;)
+public Set&lt;String&gt; queryUserAuths(@RequestParam(&quot;userId&quot;) String userId){
+    return sysUserService.getUserPermissionsSet(userId);
+}</code></pre>
+
+        <p>No <code>@RequiresPermissions</code>, no ownership check, one line between the caller&rsquo;s parameter and another account&rsquo;s permission set. We then read the same file at main HEAD. It is <strong>byte-identical</strong> &mdash; 1,155 lines, no difference. This one is unfixed everywhere, including on the branch.</p>
+
+        <h2>The AI module gains three more, and the pattern repeats exactly</h2>
+
+        <p>Three of the twenty-four land in the Airag AI module, taking its running total to twenty-five of the hundred. <strong>CVE-2026-108878</strong> lets a low-privileged caller read any AI application&rsquo;s configuration through the <code>AiragAppController</code> <code>queryById</code> handler &mdash; system prompts, memory prompts, model IDs, knowledge base IDs and plugin bindings &mdash; with application IDs enumerable from the unguarded <code>/airag/app/listDict</code> endpoint. <strong>CVE-2026-108877</strong> is the logical deletion of any user&rsquo;s prompt template through <code>DELETE /airag/prompts/delete</code>, with template IDs obtainable from the unguarded list endpoint. <strong>CVE-2026-108879</strong> is the only CWE-639 of the wave: the <code>AiragBaseApiController</code> <code>getChatVariable</code> handler reads other users&rsquo; stored AI chat variables out of Redis on the strength of a caller-supplied <code>username</code> parameter.</p>
+
+        <p>We read all three at the release commit. The prompts <code>delete</code> handler at <code>e3b9dc0a</code>:</p>
+
+        <pre><code>@DeleteMapping(value = &quot;/delete&quot;)
+public Result&lt;String&gt; delete(@RequestParam(name=&quot;id&quot;,required=true) String id) {
+    airagPromptsService.removeById(id);
+    return Result.OK(&quot;删除成功!&quot;);
+}</code></pre>
+
+        <p>And the chat-variable reader, in full &mdash; the whole controller is seventy-six lines of unannotated parameter forwarding:</p>
+
+        <pre><code>@PostMapping(&quot;/airag/api/getChatVariable&quot;)
+public String getChatVariable(
+        @RequestParam(&quot;appId&quot;) String appId,
+        @RequestParam(&quot;username&quot;) String username,
+        @RequestParam(&quot;name&quot;) String name
+) {
+    return airagBaseApi.getChatVariable(appId, username, name);
+}</code></pre>
+
+        <p>Then the main-HEAD comparison, which is the part of this story we find most instructive. The prompts <code>delete</code> handler at main HEAD now reads:</p>
+
+        <pre><code>@DeleteMapping(value = &quot;/delete&quot;)
+@RequiresPermissions(&quot;airag:prompts:delete&quot;)
+public Result&lt;String&gt; delete(@RequestParam(name=&quot;id&quot;,required=true) String id) {</code></pre>
+
+        <p>The annotation is there, the file has grown from 207 to 220 lines and now carries thirteen <code>@RequiresPermissions</code> annotations &mdash; the September cleanup commit (<code>21facc013906</code>, 11 September) that we traced in yesterday&rsquo;s briefing. But <code>AiragBaseApiController.java</code> at main HEAD is <strong>byte-identical</strong> to the release commit: same seventy-six lines, same caller-controlled <code>(appId, username, name)</code> triple, no annotation. So within three CVEs in the same module, published in the same three seconds, one exhibits the exact &ldquo;fix exists only in main, no release ships it&rdquo; shape from yesterday&rsquo;s piece, and the other two are not fixed anywhere at all.</p>
+
+        <p>One observation we raise as our own, not the advisory&rsquo;s: the same file exposes <code>setChatVariable</code> taking the identical <code>(appId, username, name)</code> triple plus a <code>value</code>. The CVE names the read; the write sits beside it with the same parameters and the same absence of authorization. We did not test it and make no claim beyond what the code shows &mdash; but a chat-memory read primitive and a chat-memory write primitive sharing one unguarded parameter triple is worth stating plainly so whoever remediates 108879 remediates both.</p>
+
+        <h2>The rest of the wave, and what it says about the first one</h2>
+
+        <p>The remaining records fill out the same access-control debt across user, department, tenant and messaging management: <code>batchEditUsers</code> (108872), department modification plus assigning or removing department heads (108873, 108874), user-group membership (108875), <code>putCancelQuit</code> (108876), dictionary editing by low-app ID (108880), cross-tenant pack membership reads that disclose administrator usernames, real names, phones and departments for fixed pack codes like <code>superAdmin</code> (108881), position membership removal (108882), message-template and message deletion (108884, 108885), username-subtree reads (108886), comment and department-role exports (108887, 108888), and templated announcement publishing with a forgeable <code>fromUser</code> across WebSocket, DingTalk, WeCom, Feishu and UniPush channels (108868, 108869).</p>
+
+        <p>Two process details are worth recording. First, the proof-of-concept repository (<code>AnkesKasty/cve-request-poc</code>) already contains per-finding scripts for this wave &mdash; <code>poc_sys_api_query_user_auths.py</code>, <code>poc_airag_prompts_delete.py</code>, <code>poc_caller_identity_subjects.py</code>, <code>poc_sys_thirdapp_edit_config_post.py</code> among them &mdash; in a repository created on 10 October at 14:31:43Z and last pushed at 14:47Z, roughly a full day <em>before</em> the NVD records appeared. The disclosure arrived with working scripts, pinned source lines and no version to upgrade to, exactly as in wave one. Second, a Brave search over the new CVE identifiers returns only automated aggregators &mdash; no analytical coverage, and nobody has yet connected the September annotation commit to the three Airag records it partially remediates.</p>
+
+        <p>The editorial reading is the same one we offered yesterday, sharpened. Nothing here is an AI-specific vulnerability class: no prompt injection, no model extraction, no tool-call confusion. It is CWE-862 applied to every object the console manages, and the objects that now hold prompts, retrieval corpora, MCP credentials and chat memory inherited the console&rsquo;s access-control debt wholesale. What the second wave adds is the enterprise-integration consequence &mdash; the finding with the highest score is not a read of someone else&rsquo;s data but a rewrite of where the company&rsquo;s directory sync and messaging go &mdash; and a cleaner measurement of the remediation gap: of the three new AI-module findings we checked line by line, one is fixed on a branch nobody can install, and two are not fixed at all.</p>
+
+        <p><em><strong>Verification note.</strong> All CVE identifiers, CVSS 4.0 base scores and vectors, CWE assignments, publication timestamps (15:16:53Z&ndash;15:16:56Z on 11 October 2026), NVD status values and the assigning source (<code>disclosure@vulncheck.com</code>) were read first-hand from the NVD 2.0 API. Affected ceilings, newest-release tag and date (v3.9.5, 27 August 2026), default-branch identity and last-push timestamp (main, 22 September 2026) came from the GitHub API. Every source excerpt &mdash; <code>queryUserAuths</code>, the Airag prompts <code>delete</code> handler at release and at main HEAD, and <code>AiragBaseApiController</code> at both revisions &mdash; was read directly from the JeecgBoot repository at commit <code>e3b9dc0a</code> and at main HEAD via raw file fetches, and is quoted verbatim; the byte-identical comparisons were computed with <code>diff</code>. The September cleanup commit (<code>21facc013906</code>) and its contents were established in our <a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">wave-one briefing</a>. PoC filenames, repository creation and push timestamps came from the GitHub API; no proof-of-concept was executed and no request was sent to any JeecgBoot instance. The observation about <code>setChatVariable</code>, the two-day total of one hundred records, and the closing argument are our editorial analysis. We found no evidence of exploitation and do not imply any.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.vulncheck.com/advisories/jeecgboot-through-3.9.5-missing-authorization-via-sys-api-queryuserauths?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; JeecgBoot through 3.9.5 missing authorization via sys/api/queryUserAuths (CVE-2026-108866, 5.3 medium, CWE-862)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/jeecgboot-through-3.9.5-missing-authorization-via-airag-prompts-delete?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; JeecgBoot through 3.9.5 missing authorization via Airag prompts delete (CVE-2026-108877, 5.3 medium, CWE-862)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/jeecgboot-through-3.9.5-idor-via-airag-api-getchatvariable-username-parameter?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; JeecgBoot through 3.9.5 IDOR via Airag API getChatVariable username parameter (CVE-2026-108879, 5.3 medium, CWE-639)</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/blob/e3b9dc0aefe1943d9772b026f64ed671a7c82802/jeecg-boot/jeecg-module-system/jeecg-system-biz/src/main/java/org/jeecg/modules/api/controller/SystemApiController.java?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JeecgBoot &mdash; <code>SystemApiController.java</code> at the v3.9.5 commit, the unannotated <code>queryUserAuths</code> handler</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/blob/e3b9dc0aefe1943d9772b026f64ed671a7c82802/jeecg-boot/jeecg-boot-module/jeecg-boot-module-airag/src/main/java/org/jeecg/modules/airag/prompts/controller/AiragPromptsController.java?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JeecgBoot &mdash; <code>AiragPromptsController.java</code> at the v3.9.5 commit, the unannotated prompts <code>delete</code> handler</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/blob/e3b9dc0aefe1943d9772b026f64ed671a7c82802/jeecg-boot/jeecg-boot-module/jeecg-boot-module-airag/src/main/java/org/jeecg/modules/airag/llm/controller/AiragBaseApiController.java?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JeecgBoot &mdash; <code>AiragBaseApiController.java</code> at the v3.9.5 commit, the caller-controlled <code>getChatVariable</code> triple</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">The Annotation Was Commented Out: 76 JeecgBoot CVEs, 22 in the AI Module, and a Fix That Only Exists in Main</a></h3><p>NVD published 76 contiguous JeecgBoot CVEs in a single minute on 10 October 2026 — CVE-2026-108605 through CVE-2026-108680, all missing-authorization, all against the current release. Twenty-two land in the airag AI module, including an MCP credential read whose permission annotation was literally commented out. A commit on 11 September restored eight of them. It has never shipped.</p><a class="text-link" href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-27">2026-09-27</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Ten SiYuan CVEs Landed in One Batch — and the Release Notes Called Them “Some security vulnerabilities”</a></h3><p>VulnCheck published ten SiYuan CVEs on 26 September 2026 for flaws fixed in v3.8.4 on 17 September. They include an incomplete fix that lets recursive MCP file operations bypass the sensitive-path guard, and two XSS bugs that reach code execution because the Electron renderer runs with nodeIntegration on.</p><a class="text-link" href="/posts/2026/09/siyuan-ten-cve-batch-mcp-descendant-guard-electron-renderer-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</a></h3><p>On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
