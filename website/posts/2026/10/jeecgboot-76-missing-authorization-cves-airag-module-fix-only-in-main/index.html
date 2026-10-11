@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Annotation Was Commented Out: 76 JeecgBoot CVEs, 22 in the AI Module, and a Fix That Only Exists in Main — al-ice.ai</title>
+  <meta name="description" content="NVD published 76 contiguous JeecgBoot CVEs in a single minute on 10 October 2026 — CVE-2026-108605 through CVE-2026-108680, all missing-authorization, all against the current release. Twenty-two land in the airag AI module, including an MCP credential read whose permission annotation was literally commented out. A commit on 11 September restored eight of them. It has never shipped." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Annotation Was Commented Out: 76 JeecgBoot CVEs, 22 in the AI Module, and a Fix That Only Exists in Main" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Annotation Was Commented Out: 76 JeecgBoot CVEs, 22 in the AI Module, and a Fix That Only Exists in Main</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>At <strong>22:16 UTC on 10 October 2026</strong>, NVD published <strong>76 CVEs against JeecgBoot in a single minute</strong>. They are contiguous — <strong>CVE-2026-108605 through CVE-2026-108680</strong>, with no gaps — every one assigned by <strong>VulnCheck</strong>, every one carrying the same affected statement: <em>JeecgBoot through 3.9.5</em>. Seventy are CWE-862 (missing authorization); the remaining six are CWE-639 (authorization bypass through user-controlled key). None of the 76 NVD records carries a CPE configuration, and none names a fixed version.</p>
+        <p>JeecgBoot is a Java low-code development platform with <strong>48,157 stars and 16,215 forks</strong> on GitHub. Version <strong>3.9.5</strong> — the version the entire batch is scoped to — is the newest release, published <strong>27 August 2026</strong>. There is no 3.9.6.</p>
+        <p>Twenty-two of the 76 land in <code>jeecg-boot-module-airag</code>, the platform’s AI module: prompt templates, knowledge-base embeddings, OCR templates, AI video and voice records, evaluator datasets, and MCP server configurations. That is the part of this batch worth reading closely, and it is where we found something the aggregators have not reported: <strong>for eight of these CVEs the fix already exists in the repository, written a month before disclosure, and it has never been released.</strong></p>
+
+        <h2>The commented-out annotation</h2>
+        <p>Start with the highest-severity AI finding, <strong>CVE-2026-108671</strong> (CVSS 4.0 base 7.1, <code>AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:N/VA:N</code>). The NVD description says any authenticated user can read MCP server configurations “because the queryById permission check is commented out,” retrieving MCP endpoint URLs, headers, and outbound authentication tokens.</p>
+        <p>We read <code>AiragMcpController.java</code> first-hand at commit <code>e3b9dc0a</code> — the commit tagged <em>v3.9.5版本发布</em>, dated 26 August 2026, which is what 3.9.5 ships. The description is literal:</p>
+        <pre><code>    @Operation(summary = "MCP-通过id删除")
+    @RequiresPermissions("airag:mcp:delete")
+    @DeleteMapping(value = "/delete")
+    ...
+
+    @Operation(summary = "MCP-通过id查询")
+    //@RequiresPermissions("airag:mcp:queryById")
+    @GetMapping(value = "/queryById")
+    public Result&lt;AiragMcp&gt; queryById(@RequestParam(name = "id", required = true) String id) {</code></pre>
+        <p>The handler immediately above it keeps <code>airag:mcp:delete</code>. The handler immediately below keeps <code>airag:mcp:export</code>. Only the read is disabled, and it is disabled by two slashes — the signature of a check switched off during development and never switched back on. The object it returns is an <code>AiragMcp</code> row: the connection details an agent uses to reach an MCP server, including whatever token sits in its headers.</p>
+        <p>This is the distinguishing property of the airag cluster. In the rest of the batch, a missing <code>@RequiresPermissions</code> exposes a department record or a message template. Here it exposes <strong>outbound credentials for a machine-to-machine tool protocol</strong>, held as ordinary CRUD rows in a low-code admin console and governed by the same annotation discipline as the announcements table.</p>
+
+        <h2>The fix was written on 11 September and never shipped</h2>
+        <p>We checked whether the annotation is still commented out on the default branch. It is not. At <code>main</code> HEAD — commit <code>87d7f938d47d</code>, 22 September 2026 — the line reads <code>@RequiresPermissions("airag:mcp:queryById")</code>, uncommented.</p>
+        <p>The change came from commit <strong><code>21facc013906</code>, 11 September 2026 at 09:53 UTC</strong>, with the commit message <em>AI提示词管理加权限注解</em> — “add permission annotations to AI prompt management.” It touches three files. It uncomments the MCP line. It adds twelve <code>@RequiresPermissions</code> annotations to <code>AiragPromptsController</code>, covering <code>list</code>, <code>recycleBinList</code>, <code>add</code>, <code>edit</code>, <code>delete</code>, <code>deleteBatch</code>, <code>queryById</code>, <code>revertRecycleBin</code>, <code>deleteRecycleBin</code>, <code>experiment</code>, <code>exportXls</code>, and <code>importExcel</code>. And it adds a Flyway migration to create the matching button permissions, named <code>V3.9.5_1__add_airag_prompts_button_permissions.sql</code>.</p>
+        <p>Match that against the CVE list and the overlap is exact. The commit remediates <strong>CVE-2026-108664</strong> (prompts <code>queryById</code>), <strong>108665</strong> (<code>edit</code>), <strong>108666</strong> (<code>deleteBatch</code>), <strong>108667</strong> (<code>revertRecycleBin</code>), <strong>108668</strong> (<code>deleteRecycleBin</code>), <strong>108670</strong> (<code>promptExperiment</code>), <strong>108673</strong> (<code>exportXls</code>), and <strong>108671</strong> (MCP <code>queryById</code>) — eight of the 76, and it covers several endpoints that were never assigned a CVE at all.</p>
+        <p>The maintainers found this class of defect themselves, in the AI module specifically, sixteen days after cutting 3.9.5 and a month before VulnCheck published. They then did not cut a release. The migration file is even named for 3.9.5, as a patch-level addition to the current version. The last push to <code>main</code> was 22 September; as of our checks on 11 October there is no 3.9.6, and the newest non-draft release remains v3.9.5 from 27 August. <strong>Every installable copy of JeecgBoot still has the annotation commented out.</strong></p>
+        <p>We have written this shape up repeatedly in the last ten days — <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI’s fixed version that was never published to PyPI</a>, <a href="/posts/2026/10/openpdc-openhistorian-icsa-26-281-02-fixed-version-no-release/">CISA’s openPDC advisory pointing at nightly builds with no release object</a>, <a href="/posts/2026/10/nginx-ui-ten-advisories-pseudo-versions-remediation-release-new-cve/">nginx-ui’s ten advisories resolved only to Go pseudo-versions</a>. JeecgBoot is the cleanest instance yet, because here the gap is not a metadata error in the advisory. The advisory is correct: there is no fixed version. The fix is simply sitting on a branch.</p>
+
+        <h2>The other fourteen AI-module findings, and what they reach</h2>
+        <p>The airag CVEs that commit <code>21facc01</code> does <em>not</em> touch are unfixed everywhere, including on <code>main</code>:</p>
+        <ul>
+          <li><strong>CVE-2026-108669 — knowledge-base embedding search.</strong> <code>AiragKnowledgeController.embeddingSearch</code> carries no Shiro annotation; supplying knowledge-base ids to <code>GET /airag/knowledge/embedding/search</code> returns document text chunks from knowledge bases the caller has no grant for. This is a RAG corpus read across the tenant boundary, through the retrieval path rather than the file path.</li>
+          <li><strong>CVE-2026-108605 and 108606 — OCR templates.</strong> <code>/airag/ocr/edit</code> lets any authenticated user overwrite LLM prompts in the shared <code>airag:ocr</code> Redis template set; <code>deleteById</code> removes records enumerated from the unguarded <code>/airag/ocr/list</code>. The first is prompt modification against a shared, system-wide template — an injection primitive that persists in configuration rather than in a document.</li>
+          <li><strong>CVE-2026-108613 — AI application release.</strong> <code>POST /airag/app/release</code> publishes or unpublishes another user’s AI application and, per the record, yields share tokens.</li>
+          <li><strong>CVE-2026-108614, 108615, 108616 — evaluator data.</strong> Export, delete and batch-delete on <code>/airag/extData/*</code>: every user’s evaluator definitions downloadable as XLS, any record removable.</li>
+          <li><strong>CVE-2026-108607, 108609, 108672, 108608 — generated media records.</strong> Four CWE-639 entries where a caller-supplied <code>userId</code> selects whose AI video or voice history is read or deleted. <code>/airag/voice/listByUser</code> returns submitted text-to-speech input for an arbitrary user id.</li>
+          <li><strong>CVE-2026-108610, 108611, 108612 — Word templates.</strong> Edit, delete and batch-delete against the shared <code>/airag/word/*</code> template set.</li>
+        </ul>
+        <p>Read together, the AI module reproduces the host platform’s authorization model exactly — including its omissions. Nothing here is an AI-specific vulnerability class. There is no prompt injection, no model extraction, no tool-call confusion. It is CWE-862, the oldest kind of web bug, applied to objects that now hold prompts, retrieval corpora, and MCP credentials. <strong>The AI feature set inherited the console’s access-control debt wholesale, and the newest code in the repository is the code with the least annotation coverage.</strong></p>
+
+        <h2>Encryption used as an authorization control</h2>
+        <p>Two findings outside the airag module are worth isolating, because together they show the same substitution — a confidentiality mechanism standing in for an access check — and because we could verify the whole chain in public source.</p>
+        <p><strong>CVE-2026-108677</strong> (7.1) covers <code>GET /sys/api/getUserByName</code> in <code>SystemApiController</code>. At v3.9.5 the handler has no permission or role annotation at all. It fetches a <code>LoginUser</code> and then calls <code>SensitiveInfoUtil.handlerObject(loginUser, true)</code>, commented <em>用户信息加密</em> — “encrypt user info.” So the stored password value is returned, AES-CBC encrypted rather than withheld.</p>
+        <p>The CVE record says the response can be decrypted “using the hard-coded key exposed by <code>/sys/getEncryptedString</code>.” Both halves check out. <code>EncryptedString.java</code> in <code>jeecg-boot-base-core</code> declares <code>public static String key = "1234567890adbcde"</code> and <code>iv = "1234567890hjlkew"</code> — the defaults are in the public repository, unchanged at <code>main</code> HEAD. And <code>LoginController.getEncryptedString()</code> returns both values as a JSON map, while <code>ShiroConfig</code> line 113 registers <code>filterChainDefinitionMap.put("/sys/getEncryptedString", "anon")</code>. The key and IV protecting the password field are served to unauthenticated callers by design, because the browser needs them to encrypt the login form.</p>
+        <p><strong>CVE-2026-108648</strong> (7.1) is the same pattern without even the encryption. <code>GET /sys/api/getDynamicDbSourceByCode</code> has a bare <code>@GetMapping</code> and returns a <code>DynamicDataSourceModel</code> — JDBC URL, username, and, per the advisory, decrypted cleartext database password — for any datasource code an authenticated low-privileged user cares to guess. We confirmed the handler is unannotated at v3.9.5 <em>and</em> at <code>main</code> HEAD. So is <code>saveDeptRolePermission</code> (<strong>CVE-2026-108628</strong>, 8.6, the joint-highest in the batch), which grants arbitrary menu and button permissions to a role id of the attacker’s choosing. The September cleanup reached the AI module and stopped there.</p>
+
+        <h2>Why the severity numbers understate this</h2>
+        <p>The score distribution is <strong>69 at 5.3, five at 7.1, two at 8.6</strong>. Scanned individually, almost the whole batch reads as medium-severity housekeeping, and each record is individually accurate: one endpoint, one missing annotation, bounded impact, <code>PR:L</code> because you need an account.</p>
+        <p>The aggregate is a different object. Any authenticated low-privileged account can, in sequence: read every tenant’s records and transfer tenant ownership to itself (<strong>CVE-2026-108661</strong>, 7.1) or approve its own tenant-administrator application (<strong>CVE-2026-108657</strong>, 8.6); grant itself arbitrary menu permissions (108628); extract cleartext datasource credentials (108648) and administrator password ciphertext decryptable with a publicly documented key (108677); and wipe the entire <code>sys_log</code> audit table by sending <code>ids=allclear</code> to the batch-delete endpoint (<strong>CVE-2026-108623</strong>, 7.1). The last one matters disproportionately: on a platform where 70 findings are “a low-privileged user did something they should not have,” the audit log is the only control that would show it, and it is deletable by the same account.</p>
+        <p>CVSS has no vector for “and 75 others.” That is an argument for reading batch disclosures as a single posture statement rather than as 76 queue items — the same argument that applies to <a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">VulnCheck’s seven-CVE agent batch published the same day</a>, where no individual score exceeded 6.0 either.</p>
+
+        <h2>Public proof-of-concept, published before NVD</h2>
+        <p>Every one of the 76 records links three references: a VulnCheck advisory, a permalinked GitHub source range in <code>jeecgboot/JeecgBoot</code> at commit <code>e3b9dc0a</code>, and a Python proof-of-concept in the public repository <code>AnkesKasty/cve-request-poc</code>. That repository was created <strong>10 October 2026 at 14:31 UTC</strong> and last pushed at 14:47 — roughly seven and a half hours before the NVD records appeared — and its <code>JeecgBoot</code> directory contains <strong>138 files</strong>. Scripts are shared across related findings; <code>poc_airag_data_plane.py</code>, for instance, is referenced by both the knowledge-base embedding search and the prompt-experiment CVEs.</p>
+        <p>So the disclosure arrives with working exploitation scripts already public, pinned source lines for every finding, and no version to upgrade to. That ordering is worth stating plainly rather than editorialising about: defenders evaluating this batch have precise detection material and no patch.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Do not wait for a version bump.</strong> There is nothing to upgrade to. If you run JeecgBoot 3.9.5 or earlier and can build from source, commit <code>21facc013906</code> plus its Flyway migration is the upstream-authored fix for the prompt and MCP findings — but it is eight of 76, and it leaves the tenant, datasource, permission and audit-log findings untouched.</li>
+          <li><strong>Treat low-privileged platform accounts as console-administrative.</strong> The realistic reading of this batch is that <code>PR:L</code> and <code>PR:H</code> are not meaningfully separated in JeecgBoot 3.9.5. Scope account issuance, SSO group mappings and self-registration accordingly, and do not rely on the role model to contain a compromised ordinary user.</li>
+          <li><strong>Rotate anything reachable through <code>/sys/api/getDynamicDbSourceByCode</code> and <code>/airag/airagMcp/queryById</code>.</strong> Datasource credentials and MCP outbound tokens held in the platform should be considered readable by every authenticated account. MCP tokens in particular are credentials to <em>other</em> systems; rotating them is independent of patching JeecgBoot.</li>
+          <li><strong>Override the default AES key and IV.</strong> <code>EncryptedString.key</code> and <code>.iv</code> ship as <code>1234567890adbcde</code> and <code>1234567890hjlkew</code> and are served unauthenticated by <code>/sys/getEncryptedString</code>. Changing them does not fix CVE-2026-108677 — the endpoint still hands out whatever the current values are — but a non-default key removes the offline, source-only path for anyone who merely scraped a response earlier.</li>
+          <li><strong>Ship audit logs off-box.</strong> <code>sys_log</code> is wipeable by an authenticated low-privileged user via <code>ids=allclear</code>. Forward to external storage the platform cannot reach.</li>
+          <li><strong>Audit your own AI modules for annotation coverage, not for AI-specific bugs.</strong> The lesson in the airag cluster generalises: when prompt libraries, RAG corpora and MCP connection records become rows in an existing admin CRUD framework, they inherit that framework’s authorization discipline. A linter that fails the build on an unannotated controller method would have caught every one of these 76 findings, including the one that was commented out.</li>
+        </ul>
+
+        <p><em>Verification note: the batch composition — 76 contiguous CVE identifiers, publication timestamps, CWE assignments, CVSS 4.0 vectors and base scores, assigning source (<code>disclosure@vulncheck.com</code> for all 76), absence of CPE configurations, and every description quoted or paraphrased above — was read first-hand from the NVD 2.0 API on 11 October 2026; all 76 records were at status Received with no independent NVD analysis. Source excerpts, annotation presence and absence, the commented-out MCP line, <code>EncryptedString</code> default key and IV values, the <code>ShiroConfig</code> anon registration, and the <code>getUserByName</code> and <code>getDynamicDbSourceByCode</code> handlers were read first-hand from raw files in <code>jeecgboot/JeecgBoot</code> at commit <code>e3b9dc0a</code> (v3.9.5) and at <code>main</code> HEAD <code>87d7f938d47d</code>. Commit <code>21facc013906</code>, its date, message, three changed files and annotation diff were read first-hand from the GitHub commits API; release tags, dates, draft status, star and fork counts and last-push date likewise. The proof-of-concept repository creation time, visibility and file count were read first-hand from the GitHub API. The mapping of commit <code>21facc01</code> to eight specific CVEs, the observation that the fix exists only on <code>main</code>, the reading of encryption-as-authorization, and the argument that the aggregate exceeds the individual scores are our editorial analysis and are not claims made by VulnCheck, NVD or the vendor. We ran no proof-of-concept, sent no requests to any JeecgBoot instance, and tested nothing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=JeecgBoot&pubStartDate=2026-10-09T00%3A00%3A00.000&pubEndDate=2026-10-11T23%3A59%3A00.000&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">NVD API — all 76 JeecgBoot CVEs published 10 October 2026 (CVE-2026-108605 to CVE-2026-108680; primary record for scores, CWEs and descriptions)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108671?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108671, MCP server configuration read because the queryById permission check is commented out (7.1)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/jeecgboot-through-3.9.5-missing-authorization-via-airag-airagmcp-querybyid?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — JeecgBoot through 3.9.5 Missing Authorization via /airag/airagMcp/queryById (assigning advisory)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108677?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108677, /sys/api/getUserByName returns any user’s stored password value (7.1)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108648?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108648, getDynamicDbSourceByCode returns JDBC credentials in cleartext (7.1)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108628?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108628, saveDeptRolePermission grants arbitrary menu and button permissions (8.6)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108623?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108623, sys_log batch delete accepts ids=allclear to wipe the audit trail (7.1)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108669?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-108669, unauthorized knowledge-base chunk reads via /airag/knowledge/embedding/search</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/commit/21facc013906?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JeecgBoot commit 21facc01 (11 September 2026) — “AI提示词管理加权限注解”: restores the MCP annotation, adds twelve prompt annotations and the V3.9.5_1 permission migration</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/blob/e3b9dc0aefe1943d9772b026f64ed671a7c82802/jeecg-boot/jeecg-boot-module/jeecg-boot-module-airag/src/main/java/org/jeecg/modules/airag/llm/controller/AiragMcpController.java?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts#L164-L173" rel="noopener">JeecgBoot v3.9.5 source — AiragMcpController.queryById with the commented-out @RequiresPermissions line</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/blob/e3b9dc0aefe1943d9772b026f64ed671a7c82802/jeecg-boot/jeecg-boot-base-core/src/main/java/org/jeecg/common/util/encryption/EncryptedString.java?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">JeecgBoot v3.9.5 source — EncryptedString default key and IV</a></li>
+          <li><a href="https://github.com/jeecgboot/JeecgBoot/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JeecgBoot releases — v3.9.5 published 27 August 2026, newest non-draft release as of 11 October</a></li>
+          <li><a href="https://github.com/AnkesKasty/cve-request-poc?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AnkesKasty/cve-request-poc — public proof-of-concept repository referenced by all 76 records (created 10 October 2026, 14:31 UTC)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/metamcp-cve-2026-79538-79537-inspector-proxy-rce-cross-tenant-session-hijack/">The Gateway That Aggregates Your MCP Servers Aggregates the Blast Radius Too — Two Unpatched MetaMCP CVEs</a></h3><p>Traceforce disclosed CVE-2026-79538 (command execution in the MetaMCP inspector proxy, NVD CVSS 9.8) and CVE-2026-79537 (cross-tenant session hijack, vendor CVSS 8.7) on 29 September 2026. Both affect MetaMCP through v2.4.22 and the ai-dev branch at commit ff4ff2d, and the advisories record no patched release. Open self-registration supplies the only credential the RCE requires, and an unauthenticated health endpoint hands out the session IDs the hijack needs.</p><a class="text-link" href="/posts/2026/09/metamcp-cve-2026-79538-79537-inspector-proxy-rce-cross-tenant-session-hijack/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-08">2026-10-08</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Splunk Shipped Both Formats on One Day: 17 Described Bugs, 5 Buckets, and a 9.8 With No Vector</a></h3><p>On 7 October 2026 Splunk published SVD-2026-1001 with 17 individually described CVEs — including CVE-2026-76268, an unauthenticated 9.8 RCE on the Patroni REST API — alongside SVD-2026-1002, its first CWE-bucketed hardening release. Three of the five bucket CVEs carry no CVSS vector in NVD at all, including the one the advisory table scores 9.8.</p><a class="text-link" href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
