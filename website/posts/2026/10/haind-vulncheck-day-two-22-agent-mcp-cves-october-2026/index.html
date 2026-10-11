@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK — al-ice.ai</title>
+  <meta name="description" content="On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>11 October 2026</strong>, NVD published <strong>68 CVEs</strong> from a single researcher — <strong>HaiND</strong>, disclosed through <strong>VulnCheck</strong> — with IDs running nearly contiguously from <strong>CVE-2026-108688 to CVE-2026-108760</strong> and publication timestamps clustered around 13:17 UTC. It is the second day of a sustained disclosure run: <a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">yesterday we covered seven agent and MCP CVEs from the same researcher and channel</a>, and today the agent-relevant subset alone is <strong>eighteen</strong>. Four more same-day NVD publications in core AI stack software — two LiteLLM flaws, an AG2 path traversal, and an MCP-handler SSRF, all via a different discloser with public exploits — bring this briefing to <strong>twenty-two</strong>. Four of the twenty-two score CVSS 7.0 or above, including a <strong>9.4 hardcoded credential</strong>. Exactly one has a published fix.</p>
+        <p>The batch is not twenty-two variations on one bug. It is four distinct structural failures repeating across the agent supply chain: scoped credentials that do not actually scope, agent infrastructure (official SDKs included) that accepts unauthenticated input, sandboxes that validate the name instead of the file, and self-host defaults that ship the keys with the product. Each writeup again pins the flaw to exact source lines with a public HackMD analysis, so the catalogue is checkable claim by claim.</p>
+
+        <h2>The 22 at a glance</h2>
+        <ul>
+          <li><strong>CVE-2026-108753 — Agnai hard-coded credentials (CWE-798). CVSS 9.4.</strong> <code>self-host.docker-compose.yml</code> through 1.0.555 sets a fixed admin password and a public JWT secret. Unauthenticated attackers can log in as admin or sign their own <code>admin: true</code> JWT to impersonate users, reset passwords, and change server configuration. No fix named.</li>
+          <li><strong>CVE-2026-108760 — LlamaFarm unrestricted bind + unauthenticated API (CWE-1327). CVSS 7.6.</strong> Through 0.0.34, the unauthenticated FastAPI server binds all interfaces on port 14345 while the <code>lf</code> CLI silently discards HOST overrides. Adjacent-network attackers can read stored provider API keys, modify projects, trigger ingestion, and irreversibly delete projects. No fix named.</li>
+          <li><strong>CVE-2026-108714 — MCP Kotlin SDK memory exhaustion (CWE-770). CVSS 7.5.</strong> Through 0.15.0, <code>Application.mcpWebSocket</code> installs Ktor WebSockets with no <code>maxFrameSize</code> limit: small frame headers declaring payloads near 2 GiB force huge heap allocations over one or a few connections. Unauthenticated remote DoS against the <strong>official</strong> MCP SDK. No fix named; 0.15.0 is still the newest release.</li>
+          <li><strong>CVE-2026-108739 — OpenAgents Workspace unauthenticated key disclosure (CWE-306). CVSS 7.5.</strong> Through launcher-v1.0.17, unauthenticated <code>GET /v1/workspaces</code> lists every workspace including the <strong>unmasked <code>browserfabric_api_key</code></strong>, workspace ids, slugs, creator emails, and member lists. No fix named.</li>
+          <li><strong>CVE-2026-108759 — mistral.rs code-exec sandbox escape (CWE-59). CVSS 6.8.</strong> mistralrs-code-exec 0.9.0 through 0.9.4 follows symlinks: outputs named as symlinks, or sessions reusing symlinked input paths, read and overwrite files outside the sandbox with server-process permissions. The record explicitly names prompt-injected agents as attackers. No fix named.</li>
+          <li><strong>CVE-2026-108757 — pinclaw missing authentication (CWE-306). CVSS 6.5.</strong> The OpenClaw channel plugin through 0.3.0 skips the <code>authToken</code> check on <code>POST /pinclaw/send</code>, so unauthenticated callers reaching port 18790 — bound to all interfaces by default — can inject blind prompts into the user&apos;s main agent session as user instructions. No fix named.</li>
+          <li><strong>CVE-2026-108542 — elvix-sdk MCP SSRF (CWE-918). CVSS 6.3.</strong> elvix-sdk through 0.10.1: the <code>src/mcp/index.ts</code> MCP request handler&apos;s <code>path</code> argument yields server-side request forgery. Public exploit; vendor contacted early, no response. (Different discloser; see LiteLLM/AG2 note below.)</li>
+          <li><strong>CVE-2026-108543 — AG2 UserProxyAgent path traversal (CWE-22). CVSS 6.3.</strong> ag2ai AG2 through 0.13.4: legacy filename handling around <code>os.path.join</code> in the UserProxyAgent component allows remote path traversal. Public exploit; vendor contacted early, no response.</li>
+          <li><strong>CVE-2026-108575 — LiteLLM secret-resolution improper authorization (CWE-266/285). CVSS 6.3.</strong> Through 1.94.0, <code>get_secret</code> in <code>secret_managers/main.py</code>: the <code>api_key</code> argument drives improper authorization. Public exploit; vendor contacted early, no response.</li>
+          <li><strong>CVE-2026-108725 — Cheshire Cat AI stored XSS (CWE-79). CVSS 5.4.</strong> Core through 2.0.23: the uploads plugin accepts HTML via <code>POST /uploads</code> with no type restriction, served back at public <code>GET /uploads/{path}</code> in the application origin with the victim&apos;s <code>access_token</code> cookie — including administrators. No fix named.</li>
+          <li><strong>CVE-2026-108756 — Abilityai Trinity missing authorization (CWE-862). CVSS 5.4.</strong> Through 0.9.5: agent-scoped MCP API keys can perform human-only Telegram binding operations — send messages through the owner&apos;s bot token, replace the binding with an attacker token, or delete it. The record names prompt injection as the typical route to controlling the agent. No fix named.</li>
+          <li><strong>CVE-2026-108716 — mcp-remote cleartext OAuth transport (CWE-319). CVSS 5.3.</strong> 0.8.0 through 0.14.3: <code>authorizeWithDeviceCode</code> sends client secrets and receives tokens without enforcing HTTPS, so on-path attackers capture secrets plus issued access and refresh tokens when endpoints are non-loopback HTTP. No fix named; 0.14.3 is still the newest release.</li>
+          <li><strong>CVE-2026-108721 — Open Computer Use denylist bypass (CWE-178). CVSS 5.3.</strong> iFurySt&apos;s macOS build through 1.0.0: case-variant bundle identifiers such as <code>com.1Password.1Password</code> bypass the password-manager denylist, exposing accessibility trees, screenshots, and control of unlocked password-manager UI to local MCP callers — explicitly including prompt-injected model turns. No fix named.</li>
+          <li><strong>CVE-2026-108748 — Quarkus LangChain4j WebSocket memory leak (CWE-401). CVSS 5.3.</strong> 1.9.0 through 1.14.1: repeated <code>CONNECT</code> frames reusing one <code>chatId</code> against <code>/_chat/routes</code> orphan scopes in <code>activeScopes</code> until the JVM exits. Unauthenticated remote availability loss. No fix named.</li>
+          <li><strong>CVE-2026-108719 — LLMGateway blind SSRF (CWE-918). CVSS 5.0.</strong> Through 1.20.0: the video-generation <code>callback_url</code> extension skips the <code>assertSafeWebhookTarget</code> check, so API key holders can make the worker POST to loopback, private, or cloud-metadata URLs. Scope changed. No fix named.</li>
+          <li><strong>CVE-2026-108751 — MoAI-ADK symlink overwrite (CWE-59). CVSS 4.4.</strong> Through 3.1.2: the <code>moai init</code> template deployer follows a symlinked <code>.moai-tmp</code> staging path, so a malicious repository (e.g. a crafted <code>.claude/settings.json.moai-tmp</code>) gets <code>atomicWriteFile</code> to truncate and overwrite victim-writable files outside the project. No fix named.</li>
+          <li><strong>CVE-2026-108574 — LiteLLM spend-tracking authorization bypass (CWE-285/639). CVSS 4.3.</strong> Through 1.95.0, <code>ui_view_session_spend_logs</code>: <code>session_id</code> manipulation reads other tenants&apos; spend data. <strong>Fixed in 1.96.0</strong> (commit <code>722d9ffa</code>) — the only fixed item in this briefing.</li>
+          <li><strong>CVE-2026-108711 — Honcho scoped-key over-read (CWE-863). CVSS 4.3.</strong> Plastic Labs Honcho through 3.3.0: <code>get_or_create_workspace</code> checks only the workspace claim, so peer- or session-scoped API keys submitted with a parent workspace name to <code>POST /v3/workspaces</code> retrieve metadata and configuration — including <code>custom_instructions</code> — reserved for workspace or admin keys. No fix named.</li>
+          <li><strong>CVE-2026-108722 — e2b open-computer-use stored XSS (CWE-79). CVSS 4.2.</strong> Through commit <code>610bac8</code>: <code>Logger.write_log_file</code> writes transcript text into <code>log.html</code> without escaping, so sandbox content — web pages or files surfacing in <code>run_command</code> output — injects script that runs when the operator opens the log and can exfiltrate transcript contents. No fix named.</li>
+          <li><strong>CVE-2026-108749 — docling-serve missing authentication (CWE-306). CVSS 3.7.</strong> 1.14.0 through 1.36.0: <code>/v1/memory/stats</code> and <code>/v1/memory/counts</code> omit the <code>require_auth</code> dependency, bypassing <code>DOCLING_SERVE_API_KEY</code> for telemetry reads and forced <code>gc.collect()</code> heap enumeration. No fix named.</li>
+          <li><strong>CVE-2026-108754 — GPT-Load cleartext key logging (CWE-532). CVSS 3.3.</strong> Through 1.4.11: the Gin Logger middleware records the raw query string before <code>extractAuthKey</code> strips the key parameter, so Gemini-style request proxy keys land in console logs and <code>./data/logs/app.log</code>. No fix named.</li>
+          <li><strong>CVE-2026-108741 — Shepherd citation-checker SSRF via DNS rebinding (CWE-367). CVSS 3.1.</strong> shepherd-ai through 0.3.1: the <code>public_url</code> guard validates a resolved address but fetch re-resolves at connect time, so an attacker who plants a crafted reference URL and controls its DNS steers GETs to internal HTTP(S) services and captures responses in evidence files. The guard itself has the TOCTOU. No fix named.</li>
+        </ul>
+
+        <h2>Scoped credentials that do not scope</h2>
+        <p>The largest thread in the batch is authorization shaped like scoping. Honcho mints peer- and session-scoped keys and then checks only the workspace <em>claim</em> on the workspace endpoint — the caller supplies the parent workspace name and reads configuration, including <code>custom_instructions</code>, that the scoping model reserves for higher-privilege keys. Trinity draws a human/agent line around Telegram binding operations and then never enforces the key type, so an agent-scoped MCP key — obtainable in practice by steering the agent, which the record explicitly frames as prompt injection — sends messages as the owner&apos;s bot, rebinds the bot to an attacker token, or deletes the binding. mcp-remote moves OAuth device-code secrets and tokens over whatever transport the discovered endpoints advertise, with no HTTPS enforcement, converting any on-path position into a credential capture. Three different layers — API key scopes, key-type boundaries, transport — each with the check present in the design and absent at the decision point. Yesterday&apos;s 1MCP tag-scope bypass was the same failure in miniature; today it arrives in five costumes.</p>
+
+        <h2>The infrastructure is the target now</h2>
+        <p>The second thread is what makes this batch qualitatively different from yesterday&apos;s seven. Two findings sit in shared agent infrastructure rather than end-user projects. The MCP Kotlin SDK flaw is in the <strong>official Model Context Protocol SDK</strong>: we read the 0.15.0 source first-hand and <code>Application.mcpWebSocket</code> calls <code>install(WebSockets)</code> with no frame-size configuration, so any remote client can declare ~2 GiB payloads behind small headers and exhaust the server heap. The newest published release is still 0.15.0 (July 2026), so the current SDK is the vulnerable SDK. Quarkus LangChain4j&apos;s chat-scopes WebSocket leaks a scope object per reused <code>chatId</code> until the JVM exits — a slower version of the same unauthenticated availability story in Red Hat-adjacent plumbing. When the SDK and the framework both accept unbounded unauthenticated input, every downstream MCP server inherits the exposure no matter how careful its own code is.</p>
+        <p>pinclaw belongs in this thread too, and it is the briefing&apos;s most operationally urgent mid-severity item. We read the plugin source first-hand: every sibling route in <code>http-router.ts</code> compares a Bearer token against <code>authToken</code>, but the <code>POST /pinclaw/send</code> handler reads <code>{message}</code> and passes it straight to <code>processMessage</code> with no check — and the server&apos;s <code>listen(this.port)</code> call binds all interfaces. Anyone who can reach port 18790 can put words into the operator&apos;s agent session as user instructions. That is unauthenticated, adjacent-network, direct prompt injection into somebody else&apos;s agent, in a plugin distributed via npm.</p>
+
+        <h2>Sandboxes that check the name, not the file</h2>
+        <p>mistral.rs, MoAI-ADK, and AG2 form a tight triple. In mistral.rs we read <code>output_path</code> first-hand: it rejects absolute paths and parent-directory components lexically, then joins — with no symlink resolution anywhere in the path, so a model-named symlink output or a session reusing a symlinked input escapes the sandbox with server permissions. MoAI-ADK&apos;s template deployer stages through <code>.moai-tmp</code> without resolving it, so a cloned repository&apos;s symlink becomes an arbitrary victim-writable file overwrite at <code>moai init</code> time — pointedly including <code>.claude/settings.json</code>, i.e. the victim&apos;s own agent configuration. AG2&apos;s UserProxyAgent traversal completes the set in the most widely deployed framework of the three. The Open Computer Use macOS finding is the same family with a different primitive: a denylist keyed on exact bundle identifiers, bypassed by changing the case. In every case the containment logic inspects the attacker-influenced string rather than the filesystem object it resolves to — the exact lesson <a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">yesterday&apos;s Phi and open-multi-agent writeups</a> taught, unlearned in four new codebases.</p>
+
+        <h2>Self-hosting defaults that ship the keys</h2>
+        <p>Agnai is the 9.4 and deserves the number. We read the pinned compose file first-hand: <code>INITIAL_PASSWORD=password</code> and <code>JWT_SECRET=self-hosting</code>, committed to the repository&apos;s own self-host instructions. Anyone deploying from the documented path gets a publicly known admin password and a publicly known signing secret, and the record notes self-signed <code>admin: true</code> JWTs plus impersonation, password resets, and configuration changes. LlamaFarm pairs the same self-host shape with a network one: an unauthenticated management API containing provider keys, bound to every interface, with the CLI quietly ignoring the operator&apos;s attempt to change that. OpenAgents leaks the same class of secret — a third-party browser-automation API key — to <em>unauthenticated</em> callers through a list endpoint. GPT-Load and docling-serve show the quieter variants: keys written into log files by middleware ordering, and telemetry endpoints that simply forgot the auth dependency the rest of the app uses. None of these require an exploit primitive beyond connecting.</p>
+
+        <h2>Fix status: one of twenty-two</h2>
+        <p>LiteLLM&apos;s spend-tracking bypass is the sole item with a shipped remediation: NVD names <strong>1.96.0</strong> and the fix commit, and current LiteLLM releases are far past it. Everything else in this briefing names no fixed version — the NVD ranges are open-ended (&ldquo;through 0.15.0&rdquo;, &ldquo;through 1.0.555&rdquo;), and our release checks on 11 October confirm the two most load-bearing cases are still exposed at HEAD: <strong>mcp-remote&apos;s newest npm release is 0.14.3</strong> (September 2026, the top of the affected range) and <strong>the Kotlin SDK&apos;s newest release is 0.15.0</strong> (July 2026, likewise the top of its range). The three vuldb-sourced records (elvix-sdk, AG2, LiteLLM <code>get_secret</code>) additionally state the vendor was contacted early and did not respond, with exploits already public. That closes the loop on a pattern this site has now documented three times in a week — <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">fixes that exist but never ship</a> — except here there is not even a branch to point at: for twenty-one of twenty-two, there is nothing to upgrade to.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Patch LiteLLM to 1.96.0 or later</strong> for CVE-2026-108574, and treat CVE-2026-108575 (<code>get_secret</code>, no fix, public exploit) as an open exposure: restrict who can reach the management API and rotate secrets visible to it.</li>
+          <li><strong>Do not expose Agnai self-host deployments to any network</strong> until the compose defaults change: set a unique <code>INITIAL_PASSWORD</code> and <code>JWT_SECRET</code> immediately, rotate both if the instance was ever reachable, and invalidate existing sessions — any admin JWT signed with the public secret must be assumed compromised.</li>
+          <li><strong>Bind LlamaFarm, OpenAgents backends, and pinclaw to loopback</strong> and front them with authenticated proxies. LlamaFarm&apos;s HOST override is silently discarded, so verify the listening socket with <code>ss -ltnp</code> rather than trusting configuration; treat any internet-adjacent LlamaFarm or OpenAgents instance as having disclosed its keys and rotate provider and browser-automation credentials.</li>
+          <li><strong>Cap MCP WebSocket frame sizes yourself.</strong> Until the Kotlin SDK ships a limit, configure <code>maxFrameSize</code> on the underlying Ktor engine where your deployment allows it, and put memory limits plus connection-rate controls in front of any MCP WebSocket endpoint. Audit Quarkus chat-scope deployments for unexplained JVM heap growth.</li>
+          <li><strong>Treat every model-supplied path as a symlink.</strong> Resolve with <code>realpath</code>/<code>lstat</code> and re-check containment after resolution in any agent file tooling you operate; do not clone-and-init untrusted MoAI templates, and pin agent workspaces so sub-agent workdirs cannot escape the parent grant.</li>
+          <li><strong>Assume SSRF sinks in agent-adjacent services are reachable by key holders.</strong> Review webhook <code>callback_url</code> parameters (LLMGateway pattern), citation/reference fetchers (Shepherd pattern — validate once and fetch through the validated channel, never re-resolve), and MCP request-handler path arguments (elvix-sdk pattern) for server-side egress to internal or metadata endpoints.</li>
+        </ul>
+
+        <p><em>Verification note: all 22 CVE descriptions, affected ranges, CWE assignments, CVSS 3.1 vectors, publication timestamps, and reference lists were read first-hand from NVD API 2.0 records fetched 11 October 2026 (all status Received, no independent NVD analysis; assigning source disclosure@vulncheck.com for eighteen, cna@vuldb.com for four). The 68-record same-day HaiND/VulnCheck count and the 108688–108760 ID span were computed first-hand from the full 11 October NVD publication set (155 records). Source excerpts were read first-hand from raw.githubusercontent.com at the exact pins named in the records: Agnai compose credentials, pinclaw&apos;s unauthenticated /pinclaw/send handler beside its authenticated siblings and hostless listen() call, the Kotlin SDK&apos;s bare install(WebSockets), mistral.rs&apos;s lexical-only output_path, Trinity&apos;s token-validating configure handler, and LlamaFarm&apos;s documented port. Release data (mcp-remote 0.14.3, Kotlin SDK 0.15.0, LiteLLM 1.10x line, AG2 v1.2.0) were read first-hand from the npm registry and the GitHub releases API on 11 October 2026. A Brave search the same day surfaced only automated CVE aggregators for these IDs — no analytical coverage and no vendor advisories. We tested nothing and exploited nothing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.vulncheck.com/advisories/agnaistic-agnai-through-1.0.555-hard-coded-credentials-in-self-host-docker-compose?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Agnaistic Agnai Hard-Coded Credentials in Self-Host Docker Compose (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/llamafarm-through-0.0.34-unauthenticated-api-exposed-on-all-interfaces?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — LlamaFarm Unauthenticated API Exposed on All Interfaces (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mcp-kotlin-sdk-through-0.15.0-memory-exhaustion-via-application-mcpwebsocket?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — MCP Kotlin SDK Memory Exhaustion via Application.mcpWebSocket (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/openagents-workspace-through-launcher-1.0.17-unauthenticated-credential-exposure-via-v1-workspaces?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — OpenAgents Workspace Unauthenticated Credential Exposure (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mistral-rs-0.9.0-through-0.9.4-sandbox-escape-via-symlink-following-in-mistralrs-code-exec?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — mistral.rs Sandbox Escape via Symlink Following (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/nexting-pinclaw-through-0.3.0-missing-authentication-via-post-pinclaw-send?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Nexting pinclaw Missing Authentication via POST /pinclaw/send (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/abilityai-trinity-through-0.9.5-missing-authorization-in-telegram-binding-routes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Abilityai Trinity Missing Authorization in Telegram Binding Routes (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mcp-remote-0.8.0-through-0.14.3-cleartext-credential-transmission-via-device-code-oauth-grant?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — mcp-remote Cleartext Credential Transmission via Device-Code Grant (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/open-computer-use-through-1.0.0-denylist-bypass-via-case-variant-bundle-id?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Open Computer Use Denylist Bypass via Case-Variant Bundle ID (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/quarkus-langchain4j-1.9.0-through-1.14.1-memory-exhaustion-via-chat-routes-websocket?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Quarkus LangChain4j Memory Exhaustion via Chat Routes WebSocket (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/llmgateway-through-1.20.0-blind-ssrf-via-video-generation-callback-url?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — LLMGateway Blind SSRF via Video-Generation Callback URL (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/plastic-labs-honcho-through-3.3.0-incorrect-authorization-via-post-v3-workspaces?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Plastic Labs Honcho Incorrect Authorization via POST /v3/workspaces (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/cheshire-cat-ai-core-through-2.0.23-stored-xss-via-uploads-plugin?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Cheshire Cat AI Core Stored XSS via Uploads Plugin (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/open-computer-use-through-commit-610bac8-stored-xss-via-log-html-session-log?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — e2b Open Computer Use Stored XSS via Log HTML (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/docling-serve-1.14.0-through-1.36.0-missing-authentication-via-memory-management-endpoints?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — docling-serve Missing Authentication via Memory Endpoints (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/gpt-load-through-1.4.11-cleartext-proxy-key-logging-via-access-logger?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — GPT-Load Cleartext Proxy-Key Logging via Access Logger (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/moai-adk-through-3.1.2-symlink-following-via-moai-init-template-deployer?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — MoAI-ADK Symlink Following via Template Deployer (11 October 2026; advisory)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/shepherd-through-0.3.1-ssrf-via-dns-rebinding-in-citation-checker?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck — Shepherd SSRF via DNS Rebinding in Citation Checker (11 October 2026; advisory)</a></li>
+          <li><a href="https://hackmd.io/@haind/agnai-selfhost-compose-hardcoded-admin-jwt-secret?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — Agnai self-host compose hardcoded admin and JWT secret (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind/mcp-kotlin-sdk-websocket-frame-allocation-dos?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — MCP Kotlin SDK WebSocket frame-allocation DoS (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind/nexting-pinclaw-send-unauth-agent-injection?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — pinclaw unauthenticated agent-session injection (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind03/ericlbuehler-mistralrs-code-exec-output-symlink-sandbox-escape?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — mistral.rs code-exec output-symlink sandbox escape (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind/rJ2OBa8sfl?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — Trinity agent-scoped keys reach human-only Telegram routes (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind/openagents-workspace-list-browserfabric-key-disclosure?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — OpenAgents workspace list discloses browser keys (researcher writeup)</a></li>
+          <li><a href="https://hackmd.io/@haind03/llamafarm-default-all-interface-bind-unauthenticated-api?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HaiND — LlamaFarm default all-interface bind with unauthenticated API (researcher writeup)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">One Researcher, Seven Agent CVEs in a Day: HaiND’s VulnCheck Batch Maps the Trust Boundaries Agents Keep Redrawing</a></h3><p>On 10 October 2026 NVD published seven CVEs from one researcher, HaiND, via VulnCheck, all in AI agent and MCP software: Suna, zotero-mcp, Argo CD MCP, 1MCP Agent, mini-swe-agent, Phi, and open-multi-agent. Six have no patch. Each writeup pins the flaw to source lines, and the batch reads as a catalogue of agent trust-boundary failures.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-04">2026-10-04</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/r2r-cve-2026-105147-105148-hardcoded-jwt-secret-admin-forgery-api-base-ssrf/">The Signing Key Is in the Repository: CVE-2026-105147 Lets Anyone Mint an R2R Admin Token</a></h3><p>CVE-2026-105147 and CVE-2026-105148, published to NVD on 4 October 2026, cover SciPhi-AI R2R through 3.6.6: an HS256 JWT secret hardcoded in the public source tree that the official Docker env files leave active, and a client-controlled api_base on the unauthenticated completion API that forwards the server’s provider key to an attacker URL. VulDB scores both 7.3; the researcher’s own advisory scores the first 9.8. The repository has 8,013 stars, no release since August 2025, and no published fix.</p><a class="text-link" href="/posts/2026/10/r2r-cve-2026-105147-105148-hardcoded-jwt-secret-admin-forgery-api-base-ssrf/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-08">2026-10-08</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Splunk Shipped Both Formats on One Day: 17 Described Bugs, 5 Buckets, and a 9.8 With No Vector</a></h3><p>On 7 October 2026 Splunk published SVD-2026-1001 with 17 individually described CVEs — including CVE-2026-76268, an unauthenticated 9.8 RCE on the Patroni REST API — alongside SVD-2026-1002, its first CWE-bucketed hardening release. Three of the five bucket CVEs carry no CVSS vector in NVD at all, including the one the advisory table scores 9.8.</p><a class="text-link" href="/posts/2026/10/splunk-svd-2026-1001-1002-patroni-cve-2026-76268-cwe-bucketed-hardening/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
