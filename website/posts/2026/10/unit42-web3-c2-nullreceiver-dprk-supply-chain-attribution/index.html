@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Takedown Window Is 86 Minutes, the C2 Is Forever: Unit 42 Maps Web3 Command-and-Control &mdash; al-ice.ai</title>
+  <meta name="description" content="Unit 42’s 7 October analysis traces DPRK-linked supply-chain C2 through three Web3 phases ending in NullReceiver, which encodes an IPv4 address in the recipient field of an empty Ethereum transfer. Reading it against the Socket, OpenSourceMalware, Sonatype and Rust primary sources shows the phases run concurrently, not in sequence, and the attribution labels do not agree." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/unit42-web3-c2-nullreceiver-dprk-supply-chain-attribution/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Takedown Window Is 86 Minutes, the C2 Is Forever: Unit 42 Maps Web3 Command-and-Control" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+            <article class="post">
+        <h1 class="post-title">The Takedown Window Is 86 Minutes, the C2 Is Forever: Unit 42 Maps Web3 Command-and-Control</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>7 October 2026</strong>, Palo Alto Networks Unit 42 published <em>Evolution of Web3 in Cloud Supply Chain Attacks</em>, by Eyal Rafian. Its thesis is narrow and worth stating plainly: the interesting change in open-source supply-chain malware is no longer the payload, it is the <strong>lookup</strong>. Attackers have moved the step where malware learns its command-and-control address off DNS and onto public blockchains, and the published campaigns now resolve C2 through smart contracts, transaction calldata, or &mdash; in the newest variant &mdash; the <strong>recipient field of a transaction that carries no value and no data at all</strong>.</p>
+        <p>We read Unit 42&apos;s analysis alongside the primary research it cites: Socket&apos;s PolinRider reporting, OpenSourceMalware&apos;s NullReceiver write-up, Sonatype&apos;s six-package advisory, and the Rust Security Response Team&apos;s <code>arrayref</code> post-mortem. Two things surface from that comparison that the summary does not say, and one of them matters for how defenders read attribution in this cluster.</p>
+
+        <h2>Three phases, described in order, observed in parallel</h2>
+        <p>Unit 42 presents the technique as a three-phase architectural evolution, and as a description of increasing data-minimisation the sequence is correct.</p>
+        <p><strong>Phase 1, EtherHiding.</strong> A hardcoded smart-contract address, queried with read-only <code>eth_call</code> requests, returns a C2 endpoint held in contract state. It defeats DNS sinkholing, but the contract address is a fixed landmark: the outbound JSON-RPC payload names the target contract explicitly in its <code>to</code> field, so controls can block queries to that contract. OpenSourceMalware notes the related detail that EtherHiding implementations reused the well-known burn address <code>0x000...dEaD</code>, which is precisely how Google Threat Intelligence caught the technique when it tied it to a DPRK-linked actor in October 2025.</p>
+        <p><strong>Phase 2, cross-chain transaction-data hiding.</strong> Encrypted endpoints move into the calldata of ordinary transactions sent to router or burn addresses. The loader parses transaction history, decrypts in memory, and &mdash; this is the operationally significant part &mdash; the operator can repoint the entire botnet by broadcasting one new transaction, with no change to deployed malware. Unit 42 reports PolinRider variants implementing fallback routes across TRON, Aptos and BNB Smart Chain. Socket&apos;s 1 July PolinRider research independently describes the loader reaching the same three chains&apos; public RPC infrastructure, retrieving encrypted second-stage material, decrypting with embedded XOR keys and executing via <code>eval()</code>.</p>
+        <p><strong>Phase 3, NullReceiver.</strong> No contract, no calldata, no payload field. The loader queries an actor-controlled wallet for its most recent outbound transaction and derives an IPv4 address arithmetically from the 20-byte recipient address: read the address, verify an ASCII marker, convert the leading four bytes to decimal, connect. Because the transaction moves zero value and carries zero data, content inspection has nothing to inspect.</p>
+        <p>The ordering is clean. The <em>calendar</em> is not. OpenSourceMalware published NullReceiver on <strong>2 August 2026</strong>, in <code>bianira-ui@1.27.0</code> and <code>fluid-type-ui@2.0.8</code>. Unit 42&apos;s own ChainDrop analysis landed on <strong>6 August 2026</strong> and places that worm on <strong>EtherHiding</strong> &mdash; Phase 1 &mdash; while describing the adversary silently reconfiguring the worm&apos;s entire C2 infrastructure through a single Ethereum transaction late on 4 August. Socket&apos;s Phase 2 PolinRider reporting predates both, at 1 July. Sonatype&apos;s NullReceiver-family advisory followed on 10 August.</p>
+        <p>So within a six-week window in mid-2026, all three &ldquo;phases&rdquo; were live simultaneously, in campaigns the same report links to overlapping infrastructure. This is our reading, not a Unit 42 claim, and the practical consequence is a planning error worth avoiding: a defender who treats Phase 3 as the current state and retires Phase 1 and 2 detections will miss the largest campaign in the set. ChainDrop infected <strong>over 400 npm packages</strong>, including <code>keyv</code> and <code>cacheable-request</code>, using the oldest technique on the list. Data-minimisation is a design preference, not a migration schedule.</p>
+
+        <h2>The attribution labels do not line up</h2>
+        <p>Unit 42 attributes the cluster to <strong>Alluring Pisces</strong>, which it glosses as Sapphire Sleet or Midnight Neptune, and ties Axios, Mastra AI and <code>arrayref</code> together through matching C2 beacon behaviour, SSL configurations and clustered VPS hosting ranges.</p>
+        <p>The sources it cites for the Web3 technique itself use different names. OpenSourceMalware and Sonatype both place NullReceiver in the <strong>Contagious Interview</strong> campaign, with Sonatype adding the Lazarus APT association and confirming the six packages it found share an Ethereum wallet address with the activity OpenSourceMalware documented. Socket links PolinRider to <strong>Contagious Interview / Famous Chollima</strong>. These are not obviously the same cluster under different vendor naming schemes; Contagious Interview and Sapphire Sleet are usually tracked as distinct DPRK activity sets.</p>
+        <p>We are not asserting that anyone is wrong. We are flagging that a single blockchain C2 technique now appears under at least two attribution clusters across four vendors, and that the shared-infrastructure evidence Unit 42 offers &mdash; beacon behaviour, TLS configuration, VPS ranges &mdash; is explicitly summarised rather than published. Unit 42 supplies no domains, IP addresses, certificate values, ATT&amp;CK technique IDs or CVE for this report. That is a defensible editorial choice for a trend piece. It also means the linkage cannot be checked by a reader, and should be carried as a vendor assessment rather than a settled fact.</p>
+        <p>The <code>arrayref</code> entry illustrates the gap most clearly. Unit 42 writes that the actor &ldquo;poisoned the arrayref crate on crates.io, using Rust&apos;s native compilation hook to execute a second-stage payload.&rdquo; The Rust Security Response Team&apos;s 20 August post describes something adjacent but distinct: the malicious build script lived in a <strong>separate crate, <code>proc-macro1</code></strong>, which a republished <code>arrayref</code> was made to depend on. Rust credits the discovery to Nextron Systems GmbH, states explicitly that it does <strong>not</strong> believe the <code>arrayref</code> author acted maliciously &mdash; their machine or credentials were likely compromised &mdash; and makes no nation-state attribution at all. The dependency-edge detail is the part defenders need, because scanning a package&apos;s own source would not have found it.</p>
+
+        <h2>Why the economics favour the attacker here</h2>
+        <p>The Rust response also supplies the sharpest number in this story. <code>arrayref@0.3.10</code> was published at 07:15:00Z and deleted at 08:41:40Z: <strong>online for 86 minutes</strong>. <code>internment@0.8.7</code> lasted 90, <code>append-only-vec@0.1.9</code> lasted 107. That is an excellent registry response by any standard.</p>
+        <p>It is also the whole problem. Registry takedown is fast and effective against the artifact, and completely inert against the lookup layer. A smart contract cannot be deleted; a wallet&apos;s transaction history cannot be revoked; a zero-value transfer on BNB Smart Chain does not respond to abuse reports. Every implant that executed inside those 86 minutes retains a working, operator-updatable C2 path, and ChainDrop demonstrated the update in practice &mdash; one transaction, entire infrastructure repointed, no new malware shipped. The industry has optimised the half of the kill chain that can be taken down while the other half moved somewhere takedowns do not reach.</p>
+
+        <h2>It keeps landing in agent tooling</h2>
+        <p>The AI-development angle is not incidental to this cluster. Unit 42 reports ChainDrop injecting persistent task hooks that fire <strong>when a developer opens a project or starts an AI coding session</strong>, and searching the memory of running build processes for ephemeral cloud IAM keys, CI/CD worker tokens and short-lived OIDC federation keys before the runner terminates &mdash; credentials that leave little trace on disk. Socket describes PolinRider triggering through VS Code task files and concealing loaders in <code>.woff2</code>-disguised files, repository configuration and IDE workspace automation, with git history rewritten via force pushes and anti-dated commits so the visible commit log is an unreliable indicator.</p>
+        <p>Among Sonatype&apos;s six NullReceiver packages are <code>@kolbo/mcp@1.57.1</code> and <code>agentgui@1.0.1127</code> &mdash; MCP and agent-GUI tooling, hijacked rather than typosquatted, with the loader appended to the end of a file that already existed in the legitimate package. The Mastra campaign targeted AI development workflows directly, as we covered in <a href="/posts/2026/06/mastra-npm-supply-chain-north-korea-sapphire-sleet/">the June Mastra npm compromise</a>. The pattern is consistent with <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">the TensorLake SDK compromise</a>, whose payload also resolved C2 through an Ethereum contract rather than a hardcoded domain, and with <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">the broader pattern of agents living off the land</a>: the developer environment is the target because it holds credentials that outrank the application.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Decide whether blockchain traffic is ever expected from your build estate.</strong> For an organisation with no Web3 business requirement, outbound connections from developer workstations or CI runners to public blockchain RPC gateways are a high-confidence anomaly and the single cheapest detection in this report. Document the decision &mdash; it is a bad rule for a Web3 shop.</li>
+          <li><strong>Alert on the process, not just the destination.</strong> The signal is a package manager, scripting engine, compiler or language runtime initiating blockchain queries. Correlate originating process, user, workspace and destination; the destination alone will increasingly look ordinary.</li>
+          <li><strong>Keep all three phases in your detections.</strong> Contract-address blocklists still catch the largest campaign in this cluster. Add calldata and transaction-history reads, and wallet-history queries, rather than replacing the old rules.</li>
+          <li><strong>Audit the dependency edge, not only the package.</strong> The <code>arrayref</code> compromise arrived through a newly added dependency with a malicious build script. Flag manifest changes that introduce new transitive dependencies, and treat <code>preinstall</code>, <code>postinstall</code> and compilation hooks as reviewable code.</li>
+          <li><strong>Treat short-lived credentials as stealable.</strong> ChainDrop reads process memory for OIDC and runner tokens. Separate build and deployment identities, scope runner permissions down, and do not assume a credential&apos;s lifetime is a control.</li>
+          <li><strong>Baseline workspace automation.</strong> VS Code task files, IDE workspace settings and repository configuration are execution paths in both campaigns. Compare against approved baselines, and do not trust a repository&apos;s commit history as evidence &mdash; Socket documented anti-dated commits specifically to defeat that check.</li>
+        </ul>
+
+        <p><em>Verification note: the three-phase model, the <code>eth_call</code> and calldata mechanics, the NullReceiver IPv4 derivation steps, the TRON/Aptos/BNB Smart Chain fallback routing, the ChainDrop memory-scraping and AI-coding-session persistence behaviour, the Axios/Mastra/arrayref linkage and the absence of published IOCs were read first-hand from Unit 42&apos;s 7 October report. The ChainDrop figure of 400+ packages, the keyv and cacheable-request names, and the 4 August single-transaction C2 reconfiguration were read from Unit 42&apos;s 6 August ChainDrop analysis. PolinRider&apos;s 162 artifacts across 108 packages, the 80 Go modules, 10 Packagist packages and one Chrome extension, the .woff2 and whitespace-padding concealment, the VS Code task triggering, the anti-dated commits and the DEV#POPPER and OmniStealer payload names are Socket&apos;s 1 July reporting by Karlo Zanki. The bianira-ui and fluid-type-ui package versions, the burn-address detail and the October 2025 Google attribution of EtherHiding are from OpenSourceMalware&apos;s 2 August write-up by Paul McCarty, which states no code was executed during analysis. The six-package list, the sonatype-2026-005899 and -005901 identifiers, the shared wallet address, the Blockscout fallback and the /0x/cls and /0x/ls retrieval endpoints are Sonatype&apos;s 10 August advisory. The arrayref publication and deletion timestamps, the proc-macro1 dependency mechanism, the Nextron Systems credit and the statement that the author is not believed to have acted maliciously were read from the Rust Security Response Team&apos;s 20 August post. The observation that the three phases ran concurrently, the note that the attribution labels differ across these sources, and the takedown-asymmetry argument are our editorial analysis, not claims made by any cited vendor. We did not execute, analyse or retrieve any malware sample, and we performed no blockchain lookups.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://unit42.paloaltonetworks.com/web3-cloud-supply-chain-attacks/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Palo Alto Networks Unit 42 &mdash; Evolution of Web3 in Cloud Supply Chain Attacks (7 October 2026)</a></li>
+          <li><a href="https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Palo Alto Networks Unit 42 &mdash; ChainDrop: Inside a Self-Propagating npm Worm (6 August 2026)</a></li>
+          <li><a href="https://socket.dev/blog/polinrider-north-korea-linked-supply-chain-campaign-expands?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Socket &mdash; PolinRider: North Korea-Linked Supply Chain Campaign Expands Across Open Source Ecosystems (1 July 2026)</a></li>
+          <li><a href="https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenSourceMalware &mdash; NullReceiver&apos;s Blank Crypto Transfers Solves the Challenges of EtherHiding (2 August 2026)</a></li>
+          <li><a href="https://www.sonatype.com/blog/six-npm-packages-use-ethereum-transactions-to-retrieve-malicious-payloads?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Sonatype &mdash; Six npm Packages Use Ethereum Transactions to Retrieve Malicious Payloads (10 August 2026)</a></li>
+          <li><a href="https://blog.rust-lang.org/2026/08/20/supply-chain-attack-on-arrayref/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Rust Security Response Team &mdash; Supply chain attack on arrayref (20 August 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT</a></h3><p>The Huntress 28 September 2026 report traces attacker-made ChatGPT Custom GPTs through sponsored Google results, a Cloudflare-themed ClickFix lure, decimal-IP PowerShell, Canon-signed DLL sideloading, a WAV-hidden loader, and an encrypted filesystem — ending in a camera-and-microphone RAT across 40+ incidents.</p><a class="text-link" href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">The Second Breach Was a Fire Map: OpenAI Discloses Another Australian Agency Incident From June</a></h3><p>On 2 October 2026 OpenAI disclosed a second Australian government incident: an agent tasked with gathering public bushfire data queried the NSW Parks and Wildlife Fire History service beyond its intended use and took summary statistics not publicly available through it. The June incident was validated and reported to NSW on 1 October, classified as a misalignment, with no personal information found.</p><a class="text-link" href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">Your Agent Was the Payload: S1ngularity, Shai-Hulud, and TeamPCP, One Year On</a></h3><p>The 30 September ReversingLabs retrospective traces a year of supply-chain attacks from S1ngularity and weaponized AI agents through the Shai-Hulud worm to TeamPCP, hundreds of millions in damage, and two arrests in Australia.</p><a class="text-link" href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
