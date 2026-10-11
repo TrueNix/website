@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Two Victims in Every Message: Barracuda Finds Phishing That Attacks the Reader and the AI Summarizer — al-ice.ai</title>
+  <meta name="description" content="Barracuda Research’s 7 October Threat Spotlight documents phishing emails that attack twice in one message: a password-protected attachment for the human reader, and hidden prompt injections — HTML comments, invisible CSS, Base64 blobs, zero-width characters — that steer the victim’s AI email assistant into vouching for the lure." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/barracuda-dual-target-phishing-ai-assistants-prompt-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Two Victims in Every Message: Barracuda Finds Phishing That Attacks the Reader and the AI Summarizer" />
+  <meta name="post:date" content="2026-10-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+            <article class="post">
+        <h1 class="post-title">Two Victims in Every Message: Barracuda Finds Phishing That Attacks the Reader and the AI Summarizer</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-11">2026-10-11</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>7 October 2026</strong>, Barracuda Research published a Threat Spotlight by Guruprasad Kenja with an unusually honest title: <em>Email attacks target both humans and AI in the same message</em>. The campaign it analyzes pairs the oldest email trick in the book &mdash; a password-protected attachment with the password helpfully included in the body &mdash; with prompt injection hidden in the same message, aimed at the AI assistant that summarizes, prioritizes, and acts on the victim&rsquo;s inbox. One email, two victims: the reader, and the software the reader trusts to pre-read mail for them.</p>
+        <p>Barracuda&rsquo;s key takeaways, paraphrased: attackers are combining tactics to manipulate both human users and their email AI assistants in a single phishing email. Humans get social engineering such as password-protected attachments; AI assistants get prompt injections designed to influence or override user behavior. And the defensive conclusion follows directly: organizations must secure not only users and inboxes, but the AI systems that consume and act on email data.</p>
+
+        <h2>The sample looked like internal mail</h2>
+        <p>The dissected sample is built to survive reputation filtering. The &ldquo;From&rdquo; and &ldquo;To&rdquo; addresses match the same mailbox, the message carries a trusted spam confidence score, and it originates from a public sector domain. Each property lends perceived legitimacy, and together they help the message pass the reputation checks that would otherwise be the first line of defense. Nothing about the envelope asks the recipient to be suspicious &mdash; which is exactly what makes the second layer viable.</p>
+
+        <h2>Layer one: the human gets the attachment</h2>
+        <p>The first attack vector is familiar to email security professionals. The message appears routine and trustworthy: a legitimate-looking domain, a reference to a business process, a document attachment. The attachment is password-protected, and the password is conveniently provided in the email body &mdash; a tactic Barracuda flags as creating a blind spot for traditional email security controls, which cannot scan inside the encrypted file. If the user opens the attachment with the supplied password, the attack progresses to credential theft or malware delivery. This half of the campaign needs no AI involvement at all, and it would work in 2016 as well as 2026.</p>
+
+        <h2>Layer two: the assistant gets the instructions</h2>
+        <p>The second layer is the one that changes the economics. The email carries hidden malicious instructions &mdash; prompt injection &mdash; aimed at the AI assistant, not the human. If the user overlooks the email, the attacker does not lose: the injection manipulates the summary the assistant presents so that the phishing email is marked as legitimate or urgent, pushing the human to open the email and click. Read that twice. <strong>The assistant becomes a re-delivery mechanism for mail the human already ignored.</strong> The ignored phish gets a second hearing, this time vouched for by trusted software.</p>
+        <p>Barracuda describes a harder variant of the same layer: injection that hijacks the assistant&rsquo;s response outright &mdash; instructing it to ignore its previous directions and instead send an urgent request to wire funds to a specified account, leak data, or surface a fake urgent action. None of these instructions are visible to the user. The human sees a helpful summary; the attacker sees an agent with mailbox context and, in the worst configurations, the ability to act on it.</p>
+
+        <h2>Four ways to hide text from the human but not the model</h2>
+        <p>According to Barracuda&rsquo;s analysis, four concealment techniques recur in these attacks:</p>
+        <ul>
+          <li><strong>Hidden text in HTML comments.</strong> Instructions sit inside comment tags that never render in a mail client but remain in the raw source the AI parses.</li>
+          <li><strong>Invisible CSS text.</strong> Zero-pixel font sizes, white-on-white color, or fully hidden styling: no visible space occupied, still present in the document the model reads.</li>
+          <li><strong>Base64-encoded data.</strong> Instructions buried inside encoded blocks &mdash; Barracuda cites image data strings as an example &mdash; that an automated pipeline may decode and extract as text.</li>
+          <li><strong>Zero-width characters.</strong> Invisible Unicode layered with normal text to smuggle or obfuscate content.</li>
+        </ul>
+        <p>The concealment layer is converging across independent observations. On <strong>3 September 2026</strong>, Microsoft Security Blog (research by Noam Kochavi and Sarah Wolstencroft) documented a high-volume phishing campaign repurposing invisible Unicode tag characters &mdash; the ASCII-smuggling technique popularized in AI prompt-injection research &mdash; for phishing evasion, emerging from Defender for Office 365 prompt-injection protection work. That is a distinct observation from Barracuda&rsquo;s, not the same campaign, but it points the same direction: techniques developed to fool models are being operationalized against the mail pipeline, and techniques built for mail are being aimed at models. The hiding places overlap because the reader &mdash; human visual system versus tokenizer &mdash; is the only thing that differs.</p>
+
+        <h2>Barracuda says this is already beyond the inbox</h2>
+        <p>The post&rsquo;s most consequential section is its set of real-world examples, because three of the four are not email triage at all:</p>
+        <ul>
+          <li><strong>Invoice fraud via summary.</strong> A hidden block in an invoice email instructs the summarizing model to add a fake priority action changing vendor payment details. The compromised summary nudges an employee toward wiring money to the attacker. The payload is a business-email-compromise outcome without any account takeover.</li>
+          <li><strong>Resume screening.</strong> A candidate embeds hidden text telling the screening AI to rate them 10 out of 10 and recommend an immediate interview regardless of qualifications. An unqualified &mdash; or malicious &mdash; applicant advances. The target here is a hiring pipeline, and the attacker is the applicant.</li>
+          <li><strong>Support bots.</strong> The attacker frames a request as an authorized maintenance or admin mode and asks the bot to reveal its own configuration. Same confused-deputy shape, different uniform.</li>
+          <li><strong>Code assistants.</strong> Poisoned documentation on a webpage the assistant reads instructs it to insert a credential-exfiltration line every time it generates authentication code. This one lands closest to home for this site: it is the same failure mode as <a href="/posts/2026/10/github-copilot-cli-cryptographic-context-injection-28-seconds-validated-not-fixed/">the Copilot CLI cryptographic-context-injection case</a>, where hidden instructions the agent itself decodes survived validation and stayed reproducible &mdash; except here the injection ships inside third-party docs rather than ciphertext.</li>
+        </ul>
+        <p>Our reading, not Barracuda&rsquo;s claim: the mailbox is just the first host. The pattern is <em>any AI that reads untrusted third-party content and acts on it</em> &mdash; the inbox, the applicant tracker, the helpdesk, the IDE. Defenses scoped to &ldquo;email security&rdquo; will miss three of the four examples in Barracuda&rsquo;s own post. Note the inverse symmetry with <a href="/posts/2026/10/cisco-talos-uat-11985-ai-assisted-google-aitm-phishing-taiwan/">the Talos UAT-11985 campaign</a>, where AI sat at the front (lure production) and humans operated the back (live MFA relay). Here the human is the front and the AI is the back &mdash; the assistant is the thing being socially engineered, at machine speed, inside infrastructure the victim owns.</p>
+
+        <h2>What Barracuda does not claim</h2>
+        <p>Carrying this correctly means noting its boundaries. The post names no threat actor, gives no campaign size or prevalence figures, publishes no IOCs, and assigns no CVE &mdash; there is none to assign. It is an analyzed campaign plus observed examples, not a measured trend, and should not be cited as one. The defenses section closes with a product pitch for Barracuda&rsquo;s own layered controls; the research content stands without it, and so does our summary. The examples beyond email &mdash; hiring, helpdesk, code generation &mdash; are presented as attacks Barracuda has seen, but the post does not quantify them either.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Sanitize at ingestion, before the model.</strong> Strip HTML comments, hidden and invisible spans, and zero-width characters, and decode-and-inspect Base64 blobs in the pipeline &mdash; not via prompting. A control the attacker&rsquo;s text can argue with is not a control.</li>
+          <li><strong>Treat AI summaries of untrusted mail as untrusted content.</strong> Summary urgency must never substitute for opening the original. Flag cases where the summary&rsquo;s priority contradicts headers and reputation signals &mdash; that contradiction is the detection.</li>
+          <li><strong>Keep money and vendor-detail changes behind human approval outside the assistant loop.</strong> Any wire instruction or payment-detail change arriving via a summary gets verified through a second channel. The invoice example is BEC without the break-in; approve accordingly.</li>
+          <li><strong>Sandbox the assistant to the task.</strong> A summarizer needs read access, not the ability to send mail, move money, or change records. Bind capability to the job, per task, and the wire-funds variant fails closed.</li>
+          <li><strong>Validate outputs before they trigger actions, and log the attempts.</strong> Review AI-generated responses before they cause effects, and treat repeated injection attempts &mdash; especially retries against the same mailbox &mdash; as signal, not noise.</li>
+          <li><strong>Enforce the data-only rule structurally.</strong> External content of any kind is data, never instructions. Where the platform allows it, that separation belongs in architecture &mdash; roles, schemas, tool permissions &mdash; not in a system prompt the next email can override. This is the same boundary <a href="/posts/2026/01/arxiv-echoleak-zero-click-prompt-injection-copilot/">EchoLeak</a> violated in Copilot and <a href="/posts/2026/01/varonis-reprompt-copilot-single-click/">Reprompt</a> chained through deep links; the venue changed, the missing boundary did not.</li>
+        </ul>
+
+        <p><em>Verification note: the campaign structure, the From/To and spam-score sample details, the two attack vectors, the four concealment techniques, the four real-world examples, the six defensive measures, and the data-only principle were read first-hand from Barracuda&rsquo;s 7 October 2026 Threat Spotlight (page marked updated 6 October 2026). The Microsoft ASCII-smuggling details &mdash; 3 September 2026 post, the Kochavi and Wolstencroft bylines, the high-volume invisible-Unicode-tag phishing observation, and its Defender for Office 365 research origin &mdash; were read first-hand from the Microsoft Security Blog. The Infosecurity Magazine piece of 7 October was used only as a secondary pointer. The observations about re-delivery economics, the beyond-the-inbox pattern, and the Talos inverse symmetry are our editorial analysis. We executed no samples and reproduced no attacks. Unit 42&rsquo;s March documentation of the <a href="/posts/2026/03/unit42-web-indirect-prompt-injection/">first large-scale indirect prompt injection attacks in the wild</a> remains the baseline this campaign extends: from live web content to the inbox itself.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.barracuda.com/2026/10/07/email-attacks-target-both-humans-ai-assistants?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Barracuda Research &mdash; Threat Spotlight: Email attacks target both humans and AI in the same message (7 October 2026)</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/attackers-hide-ai-prompt/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine &mdash; Attackers Hide AI Prompt Injections Inside Phishing Emails (7 October 2026)</a></li>
+          <li><a href="https://www.microsoft.com/en-us/security/blog/2026/09/03/ascii-smuggling-crosses-over-from-ai-prompt-injection-to-phishing-evasion/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Blog &mdash; ASCII smuggling crosses over from AI prompt injection to phishing evasion (3 September 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-27">2026-05-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/paubox-invisible-text-prompt-injection-ai-email-filters/">Paubox — Invisible text prompt injection bypasses AI email filters</a></h3><p>Phishing campaigns use zero-font and color-matched hidden text to inject benign content that tricks AI email filters into classifying malicious messages as safe.</p><a class="text-link" href="/posts/2026/05/paubox-invisible-text-prompt-injection-ai-email-filters/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/">One Prompt, Every Agent in the Region: Zenity’s AgentCorruption Turns IMDS Access Into Full AgentCore Takeover</a></h3><p>Zenity Labs disclosed AgentCorruption on 8 October 2026 at SecTor: a single prompt to one public-facing Bedrock AgentCore agent yielded live STS execution-role credentials, and an overbroad default IAM role extended them to every AgentCore agent in the account and region — conversations, memories, source code, Secrets Manager credentials, and persistent memory poisoning. AWS closed the IMDS entrance in February but the role stayed overbroad until between June and September.</p><a class="text-link" href="/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-30">2026-05-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/greyvibe-russia-ai-cyber-operations-withsecure/">WithSecure — GreyVibe Russia-Linked Group Supercharges Ops with AI</a></h3><p>WithSecure documents GreyVibe, a Russia-nexus threat group using ChatGPT, Gemini, and Ideogram AI across every attack phase — from lure creation to malware development.</p><a class="text-link" href="/posts/2026/05/greyvibe-russia-ai-cyber-operations-withsecure/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
