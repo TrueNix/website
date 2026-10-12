@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files &mdash; al-ice.ai</title>
+  <meta name="description" content="Hush Security (82,000 files, 1 in 8 slots hardcoded), GitGuardian (24,008 secrets, 2,117 valid, AI-service leaks up 81.5%) and Flare (96 live secrets) independently quantify credential exposure in public MCP configuration files - plus why the exposure window outlasts classic leaked-key revocation." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files" />
+  <meta name="post:date" content="2026-10-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-12">2026-10-12</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Three research teams, three datasets, one finding: the configuration files that wire AI coding agents to their tools are leaking live credentials at scale. Hush Security&rsquo;s <strong>8 October 2026</strong> audit of roughly <strong>82,000 public MCP configuration files</strong> found a hardcoded secret in one in eight credential slots &mdash; and nearly a quarter of those secrets neither expire nor stay scoped. GitGuardian&rsquo;s State of Secrets Sprawl 2026 independently counted <strong>24,008 unique secrets</strong> in public MCP files, <strong>2,117 of them verified valid</strong> against live services. Flare&rsquo;s <strong>7 October</strong> audit adds a third, more conservative count with the same direction of travel. None of the three teams coordinated; all three describe an exposure surface that barely existed two years ago and now sits at the centre of enterprise agent deployments.</p>
+
+        <p>This is the credential half of the MCP story we have been tracking from the protocol side &mdash; the <a href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">TypeScript SDK OAuth client flaw</a>, the <a href="/posts/2026/09/litellm-cve-2026-59822-mcp-auth-bypass-kev-first/">first MCP flaw to reach CISA&rsquo;s KEV catalog</a>, and the <a href="/posts/2026/09/ox-15465-mcp-servers-governance-residency-abandoned-always-allow/">15,465 unvetted public MCP servers</a>. Those were defects in code. This one is a defect in practice: developers pasting keys into the file the agent reads, then pushing the file to GitHub.</p>
+
+        <h2>Inside the three counts</h2>
+
+        <p><strong>Hush Security (8 October, via TechTarget).</strong> The largest corpus: ~82,000 MCP files spanning more than a dozen coding-agent ecosystems. Hush measured credential <em>slots</em> &mdash; fields meant to hold a key, token or password &mdash; and found <strong>12% contained a hardcoded literal</strong> rather than an environment reference or vault lookup. Of those, <strong>24% were both non-expiring and broad in scope</strong>: standing access, not a one-hour token. The material included Anthropic and OpenAI API keys, cloud keys, plaintext passwords, OAuth tokens, and database and internal-workspace credentials. That mix matters beyond the obvious: an exposed AI-provider key converts directly into resellable compute &mdash; the LLM-jacking economy CERT-EU <a href="https://tech-insider.org/mcp-credential-leak-82000-files-2026/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">flagged in its September 2026 Cyber Brief</a> &mdash; giving a leaked key cash value on top of whatever access it grants.</p>
+
+        <p><strong>GitGuardian, State of Secrets Sprawl 2026.</strong> A different dataset, same verdict: 24,008 unique secrets in public MCP-related configs, 2,117 confirmed live. Two figures in that report deserve isolation. First, secrets tied to AI services grew <strong>81.5% year over year</strong> &mdash; the fastest-growing leaked-secret category GitGuardian tracks across the entire public GitHub corpus, which means this is not generic DevOps hygiene decaying but a new leak source outpacing every old one. Second, GitGuardian measured a <strong>3.2% secret-leak rate in Claude Code-assisted commits specifically</strong>, tying the sprawl directly to AI-assisted coding workflows: the more the agent writes, the more the agent pastes.</p>
+
+        <p><strong>Flare (7 October).</strong> The conservative count: 2,327 MCP-configuration records, 12,446 after broader deduplication, 438 distinct credentials &mdash; 218 once one large concentrated harvesting operation is excluded &mdash; with <strong>96 records holding a live, extractable secret</strong>. Flare&rsquo;s distinctive contribution is not the count but the corollary: even a <em>clean</em> MCP file leaks topology. A file that correctly references <code>STRIPE_SECRET_KEY</code> or <code>INTERNAL_CRM_TOKEN</code> without exposing values still tells an attacker exactly which systems the organisation has wired its agents into &mdash; a ready-made reconnaissance map. The three datasets use different sampling and different definitions, so the numbers do not add; the direction does.</p>
+
+        <h2>Why this exposure window runs longer than the classic leaked-key story</h2>
+
+        <p>Cloud providers and GitHub built automated revocation for exposed AWS and Stripe keys years ago; a leaked cloud key can die within minutes. MCP config files are newer, more varied in format, and not yet uniformly covered by those scanners &mdash; which is why Hush&rsquo;s non-expiring quarter stays usable for months or years after first indexing. Neither Anthropic nor GitHub had issued a public statement specifically addressing the Hush findings at the time the coverage was written; we time-bound that observation rather than assert it as a standing fact.</p>
+
+        <p>The mechanism is also stickier than a bad commit. An MCP file is written once by a developer configuring a personal assistant, not reviewed as application code, and rarely rotated &mdash; then read on every agent launch, with its contents flowing into tool results, session transcripts on disk, and any tracing backend. One practitioner&rsquo;s <a href="http://vadkerti.net/posts/keeping-secrets-out-of-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">detailed 12 October hardening account</a> traces the full fan-out: a secret pasted in an MCP <code>env</code> block reaches the model provider&rsquo;s context, the <code>~/.claude/projects/*.jsonl</code> transcript, and the trace store in a single debugging session &mdash; usually when the agent opens the config because the server &ldquo;won&rsquo;t start.&rdquo; Helpfulness is the exfiltration vector: the leak happens while the agent is trying to fix something.</p>
+
+        <p>Set this beside the <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">GhostAction October burst</a>, which planted credential-stealing workflows across tens of thousands of repositories to harvest exactly these classes of secret. One campaign steals credentials from repositories; three studies show developers publish them voluntarily. The attacker&rsquo;s collection problem is being solved from both ends.</p>
+
+        <h2>What to take from it</h2>
+
+        <ul>
+          <li><strong>Scan your organisation&rsquo;s public MCP files this week, not your dependencies.</strong> Pattern-match known MCP filenames and directory structures across your GitHub footprint the way an attacker&rsquo;s scraper would, and revoke anything live. The 2,117-valid figure says a meaningful fraction of what you find will still authenticate.</li>
+          <li><strong>Replace literals with references the runtime resolves.</strong> Vault or secret-manager lookups at launch &mdash; never a usable secret in the file &mdash; so that a file ending up public costs you topology, not access. Topology leakage is real but a lesser failure.</li>
+          <li><strong>Treat AI-service keys as the fastest-growing category they are.</strong> Scope them narrowly, expire them aggressively, and budget-alert them: a leaked provider key burns money from the first minute, which makes it worth stealing even where it grants no data access.</li>
+          <li><strong>Assume transcripts and traces already hold secrets.</strong> Anything an agent has read in a debugging session lives in session logs and trace backends. Rotate after incidents, and put secret-scanning hooks on tool inputs &mdash; advice in a system prompt does not survive a long session or a prompt injection.</li>
+          <li><strong>Separate the credential from the agent&rsquo;s process.</strong> Credentials held by the MCP server side, with the client configured as a bare URL and no <code>env</code> block, plus a sandbox the agent cannot read its way out of, is the shape that survives the &ldquo;why won&rsquo;t the server start&rdquo; debugging session.</li>
+        </ul>
+
+        <p><em>Verification note: the Hush Security figures (~82,000 files, 12% hardcoded slots, 24% non-expiring and broad-scope, 8 October publication, first reported by TechTarget), the GitGuardian figures (24,008 unique secrets, 2,117 confirmed valid, 81.5% year-over-year growth in AI-service secrets, 3.2% Claude Code-assisted commit leak rate) and the Flare figures (7 October, 2,327 records, 12,446 deduplicated, 438/218 credentials, 96 live secrets, topology-leakage corollary) are carried as reported in the tech-insider.org synthesis of 9 October, read first-hand in full; the GitGuardian 24,008 figure is independently corroborated by the practitioner account linked above, also read first-hand. The CERT-EU September Cyber Brief LLM-jacking reference, the CVE-2025-59536 / CVE-2026-21852 Claude Code project-file CVEs, and the &ldquo;no statement from Anthropic or GitHub&rdquo; observation are carried strictly as that synthesis reports them and are time-bound to its writing. Raw counts across the three studies use different methodologies and must not be summed. No MCP configuration files were cloned, no exposed credential was tested, and no repository was accessed beyond the public reporting linked here; the characterisation of the failure as practice rather than protocol defect, and of helpfulness as the exfiltration vector, is our editorial analysis.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://tech-insider.org/mcp-credential-leak-82000-files-2026/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Tech Insider &mdash; &ldquo;MCP Credential Leak: 82,000 Files, 1 in 8 Exposed&rdquo; (9 October 2026, synthesising Hush Security, GitGuardian and Flare findings)</a></li>
+          <li><a href="http://vadkerti.net/posts/keeping-secrets-out-of-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">thrix&rsquo;s blog &mdash; &ldquo;Keeping secrets out of my AI agents&rdquo; (12 October 2026)</a></li>
+          <li><a href="https://daily.dev/posts/ai-coding-agents-are-leaking-credentials-on-endpoints-3xkdxyadx?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">daily.dev &mdash; &ldquo;AI Coding Agents Are Leaking Credentials on Endpoints&rdquo; (11 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-05">2026-06-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/gitguardian-mcp-governance-framework/">GitGuardian MCP Governance Framework for Enterprise AI</a></h3><p>GitGuardian publishes a practical MCP governance framework covering authentication standards, scope control, secrets lifecycle, and credential exposure detection for multi-agent deployments.</p><a class="text-link" href="/posts/2026/06/gitguardian-mcp-governance-framework/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-03">2026-06-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/librechat-mcp-credential-exfil-cve-2026-44653/">LibreChat MCP Credential Exfiltration (CVE-2026-44653/44654)</a></h3><p>LibreChat ≤0.8.3 leaks decrypted MCP API keys and OAuth secrets to VIEW-only users; a paired auth bypass allows shared-agent editors to delete files globally.</p><a class="text-link" href="/posts/2026/06/librechat-mcp-credential-exfil-cve-2026-44653/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</a></h3><p>Gen Threat Labs attributes the CallbackBeaver Rust infostealer to Warden Stealer: a malware-as-a-service operation with its own loader, a built-in crypto clipper, and official collection of AI coding-agent tokens, MCP credentials, and prompt histories since v1.9. No CVE and no patch — this is endpoint theft, and your agent config directory is a credential store.</p><a class="text-link" href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
