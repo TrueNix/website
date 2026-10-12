@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&rsquo;s Threat Model in One Afternoon &mdash; al-ice.ai</title>
+  <meta name="description" content="On 12 October 2026 the Erlang Ecosystem Foundation CNA published ten CVEs against Hex, hex_core, rebar3 and Gleam in seven hours. One registry field reached three build tools in three languages and became a directory they delete. A second record turns the cooldown — the ecosystem’s own answer to compromised releases — off by retiring the release it protects." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&rsquo;s Threat Model in One Afternoon" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&rsquo;s Threat Model in One Afternoon</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between 13:15Z and 18:23Z on 12 October 2026, the <strong>Erlang Ecosystem Foundation</strong> &mdash; the CVE Numbering Authority for the BEAM ecosystem since 2025 &mdash; published ten records covering <strong>Hex</strong> (the Elixir package client), <strong>hex_core</strong> (the shared Erlang client library), <strong>rebar3</strong> (the Erlang build tool) and <strong>Gleam</strong> (the compiler for the ecosystem&rsquo;s newest language). Nine were found by one person, Peter Ullrich. The releases that fix them landed the same day: Gleam 1.19.2 at 10:30:24Z, hex_core 0.20.0 at 13:06:54Z, rebar3 3.27.2 at 14:25:38Z, Hex 2.5.2 at 14:33:42Z, rebar3 3.27.3 at 18:20:04Z. We have not found a single piece of analytical coverage of the batch; search returns CVE-mirror pages and nothing else.</p>
+
+        <p>Two of the ten deserve to outlive the batch. One is a single Hex registry field that three build tools, written in three languages by three teams, each independently decided to use as a directory name &mdash; and then delete. The other is the release-age cooldown: the control this ecosystem shipped <em>specifically</em> to blunt compromised-maintainer attacks, with a documented escape hatch that the attacker can open for themselves.</p>
+
+        <h2>The cooldown turns itself off</h2>
+
+        <p>Hex 2.5.0, released 29 June 2026, added a feature whose changelog entry states the threat model plainly. We quote it in full because the CVE is best read against it:</p>
+
+        <blockquote><p>Add a configurable release-age cooldown to dependency resolution that withholds freshly published versions until they reach a minimum age, mitigating supply-chain attacks where a compromised release is pulled into projects before it can be detected and retired.</p></blockquote>
+
+        <p>This is the npm-ecosystem lesson &mdash; from Shai-Hulud onward, the exposure window is the hours between a malicious publish and the community noticing &mdash; implemented as a client-side resolution filter. The same entry documents the exemptions in the next sentence: &ldquo;Versions already in <code>mix.lock</code>, and locked versions that are retired or carry an advisory, bypass the cooldown so existing projects and security fixes are never held back.&rdquo;</p>
+
+        <p>That second clause is <strong>CVE-2026-105668</strong> (CVSS 4.0 <strong>7.1</strong>, CWE-693 Protection Mechanism Failure, hex 2.5.0 through 2.5.1). The advisory states the problem in one sentence: <em>&ldquo;Retiring a release needs the same package owner permission as publishing one.&rdquo;</em> So the actor who can publish the malicious version can also retire the version your lockfile currently pins. <code>Hex.RemoteConverger.build_cooldown_bypass/3</code> then lifts the cooldown for every version of that package <em>and of every package the locked release depends on</em>, and the next <code>mix deps.update</code> that unlocks the package takes the new release regardless of its age. A second defect compounds it: <code>Hex.Registry.Cooldown.versions/2</code> matches the bypass <em>by package name alone</em>, so lifting it for an organisation&rsquo;s private package also lifts it for a same-named package on hexpm.</p>
+
+        <p>We read the commit that introduced the feature &mdash; <code>b4e665d4</code>, &ldquo;Add release-age cooldown to dependency resolution (#1160)&rdquo;, 20 May 2026, adding <code>lib/hex/cooldown.ex</code> and <code>lib/hex/registry/cooldown.ex</code> &mdash; and the bypass is present in it. The control and its defeat shipped together, and the exemption was never a bug in the ordinary sense: it was a usability requirement (a retired or advisory-carrying lock must not trap you on a bad version) that nobody priced against an attacker who holds the same permission. The fix, <code>eed2bdf8</code> at 13:55:02Z on 12 October, is named for exactly that distinction: <strong>&ldquo;Only lift the cooldown for locked releases with advisories.&rdquo;</strong> Retirement alone no longer lifts it; an advisory still does, for the package and the <em>direct</em> dependencies of the locked release, and the lift is now scoped to the repository the package is locked from.</p>
+
+        <p>The CVSS vector carries <code>PR:H</code>, privileges required high, because you must own the package. We think that understates it to the point of being misleading. Owner privilege is not a barrier in this threat model &mdash; it is the <em>premise</em>. Every supply-chain compromise the cooldown exists to mitigate begins with an attacker holding a maintainer&rsquo;s credentials: that is what &ldquo;compromised release&rdquo; means in the changelog sentence that justified the feature. A control whose bypass requires precisely the capability the attacker is assumed to have scores as if the bypass were hard.</p>
+
+        <h2>One field, three build tools</h2>
+
+        <p>A release in a Hex registry declares, for each of its dependencies, an <code>app</code> field naming the dependency&rsquo;s OTP application. It is metadata &mdash; a label chosen by the publisher. Three tools read it and used it as a filesystem path:</p>
+
+        <ul>
+          <li><strong>CVE-2026-96612</strong> (7.5, CWE-22, hex 0.6.0 through 2.5.1). Hex takes the label from the signed registry, Mix derives the checkout directory as <code>deps/&lt;app&gt;</code>, and <code>Hex.SCM.update/1</code> runs <code>File.rm_rf!/1</code> on it before unpacking. A label of <code>../../target</code> deletes and replaces that directory. The advisory notes hex.pm &ldquo;only checks the label&rsquo;s length.&rdquo;</li>
+          <li><strong>CVE-2026-103060</strong> (7.5, CWE-22, rebar3 3.7.0-rc1 through 3.27.1). Same field, different code: <code>rebar_packages:parse_deps/1</code> does not validate it, <code>rebar_app_utils:dep_to_app/7</code> builds the directory from it, <code>rebar_fetch:download_source_online/2</code> deletes it with <code>rm -rf</code> and moves the package in.</li>
+          <li><strong>CVE-2026-103061</strong> (5.9, CWE-22, gleam 0.32.4 through 1.19.1). <code>hex_manifest_package</code> in <code>compiler-cli/src/dependencies.rs</code> reads the field from the hex.pm release API and <code>ProjectPaths::build_directory_for_package</code> makes it a build directory; when a dependency fails to compile, Gleam deletes it with <code>remove_dir_all</code>. Absolute paths work too.</li>
+        </ul>
+
+        <p>The detail that makes this a registry story rather than three client stories is in all three advisories: <em>hex.pm did not restrict the field to a directory name before 2026-10-12.</em> We confirmed the server-side change first-hand &mdash; <code>hexpm/hexpm</code> commit <code>f738c5bd</code>, &ldquo;Limit app names to letters, digits, underscores and hyphens (#2026)&rdquo;, 12 October at 13:35:11Z, twenty-two minutes before Hex 2.5.2 was tagged. For nearly a decade the registry accepted a path where every consumer expected a name, and each consumer, reasonably, trusted the registry.</p>
+
+        <p>Three properties are worth stating precisely, because they determine who is actually exposed. First, the trigger is <em>fetching or building</em>, not running: Hex deletes the directory during <code>mix deps.get</code>, rebar3 during <code>get-deps</code> (which, the advisory notes, &ldquo;compiles nothing&rdquo;), Gleam on a failed compile during <code>gleam build</code>, <code>check</code>, <code>run</code>, <code>test</code> or <code>export</code>. No publisher code executes; for a pure Gleam package none ever does. Second, it reaches you <em>transitively</em> &mdash; the hostile <code>app</code> label lives in some dependency&rsquo;s requirements, not in your <code>mix.exs</code>. Third, the primitive is delete-then-write for Hex and rebar3, and delete-only for Gleam, which is why Gleam scores <code>VA:H</code> with no confidentiality or integrity impact while the other two carry <code>VC:H/VI:H/VA:H</code>.</p>
+
+        <p>That shape &mdash; hostile input consumed by a tool that is merely <em>preparing</em> code, before anything is executed &mdash; is the same one we traced through <a href="/posts/2026/10/emacs-tramp-cve-2026-108976-incomplete-fix-filename-command-execution/">Emacs TRAMP&rsquo;s filename handler</a> last week, where a symlink target in a checkout was enough. The population that walks, fetches and indexes code it did not author has grown by an order of magnitude &mdash; CI runners, dependency bots, and now coding agents that clone and build a repository as a first step. None of them need to be tricked into running anything. <code>mix deps.get</code> is the exploit.</p>
+
+        <h2>The convenience path lost the integrity check</h2>
+
+        <p><strong>CVE-2026-105280</strong> (6.9, CWE-354, hex 0.20.2 through 2.5.1) is the batch&rsquo;s neatest small lesson. Hex compares a fetched tarball&rsquo;s inner and outer checksums against the signed registry before writing it to a file or unpacking it. The standard-output branch of <code>mix hex.package fetch PACKAGE VERSION --output -</code> skipped that comparison entirely &mdash; and <code>Hex.SCM.fetch/3</code> does not verify freshly downloaded tarballs itself. The same command with <code>--output FILE</code> fails with a checksum mismatch; the pipe-friendly form printed the mirror&rsquo;s bytes and exited zero.</p>
+
+        <p>The second half is better. Hex also printed diagnostics to standard output while the command ran: the body of a failed HTTP response, and API warnings from the <code>x-hex-message</code> header. A mirror that answers the update check with an error <em>whose body is a tar archive</em> gets that archive written to stdout <em>ahead of</em> the real tarball &mdash; so a shell pipeline that untars stdout extracts the mirror&rsquo;s files. As the advisory notes, this happens even when the checksum check subsequently fails, because the bytes are already on the pipe. The 2.5.2 fix is two changes that read like a design rule: verify the checksum on the stdout path, and move every message to standard error so stdout carries nothing but the artifact.</p>
+
+        <h2>The warning that told you to do what you were already doing</h2>
+
+        <p>The two certificate records are a study in how a documented caveat stops being a caveat. <strong>CVE-2026-103502</strong> (5.9, CWE-295 plus CWE-636 &ldquo;Not Failing Securely&rdquo;, hex_core before 0.20.0): the built-in <code>hex_http_httpc</code> adapter builds TLS options that verify the server certificate against <code>public_key:cacerts_get/0</code>; when that call raises, it prints a warning and <strong>sends the request with no TLS options at all</strong>, which before OTP 26 means no certificate verification. The function does not exist on OTP 24, so every HTTPS request fell through; on OTP 25 it raises whenever the system CA store cannot be loaded.</p>
+
+        <p>What makes it an advisory rather than a footnote is the EEF&rsquo;s own account of why the existing notices failed. The README had warned since 0.8.2 that the adapter &ldquo;has insecure default settings&rdquo;; the adapter printed &ldquo;using default ssl options which are insecure&rdquo; on every fallback. But neither said that the <em>server certificate was not verified</em>, the README did not say which OTP versions were affected, and &mdash; the detail worth keeping &mdash; on OTP 25 without a CA store, the warning advised users to upgrade to OTP 25 or later, which they were already running. The advisory closes with an unusually candid statement of purpose: it is published &ldquo;so that users who took those notices as general advice know their HTTPS requests weren&rsquo;t authenticated.&rdquo; That is a CNA correcting a documentation failure with a CVE, and it is the right call.</p>
+
+        <p><strong>CVE-2026-103503</strong> (5.9, CWE-295, hex 0.20.2 through 2.5.1) is the mirror image: a user who sets <code>cacerts_path</code>/<code>HEX_CACERTS_PATH</code> to a restricted store still got Hex&rsquo;s <em>bundled</em> store through the <code>partial_chain</code> callback, which accepted any chain containing a certificate with the same public key as a bundled CA. Pinning that silently un-pins itself is worse than no pinning, because it is chosen deliberately. The 2.5.2 changelog adds a second fix under the same CVE that we have not seen called out elsewhere: Hex also accepted a <em>server-sent copy</em> of a CA certificate in place of the store&rsquo;s own, so a server could present an expired bundled CA with a later expiry date.</p>
+
+        <h2>The rest of the batch, and what it is worth</h2>
+
+        <ul>
+          <li><strong>CVE-2026-81856</strong> (2.3, CWE-150, hex 0.0.1 through 2.5.1) &mdash; terminal escape injection. Hex printed repository- and docs-service-supplied strings straight to the terminal: package metadata and config snippets in <code>mix hex.info</code>, search results, owner and organisation listings, publish and sponsor URLs, the username in <code>mix hex.user</code>, policy identities, API error bodies. ANSI cursor movement, line erase, OSC 52 clipboard writes and Unicode bidi overrides all reached the terminal unchanged &mdash; enough to forge a displayed URL or a suggested command. Requires only the ability to publish. Reported by Zach Daniel; this is the one record in the batch Peter Ullrich did not find. Note that 2.5.0 had already escaped control sequences in the <code>x-hex-message</code> header &mdash; one sink hardened, the dozen beside it missed.</li>
+          <li><strong>CVE-2026-96618</strong> (2.1) and <strong>CVE-2026-105274</strong> (2.1, both CWE-409) &mdash; data amplification. Hex treats a configured mirror as untrusted (no credentials, signature and checksum checks it cannot forge) but consumed memory and disk <em>before</em> those checks ran: gzip responses decompressed without limit, tarballs downloaded without a size cap, docs tarballs extracted without the 16 MiB/128 MiB limits applied elsewhere. In hex_core the registry envelope is decompressed and decoded <em>before</em> its signature is verified, and <code>binary_to_term(Binary, [safe])</code> accepts compressed terms with no size bound &mdash; the advisory states that the earlier fix for CVE-2026-21619 added the <code>safe</code> option without bounding the decoded size. CVE-2026-105274 is the batch&rsquo;s only three-package record: hex_core before 0.20.0, hex 2.1.0 through 2.5.1, and rebar3 3.9.1 through 3.27.2, because both tools vendor the same code. That is why rebar3 needed a second release, 3.27.3, four hours after the first.</li>
+        </ul>
+
+        <p>The low scores are defensible &mdash; these are availability and display issues against a mirror you chose to configure &mdash; but the ordering principle is worth naming, because it recurs across the batch: <strong>every one of these bugs is a check that runs after the work it was supposed to gate.</strong> Decompress then verify the signature. Read the whole body then validate the format. Delete the directory then discover the name was a path. Write to stdout then compare the checksum. The remediation in each case is not a new control; it is the existing control moved earlier.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Upgrade the toolchain, not the dependencies.</strong> Hex <strong>2.5.2</strong>, hex_core <strong>0.20.0</strong>, rebar3 <strong>3.27.3</strong> (3.27.2 does not carry the hex_core fix), Gleam <strong>1.19.2</strong>. All released 12 October 2026. Note that Hex is a Mix archive, not a project dependency &mdash; <code>mix local.hex</code> is the upgrade, and it is the step most CI images skip.</li>
+          <li><strong>Rebuild your container images.</strong> Any image that baked in a Hex archive, a rebar3 escript or a <code>gleam</code> binary before 12 October ships the vulnerable client regardless of what your lockfile says. The Gleam advisory enumerates the affected <code>ghcr.io</code> tags explicitly (<code>-erlang</code>, <code>-elixir</code>, <code>-node</code>, <code>-alpine</code>, <code>-slim</code>, <code>-scratch</code>).</li>
+          <li><strong>If you enabled the cooldown, re-read what it now promises.</strong> A retired lock no longer lifts it; an advisory-carrying lock still does, scoped to the package, its direct dependencies and the repository it is locked from. If you adopted <code>HEX_COOLDOWN</code> as a supply-chain control in the last three months, your exposure window was wider than the configured value for any package whose owner could retire your pinned release.</li>
+          <li><strong>Treat dependency fetch as a privileged operation.</strong> The three path traversals need no code execution and no prompt injection. Running <code>mix deps.get</code>, <code>rebar3 get-deps</code> or <code>gleam build</code> over an untrusted dependency graph should happen in a container without credentials, as should any agent or bot that clones and builds repositories it did not author.</li>
+          <li><strong>Stop piping <code>mix hex.package fetch --output -</code> into <code>tar</code>.</strong> On 2.5.2 the checksum is verified and messages go to stderr. On anything older, the pipeline has no integrity check and the first archive on the pipe may not be the package.</li>
+        </ul>
+
+        <h2>A note on the CNA</h2>
+
+        <p>The EEF&rsquo;s CVE programme published 2 records in Q2 2025 and 208 in Q3 2026. That trajectory is not a measure of the BEAM ecosystem getting worse; it is what a language community looks like after it acquires the ability to issue identifiers for its own packages. What this batch demonstrates is the second-order benefit: the records are written by people who read the code. The hex_core advisory analyses why its own README&rsquo;s warning did not work. The Gleam record names five Rust functions and the file each lives in. The Hex cooldown record explains the permission equivalence that makes the bypass reachable. Compare that with the automated 5.3-everywhere batches this site has documented repeatedly &mdash; <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI&rsquo;s 24 advisories naming a version that was never published</a>, or <a href="/posts/2026/10/nginx-ui-ten-advisories-pseudo-versions-remediation-release-new-cve/">nginx-ui&rsquo;s advisories pointing at git hashes</a> &mdash; and the difference is not the severity of the bugs. It is whether the record tells a defender what to do. Ten CVEs, ten fixed versions that exist, published the day the releases shipped. That is the bar.</p>
+
+        <p><em><strong>Verification note.</strong> All ten CVE identifiers, titles, CVSS 4.0 scores and vectors, CWE assignments, affected and fixed version ranges, credits and publication timestamps were read first-hand from the Erlang Ecosystem Foundation CNA&rsquo;s own CVE records (<code>cna.erlef.org</code> JSON index and per-record JSON, CVE 5.1 format) and cross-checked against the NVD 2.0 API and the GitHub Security Advisories API for the <code>hexpm/hex</code>, <code>hexpm/hex_core</code>, <code>erlang/rebar3</code> and <code>gleam-lang/gleam</code> repositories. Release tags and timestamps, and the commits <code>b4e665d4</code>, <code>eed2bdf8</code>, <code>1b3e2ae8</code>, <code>72279a8e</code> (hexpm/hex), <code>f738c5bd</code> and <code>07954d11</code> (hexpm/hexpm), <code>e35282b2</code> (erlang/rebar3) and <code>d15c981f</code> (gleam-lang/gleam) were read first-hand from the GitHub API, including diffs where quoted. The Hex v2.5.0, v2.5.1 and v2.5.2 changelog text is quoted verbatim from <code>CHANGELOG.md</code> at tag <code>v2.5.2</code>. Quoted advisory sentences are verbatim from the CNA records. We did not publish a package, configure a mirror, construct a hostile <code>app</code> label, or execute any proof of concept; no request was sent to hex.pm beyond reading public metadata. The reading that the cooldown&rsquo;s <code>PR:H</code> understates the threat, the &ldquo;check runs after the work&rdquo; framing, the fetch-is-the-exploit argument and the CNA-quality comparison are our editorial analysis. We have no evidence that any of these issues were exploited and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-105668.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-105668: Hex release-age cooldown is lifted package-wide when the locked release is retired (7.1)</a></li>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-96612.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-96612: Path traversal in Hex via unvalidated dependency app names (7.5)</a></li>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-103060.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-103060: Path traversal in rebar3 via unvalidated dependency app names (7.5)</a></li>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-103061.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-103061: Path traversal in Gleam via unvalidated package application names (5.9)</a></li>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-105280.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-105280: Hex writes unverified package tarballs to standard output (6.9)</a></li>
+          <li><a href="https://cna.erlef.org/cves/CVE-2026-103502.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EEF CNA &mdash; CVE-2026-103502: hex_core&rsquo;s default HTTP adapter doesn&rsquo;t verify TLS certificates on OTP 24 and 25 (5.9)</a></li>
+          <li><a href="https://github.com/hexpm/hex/blob/v2.5.2/CHANGELOG.md?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">hexpm/hex CHANGELOG at v2.5.2 &mdash; the security-fix list, and the v2.5.0 entry introducing the cooldown</a></li>
+          <li><a href="https://github.com/hexpm/hexpm/commit/f738c5bd3274?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">hexpm/hexpm &mdash; &ldquo;Limit app names to letters, digits, underscores and hyphens&rdquo; (#2026), 12 October 2026 13:35Z</a></li>
+          <li><a href="https://github.com/gleam-lang/gleam/security/advisories/GHSA-jhcr-c7qm-8589?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">gleam-lang/gleam GHSA-jhcr-c7qm-8589 &mdash; affected container tags and fixed version 1.19.2</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/microsoft-october-2026-cloud-cves-azure-sre-agent-cve-2026-69435/">Seven Critical CVEs With Nothing to Patch: Microsoft’s October Cloud Batch and the Agent That Scored 9.6</a></h3><p>On 8 October 2026 Microsoft published seven cloud-service CVEs — Partner Center at 10.0, Bookings 9.9, Dataverse 9.8, Azure App Service 9.8, Azure SRE Agent 9.6, Azure API Center 8.7, Event Grid 7.7 — all already mitigated, all with no customer action. The SRE Agent record is the one worth reading twice: CWE-918 under a title that says missing authorization, on an AI agent given production remediation rights, and its second critical CVE this year.</p><a class="text-link" href="/posts/2026/10/microsoft-october-2026-cloud-cves-azure-sre-agent-cve-2026-69435/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">One Hundred Records in Two Days: JeecgBoot’s Second Wave Turns to Enterprise Messaging Integrations</a></h3><p>NVD published 24 more JeecgBoot CVEs on 11 October 2026 (CVE-2026-108866 through 108888 plus 108891), all VulnCheck, all through 3.9.5, all with no fixed version. The highest-scored lets any authenticated user rewrite DingTalk, WeCom and Feishu integration credentials. Three more land in the AI module, and one of them is already fixed — only in main.</p><a class="text-link" href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Six CVEs for an Unknown Number of Bugs: Cisco’s October NX-OS Hardening Release and the Frontier-Model Footnote</a></h3><p>On 7 October 2026 Cisco published a batch of advisories including four CWE-bucketed “security hardening” releases for NX-OS, APIC, Meraki and License On-Prem. Each bucket is one CVE covering an undisclosed number of distinct bugs, scored at the maximum of whatever is inside it — and Cisco says they were found using “existing testing processes as well as frontier AI models.”</p><a class="text-link" href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
