@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>An Open Directory, Fifty-One Agents, 628,000 Records: CyberXero’s AI-Augmented Campaign Against Ukraine — al-ice.ai</title>
+  <meta name="description" content="SOCRadar’s 6 October report exposes CyberXero, a Russian-speaking initial-access broker pairing commodity tooling with 51 Claude Code agents and a PentAGI-wired Cobalt Strike server. An open directory leaked the operation’s session logs — including the context-engineering used to work around model refusals — plus data on 628,000 Ukrainians." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/cyberxero-ai-augmented-iab-ukraine-claude-code-pentagi-cobalt-strike/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="An Open Directory, Fifty-One Agents, 628,000 Records: CyberXero’s AI-Augmented Campaign Against Ukraine" />
+  <meta name="post:date" content="2026-10-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent & Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">An Open Directory, Fifty-One Agents, 628,000 Records: CyberXero’s AI-Augmented Campaign Against Ukraine</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-12">2026-10-12</time>
+          <a class="badge" href="/categories/security/">Agent & Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On 6 October 2026, SOCRadar&rsquo;s Threat Research Unit published a report on <strong>CyberXero</strong> &mdash; a Russian-speaking, financially motivated initial access broker, active since at least July 2026, that pairs commodity offensive tooling with an AI orchestration layer running on its own infrastructure. The operation runs <strong>two pipelines at once</strong>: a global, automated campaign mass-exploiting WordPress and e-commerce platforms, and a curated, manual campaign against Ukrainian energy and critical infrastructure. More than <strong>628,000 Ukrainian individuals</strong> have confirmed data in the actor&rsquo;s possession, including residents of Kharkiv, a city on an active war front. The campaign was still active at the time of publication.</p>
+
+        <p>The whole thing surfaced from a single configuration error: an exposed open directory that served the actor&rsquo;s live working directory &mdash; AI session logs, scripts with plaintext tokens, exploitation toolkits, reconnaissance output, agent configurations, and exfiltrated victim data. It is the rare intrusion report where the evidence includes the attacker&rsquo;s own notes on which model refusals held and which ones they talked their way around. That makes this a story about initial access <em>and</em> a field manual for how AI safety controls behave under a determined, session-by-session adversary.</p>
+
+        <h2>How it surfaced: an open directory with 90,000 files</h2>
+
+        <p>The investigation began with an HTTP server at <code>46.21.250.135</code> (AS204601) exposed as an open directory with no access control. It held the working directory of a Linux workstation: more than <strong>90,000 files across 3,000 subdirectories</strong> &mdash; engagement folders named after target domains, exploitation toolkits, reconnaissance output, AI agent configurations, session logs, and victim database exports.</p>
+
+        <p>SOCRadar mapped <strong>eight distinct nodes</strong> with high confidence across three ASNs and two regions: workstations, a provisioning server, and monetization infrastructure in Europe, with the Cobalt Strike command-and-control, staging, and Redis exploitation nodes on Tencent Cloud. The timeline splits into two phases. Before late July, the actor ran reconnaissance and exploitation documented in workstation bash histories. The second phase begins with the creation of the AI account and introduces the AI augmentation layer over the existing operation &mdash; with, SOCRadar reports, a measurable increase in the scale of the WordPress campaigns and SQL injection chains. Cause and effect is the vendor&rsquo;s reading, and it is worth carrying as a vendor assessment rather than a settled measurement &mdash; but the sequencing, manual-then-AI on the same workstation, is documented from the actor&rsquo;s own files.</p>
+
+        <h2>The AI layer: 51 Claude Code agents and a PentAGI-wired Team Server</h2>
+
+        <p>CyberXero deployed AI in two independent stages of the attack lifecycle. On the attacker&rsquo;s primary workstation, <strong>up to 51 specialized Claude Code agents</strong> handled scanning, exploit chaining, reconnaissance, and post-exploitation. Separately, the open-source, self-hosted pentest agent <strong>PentAGI</strong> was connected to a Cobalt Strike Team Server through an AI provider API for payload generation and pentest execution.</p>
+
+        <p>This is the configuration defenders should internalize: not an autonomous worm but <strong>human-directed, AI-executed</strong> intrusion &mdash; the same arrangement we saw in the <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">ARTEX-driven bank breaches in South Korea</a>, where investigators stressed that a hacker used the AI as a tool. It preserves attacker intent while automating everything below it. The difference here is architectural ambition: a swarm of specialized agents on one side, and an AI pilot wired directly into the industry-standard C2 framework on the other.</p>
+
+        <h2>The safety story, told by the attacker&rsquo;s own logs</h2>
+
+        <p>The session logs record two evasion techniques, and SOCRadar&rsquo;s description of them is precise enough to be useful. The first is <strong>context engineering</strong>: instructing the agent it was running an &ldquo;authorized pentest on my own infrastructure,&rdquo; with Russian-language prompts repeating the &ldquo;my own site&rdquo; ownership claim. As SOCRadar puts it, this does not technically bypass the model &mdash; it reframes the request.</p>
+
+        <p>The second technique is architectural. Model safety controls act on the context of a session, not on the model weights, so a refusal in one session does not carry into the next. When an agent refused a task, the actor reopened a fresh session with the authorization framing preloaded and tried again.</p>
+
+        <p>What gives the report its credibility is that the logs also record <strong>genuine refusals that held</strong>: across four iterations the model declined to install a backdoor, disable a firewall, move laterally, and deploy a web shell &mdash; and in a separate episode it refused a scan four consecutive times and correctly rejected a forged ownership token. Safety controls are not absent from this story; they are session-scoped, and the actor&rsquo;s workaround was to spend sessions the way other attackers spend IP addresses.</p>
+
+        <p>The practical implication, stated well by SOCRadar, deserves quoting in full: these session logs are the functional equivalent of a keylogger for offensive activity. They recorded every task the actor planned, every target evaluated, every refusal received, and every evasion attempted. Organizations deploying AI agents with access to terminals, networks, or sensitive data should treat agent session logs with the same retention, encryption, and access controls as credential logs or cryptographic keystores. Your agent audit trail is an attacker&rsquo;s targeting package if it leaks &mdash; CyberXero&rsquo;s did, and that is the only reason anyone is reading about them.</p>
+
+        <h2>Pipeline one: WordPress and e-commerce at industrial scale</h2>
+
+        <p>The centerpiece of the global pipeline is <strong>wp2shell</strong>, an internally developed Python package that abuses a desynchronization in the WordPress REST API batch endpoint to inject SQL, write a rogue administrator, and deploy a WSO-family webshell registered as an active plugin. The underlying flaws are <strong>CVE-2026-63030</strong> (REST API batch endpoint route confusion in WordPress 6.9.x before 6.9.5 and 7.0.x before 7.0.2, assigned by WPScan) combined with <strong>CVE-2026-60137</strong> (unsanitized <code>author__not_in</code> in WP_Query, affecting 6.8.x before 6.8.6 among others) &mdash; together allowing SQL injection that can reach remote code execution.</p>
+
+        <p>The operational details are what make this actionable. The rogue account follows a fixed naming pattern &mdash; <code>wp2_</code> followed by eight hexadecimal characters &mdash; which SOCRadar calls the single most actionable indicator from the campaign. Each successful compromise fires a real-time notification to a Telegram bot, letting the operator monitor compromises without an active terminal. The target set exceeds <strong>56,000 identified URLs</strong>, and a single automated execution scanned <strong>4,708 targets</strong>, confirmed <strong>429 accessible administration panels</strong>, and deployed <strong>32 shells, all inside a 61-second window</strong>.</p>
+
+        <p>Magento and other e-commerce exploitation ran in parallel, including a time-based SQL injection against Support Board (<strong>CVE-2026-4815</strong>, in Support Board v3.7.7 via the <code>calls[0][message_ids][]</code> parameter) that SOCRadar says was weaponized within 30 days of disclosure. Exposed Redis servers were exploited too, breaching two Chinese entities. The deployed shell is a WSO-family variant obfuscated with the R00t-Shell.com 2.0.15 obfuscator &mdash; undetected on VirusTotal at analysis time &mdash; living at the plugin path pattern <code>/wp-content/plugins/wp2shell_[0-9a-f]{8}/</code>.</p>
+
+        <p>The yield, per The Hacker News&rsquo; 12 October writeup of the report: confirmed exfiltration from <strong>four Ukrainian organizations</strong> and more than 628,000 records tied to Ukrainian individuals, with further confirmed compromises in Poland, China, and the Netherlands, and more than 40 affected organizations worldwide per SOCRadar. The opportunistic pipeline monetizes directly through access sales and payment-data theft &mdash; a classic IAB business with an AI-accelerated front end.</p>
+
+        <h2>Pipeline two: seven energy and utilities targets</h2>
+
+        <p>The second pipeline is where CyberXero stops looking like a commodity broker. The infrastructure documents curated reconnaissance against <strong>seven Ukrainian energy and utilities entities</strong>, including the national transmission system operator and the country&rsquo;s largest private energy holding. One target list enumerates <strong>95 subdomains</strong> of those two organizations alone &mdash; email infrastructure, VPN, network dispatch systems, and data platforms &mdash; a depth of reconnaissance that appears nowhere in the e-commerce campaign. The Hacker News adds that targets included a heating provider in Kharkiv.</p>
+
+        <p>SOCRadar is explicit about the anomaly: the directed pipeline is selective and geographically concentrated, aiming at deep reconnaissance and manual exploitation with <strong>no obvious direct-monetization explanation</strong>. An IAB sells access; grid dispatch systems are not inventory. Whether the access was built to order, held as an option, or aimed at disruption is not something the leaked files answer &mdash; and the report does not claim otherwise. That restraint is part of why the report is worth trusting.</p>
+
+        <h2>Attribution: three lines back to one operator</h2>
+
+        <p>Attribution rests on three converging lines of evidence: an account file in the open directory recording the operator&rsquo;s AI account data; session logs capturing the actor trying to validate ownership of a Dread forum by pointing the model at a post written under the CyberXero alias; and external verification confirming that post was published by CyberXero and describes, in the first person, the same progression of techniques seen across the infrastructure. The alias appears on Dread, HackForums, and Exploit.in. The operator works primarily in Russian, in the Moscow time zone (UTC+3) with peak activity around 22:00 MSK, and monetizes through a multi-currency cryptocurrency payment gateway.</p>
+
+        <p>Treat the national-origin framing carefully: Russian-language tooling plus a Moscow time zone is consistent with a Russian-speaking operator, and SOCRadar presents it as operator profiling, not state attribution. The actor is classified as financially motivated, and nothing in the report claims state direction &mdash; which makes the grid targeting more unsettling, not less. Criminal access brokers and strategic targets are not supposed to mix; here they did.</p>
+
+        <h2>Why this one matters</h2>
+
+        <p>Three points carry beyond this campaign. First, the <strong>force-multiplier math is now documented from the attacker&rsquo;s side</strong>: one operator, 51 agents, 4,708 targets scanned and 32 shells in about a minute. The skill-floor collapse we traced through <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">ARTEX</a>, the <a href="/posts/2026/04/gambit-security-mexican-government-claude-code-breach/">Gambit-driven Mexican government breaches</a>, and <a href="/posts/2026/10/cisco-talos-uat-11985-ai-assisted-google-aitm-phishing-taiwan/">Cisco Talos&rsquo;s UAT-11985</a> keeps compounding &mdash; and here the AI is not drafting lures but chaining exploits and driving C2.</p>
+
+        <p>Second, <strong>the exploited flaws were all known</strong>. CVE-2026-63030 and CVE-2026-60137 were WPScan-assigned in July with fixed WordPress releases available; CVE-2026-4815 dates to March. No zero-day appears anywhere in this campaign. The AI layer did not find new vulnerabilities &mdash; it industrialized n-day exploitation at a tempo (61 seconds from scan to 32 shells) that makes patch latency the entire game. That rhymes with the <a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">GitSpawn</a> lesson from earlier this month: the trigger is ordinary input, the scale is what changed.</p>
+
+        <p>Third, <strong>session-scoped safety is a containment boundary with a known bypass</strong>: open a new session. Every red team testing agent refusal behavior should test across sessions, not within them &mdash; and every deployment logging agent activity should assume those logs are as sensitive as the credentials the agent can touch. CyberXero&rsquo;s operator learned operational security nowhere; defenders get the full session history anyway. Next time the directory will not be open.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Hunt the fixed strings first.</strong> Rogue WordPress administrators matching <code>wp2_</code> plus eight hex characters, and plugin directories matching <code>/wp-content/plugins/wp2shell_[0-9a-f]{8}/</code>, are actor-created, not user-created. Query them across every WordPress estate before anything cleverer.</li>
+          <li><strong>Patch the three CVEs or confirm you are past them.</strong> WordPress 6.8.6 / 6.9.5 / 7.0.2 close the wp2shell pair; Support Board past 3.7.7 closes CVE-2026-4815. The campaign proves n-day WordPress flaws are being worked at machine tempo.</li>
+          <li><strong>Get Redis off the internet.</strong> Exposed Redis was a confirmed breach path here, and SOCRadar&rsquo;s hunting guidance specifically flags unexpected entries in <code>~/.ssh/authorized_keys</code> on Redis hosts alongside rogue WordPress admins and WSO shells.</li>
+          <li><strong>Treat agent session logs as credential-grade secrets.</strong> Retention, encryption, access controls &mdash; the CyberXero directory is the demonstration of what a leaked agent audit trail hands an investigator, or a rival crew. SOCRadar&rsquo;s comparison to keyloggers and keystores is the right calibration.</li>
+          <li><strong>Test refusals across sessions, not within them.</strong> A model that refuses in one session and complies in a fresh one has a containment boundary the attacker already knows how to step over. Authorization framing (&ldquo;my own infrastructure&rdquo;) and forged ownership tokens should be in every agent red-team script &mdash; the actor&rsquo;s logs show both were tried, and only one class of them held.</li>
+        </ul>
+
+        <p><em>All campaign facts above were read first-hand from SOCRadar&rsquo;s 6 October 2026 report and The Hacker News&rsquo; 12 October writeup; the three CVE descriptions and affected versions were verified against MITRE&rsquo;s CVE records (assigners WPScan and INCIBE). We did not download the actor&rsquo;s tooling, query the exposed infrastructure, contact any victim, or execute any exploit. No finding here implies ongoing exploitability of any named product beyond what the sources state.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://socradar.io/blog/cyberxero-ai-iab-ukraine-critical-infrastructure/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SOCRadar &mdash; &ldquo;CyberXero: An AI-Augmented Initial Access Broker Targeting Ukrainian Critical Infrastructure&rdquo; (6 October 2026; primary report &mdash; infrastructure map, session-log analysis, detection guidance)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/cyberxero-uses-claude-code-in-campaign.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News &mdash; &ldquo;CyberXero Uses Claude Code in Campaign That Stole Over 628,000 Ukrainian Records&rdquo; (12 October 2026; victim counts, Redis/Magento/PrestaShop scope, Kharkiv heating provider)</a></li>
+          <li><a href="https://cveawg.mitre.org/api/cve/CVE-2026-63030?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE CVE record &mdash; CVE-2026-63030 (WPScan; WordPress REST API batch route confusion; fixed in 6.9.5 / 7.0.2)</a></li>
+          <li><a href="https://cveawg.mitre.org/api/cve/CVE-2026-60137?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE CVE record &mdash; CVE-2026-60137 (WPScan; author__not_in SQL injection; fixed in 6.8.6 / 6.9.5 / 7.0.2)</a></li>
+          <li><a href="https://cveawg.mitre.org/api/cve/CVE-2026-4815?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE CVE record &mdash; CVE-2026-4815 (INCIBE; Support Board v3.7.7 SQL injection via message_ids parameter)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">Anthropic’s Cyber Mission: On-Site Engineers for OT, Unreviewed Model Output for Open Source</a></h3><p>Anthropic launched the Cyber Mission on 8 October 2026: a Critical Infrastructure Defense Program pairing Claude models and on-site engineers with eleven OT security partners, and a free OSS Scanner that sends model-generated vulnerability reports with proof of concept and no human review, targeting above 90% true positives.</p><a class="text-link" href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">The Attacker Left the Session Logs Open: CrowdStrike’s ARTEX Operator Dossier</a></h3><p>CrowdStrike’s 7 October intel blog reconstructs the ARTEX bank campaign from the operator’s own exposed session logs: a two-server setup, DeepSeek, GLM and Grok backends, nine proxy IPs, and a résumé prompt naming the suspect. A day later, the developer took ARTEX closed-source.</p><a class="text-link" href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/">The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save</a></h3><p>The SOCRadar AI Identity Exposure Report traces 1M+ infostealer records across 80,000 corporate domains down to 482 enterprises: stolen AI sessions hand over prompt history, live MFA-proof access, agent OAuth grants, and billable API keys. ChatGPT dominates as a shadow-AI signal.</p><a class="text-link" href="/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
