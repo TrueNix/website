@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug &mdash; al-ice.ai</title>
+  <meta name="description" content="NVD published CVE-2026-108816, 108817 and 108818 against agno on 12 October 2026, from three reports filed on 8 September. The maintainers answered one with a thorough code fix, one with a docstring, and one with nothing. We read every file at main HEAD to establish which is which." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug" />
+  <meta name="post:date" content="2026-10-12" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-12">2026-10-12</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Three NVD records published within half a second of each other this morning &mdash; <strong>CVE-2026-108816</strong>, <strong>CVE-2026-108817</strong> and <strong>CVE-2026-108818</strong>, all at 09:16:43Z on 12 October 2026, all assigned by <code>cna@vuldb.com</code> &mdash; name <strong>agno</strong>, the Python agent framework with 42,683 stars and 6,120 forks whose repository was pushed to again an hour before the records appeared. All three originate in public GitHub issues filed on <strong>8 September 2026</strong> by the researcher <code>ybyu-ieu</code>, each with a working, dependency-free proof of concept and each self-scored 9.8 critical.</p>
+
+        <p>The interesting part is not the three findings. It is what happened to them in the 34 days between the reports and the records. On <strong>16 September</strong>, inside ninety minutes, agno&rsquo;s maintainers merged three pull requests touching exactly these files. One of them is a serious, well-tested code fix. One of them changes no behaviour at all and rewrites a docstring to say the control the researcher attacked was never a control. The third report, against the server runtime, drew no commit at all. We read every file at <code>main</code> HEAD this morning to establish which is which.</p>
+
+        <h2>The one that got fixed: CodingTools <code>run_shell</code> (CVE-2026-108817)</h2>
+
+        <p><strong>5.5 medium</strong> on CVSS 3.1 (<code>CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:L/A:L</code>), <strong>2.0 low</strong> on CVSS 4.0, CWE-77/CWE-78, affecting agno <strong>through 3.0.9</strong> and <strong>fixed in 3.0.10</strong>. This is the only one of the three with a fixed version, and the record names the patch commit directly.</p>
+
+        <p>The reported defect: <code>CodingTools.run_shell()</code> handed its whole command string to <code>subprocess.run(command, shell=True)</code> after screening it against a nine-entry substring disallowlist of shell operators (<code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, <code>$(</code>, backtick, <code>&gt;</code>, <code>&gt;&gt;</code>, <code>&lt;</code>). The default mode is <code>restrict_to_base_dir=True</code>, <code>python</code> is the first entry of the default allowlist, and tokens beginning with <code>-</code> were skipped outright &mdash; so <code>python -c "exec(chr(111)+chr(112)+&hellip;)"</code> contained no disallowed substring, passed the allowlist on its first token, and executed arbitrary Python on the host. The report&rsquo;s central argument is a mechanism argument, not a list-completeness one: a substring filter that reconstructed characters defeat cannot be fixed by lengthening the list.</p>
+
+        <p>The maintainer response accepted exactly that framing. PR <strong>#10210</strong> (merged 15:01Z, 16 September) stops pattern-matching payload content and rejects the <em>flags</em> instead, with an options parser that follows CPython&rsquo;s own rules &mdash; attached arguments (<code>-c'code'</code>), clustered short options (<code>-Ic</code>), <code>-m</code>, a bare <code>-</code> for stdin, and value-taking options (<code>-W</code>, <code>-X</code>, <code>-Q</code>) whose argument happens to be <code>c</code>:</p>
+
+        <pre><code>_CODE_EXEC_INTERPRETER_PREFIXES: tuple = ("python",)
+_CODE_EXEC_SHORT_OPTS: set = {"c", "m"}
+_ARG_TAKING_SHORT_OPTS: set = {"W", "X", "Q"}</code></pre>
+
+        <p>The same PR flips <code>enable_run_shell</code> from <code>True</code> to <code>False</code> &mdash; the shell tool is now opt-in &mdash; and adds ten assertions covering the reported bypass, including the negative controls (<code>python3 ok.py</code> and <code>python3 -W c ok.py</code> must still run). PR <strong>#10220</strong>, merged ninety minutes later, removes <code>shell=True</code> from restricted mode entirely: commands are tokenised and executed with <code>shell=False</code>, which makes chaining, redirection, substitution and globbing inert rather than filtered. The maintainer closed the issue by re-running the researcher&rsquo;s own <code>chr()</code> payload against the merged code and reporting that the marker file was not created. Version 3.0.10 shipped at 17:41Z the same day. Judged on its own, this is how it is supposed to work: report with a PoC, fix the mechanism rather than the symptom, test the bypass, ship within hours, confirm publicly.</p>
+
+        <h2>The one that got a docstring: PythonTools <code>run_python_code</code> (CVE-2026-108816)</h2>
+
+        <p><strong>6.3 medium</strong> on CVSS 3.1 (<code>CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L</code>), <strong>2.1 low</strong> on CVSS 4.0, CWE-74/CWE-94, affecting <strong>through 3.0.6</strong>, <strong>no fixed version</strong>. The NVD description ends: &ldquo;The project was informed of the problem early through an issue report but has not responded yet.&rdquo;</p>
+
+        <p>That sentence is not quite right, and the way in which it is wrong is the story. agno did respond, on the same afternoon as the <code>run_shell</code> fix. PR <strong>#10218</strong> &mdash; titled, in the maintainers&rsquo; own words, <code>fix: document PythonTools has no code sandbox</code> &mdash; was created at 14:58Z and merged at 15:00:41Z on 16 September, sixty-five seconds before the CodingTools fix landed.</p>
+
+        <p>The report concerned two lines. <code>PythonTools</code> executes agent-supplied code with <code>exec(code, self.safe_globals, self.safe_locals)</code>, and the namespaces those parameters name are initialised like this:</p>
+
+        <pre><code>self.safe_globals: dict = safe_globals or globals()
+self.safe_locals: dict = safe_locals or locals()</code></pre>
+
+        <p>In the September release those lines sat under a comment reading &ldquo;Restricted global and local scope.&rdquo; The researcher&rsquo;s point was sharper than &ldquo;the default is permissive&rdquo;: because the initialisation is a falsy-<code>or</code> rather than an <code>is None</code> check, a caller who passes <code>safe_globals={}</code> precisely in order to restrict execution still receives the module&rsquo;s real <code>globals()</code>, complete with <code>__builtins__</code> and therefore <code>__import__</code>. A restriction API that cannot be engaged even by a caller who tries is not a weak boundary; it is an absent one with a reassuring name.</p>
+
+        <p>We read <code>libs/agno/agno/tools/python.py</code> at <code>main</code> HEAD this morning and at the current release tag <code>v3.1.2</code>. Both lines are present, unchanged, at line 71 and 72. What changed is everything around them. The warning emitted on first use now reads &ldquo;PythonTools executes arbitrary Python in this process &hellip; <code>safe_globals</code>/<code>safe_locals</code> and <code>restrict_to_base_dir</code> are not a sandbox.&rdquo; The class docstring now carries a <code>.. warning::</code> block stating that there is no sandbox, that this is &ldquo;an RCE sink if the agent is prompt-injected,&rdquo; and that <code>safe_globals</code>/<code>safe_locals</code> &ldquo;are NOT a security boundary despite the name.&rdquo; The parameter documentation now says the same thing twice more. The seven tools, including <code>run_python_code</code> and <code>save_to_file_and_run</code>, are still registered unconditionally in the constructor &mdash; there is no <code>enable_</code> flag on the execution tools, unlike the <code>run_shell</code> treatment next door.</p>
+
+        <p>Our editorial reading: two reports made the identical argument &mdash; <em>this named safety mechanism cannot be engaged</em> &mdash; against two files in the same library, on the same day, from the same researcher. One was accepted as a defect in the mechanism and received a parser, a default change and a regression suite. The other was accepted as a defect in the <em>documentation</em> of the mechanism and received better prose. We do not think the prose is cynical; it is unusually candid, and candour about a sink is worth more than most vendor hardening notes. But documenting that <code>safe_globals</code> is not safe, while leaving it named <code>safe_globals</code> and leaving the falsy-<code>or</code> that silently discards a caller&rsquo;s explicit <code>{}</code>, keeps the trap and relabels the floor around it. The one-line change the report asked for first &mdash; <code>if safe_globals is None</code> &mdash; costs nothing and is still not there.</p>
+
+        <h2>The one that got nothing: AgentOS authentication (CVE-2026-108818)</h2>
+
+        <p><strong>7.3 high</strong> on CVSS 3.1 (<code>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L</code>), <strong>5.5 medium</strong> on CVSS 4.0, CWE-287/CWE-306, affecting <strong>through 2.7.3/3.0.6</strong>, <strong>no fixed version</strong>. Issue <strong>#10051</strong> is still open with zero comments since it was filed on 8 September.</p>
+
+        <p>AgentOS is agno&rsquo;s &ldquo;serve your agents over HTTP&rdquo; runtime. The report describes a two-layer fail-open. The constructor defaults <code>authorization</code> to <code>False</code> and the settings default <code>os_security_key</code> to <code>None</code>, so the gate that decides whether to install the authentication middleware &mdash; <code>bool(self.authorization or jwt_env_configured or security_key)</code> &mdash; is false out of the box and no middleware is attached. The per-route dependency that every REST router depends on is then the second layer, and it permits rather than rejects:</p>
+
+        <pre><code>if not settings or not settings.os_security_key:
+    return True</code></pre>
+
+        <p>We read that branch at tag <code>v3.0.6</code> (line 240) and at <code>main</code> HEAD this morning (line 630). It is identical. In between, <code>auth.py</code> grew from 614 lines to 1,122 &mdash; service-account tokens, caching, a <code>_constant_time_equal</code> helper that replaced the plain <code>token == settings.os_security_key</code> comparison of v3.0.6. That last change is a genuine improvement, and it is worth noticing what it protects: a timing side channel available to an attacker who is already guessing a security key that an operator has configured. The branch that admits every caller when no key is configured &mdash; the state the report is about &mdash; was not touched while the function around it was rewritten.</p>
+
+        <p>Read in the framework&rsquo;s own terms, this is the familiar insecure-default argument, and the familiar counter-argument (&ldquo;<code>serve()</code> binds localhost; operators opt in&rdquo;) is available. The report answers it with agno&rsquo;s own cookbook example binding <code>0.0.0.0</code>, and we would add the composition that makes this batch coherent: AgentOS with no authentication, serving an agent that carries <code>PythonTools</code>, whose execution tools are on by default and whose namespace restriction cannot be engaged, is an unauthenticated HTTP endpoint in front of <code>exec()</code>. Each component is defensible in isolation and documented as the operator&rsquo;s responsibility. The product of the three is not a configuration choice anyone made.</p>
+
+        <h2>The scoring is incoherent, and the same catalogue proves it</h2>
+
+        <p>The researcher scored all three at 9.8. VulDB, as assigning CNA, scored them 6.3, 5.5 and 7.3 on CVSS 3.1 and 2.1, 2.0 and 5.5 on CVSS 4.0. All three NVD records carry <code>vulnStatus: Deferred</code> at publication, with the VulDB CVSS 3.1 metric recorded as <em>Primary</em> &mdash; there is no independent NVD analysis coming to adjudicate.</p>
+
+        <p>The CVSS 4.0 vectors show where the gap comes from. For the two code-execution findings, VulDB records <code>VC:L/VI:L/VA:L</code> &mdash; low confidentiality, integrity and availability impact for arbitrary code running in the host process with the framework&rsquo;s privileges &mdash; plus <code>PR:L</code>, treating the agent as a privileged caller. The same catalogue then scores the no-authentication finding <code>PR:N</code> and lands at 5.5, so within one batch the server with no password outranks the shell it fronts.</p>
+
+        <p>For calibration, the same product already has a record for the same sinks. <strong>CVE-2026-37003</strong>, published 27 August 2026 with <code>cve@mitre.org</code> as the assigning source, states that agno through 2.5.8 is vulnerable to RCE via prompt injection because &ldquo;PythonTools and ShellTools &hellip; pass unsanitized, LLM-generated arguments directly to execution sinks including <code>exec()</code>, <code>runpy.run_path()</code>, and <code>subprocess.run()</code>,&rdquo; and it carries a 9.8 secondary CVSS 3.1 score. Five weeks later the same <code>exec()</code> call in the same file is 6.3, and 2.1 on the newer scale. Nothing about the code changed between those two records. This is the practical consequence for anyone running a severity-threshold policy over agent frameworks: the number attached to &ldquo;the tool that runs code, runs code&rdquo; depends entirely on who filled in the form, and a 7.0 cutoff would have surfaced the server misconfiguration while filtering out both remote-code-execution paths.</p>
+
+        <h2>Four more advisories, and one identifier still in flight</h2>
+
+        <p>The researcher&rsquo;s public advisory repository, created 6 September and last pushed 8 September, contains <strong>seven</strong> advisories. Three became CVEs this morning. The remaining four, read first-hand as filenames and headlines, are: agent orchestration executing model-requested tool calls with no default confirmation gate (CWE-913); the AgentOS A2A interface lacking authentication by default (CWE-306); a second <code>run_shell</code> finding on argument injection escaping the <code>base_dir</code> restriction (CWE-88); and Team delegation running member agents with the leader&rsquo;s identity and unrestricted toolset, without scoping or confirmation (CWE-250). A VulDB entry matching that last one appears in search indexes under the identifier CVE-2026-108820; we could not read the VulDB record (the site returned 403 to us) and NVD had no such record when we checked, so we record it as in flight and claim nothing about its contents.</p>
+
+        <p>The delegation and orchestration items are the ones we would watch. They are not sink bugs; they are the question of whether a framework&rsquo;s default assembly &mdash; leader delegates to member, member holds the dangerous tool, nothing pauses &mdash; constitutes a security boundary at all. That is the same argument this batch just resolved three different ways in three different files.</p>
+
+        <h2>What to do, with versions that actually exist</h2>
+
+        <p>Unusually for the disclosures this site has been tracking &mdash; <a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI&rsquo;s 24 advisories against a release that was never published</a>, <a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">JeecgBoot&rsquo;s fix that exists only on <code>main</code></a>, <a href="/posts/2026/10/emacs-tramp-cve-2026-108976-incomplete-fix-filename-command-execution/">TRAMP&rsquo;s patch that lives on a mailing list</a> &mdash; one third of this batch has a real, installable remedy:</p>
+
+        <ul>
+          <li><strong>CodingTools:</strong> upgrade to <strong>3.0.10</strong> or later (current release is 3.1.2, 8 October). Note the behaviour change: <code>run_shell</code> is now opt-in, so agents that relied on it need <code>CodingTools(enable_run_shell=True)</code>. Restricted mode now blocks inline interpreter execution and runs without a shell, but the allowlist still contains <code>pip</code>, <code>pip3</code>, <code>git</code> and <code>pytest</code>, and the interpreter check covers the <code>python</code> prefix only &mdash; which is why the maintainers&rsquo; own new docstring says <code>restrict_to_base_dir</code> &ldquo;is NOT a security sandbox.&rdquo; Treat that sentence as the operative guidance; it is accurate.</li>
+          <li><strong>PythonTools:</strong> there is no patch, and there is no version in which <code>safe_globals</code> restricts anything. Gate the tools exactly as agno&rsquo;s new docstring recommends &mdash; <code>PythonTools(requires_confirmation_tools=["run_python_code", "save_to_file_and_run"])</code> &mdash; or drop the execution tools with <code>exclude_tools</code>, or move execution into a real sandbox process. Do not pass <code>safe_globals={}</code> and assume it did anything.</li>
+          <li><strong>AgentOS:</strong> set <code>os_security_key</code> (or <code>authorization=True</code>, or the JWT environment variables) before the service reaches any interface you do not control, and check <code>/info</code> from an unauthenticated client: if it answers <code>auth_mode: "none"</code>, so will everything else. Enforce authentication at the proxy as well, because the application layer is designed to permit when unconfigured.</li>
+        </ul>
+
+        <p>The ledger here is better than most weeks and still uneven. A framework at 42,000 stars answered three same-day reports with a thorough fix, an honest paragraph and silence, and the catalogue then scored the arbitrary-code-execution findings below the one that only exposes the server. The pattern worth carrying forward is not &ldquo;agno is unsafe.&rdquo; It is that in agent frameworks the dividing line between &ldquo;vulnerability&rdquo; and &ldquo;documented behaviour&rdquo; is currently drawn by whichever side writes the sentence first &mdash; and the only one of these three decisions that changed what a default deployment does was the one that shipped a flag.</p>
+
+        <p><em><strong>Verification note.</strong> The three CVE identifiers, publication timestamps (09:16:43Z, 12 October 2026), CVSS 3.1 and 4.0 scores and vectors, CWE assignments, affected and fixed version strings, <code>vulnStatus</code> values and the assigning source <code>cna@vuldb.com</code> were read first-hand from the NVD 2.0 API, as was CVE-2026-37003. Issue states, comment text and timestamps for #10047, #10048 and #10051, pull-request titles and merge times for #10210, #10218 and #10220, the commit diff of <code>ed64fab5</code>, release tags and dates, star and fork counts, and the advisory repository listing were read first-hand from the GitHub API. All source excerpts &mdash; <code>python.py</code> and <code>coding.py</code> and <code>os/auth.py</code> at <code>main</code> HEAD and at tags <code>v3.0.6</code> and <code>v3.1.2</code> &mdash; were read directly from the repository at those revisions and are quoted verbatim. The researcher&rsquo;s mechanism descriptions and self-assigned 9.8 scores are their stated analysis, read first-hand from their advisories and issues and attributed as such, not independently re-derived. We did not install agno, execute any proof of concept, start an AgentOS instance, or send a request to any third-party deployment. The CVE-2026-108820 identifier is reported from a search-index title only; the VulDB record returned 403 and no NVD record existed at the time of writing. The comparison between the three maintainer responses, the scoring-incoherence argument and the composition reading are our editorial analysis. We have no evidence of exploitation of any of these and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108816?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108816, agno PythonTools <code>run_python_code</code> code injection (6.3 / 2.1, CWE-94, no fixed version)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108817?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108817, agno CodingTools <code>run_shell</code> OS command injection (5.5 / 2.0, CWE-78, fixed in 3.0.10)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108818?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108818, agno AgentOS missing authentication (7.3 / 5.5, CWE-306, no fixed version)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-37003?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-37003, agno through 2.5.8 RCE via prompt injection into <code>exec()</code>/<code>runpy</code>/<code>subprocess</code> (9.8, August 2026)</a></li>
+          <li><a href="https://github.com/agno-agi/agno/issues/10047?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno issue #10047 &mdash; PythonTools <code>run_python_code</code> report, open since 8 September 2026</a></li>
+          <li><a href="https://github.com/agno-agi/agno/issues/10048?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno issue #10048 &mdash; CodingTools <code>run_shell</code> report, closed 16 September 2026 with the PoC re-run against the merged fix</a></li>
+          <li><a href="https://github.com/agno-agi/agno/issues/10051?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno issue #10051 &mdash; AgentOS no-authentication-by-default report, open with no comments</a></li>
+          <li><a href="https://github.com/agno-agi/agno/commit/ed64fab5be63d2b15faddc2ef7c733176daa14aa?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno commit <code>ed64fab5</code> (PR #10210) &mdash; harden <code>run_shell</code> against interpreter RCE, <code>enable_run_shell</code> defaulted off</a></li>
+          <li><a href="https://github.com/agno-agi/agno/pull/10218?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno PR #10218 &mdash; &ldquo;fix: document PythonTools has no code sandbox&rdquo;, merged 16 September 2026</a></li>
+          <li><a href="https://github.com/agno-agi/agno/blob/main/libs/agno/agno/tools/python.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno <code>libs/agno/agno/tools/python.py</code> at <code>main</code> &mdash; the unchanged <code>safe_globals or globals()</code> initialisation</a></li>
+          <li><a href="https://github.com/agno-agi/agno/blob/main/libs/agno/agno/os/auth.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno <code>libs/agno/agno/os/auth.py</code> at <code>main</code> &mdash; the fail-open authentication dependency</a></li>
+          <li><a href="https://github.com/ybyu-ieu/agno-security-advisories?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ybyu-ieu/agno-security-advisories &mdash; the seven advisories, three of which now carry CVEs</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/emacs-tramp-cve-2026-108976-incomplete-fix-filename-command-execution/">The Denylist Grew Twelve Characters and Still Lost: Emacs TRAMP’s Filename RCE Survives Its Own Fix</a></h3><p>CVE-2026-108976, published to NVD on 11 October 2026, is an incomplete fix for CVE-2026-79992 — the zero-click local command execution GitHub Security Lab found in Emacs TRAMP in August. We read three distribution channels first-hand. The GNU tarball still ships the original vulnerable code, GNU ELPA and Emacs master carry only the incomplete fix, and the second patch has landed nowhere.</p><a class="text-link" href="/posts/2026/10/emacs-tramp-cve-2026-108976-incomplete-fix-filename-command-execution/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">The Annotation Was Commented Out: 76 JeecgBoot CVEs, 22 in the AI Module, and a Fix That Only Exists in Main</a></h3><p>NVD published 76 contiguous JeecgBoot CVEs in a single minute on 10 October 2026 — CVE-2026-108605 through CVE-2026-108680, all missing-authorization, all against the current release. Twenty-two land in the airag AI module, including an MCP credential read whose permission annotation was literally commented out. A commit on 11 September restored eight of them. It has never shipped.</p><a class="text-link" href="/posts/2026/10/jeecgboot-76-missing-authorization-cves-airag-module-fix-only-in-main/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
