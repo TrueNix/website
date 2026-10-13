@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Loop Runs Whatever the Model Asks: agno&rsquo;s Fourth and Fifth CVEs &mdash; al-ice.ai</title>
+  <meta name="description" content="CVE-2026-108819 (7.3) and CVE-2026-108820 (6.3), published 12 October 2026, extend the agno batch: the orchestration loop executes every model-requested tool call with no default confirmation gate, and team delegation runs members with the leader's identity. Both community fix PRs remain open and unmerged." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/agno-108819-108820-orchestration-confirmation-gate-open-prs/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Loop Runs Whatever the Model Asks: agno&rsquo;s Fourth and Fifth CVEs" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Loop Runs Whatever the Model Asks: agno&rsquo;s Fourth and Fifth CVEs</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>An hour after <a href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">yesterday&rsquo;s three-CVE agno batch</a>, NVD published the rest of researcher <code>ybyu-ieu</code>&rsquo;s 8 September findings. <strong>CVE-2026-108819</strong> (7.3 on CVSS 3.1, <code>AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L</code>; 5.5 on CVSS 4.0; CWE-913) names the agent orchestration layer itself: the function <code>exec</code> path executes <strong>every tool call the model requests immediately, with no deterministic policy gate and no human confirmation enabled by default</strong>. <strong>CVE-2026-108820</strong> (6.3 / 2.1) &mdash; the record this site noted yesterday as in flight with no NVD entry &mdash; is now published: <code>member_agent.run</code> in the team delegation feature runs member agents with the leader&rsquo;s identity and full toolset, unscoped and without confirmation. Both carry <code>vulnStatus: Deferred</code>, both credit the same reporter, and both fix PRs &mdash; written by the community, not the maintainers &mdash; sit <strong>open and unmerged</strong>.</p>
+
+        <p>The 108819 claim is checkable in one function, so we checked it. In <code>libs/agno/agno/models/base.py</code>, <code>run_function_calls()</code> at <code>main</code> HEAD iterates the model&rsquo;s requested calls, and the only deterministic pauses in the loop are the per-tool opt-in flags: <code>requires_confirmation</code> (which shelves the call as a <code>ToolExecution</code> awaiting approval) and <code>requires_user_input</code>, plus the special-cased <code>get_user_input</code> control-flow tool. Everything else falls through to execution. The tool decorator declares <code>requires_confirmation: Optional[bool] = None</code> &mdash; documented as <em>&ldquo;If True, the function will require user confirmation before execution&rdquo;</em> &mdash; and the exclusivity check treats all three HITL flags as false unless set. Opt-in, off by default, exactly as issue <strong>#10053</strong> (open since 8 September, self-scored 9.8 by the reporter) states. A coding agent whose every tool defaults to execute is an agent whose safety posture is whatever the tool author remembered to opt into.</p>
+
+        <h2>Two PRs, zero merges, zero reviews</h2>
+
+        <p>The remediation trail is the story&rsquo;s second half. For 108819, community member <code>Kylinny</code> opened PR <strong>#10523</strong> on 24 September &mdash; <em>fix: require confirmation by default for PythonTools code-executing tools</em> &mdash; pausing <code>run_python_code</code>, <code>save_to_file_and_run</code>, <code>run_python_file_return_variable</code> and the pip-install tools instead of executing a model-requested call. It has <strong>zero review comments and no merge</strong>. For 108820, PR <strong>#10124</strong> (<em>fix: require confirmation for team delegation</em>, 11 September) likewise sits open and unmerged, while issue <strong>#10054</strong> sits at zero comments. Contrast this with the same batch&rsquo;s CodingTools fix, which went from PR to release <code>v3.0.10</code> in under three hours on 16 September: the project can move fast on this class of bug when it chooses to. The confirmation-gate reports &mdash; the ones that change default behaviour rather than patch a sink &mdash; are the ones waiting.</p>
+
+        <p>The scoring incoherence we noted yesterday gets worse with the new pair inside the frame. The orchestration loop that runs arbitrary model-requested code with no gate carries 5.5 on CVSS 4.0 (PR:N, VC:L/VI:L/VA:L); the unauthenticated AgentOS endpoint from the same batch carries the same week&rsquo;s higher number for a misconfiguration. And the researcher&rsquo;s own 9.8 on #10053 versus the assigned 7.3/5.5 replays the calibration gap from yesterday&rsquo;s batch: the people who found the sinks rate the loop that feeds them. Our position is unchanged &mdash; the loop finding is the batch&rsquo;s most structural one, because every future tool agno ships inherits the default it sets.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Set <code>requires_confirmation</code> on every code-executing tool you register</strong> (<code>run_python_code</code>, shell tools, file writers, installers) &mdash; the default will not do it for you. Or gate at the run level with confirmation tooling; do not rely on the loop to pause.</li>
+          <li><strong>Scope team delegation explicitly.</strong> Until #10124 or equivalent merges, member agents inherit the leader&rsquo;s identity and toolset; restrict member toolsets and treat delegated runs as leader-privileged.</li>
+          <li><strong>Watch PRs #10523 and #10124, not just releases.</strong> Both fixes exist as open community PRs; a merge is the event that changes your posture, and neither has one.</li>
+          <li><strong>Track the remaining advisories.</strong> The researcher&rsquo;s advisory repository holds seven entries; five now carry CVEs. Assume the batch is not finished.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> Both CVE identifiers, publication timestamps (12 October 2026, 10:16:43Z), CVSS 3.1 and 4.0 scores and vectors, CWE assignments, affected ranges (up to 3.0.6/3.1.1) and <code>vulnStatus: Deferred</code> were read first-hand from the NVD 2.0 API. Issue states, creation dates, authors, comment counts (#10053: open, 2 comments; #10054: open, 0 comments) and PR states (#10523 and #10124: open, unmerged) were read first-hand from the GitHub API. The loop analysis was verified first-hand against <code>run_function_calls()</code> in <code>models/base.py</code> at <code>main</code> HEAD and the <code>requires_confirmation</code> default in the tool decorator &mdash; quoted paraphrases only, no code reproduced beyond identifiers. agno was not installed, no tool was executed, no AgentOS instance started. The remedy-priority reading is our editorial analysis. We have no evidence of exploitation and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108819?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108819, agent orchestration layer executes model-requested calls without default confirmation (7.3 / 5.5)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108820?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108820, team delegation runs members with leader identity and toolset (6.3 / 2.1)</a></li>
+          <li><a href="https://github.com/agno-agi/agno/issues/10053?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno-agi/agno issue #10053 &mdash; missing default confirmation gate (open, 8 September 2026)</a></li>
+          <li><a href="https://github.com/agno-agi/agno/pull/10523?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">agno-agi/agno PR #10523 &mdash; require confirmation by default for PythonTools (open, unmerged)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/nginx-ui-four-mcp-cves-config-validation-stepup-bypass/">The Fourth Path Was the MCP Interface: nginx-ui&amp;rsquo;s Four CVEs</a></h3><a class="text-link" href="/posts/2026/10/nginx-ui-four-mcp-cves-config-validation-stepup-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug</a></h3><p>NVD published CVE-2026-108816, 108817 and 108818 against agno on 12 October 2026, from three reports filed on 8 September. The maintainers answered one with a thorough code fix, one with a docstring, and one with nothing. We read every file at main HEAD to establish which is which.</p><a class="text-link" href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/x64dbg-mcp-server-cve-2026-107824-107820-unauth-debugger-preauth-dos/">No Auth on the Debugger&amp;rsquo;s Front Door: x64dbg-MCP Server&amp;rsquo;s CVE-2026-107824 (9.3) and CVE-2026-107820</a></h3><p>CVE-2026-107824 (CVSS 9.3) left x64dbg-MCP Server&amp;rsquo;s full debugger toolset &amp;mdash; arbitrary commands, process attach, memory read/write, arbitrary file write &amp;mdash; open to any unauthenticated network client on 0.0.0.0:9094. CVE-2026-107820 (5.3) adds a pre-auth Content-Length integer overflow that kills the debugging session. Fixed in 1.1 and 1.2; both CVEs published 9 October 2026.</p><a class="text-link" href="/posts/2026/10/x64dbg-mcp-server-cve-2026-107824-107820-unauth-debugger-preauth-dos/">Read briefing →</a></article></div>
+    </aside>
+</main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
