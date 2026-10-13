@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Name Is Not the Repository: SlugFest Turns Abandoned GitHub Slugs Into npm Publish Rights &mdash; al-ice.ai</title>
+  <meta name="description" content="Bloom Security's SlugFest research, disclosed 13 October 2026, shows npm Trusted Publishing bound packages to mutable owner/repo slugs instead of immutable repository IDs. Claiming a renamed, transferred or deleted repository name plus a matching workflow filename yielded a valid publish credential — with valid provenance — for 1,500+ packages totalling 10M+ downloads. Reported via HackerOne on 6 June; GitHub shipped a fix on 2 October." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/slugfest-npm-trusted-publishing-slug-confusion-1500-packages/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Name Is Not the Repository: SlugFest Turns Abandoned GitHub Slugs Into npm Publish Rights" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Name Is Not the Repository: SlugFest Turns Abandoned GitHub Slugs Into npm Publish Rights</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Trusted Publishing was supposed to end the era of stolen npm tokens. Generally available since July 2025, it replaces long-lived publishing credentials: a maintainer declares which GitHub repository and workflow file may publish a package, GitHub issues that workflow a signed identity token at run time, and npm exchanges it for a publish credential that expires within minutes. No token to phish, no secret to leak. Research from <strong>Bloom Security</strong> disclosed on 13 October 2026 &mdash; dubbed <strong>SlugFest</strong> &mdash; shows the binding was made to the one identifier the attacker can re-register. npm recorded the repository by its <em>slug</em>, the human-readable <code>owner/repo</code> string. GitHub also assigns every repository and owner a permanent numeric ID that survives renames and transfers, and it puts both IDs in the token. npm did not check them. So once a maintainer renamed, transferred or deleted the bound repository &mdash; or the owner account itself was renamed or deleted &mdash; the old slug was free, and anyone who claimed it and added a workflow file with the matching filename received a publish credential for a package they did not own. Bloom counted <strong>more than 1,500 exposed packages totalling over 10 million downloads</strong>, with no credential theft required at any step.</p>
+
+        <p>The wording that matters most in the reporting is the understated one: this was a package-takeover <em>path</em>, not an active malware campaign. Bloom proved it end to end on packages and repositories its own researchers controlled &mdash; publishing from a second organisation&rsquo;s repository that had claimed the freed slug &mdash; and confirmed the grimmest detail: a release published this way also carries a <strong>valid provenance attestation</strong>, the signed build record, naming the attacker&rsquo;s repository. The one signal the ecosystem built to distinguish legitimate builds from impostors would have vouched for the impostor. There is a partial mitigation worth knowing accurately: GitHub retires the names of repositories with more than 100 clones in the week before an owner account is renamed or deleted, which protects some packages. Bloom&rsquo;s Golan Myers is quoted as saying the researchers accounted for that &mdash; everything they counted as vulnerable used a genuinely claimable slug.</p>
+
+        <h2>Four months from report to fix, via silence</h2>
+
+        <p>The disclosure timeline is doing half the argumentative work here, and every date below is as reported. Bloom filed through GitHub&rsquo;s HackerOne bug bounty programme on <strong>6 June 2026</strong>; GitHub validated the report on <strong>9 June</strong>. Bloom says the last reply it received came on <strong>8 July</strong>, and that six follow-ups after that &mdash; including a mediation request to HackerOne &mdash; went unanswered. GitHub announced the change on <strong>2 October</strong>: unvalidated Trusted Publishing configurations now expire 48 hours after creation and can no longer authorise publishing, and npm&rsquo;s documentation says a configuration&rsquo;s first successful publish binds it to the repository&rsquo;s immutable identity. A GitHub spokesperson is quoted confirming the fix and framing it as limiting &ldquo;the risk of trusting a repository or project name that changes ownership.&rdquo;</p>
+
+        <p>Two gaps remain open, and both are stated carefully rather than filled in. GitHub&rsquo;s statement does not say whether configurations that published <em>before</em> the change were bound retroactively to the immutable identity &mdash; which decides whether the 48-hour expiry closes the hole for every existing binding or only for new ones. And Myers says it is unknown whether anyone exploited the flaw in the wild; Bloom is not publishing the affected package names. A 118-day window between validation and fix, with no public list and no retroactivity statement, is the part of this story incident responders will be living with for a while.</p>
+
+        <h2>Why this site treats it as an agent-security story</h2>
+
+        <p>Bloom&rsquo;s argument, and the reason this belongs on an agent-security front page rather than only a supply-chain one: AI coding agents have become high-volume, low-scrutiny package consumers. Citing telemetry from dozens of organisations, Bloom estimates agents on a typical endpoint install roughly <strong>70 packages a month, nearly 350 on developer machines</strong>, dependencies not counted &mdash; usually without any review of the package or its maintainer. A hijacked release with a postinstall script (code npm runs automatically on install) and a <em>valid provenance attestation</em> is precisely the payload that sails through an agent-driven install pipeline: no human reads the diff, the signature checks out, the name is the name everyone trusts. Myers&rsquo; quoted line lands because it is structural, not rhetorical: developers are no longer the only consumers of developer software. Every consumer that cannot judge trust has to inherit it from infrastructure &mdash; and SlugFest shows the infrastructure was judging by display name.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>If you maintain a package with Trusted Publishing, audit the binding now.</strong> Run <code>npm trust list</code> and confirm each listed repository still resolves to one you control. Delete and re-create any binding that points at a renamed or transferred repository, and remove the binding <em>before</em> deleting a repository &mdash; a deleted repo&rsquo;s slug is exactly what this attack claims.</li>
+          <li><strong>If you consume npm packages, verify provenance against expectation, not just validity.</strong> Bloom is not publishing the affected names, so there is no list to check against. Confirm a package&rsquo;s provenance attestation names the repository the project is <em>supposed</em> to come from; a valid signature from an unfamiliar repository is the signature SlugFest forges by design.</li>
+          <li><strong>If agents install packages in your environment, pin and gate.</strong> Lockfiles, private registries or caching proxies, and install-time sandboxing turn a silent takeover into a visible diff. Seventy unattended installs a month per endpoint is seventy rolls of someone else&rsquo;s hygiene &mdash; the <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">Tensorlake Shai-Hulud compromise</a> already showed what valid-looking provenance costs when nobody inspects it, and the <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">Shai-Hulud retrospective</a> is the playbook for how agents become distribution.</li>
+          <li><strong>Treat mutable names as display strings everywhere.</strong> The general lesson is one this site has now written at three layers in a fortnight: a trust parameter that defaults to the convenient value eventually gets omitted, a validator that checks syntax eventually meets semantics it never considered, and &mdash; here &mdash; an identity check that compares the label eventually meets a label someone else registered. Bind to the immutable ID at configuration time and verify it at use time; Bloom&rsquo;s own recommendation is exactly that: store the repository and owner identifiers when the publisher is configured, then verify the repository identifier in the OIDC token at credential exchange.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> The Help Net Security report (Mirko Zorz, 13 October 2026) was read first-hand in full; the mechanism description, the 1,500-plus package and 10-million-download counts, the June 6 / June 9 / July 8 / October 2 timeline, the six unanswered follow-ups including the HackerOne mediation request, the 100-clone name-retirement detail, the Myers and GitHub-spokesperson quotes, the end-to-end researcher-controlled proof, the 48-hour-expiry and immutable-identity fix description, the two open gaps (retroactivity unstated, wild exploitation unknown), the agent-install telemetry figures and the remediation advice are that article&rsquo;s reporting, relayed as reported. The &ldquo;SlugFest&rdquo; name and Bloom Security attribution are corroborated across CSO Online, GBHackers and The Next Web coverage found via search. We did not claim any freed slug, publish any package, or test any binding; the exploitability claims are Bloom&rsquo;s, verified by them on infrastructure they controlled. Cross-references to our Shai-Hulud coverage and the composition-failure reading are our editorial analysis. There is no CVE identifier for this flaw and we invent none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.helpnetsecurity.com/2026/10/13/slugfest-npm-trusted-publishing-flaw/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security &mdash; npm Trusted Publishing flaw exposed 1,500+ npm packages to takeover (13 October 2026)</a></li>
+          <li><a href="https://www.csoonline.com/article/4234229/over-1500-npm-packages-exposed-by-trusted-publishing-validation-flaw.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CSO Online &mdash; Over 1,500 npm packages exposed by Trusted Publishing validation flaw</a></li>
+          <li><a href="https://gbhackers.com/npm-packages-hijacked/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers &mdash; Attackers Can Hijack npm Packages Without Stealing Developer Credentials</a></li>
+          <li><a href="https://thenextweb.com/news/npm-trusted-publishing-flaw-ai-agents-slugfest?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Next Web &mdash; npm Trusted Publishing flaw left 1,500 packages open to attackers</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985.</a></h3><p>Truffle Security scanned 224 million public GitHub repositories from The Stack v3 and found 543,699 credentials that still authenticated in July 2026. The median had been public for 784 days. The variable that decides survival is not push protection — it is whether the issuing provider runs an automated kill switch, and the gap between providers is three orders of magnitude.</p><a class="text-link" href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">A Poisoned Release Pipeline Turned an AI Memory Plugin Into a Self-Spreading Credential Stealer</a></h3><p>Attackers stole npm and PyPI publish tokens from MemTensor&amp;#39;s own GitHub Actions release jobs using BASH_ENV injection, then shipped the sckit Go implant inside an OpenClaw memory plugin and the MemoryOS library.</p><a class="text-link" href="/posts/2026/09/memtensor-sckit-worm-ci-release-pipeline-token-theft/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-02-24">2026-02-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/02/cline-unauthorized-npm-publish-ghsa-9ppg-jx86-fqw7/">GitHub Advisory — Cline unauthorized npm publish added postinstall</a></h3><p>A compromised npm publish token led to an unauthorized Cline CLI release that added a postinstall script, highlighting supply-chain risk in agent tooling.</p><a class="text-link" href="/posts/2026/02/cline-unauthorized-npm-publish-ghsa-9ppg-jx86-fqw7/">Read briefing →</a></article></div>
+    </aside>
+</main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
