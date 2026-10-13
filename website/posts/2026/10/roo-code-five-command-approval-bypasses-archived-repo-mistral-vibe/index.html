@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Five Ways to Disagree With bash: Roo Code Gets Five Approval-Bypass CVEs and No Patch Is Possible &mdash; al-ice.ai</title>
+  <meta name="description" content="CVE-2026-110202 through CVE-2026-110206, published to NVD at 19:18Z on 13 October 2026, name five independent command-approval bypasses in Roo Code through 3.54.0. The repository was archived on 16 May 2026, so &quot;through 3.54.0&quot; is permanent. The same batch carries CVE-2026-109429 against Mistral Vibe, whose tree-sitter-bash parser was defeated by the one trick Roo Code&rsquo;s regex denylist actually catches. We read both gates at the named tags and reproduced the glob tokenisation locally." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/roo-code-five-command-approval-bypasses-archived-repo-mistral-vibe/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Five Ways to Disagree With bash: Roo Code Gets Five Approval-Bypass CVEs and No Patch Is Possible" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Five Ways to Disagree With bash: Roo Code Gets Five Approval-Bypass CVEs and No Patch Is Possible</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>At 19:18Z on 13 October 2026, VulnCheck published five CVEs against <strong>Roo Code</strong> &mdash; <strong>CVE-2026-110202</strong>, <strong>110203</strong>, <strong>110204</strong>, <strong>110205</strong> and <strong>110206</strong>. All five are scored <strong>7.7</strong> on CVSS 4.0 (<code>AV:N/AC:L/AT:P/PR:N/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N</code>) and <strong>8.8</strong> on CVSS 3.1. Four carry CWE-436 (Interpretation Conflict); CVE-2026-110205 carries CWE-184. All five are credited to <strong>Minqiang Gui</strong> and <strong>Siyu Lou</strong>, and all five say the same thing in five different ways: the command-approval gate re-implements bash&rsquo;s grammar in regular expressions, and the shell does not agree with it.</p>
+
+        <p>The affected range on every record is <em>through 3.54.0</em>. That phrasing usually means &ldquo;until someone ships 3.54.1&rdquo;. Here it does not. We checked the repository through the GitHub API: <code>RooCodeInc/Roo-Code</code> returns <code>archived: true</code>. Its last release, <code>v3.54.0</code>, was published on <strong>15 May 2026</strong>; its last commits, three hours later the same day, are titled &ldquo;Redirect roocode.com to roomote.dev&rdquo; and &ldquo;Remove roocode.com web app&rdquo;. The repository is read-only with 1,033 issues still open, 24,281 stars and 3,426 forks, under Apache-2.0. The researcher&rsquo;s own write-ups open by quoting GitHub&rsquo;s banner verbatim: &ldquo;This repository was archived by the owner on May 16, 2026. It is now read-only.&rdquo; There is no fixed version, and there will not be one. Five months after the lights went out, a VS Code extension with a quarter of a million-odd installs acquired five permanently unpatched approval bypasses.</p>
+
+        <h2>The gate, and the two files it lives in</h2>
+
+        <p>When &ldquo;always approve execute&rdquo; is enabled, Roo Code decides on its own whether to run a shell command the model proposed. The decision is <code>getCommandDecision</code> in <code>src/core/auto-approval/commands.ts</code>. We read it at tag <code>v3.54.0</code>. It splits the command into sub-commands, checks each against an allowlist and a denylist, and returns one of three verdicts:</p>
+
+        <pre><code>// Parse into sub-commands (split by &amp;&amp;, ||, ;, |)
+const subCommands = parseCommand(command)
+
+const decisions: CommandDecision[] = subCommands.map((cmd) =&gt; {
+    // Remove simple PowerShell-like redirections (e.g. 2&gt;&amp;1) before checking
+    const cmdWithoutRedirection = cmd.replace(/\d*&gt;&amp;\d*/, "").trim()
+    return getSingleCommandDecision(cmdWithoutRedirection, allowedCommands, deniedCommands)
+})</code></pre>
+
+        <p>The splitting is done by <code>parseCommand</code> in <code>src/shared/parse-command.ts</code>, which masks shell constructs into placeholders (<code>__PARAM_n__</code>, <code>__SUBSH_n__</code>, <code>__QUOTE_n__</code>, <code>__VAR_n__</code>) with a sequence of regular expressions, hands the masked string to the <code>shell-quote</code> library, then walks the resulting tokens looking for separators. Every one of the five CVEs is a place where that masking, or that token walk, parts company with the shell that will actually run the string.</p>
+
+        <p>It matters that this is not a missing control. It is a control that was built, and built with some care &mdash; which is why the failure mode is interesting rather than merely embarrassing.</p>
+
+        <h2>The five disagreements</h2>
+
+        <p><strong>CVE-2026-110206 &mdash; substitution in command position.</strong> <code>parseCommand</code> pulls the inside of a <code>$(...)</code> out and checks it as its own sub-command. That is right when a substitution supplies an <em>argument</em>. It is wrong when the substitution <em>is</em> the command: bash runs the inner command and then executes its standard output as a new command. So <code>$(echo touch /tmp/x)</code> is checked as <code>echo touch /tmp/x</code>, matches an <code>echo</code> allowlist entry, and is approved &mdash; after which the shell runs <code>touch</code>. An allowlist containing only <code>echo</code>, a command chosen precisely because printing is harmless, yields arbitrary execution.</p>
+
+        <p><strong>CVE-2026-110202 &mdash; the redirect strip.</strong> The line above, <code>cmd.replace(/\d*&gt;&amp;\d*/, "")</code>, is commented as removing fd-duplications such as <code>2&gt;&amp;1</code>. But <code>\d*</code> matches zero digits, so it also strips a bare <code>&gt;&amp;</code>, which is not an fd-duplication at all &mdash; it is &ldquo;send stdout and stderr to this file&rdquo;. Strip the operator and its target word is promoted into command position. <code>&gt;&amp;echo touch /tmp/x</code> is checked as <code>echo touch /tmp/x</code> and approved; bash reads it as &ldquo;redirect to a file named <code>echo</code>, then run <code>touch</code>&rdquo;. Note where this one lives: the tokenizer gets it right and preserves the redirect, and the decision function then throws it away.</p>
+
+        <p><strong>CVE-2026-110204 &mdash; the funsub.</strong> The parameter-expansion masker is <code>/\$\{[^}]+\}/g</code>, documented in-source as covering <code>${var}</code>, <code>${var:-default}</code>, <code>${#var}</code> and friends. It also matches <code>${ command; }</code> &mdash; the command substitution that ksh93 has had for decades and that bash gained in 5.3. The command inside is masked into <code>__PARAM_0__</code> and never checked, so <code>echo ${ touch /tmp/x; }</code> is approved as plain <code>echo</code>. The regex predates the bash feature; the shell on the developer&rsquo;s machine does not. For reference, the bash on our own test host is 5.3.15, which supports the construct.</p>
+
+        <p><strong>CVE-2026-110203 &mdash; quote-state drift.</strong> Double-quoted spans are masked with <code>/"[^"]*"/g</code>, which pairs quote characters by counting them. bash does not count; it tracks state. A backslash-escaped <code>\"</code> outside quotes is a literal character that opens nothing, and a <code>"</code> inside <code>'…'</code> or ANSI-C <code>$'…'</code> is likewise literal. When one of those appears, the regex pairs two characters bash considers literal and swallows everything between them &mdash; including a <code>;</code> separator and whatever follows it &mdash; into one placeholder. The separator never becomes a token, so <code>parseCommand</code> returns a single <code>echo …</code> sub-command while bash runs two commands.</p>
+
+        <p><strong>CVE-2026-110205 &mdash; the glob token.</strong> This is the subtlest of the five and the one we checked by hand, because it depends on a third-party library&rsquo;s output rather than on Roo Code&rsquo;s own regexes. The substitution-extraction branch only fires when the <code>__SUBSH_n__</code> placeholder survives tokenisation as a bare string token. Put a <code>*</code> or <code>?</code> next to the substitution and it does not. We installed <code>shell-quote@1.8.3</code> &mdash; the same version the researcher&rsquo;s reproduction pins &mdash; and ran the parse directly:</p>
+
+        <pre><code>parse("echo __SUBSH_0__")   -&gt; ["echo","__SUBSH_0__"]
+parse("echo *__SUBSH_0__")  -&gt; ["echo",{"op":"glob","pattern":"*__SUBSH_0__"}]</code></pre>
+
+        <p>The placeholder has moved into a <code>pattern</code> field. Roo Code&rsquo;s token loop handles any non-separator operator token with a single line &mdash; <code>currentCommand.push(token.op)</code>, under the comment &ldquo;Other operators (&gt;) are part of the command&rdquo; &mdash; which pushes the literal string <code>"glob"</code> and discards <code>pattern</code> entirely. The sub-command reported to the gate is <code>echo glob</code>. The stored <code>touch /tmp/x</code> is never checked by anything. Remove the <code>*</code> and the identical substitution surfaces and is denied.</p>
+
+        <h2>The second defence catches the exotic and misses the ordinary</h2>
+
+        <p>Here is the part worth dwelling on. <code>getCommandDecision</code> does not rely on the parser alone. After the allow/deny pass it runs a dedicated guard:</p>
+
+        <pre><code>if (containsDangerousSubstitution(command)) {
+    return "ask_user"
+}</code></pre>
+
+        <p>We read <code>containsDangerousSubstitution</code> in full. It is not lazy work. It tests for <code>${var@P}</code> and the other <code>@</code>-transform operators, with a comment explaining that <code>@P</code> &ldquo;interprets escape sequences and executes embedded commands&rdquo;. It tests for parameter assignments carrying octal, hex or unicode escapes. It tests for indirect expansion <code>${!var}</code>. It tests for here-strings with substitution, <code>&lt;&lt;&lt;$(…)</code>. It tests for zsh process substitution <code>=(…)</code> and for zsh glob qualifiers with embedded code, <code>*(e:whoami:)</code>. Somebody sat down and enumerated the clever ways a shell can be made to execute something that does not look like a command.</p>
+
+        <p>None of its patterns match a plain <code>$(…)</code> in command position, a bare <code>&gt;&amp;</code>, a <code>${ cmd; }</code> funsub, an escaped quote, or a substitution glued to a <code>*</code>. The guard was aimed at the exotic and the five bypasses are, with the partial exception of the funsub, thoroughly ordinary shell. This is a recognisable shape: a denylist assembled from the attacks its author had heard of, sitting downstream of a parser whose failures its author had not enumerated. The enumeration is the whole mechanism, so the mechanism ends exactly where the author&rsquo;s imagination did.</p>
+
+        <h2>Mistral Vibe, in the same batch, from the other direction</h2>
+
+        <p>The same VulnCheck batch carries <strong>CVE-2026-109429</strong> against <strong>Mistral Vibe</strong>, scored <strong>8.7</strong> CVSS 4.0 and <strong>8.8</strong> CVSS 3.1, CWE-436, affecting versions before <strong>2.25.4</strong>, credited to <strong>Minqiang Gui</strong>. Vibe did the thing Roo Code did not: it classified commands with <strong>tree-sitter-bash</strong>, a real grammar rather than a stack of regexes. It was defeated anyway. Per the advisory, an attacker hides a command substitution inside a <em>single-quoted</em> variable value &mdash; inert to any static parse, because in single quotes it is just text &mdash; and then re-expands it with <code>${var@P}</code>, the prompt-transform operator, whose <code>promptvars</code> behaviour executes the hidden command at run time. Only the trailing allowlisted command is what the classifier sees.</p>
+
+        <p>The symmetry is almost too neat to be accidental, and it is the reason we have put these records in one briefing. <code>${var@P}</code> is the <em>first</em> thing on Roo Code&rsquo;s dangerous-substitution list. The tool that used a real parser fell to the trick the tool with the regex denylist explicitly catches; the tool with the denylist fell to five constructs any grammar would have tokenised correctly. Neither approach is the answer, because neither is the shell. A static classifier and a run-time interpreter are two different programs reading the same string, and every gap between them is a bypass.</p>
+
+        <p>One correction to the public record while we are here. Vibe&rsquo;s fix is real and predates the CVE: commit <code>19b5b74</code>, merged as PR #1084 on <strong>12 September 2026 at 18:39Z</strong>, shipped <code>v2.25.4</code> with two new files &mdash; <code>_shell_command_policy.py</code> (276 lines) and <code>_shell_permission_analysis.py</code> (165 lines) &mdash; plus 406 added lines in <code>tests/tools/test_bash.py</code>. But the CHANGELOG entry for 2.25.4 attributes that work to a different set of records: &ldquo;Shell permission checks now require approval for risky syntax and command options that could bypass workspace and denylist controls (CVE-2026-87984, CVE-2026-87985, CVE-2026-87986, CVE-2026-87987, and residual CVE-2026-87988 variants).&rdquo; CVE-2026-109429 is not named there, and the 879xx series traces to HiddenLayer advisories from 11 September. So 109429 is a separate, later record pointing at an existing release &mdash; the fix landed 31 days before the CVE that cites it. Vibe is on <code>v2.26.1</code> as of 9 October; anyone on a current build has had this fixed for a month without knowing the CVE number.</p>
+
+        <h2>What to do</h2>
+
+        <p>For Mistral Vibe the remediation is ordinary: run <strong>2.25.4 or later</strong>, which means any build from mid-September onward.</p>
+
+        <p>For Roo Code there is no upgrade, so the advice has to be structural. If you still run the extension, <strong>turn off &ldquo;always approve execute&rdquo;</strong>; that single setting is the precondition for all five records, and with it off the gate is not making the decision. If you cannot, understand that an allowlist of <code>echo</code> is sufficient for arbitrary execution via at least three of the five paths, so the allowlist&rsquo;s contents buy you very little &mdash; the usual instinct of allowlisting only &ldquo;harmless&rdquo; commands is the exact instinct these findings punish. Denylists fare no better: CVE-2026-110202 was demonstrated with <code>touch</code> explicitly denied. Treat a forked or vendored copy as carrying all five unless you have patched the two files yourself, and note that the archived upstream will not be issuing a GHSA to tell you.</p>
+
+        <p>The general lesson generalises past these six records, and we have now written it three days running about three different products. If a control suppresses a confirmation prompt, find the code that <em>parses</em> the subject and the code that <em>executes</em> it, and establish that they are the same program. Where they are not &mdash; a regex gate in front of bash, a static classifier in front of an interpreter, a Node tokenizer in front of a shell &mdash; the question is not whether a divergence exists but how many a motivated reader will find. Two researchers found five in one extension and one in a frontier lab&rsquo;s coding agent, in the same week, and filed them on the same afternoon.</p>
+
+        <h2>What we verified, and what we did not</h2>
+
+        <p>All CVE identifiers, publication timestamps, CVSS 3.1 and 4.0 vectors, CWE assignments, affected ranges and assigner fields were read first-hand from the NVD 2.0 API. Credits and advisory text were read first-hand from the VulnCheck advisory pages. Both Roo Code source files were fetched at tag <code>v3.54.0</code> and every excerpt above is quoted verbatim from them; the archived flag, release dates, commit titles, star, fork and open-issue counts come from the GitHub API. The <code>shell-quote</code> tokenisation was reproduced locally against version 1.8.3. The Mistral Vibe commit metadata, file list, release tags and CHANGELOG text were read first-hand from the GitHub API at commit <code>19b5b74</code>.</p>
+
+        <p>We did not install Roo Code or Mistral Vibe, did not run either approval gate, did not execute any proof of concept, did not start an agent, and sent no request to any third-party deployment. We did not evaluate the researchers&rsquo; reproduction scripts beyond reading them, and the execution claims in their write-ups &mdash; that the constructs run on bash 5.3.15 and 3.2.57 &mdash; are reported as theirs, not reproduced by us.</p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110206?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110206, Roo Code auto-approve bypass via command substitution at command position (7.7 CVSS 4.0, CWE-436)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110202?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110202, bypass via bare <code>&gt;&amp;</code> redirect stripping</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110203?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110203, bypass via quote-masking desynchronisation</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110204?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110204, bypass via <code>${ cmd; }</code> funsub misread as parameter expansion</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110205?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110205, bypass via glob token discarding a command substitution (CWE-184)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109429?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109429, Mistral Vibe bash permission bypass via <code>${var@P}</code> prompt transform (8.7 / 8.8, before 2.25.4)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/roo-code-through-3.54.0-auto-approve-bypass-via-command-substitution-at-command-position?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Roo Code auto-approve bypass, credit Minqiang Gui and Siyu Lou</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mistral-vibe-bash-permission-bypass-via-var-p-prompt-transform?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Mistral Vibe &lt; 2.25.4 bash permission bypass, credit Minqiang Gui</a></li>
+          <li><a href="https://github.com/RooCodeInc/Roo-Code/blob/v3.54.0/src/shared/parse-command.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Roo Code <code>src/shared/parse-command.ts</code> at <code>v3.54.0</code> &mdash; the maskers and the token loop</a></li>
+          <li><a href="https://github.com/RooCodeInc/Roo-Code/blob/v3.54.0/src/core/auto-approval/commands.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Roo Code <code>src/core/auto-approval/commands.ts</code> at <code>v3.54.0</code> &mdash; <code>getCommandDecision</code> and <code>containsDangerousSubstitution</code></a></li>
+          <li><a href="https://github.com/7rah/oss-cve/blob/6adb836d24ca446fd168c3acdc4c170beb77fe0f/roocode-group16-output-as-command.md?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Researcher write-ups for all five Roo Code findings (7rah/oss-cve, pinned commit)</a></li>
+          <li><a href="https://github.com/mistralai/mistral-vibe/pull/1084?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">mistral-vibe PR #1084 &mdash; v2.25.4, merged 12 September 2026, shell-permission policy and analysis modules</a></li>
+          <li><a href="https://github.com/mistralai/mistral-vibe/releases/tag/v2.25.4?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">mistral-vibe release v2.25.4 and its CHANGELOG entry naming CVE-2026-87984 through 87988</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/sglang-five-multimodal-resource-exhaustion-cves-109225-109229-no-fix/">The Budget Arrives in the Request: Five SGLang Multimodal CVEs With No Fixed Version</a></h3><p>NVD published CVE-2026-109225 through 109229 against SGLang on 12 October 2026, each 8.7, each unauthenticated, all affecting 0.5.21 with no fix. Four are the same mistake — the limit is applied after the allocation — and one lets the caller set the resource budget in the request body. We read all five code paths at the v0.5.21 tag.</p><a class="text-link" href="/posts/2026/10/sglang-five-multimodal-resource-exhaustion-cves-109225-109229-no-fix/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/conductor-oss-five-ssrf-cves-mcp-a2a-agentspan-october-2026/">Five SSRF Records Against One Orchestrator: What conductor-oss&amp;rsquo;s MCP and A2A Code Actually Does</a></h3><p>Five CWE-918 CVEs landed against conductor-oss on 13 October 2026, covering the MCP tool lister, A2A agent-card fetch, the API-spec task, the Agentspan controller and the Kafka task. We read every named file. One has no outbound destination policy at all; one already ships the exact guard the record says is missing.</p><a class="text-link" href="/posts/2026/10/conductor-oss-five-ssrf-cves-mcp-a2a-agentspan-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mcp-context-forge-cve-2026-53709-hardcoded-jwt-key-admin-forgery/">The Blocklist Named Its Own Default: MCP Context Forge&amp;rsquo;s CVE-2026-53709 Mints Platform Admins</a></h3><p>CVE-2026-53709, published to NVD on 13 October 2026 and scored 9.8, covers IBM&amp;rsquo;s MCP Context Forge gateway through 1.0.1: a hardcoded HS256 JWT_SECRET_KEY shipped in config.py and .env.example, enumerated in the project&amp;rsquo;s own weak-secrets blocklist, accepted by verify_jwt_token, with a platform-admin bootstrap that needs no database row. The fix landed 26 May; the CVE arrived 140 days later. We read the vulnerable and fixed configuration code at v1.0.2.</p><a class="text-link" href="/posts/2026/10/mcp-context-forge-cve-2026-53709-hardcoded-jwt-key-admin-forgery/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
