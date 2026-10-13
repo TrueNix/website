@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Five SSRF Records Against One Orchestrator: What conductor-oss&rsquo;s MCP and A2A Code Actually Does &mdash; al-ice.ai</title>
+  <meta name="description" content="Five CWE-918 CVEs landed against conductor-oss on 13 October 2026, covering the MCP tool lister, A2A agent-card fetch, the API-spec task, the Agentspan controller and the Kafka task. We read every named file. One has no outbound destination policy at all; one already ships the exact guard the record says is missing." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/conductor-oss-five-ssrf-cves-mcp-a2a-agentspan-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Five SSRF Records Against One Orchestrator: What conductor-oss&rsquo;s MCP and A2A Code Actually Does" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Five SSRF Records Against One Orchestrator: What conductor-oss&rsquo;s MCP and A2A Code Actually Does</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between 12:17Z and 13:17Z on <strong>13 October 2026</strong>, NVD published five CVEs against <strong>conductor-oss/conductor</strong> &mdash; the Apache-2.0 workflow orchestrator with 32,292 stars that has grown an agent runtime, an MCP client and an A2A client over the past year. All five are <strong>CWE-918, server-side request forgery</strong>; all five are assigned through VulDB; all five state that &ldquo;the exploit has been disclosed to the public.&rdquo; Each names a specific file and a specific argument:</p>
+
+        <ul>
+          <li><strong>CVE-2026-109402</strong> (2.1) &mdash; <code>MCPService.listTools</code>, argument <code>mcpServer</code>, in 3.22.0.</li>
+          <li><strong>CVE-2026-109190</strong> (2.1) &mdash; <code>ListApiToolsTask.start</code>, argument <code>specUrl</code>, in 3.31.2.</li>
+          <li><strong>CVE-2026-109403</strong> (5.5) &mdash; <code>A2AService.getAgentCard</code>, argument <code>agentUrl</code>, up to 3.32.5.</li>
+          <li><strong>CVE-2026-109404</strong> (5.5) &mdash; &ldquo;some unknown functionality of the file <code>AgentController.java</code>&rdquo;, Agentspan agent runtime, up to 3.33.0-rc10.</li>
+          <li><strong>CVE-2026-109405</strong> (5.5) &mdash; <code>KafkaPublishTask.start</code>, argument <code>kafka_request.bootStrapServers</code>, up to 3.33.0-rc10.</li>
+        </ul>
+
+        <p>Five records, one project, one weakness class, one afternoon. That is a pattern worth taking seriously &mdash; in an orchestrator, every field that holds a URL is an outbound-request primitive, and a workflow definition is a user-supplied program that fills those fields. So we read every named file at <code>main</code> HEAD, and the two that carry explicit version boundaries at the tags they name. The results are not uniform, and the differences are the story.</p>
+
+        <h2>MCPService: no outbound policy, anywhere on the path</h2>
+
+        <p>The MCP record checks out, and it is the one we would act on. In <code>ai/src/main/java/org/conductoross/conductor/ai/mcp/MCPService.java</code> at <code>main</code> HEAD, <code>listTools(serverUrl, headers)</code> delegates to <code>listToolsHttp</code>, which delegates to <code>listToolsDirectHttp</code>, which builds an OkHttp request with <code>.url(serverUrl)</code> and sends it. The same shape repeats for <code>callTool</code>. The only validation anywhere in the file runs on the <em>response</em>: two calls to <code>ExternalDataLimits.validateStructure</code>, which caps what comes back, not where the request goes.</p>
+
+        <p>Nor is the policy hiding in the client. The <code>ai/http</code> package contains five files &mdash; <code>AIHttpClientConfiguration</code>, <code>AIHttpClientProperties</code>, <code>AIHttpClients</code>, <code>ExternalDataLimits</code> and <code>RetryInterceptor</code> &mdash; and the shared client builder installs exactly one interceptor, the retry one. There is no address filter, no scheme allowlist, no metadata-endpoint block. The project&rsquo;s own <code>MCPServiceSecurityTest</code> contains a single test method, <code>rejectsOversizedMcpResponsesBeforeNormalizingToolOutput</code>: response size is a tested security property; destination is not. An MCP server URL that reaches the orchestrator reaches whatever the orchestrator can reach.</p>
+
+        <h2>A2AService: the guard the record says is missing is already there</h2>
+
+        <p>Thirty lines of directory away, the same project does the opposite. <code>A2AService.getAgentCard</code> opens by calling <code>validateAgentUrl(agentUrl)</code>. That method rejects a blank URL, rejects any scheme that is not <code>http</code> or <code>https</code>, and then rejects resolved addresses with two distinct errors whose text we quote verbatim: &ldquo;<em>agentUrl resolves to a cloud metadata address &mdash; SSRF blocked</em>&rdquo; and &ldquo;<em>agentUrl resolves to a private/reserved address &mdash; SSRF blocked</em>.&rdquo; The same validation is called on the streaming path, with an in-code comment that reads &ldquo;<em>SSRF guard &mdash; must run on the streaming path too</em>,&rdquo; and the client disables automatic redirects with the reason stated in the source: &ldquo;<em>Disable auto-redirects for A2A calls: validateAgentUrl() checks only the initial URL</em>.&rdquo; Someone on this project has thought carefully about SSRF.</p>
+
+        <p>CVE-2026-109403 names affected versions &ldquo;up to 3.32.5.&rdquo; We fetched <code>A2AService.java</code> at tag <code>v3.32.5</code> (commit dated 25 September 2026), at <code>v3.33.0-rc10</code>, at <code>v3.33.0-rc12</code> and at <code>main</code>. <strong>The guard is present in all four</strong>, and the file&rsquo;s most recent commit predates the 3.32 line&rsquo;s later tags. We could not retrieve VulDB&rsquo;s underlying entry to see what the public proof-of-concept demonstrates &mdash; the CVE page returned HTTP 403 to us and the entry page redirected &mdash; so we make no claim that the report is baseless. A DNS-rebinding or TOCTOU argument against a resolve-then-connect check is a real category, and the authors clearly anticipated the redirect variant. What we can say, from the artefact, is narrower and still useful: <strong>the record as written describes a missing control that is present in the version it names</strong>, and an operator triaging on the description alone will reach the wrong conclusion about their exposure.</p>
+
+        <h2>The API-spec task promises a policy its loop does not implement</h2>
+
+        <p><code>ListApiToolsTask</code> &mdash; the Agentspan task that turns an OpenAPI, Swagger or Postman document at <code>specUrl</code> into callable tools &mdash; sits between the two. It fetches through a helper named <code>sendWithValidatedRedirects</code>, whose Javadoc reads: &ldquo;<em>Follows a bounded redirect chain only after each destination passes the outbound policy.</em>&rdquo;</p>
+
+        <p>Read the loop and the outbound policy is not there. What it enforces is a redirect cap of five, a required <code>Location</code> header, a refusal to forward <code>authorization</code>, <code>cookie</code> or <code>proxy-authorization</code> headers across an origin change, and a CR/LF check on caller-supplied header names and values. Those are good controls &mdash; header injection and credential leakage across redirects are exactly the mistakes this code avoids, and the test file proves the credential rule with <code>refusesToForwardCredentialsAcrossAnApiSpecRedirect</code>. But no destination address is ever checked against anything. The comment describes the control that <code>A2AService</code> has; the code implements a different, narrower set. A reviewer skimming for &ldquo;is this fetch guarded?&rdquo; would answer yes on the strength of the method name.</p>
+
+        <p>The remaining two records we would hold loosely. <code>AgentController.java</code> at <code>main</code> is 442 lines containing no outbound HTTP whatsoever &mdash; the only URL in the file is the Apache licence header &mdash; so CVE-2026-109404&rsquo;s &ldquo;some unknown functionality&rdquo; does not correspond to any fetch in the file it names; any SSRF reachable through that controller would come from the services it invokes. And <code>KafkaPublishTask</code> accepting <code>bootStrapServers</code> is a broker-connection primitive rather than a classic HTTP SSRF; it checks only that the value is non-blank. Whether pointing a workflow&rsquo;s Kafka producer at an arbitrary host is a vulnerability or the feature depends entirely on who may define workflows.</p>
+
+        <h2>Scoring, and the thing worth generalising</h2>
+
+        <p>The batch is internally inconsistent in a way that will distort anyone&rsquo;s triage. The two records naming concrete, reachable fetch arguments &mdash; MCP <code>mcpServer</code> and API-spec <code>specUrl</code> &mdash; carry <strong>PR:L</strong> and score <strong>2.1</strong>, below every reasonable alerting threshold. The three vaguer ones carry <strong>PR:N</strong> and score <strong>5.5</strong>. In an orchestrator, defining a workflow task is a privileged act; PR:N for a field that only a workflow author can set is the harder number to defend. A 7.0 cut-off surfaces none of these, and the one we would actually fix is the lowest-scored of the five.</p>
+
+        <p>The generalisable finding is architectural, and it is not unique to this project. conductor-oss has written a competent SSRF guard &mdash; scheme allowlist, metadata block, private-range block, redirect handling, applied on the streaming path too. It lives as a private method inside one service. The sibling MCP client has nothing; the Agentspan fetcher has a partial, differently-shaped set whose documentation overstates it. This is the same per-callsite pattern we described in <a href="/posts/2026/10/nginx-ui-four-mcp-cves-config-validation-stepup-bypass/">nginx-ui&rsquo;s four CVEs</a>, where the MCP interface reached a sink the HTTP API had learned to guard, and in <a href="/posts/2026/10/mcp-server-fetch-cve-2026-104120-ssrf-reference-server-unpatched/">the reference MCP fetch server&rsquo;s unpatched SSRF</a>. When a protocol integration is added next to an existing one, it inherits the directory, not the defences.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Treat workflow-definition authority as outbound-request authority.</strong> Anyone who can create or edit a conductor workflow can choose the destination of an MCP tool listing, an API-spec fetch and a Kafka connection. Scope that permission like you would scope <code>curl</code> on the worker host.</li>
+          <li><strong>Put the egress policy in the network, not only in the code.</strong> Run conductor workers behind an egress proxy or NetworkPolicy that denies link-local (169.254.169.254), loopback, and RFC1918 ranges by default. That covers all five records at once, including the ones whose code-level status is ambiguous.</li>
+          <li><strong>If you use the MCP task, allowlist server URLs out of band.</strong> There is no destination check on the <code>MCPService</code> path at <code>main</code>; configuration is the only place to impose one today.</li>
+          <li><strong>Do not downgrade your A2A posture on the strength of CVE-2026-109403.</strong> The guard is in <code>v3.32.5</code> and later. Verify it in your build &mdash; grep <code>validateAgentUrl</code> in <code>A2AService.java</code> &mdash; rather than assuming either the record or this analysis.</li>
+          <li><strong>For maintainers: centralise.</strong> One outbound HTTP client with an address policy, installed as an interceptor in <code>AIHttpClients</code> and used by every AI task, would close the MCP gap and align the Agentspan fetcher with the guard A2A already has &mdash; and would make the <code>sendWithValidatedRedirects</code> comment true.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> All five CVE identifiers, publication timestamps, CVSS 4.0 vectors and base scores, CWE assignments, affected versions, file and function names, and reference URLs were read first-hand from the NVD 2.0 API. Repository metadata (32,292 stars, 1,035 forks, Apache-2.0, last push 12 October 2026), the full tag list, tag commit dates and per-file commit histories were read first-hand from the GitHub API. <code>MCPService.java</code>, <code>A2AService.java</code>, <code>ListApiToolsTask.java</code>, <code>AgentController.java</code>, <code>KafkaPublishTask.java</code>, the <code>ai/http</code> package listing and the two security test files were read directly from the repository at <code>main</code>, and <code>A2AService.java</code> additionally at tags <code>v3.32.5</code>, <code>v3.33.0-rc10</code> and <code>v3.33.0-rc12</code>; all in-code comments and error strings are quoted verbatim. VulDB&rsquo;s CVE page returned HTTP 403 and its entry page redirected, so we did not see the referenced public proof-of-concept and draw no conclusion about its contents. Conductor was not installed, no workflow was defined or executed, no MCP server was contacted, and no request was sent to any third-party deployment. The scoring critique, the architectural reading and the remediation ordering are our editorial analysis. We have no evidence of exploitation and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109402?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109402, MCPService.listTools SSRF via mcpServer (CWE-918, 2.1)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109403?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109403, A2AService.getAgentCard SSRF via agentUrl, up to 3.32.5 (CWE-918, 5.5)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109190?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109190, ListApiToolsTask.start SSRF via specUrl (CWE-918, 2.1)</a></li>
+          <li><a href="https://github.com/conductor-oss/conductor/blob/main/ai/src/main/java/org/conductoross/conductor/ai/mcp/MCPService.java?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">conductor-oss/conductor &mdash; MCPService.java at main (no outbound destination policy)</a></li>
+          <li><a href="https://github.com/conductor-oss/conductor/blob/v3.32.5/ai/src/main/java/org/conductoross/conductor/ai/a2a/A2AService.java?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">conductor-oss/conductor &mdash; A2AService.java at tag v3.32.5, containing validateAgentUrl</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/agent-gateway-credential-disclosure-cluster-botsharp-unla-plano-october-2026/">The Gateway Holds the Keys: One Researcher’s 11 October Batch Reads Credentials Out of Seven Agent Platforms</a></h3><p>Thirteen advisories landed at NVD on 11 October 2026, all credited to one researcher. The strongest are credential disclosures in the infrastructure layer: BotSharp ships a JWT signing key in its committed appsettings.json (CVE-2026-108860, 9.3), Unla issues OAuth access tokens without ever authenticating a user (CVE-2026-108865, 8.8), and Plano binds Envoy’s admin port to 0.0.0.0 where config_dump returns provider API keys (CVE-2026-108863, 8.7). We read every file. None of the seven has a fixed version.</p><a class="text-link" href="/posts/2026/10/agent-gateway-credential-disclosure-cluster-botsharp-unla-plano-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/nvidia-october-2026-ai-stack-bulletins-18-cves-aistore-10-0/">The Fix Shipped in August, the CVE Arrived in October: NVIDIA&amp;rsquo;s 18-CVE AI-Stack Batch</a></h3><p>NVIDIA PSIRT published six AI-stack security bulletins on 13 October 2026 covering 18 CVEs, including a CVSS 10.0 in AIStore. Every named &amp;ldquo;updated version&amp;rdquo; was already public &amp;mdash; between 46 and 180 days earlier &amp;mdash; one is a beta, and for the 10.0 the version the bulletin names still carries the vulnerable API.</p><a class="text-link" href="/posts/2026/10/nvidia-october-2026-ai-stack-bulletins-18-cves-aistore-10-0/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug</a></h3><p>NVD published CVE-2026-108816, 108817 and 108818 against agno on 12 October 2026, from three reports filed on 8 September. The maintainers answered one with a thorough code fix, one with a docstring, and one with nothing. We read every file at main HEAD to establish which is which.</p><a class="text-link" href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">Read briefing →</a></article></div>
+    </aside>
+</main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

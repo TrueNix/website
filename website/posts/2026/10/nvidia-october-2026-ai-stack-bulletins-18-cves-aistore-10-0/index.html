@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Fix Shipped in August, the CVE Arrived in October: NVIDIA&rsquo;s 18-CVE AI-Stack Batch &mdash; al-ice.ai</title>
+  <meta name="description" content="NVIDIA PSIRT published six AI-stack security bulletins on 13 October 2026 covering 18 CVEs, including a CVSS 10.0 in AIStore. Every named &ldquo;updated version&rdquo; was already public &mdash; between 46 and 180 days earlier &mdash; one is a beta, and for the 10.0 the version the bulletin names still carries the vulnerable API." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/nvidia-october-2026-ai-stack-bulletins-18-cves-aistore-10-0/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Fix Shipped in August, the CVE Arrived in October: NVIDIA&rsquo;s 18-CVE AI-Stack Batch" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Fix Shipped in August, the CVE Arrived in October: NVIDIA&rsquo;s 18-CVE AI-Stack Batch</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>NVIDIA PSIRT published six security bulletins on <strong>13 October 2026</strong>, each marked <em>Revision 1.0.0 &mdash; Initial Release</em>, covering <strong>18 CVEs</strong> across the company&rsquo;s open-source AI stack: the AIStore object store (8), Megatron-LM (3), DALI (4), NVSentinel (1), Isaac Lab (1) and Warp (1). The headline number is <strong>CVE-2026-65162</strong>, a <strong>CVSS 10.0</strong> (<code>AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</code>, CWE-250) in AIStore&rsquo;s legacy ETL Kubernetes Pod-spec initialization API, where &ldquo;a remote attacker may supply Kubernetes host-namespace and container-security settings.&rdquo; All 18 records landed at NVD the same afternoon with <code>vulnStatus: Awaiting Analysis</code>, carrying NVIDIA&rsquo;s own CVSS 3.1 scores.</p>
+
+        <p>The interesting part is not the 10.0. It is that <strong>not one of these bulletins announces a new release</strong>. We checked every &ldquo;Updated Version&rdquo; cell in all six bulletins against the publication timestamp of the matching upstream tag, read first-hand from the GitHub API. Every fix was already public, by between a month and half a year:</p>
+
+        <ul>
+          <li><strong>Megatron-LM 0.17.0</strong> (fix for CVE-2026-65180, CWE-502 checkpoint deserialisation) &mdash; tag <code>core_v0.17.0</code>, 16 April 2026: <strong>180 days</strong> before the bulletin.</li>
+          <li><strong>Megatron-LM 0.17.1</strong> (CVE-2026-65110, a second checkpoint-loading RCE, and CVE-2026-65104, hash collisions in the inference cache) &mdash; <code>core_v0.17.1</code>, 28 May 2026: <strong>138 days</strong>.</li>
+          <li><strong>Isaac Lab 3.0-beta2</strong> (CVE-2026-65141, CWE-95 eval injection) &mdash; <code>v3.0.0-beta2</code>, 17 June 2026: <strong>118 days</strong>.</li>
+          <li><strong>Warp 1.16.0</strong> (CVE-2026-67456, heap overflow) &mdash; <code>v1.16.0</code>, 3 August 2026: <strong>71 days</strong>.</li>
+          <li><strong>AIStore 5.0</strong> (all eight AIStore CVEs) &mdash; tag <code>v1.5.0</code>, release named &ldquo;5.0&rdquo;, 21 August 2026: <strong>53 days</strong>.</li>
+          <li><strong>NVSentinel 1.20.0</strong> (CVE-2026-65131, unauthenticated gRPC health-event socket) &mdash; <code>v1.20.0</code>, 24 August 2026: <strong>50 days</strong>.</li>
+          <li><strong>DALI 2.3</strong> (CVE-2026-65147 through 65150, four memory-safety bugs) &mdash; <code>v2.3.0</code>, 28 August 2026: <strong>46 days</strong>.</li>
+        </ul>
+
+        <p>None of those releases mentions a CVE identifier, because none existed yet. That is not misconduct &mdash; assignment follows its own clock, and NVIDIA is publishing the records rather than sitting on them. But it does determine what the bulletin is actually <em>for</em>. For six separate projects, the security content of a release was legible in October and invisible in August, and the population that upgraded in between did so for unrelated reasons.</p>
+
+        <h2>The release notes said it; they just didn&rsquo;t say &ldquo;CVE&rdquo;</h2>
+
+        <p>AIStore is the clearest case, because its 5.0 notes describe the fixes in plain prose. Under a section headed <em>Security, Reliability, and Correctness</em>, the notes state that &ldquo;Several of the problems in this section were reported to us privately&rdquo; and then enumerate them. Three lines map one-to-one onto bulletin entries:</p>
+
+        <ul>
+          <li>&ldquo;<em>dSort external key-map URLs can no longer reach loopback, private, link-local, unspecified, or multicast destinations</em>&rdquo; &mdash; this is <strong>CVE-2026-65101</strong> (8.6, CWE-918, SSRF via a crafted external key map URL in distributed sort).</li>
+          <li>&ldquo;<em>Promote sources are now restricted to absolute paths beneath <code>/var/lib/ais/promote</code></em>&rdquo; &mdash; this is <strong>CVE-2026-65161</strong> (7.5, CWE-22, unauthenticated file read via the Promote API).</li>
+          <li>&ldquo;<em>Targets now validate object names independently for GET, PUT, HEAD, DELETE, and PATCH&hellip; Object names, virtual-directory prefixes, and archive paths are rejected when they could escape an AIS mountpath</em>&rdquo; &mdash; the surface behind <strong>CVE-2026-65103</strong> (8.1, target-side rename traversal) and <strong>CVE-2026-65164</strong> (8.1, dSort archive-member traversal).</li>
+        </ul>
+
+        <p>The 5.0 ETL section adds &ldquo;<em>ETL management operations enforce authorization</em>,&rdquo; which is <strong>CVE-2026-65172</strong> (8.6, CWE-862). The project even credits reporters by name in its own acknowledgements &mdash; including a promote-path report from <code>@geo-chen</code> (commit <code>e2c709706</code>) that corresponds to the bulletin&rsquo;s credit line for CVE-2026-65161. The information was there. The identifier was not, and identifiers are what scanners, SBOM pipelines and change-advisory boards consume.</p>
+
+        <h2>For the 10.0, the version the bulletin names is not the version that removes it</h2>
+
+        <p>This is the finding that changes someone&rsquo;s afternoon. The AIStore bulletin&rsquo;s remediation instruction reads: &ldquo;<em>download and install the 5.0 version of the NVIDIA AIStore framework</em>,&rdquo; and the affected-version table lists <strong>0 to 4.9 &rarr; 5.0</strong> for all eight CVEs, including the 10.0. We read <code>ext/etl/api.go</code> at three tags to see what 5.0 actually did to the Pod-spec path:</p>
+
+        <ul>
+          <li>At <strong>v1.4.9</strong>: <code>InitSpecMsg</code> &mdash; the full-Pod-spec initialisation message &mdash; is present, parsed and validated, with no deprecation marker.</li>
+          <li>At <strong>v1.5.0</strong> (&ldquo;5.0&rdquo;): <code>InitSpecMsg</code> is <em>still</em> present, still parsed, still validated. It gains a comment: &ldquo;<em>Deprecated: Kubernetes Pod spec ETL initialization will be removed in v5.1. Use ETLSpecMsg instead.</em>&rdquo; The commit that introduced it (<code>14a0bdde4</code>, 25 July 2026) is explicit in its own message: &ldquo;<em>keep supporting Pod specs init unchanged with prominent warning; plan to remove Pod specs init completely in v5.1</em>.&rdquo; It touches seven files and adds warnings and documentation; it changes no behaviour.</li>
+          <li>At <strong>v1.5.1</strong> and at <code>main</code> today: <code>InitSpecMsg</code> is gone. All that survives is a constant comment, <code>SpecType = "spec" // persisted InitSpecMsg discriminator (removed in v5.1)</code>. The removal is commit <code>739fcca2f</code>, 25 August 2026 &mdash; four days <em>after</em> 5.0 shipped &mdash; and the 5.1 notes list it under &ldquo;Removed in v5.1&rdquo;: &ldquo;<em>Kubernetes Pod-spec ETL initialization (<code>InitSpecMsg</code>, CLI Pod-spec parsing, Python <code>Etl.init_spec()</code>, and bundled Pod templates) is removed.</em>&rdquo;</li>
+        </ul>
+
+        <p>Two qualifications, because they matter. First, 5.0 does reduce exposure for most operators by a different route: ETL now sits behind an <code>etl</code> build tag and &ldquo;<em>is excluded from default builds</em>,&rdquo; with separate <code>-etl</code> images published alongside the default. A default 5.0 build has no ETL subsystem at all. Second, the 5.0 notes are candid about why the feature is going away: &ldquo;<em>deprecate full Pod specs because Kubernetes-level controls create privilege-escalation and node-compromise risks</em>&rdquo; &mdash; which is, almost word for word, the impact statement later attached to a 10.0.</p>
+
+        <p>But the practical reading stands: an operator who follows the bulletin literally, installs an ETL-enabled 5.0 and stops, still runs the API the CVSS 10.0 describes. <strong>5.1 &mdash; released 28 September, fifteen days before the bulletin &mdash; is the version that removes it</strong>, and the bulletin does not mention 5.1. AIStore 5.0 is also not a drop-in upgrade: its own notes call it &ldquo;a mandatory bridge&rdquo; that changes persisted cluster metadata and the intra-cluster trust model, and &ldquo;a 4.x cluster must pass through 5.0 on the way to 5.1.&rdquo; The remediation for a 10.0 here is a two-step major-version migration, not a patch.</p>
+
+        <h2>One fix exists only in a beta, one project is seven releases past the fix</h2>
+
+        <p>The Isaac Lab entry has the opposite problem. CVE-2026-65141 (7.8, CWE-95 eval injection) lists affected versions <strong>0.0&ndash;2.3.2</strong> and updated version <strong>3.0-beta2</strong>. The matching tag, <code>v3.0.0-beta2</code>, is a 3.0 pre-release line; the last 2.x release, <code>v2.3.2</code>, shipped 2 February 2026 and is itself the top of the affected range. There is no patched 2.x. A team standardised on the stable line is being pointed at a beta &mdash; the same shape we noted for <a href="/posts/2026/10/continue-goose-deepsec-orb-four-agent-boundary-bypasses-october-2026/">orb/sandboxed.sh, where the fix existed only ahead of any tagged release</a>.</p>
+
+        <p>NVSentinel shows the inverse: it ships weekly, and its <code>v1.20.0</code> notes describe the fix without naming it &mdash; the release &ldquo;<em>authenticates health-event publishers and binds each event to its reporting node</em>,&rdquo; which is exactly CVE-2026-65131&rsquo;s unauthenticated gRPC health-event interface. The project reached <code>v1.27.0</code> on 12 October, the day before the bulletin. Anyone on a current NVSentinel was fixed seven releases ago and never knew there had been something to fix.</p>
+
+        <p>Megatron-LM carries the quietest risk in the batch. Two of its three CVEs &mdash; <strong>CVE-2026-65110</strong> and <strong>CVE-2026-65180</strong>, both 7.8, both CWE-502 &mdash; are checkpoint-loading RCEs: &ldquo;an attacker could cause an RCE by convincing a user to load a maliciously crafted file.&rdquo; Loading someone else&rsquo;s checkpoint is not an exotic act in this ecosystem; it is the normal mode of a model hub. The fixes are in 0.17.0 and 0.17.1, from April and May; the project is now on <code>core_v0.19.2</code>.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>AIStore: go to 5.1, not 5.0.</strong> 5.0 remediates seven of the eight CVEs but leaves the Pod-spec ETL init API present and functional; 5.1 removes it. If you must sit at 5.0 as the migration bridge, build without the <code>etl</code> tag (the default) or keep ETL-enabled images off any network an untrusted caller can reach, and note that persisted legacy ETLs are discarded on the 5.1 upgrade.</li>
+          <li><strong>Megatron-LM: treat checkpoints as code.</strong> Two CWE-502 records against checkpoint loading mean the file format is an execution boundary. Pin to 0.17.1 or later, and load third-party checkpoints only in a container you are willing to lose.</li>
+          <li><strong>Isaac Lab: there is no fixed stable release.</strong> Decide deliberately between the 3.0 pre-release line and keeping 2.3.2 away from untrusted input; do not assume &ldquo;latest stable&rdquo; is patched.</li>
+          <li><strong>Check DALI 2.3+, Warp 1.16.0+, NVSentinel 1.20.0+.</strong> All three are plain version bumps already months old; the only work is confirming what you actually run.</li>
+          <li><strong>Stop treating release notes as marketing.</strong> Five of these six projects described their security fixes in prose, weeks before an identifier existed. If your upgrade trigger is a CVE feed, your trigger fires a quarter late. Diff the notes of the AI infrastructure you run, and watch for the vocabulary &mdash; &ldquo;reported to us privately&rdquo;, &ldquo;no longer reach loopback&rdquo;, &ldquo;now enforce authorization&rdquo;.</li>
+          <li><strong>Match the artefact, not the label.</strong> NVIDIA&rsquo;s tables use marketing versions (&ldquo;5.0&rdquo;, &ldquo;0.17.1&rdquo;, &ldquo;3.0-beta2&rdquo;) that do not literally match upstream tags (<code>v1.5.0</code>, <code>core_v0.17.1</code>, <code>v3.0.0-beta2</code>). Resolve the mapping before you tell an auditor you are patched.</li>
+        </ul>
+
+        <p>This is the AI-infrastructure version of a pattern this site has traced through <a href="/posts/2026/10/deepseek-harness-cve-2026-108789-workflow-vm-escape-silent-sandbox-fix/">the deepseek-harness silent sandbox rewrite</a> and through <a href="/posts/2026/10/nvidia-dcgm-exporter-cve-2026-47483-pprof-unauthenticated-crash-exposed-gpus/">NVIDIA&rsquo;s own DCGM exporter record</a>: the engineering is frequently better than the disclosure. Eighteen records published in one afternoon tell you a vendor&rsquo;s PSIRT is doing its job on the back end. They also tell you that, for most of this year, the defenders of six widely deployed AI components had no machine-readable reason to upgrade.</p>
+
+        <p><em><strong>Verification note.</strong> All 18 CVE identifiers, CVSS 3.1 vectors and base scores, CWE assignments, descriptions, publication timestamps (13 October 2026, 13:17Z) and <code>vulnStatus: Awaiting Analysis</code> were read first-hand from the NVD 2.0 API. All six bulletins &mdash; NVIDIA product-security entries 5881, 5889, 5890, 5900, 5901 and 5902 &mdash; were read first-hand from the NVIDIA/product-security repository, including their affected/updated version tables, acknowledgements and revision histories; bulletin text is quoted verbatim where quoted. Every upstream tag name and publication timestamp, the commit metadata for <code>14a0bdde4</code> and <code>739fcca2f</code>, and the v1.5.0/v1.5.1 release notes were read first-hand from the GitHub API, and release-note excerpts are quoted verbatim. The <code>InitSpecMsg</code> presence/absence comparison was performed by reading <code>ext/etl/api.go</code> directly at tags <code>v1.4.9</code>, <code>v1.5.0</code>, <code>v1.5.1</code> and at <code>main</code>. Nothing was installed, no AIStore cluster was deployed, no ETL job was started, no checkpoint was crafted or loaded, and no request was sent to any third-party deployment. The day-count arithmetic, the remediation-gap reading and the ordering of priorities are our editorial analysis. We have no evidence of exploitation and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/NVIDIA/product-security/tree/main/2026/5889?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVIDIA Security Bulletin 5889 &mdash; AIStore Framework, October 2026 (8 CVEs, incl. CVE-2026-65162 at 10.0)</a></li>
+          <li><a href="https://github.com/NVIDIA/product-security/tree/main/2026/5881?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVIDIA Security Bulletin 5881 &mdash; Megatron-LM, October 2026 (CVE-2026-65104, 65110, 65180)</a></li>
+          <li><a href="https://github.com/NVIDIA/product-security/tree/main/2026/5902?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVIDIA Security Bulletin 5902 &mdash; Isaac Lab, October 2026 (CVE-2026-65141, fixed only in 3.0-beta2)</a></li>
+          <li><a href="https://github.com/NVIDIA/aistore/releases/tag/v1.5.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVIDIA/aistore release 5.0 (tag v1.5.0, 21 August 2026) &mdash; security section and Pod-spec deprecation</a></li>
+          <li><a href="https://github.com/NVIDIA/aistore/releases/tag/v1.5.1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVIDIA/aistore release 5.1 (tag v1.5.1, 28 September 2026) &mdash; &ldquo;Removed in v5.1: Kubernetes Pod-spec ETL initialization&rdquo;</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-65162?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-65162, AIStore legacy ETL Kubernetes PodSpec initialization API (CVSS 10.0, CWE-250)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">PraisonAI: 24 Advisories in 33 Hours Point at a Fixed Version That Was Never Published to PyPI</a></h3><p>Between 7 and 8 October 2026, 24 GitHub advisories covering 25 CVEs landed against PraisonAI. Every one names a fixed version — 4.6.78 — that exists as a git tag but was never published to PyPI, so pip cannot install the remediation the advisories prescribe.</p><a class="text-link" href="/posts/2026/10/praisonai-24-advisories-fixed-version-4-6-78-never-published-pypi/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Six CVEs for an Unknown Number of Bugs: Cisco’s October NX-OS Hardening Release and the Frontier-Model Footnote</a></h3><p>On 7 October 2026 Cisco published a batch of advisories including four CWE-bucketed “security hardening” releases for NX-OS, APIC, Meraki and License On-Prem. Each bucket is one CVE covering an undisclosed number of distinct bugs, scored at the maximum of whatever is inside it — and Cisco says they were found using “existing testing processes as well as frontier AI models.”</p><a class="text-link" href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Admin by Default: AWS October Bulletins Fix Loom Control-Plane Takeover (CVE-2026-103956, CVSS 10.0) and SageMaker Cross-Space Execution (CVE-2026-104019)</a></h3><p>AWS published two Important security bulletins on 2 October 2026 covering four CVEs: CVE-2026-103956 lets any network client take full admin over Loom for AWS agent control planes with no identity provider configured, CVE-2026-103957/103958 leak OAuth tokens and reach cloud credentials through MCP and A2A scopes, and CVE-2026-104019 lets a SageMaker project member run code in a teammate’s Space. No exploitation reported.</p><a class="text-link" href="/posts/2026/10/aws-loom-sagemaker-cve-2026-103956-104019-agent-control-plane-takeover/">Read briefing →</a></article></div>
+    </aside>
+</main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
