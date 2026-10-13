@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checked the First Field, Missed the Payload: Three New Network-AI CVEs and the Guardrail That Keeps Getting Bypassed &mdash; al-ice.ai</title>
+  <meta name="description" content="NVD published CVE-2026-109330, CVE-2026-109331 and CVE-2026-109332 against Jovancoding Network-AI on 12 October 2026. The headline record is a ClaudeHookBridge PreToolUse bypass that matches deny patterns against only the first candidate field, the second bypass of the same guardrail in two months. Fixed in 5.15.2." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/network-ai-three-cves-claudehookbridge-deny-bypass-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Checked the First Field, Missed the Payload: Three New Network-AI CVEs and the Guardrail That Keeps Getting Bypassed" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Checked the First Field, Missed the Payload: Three New Network-AI CVEs and the Guardrail That Keeps Getting Bypassed</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>NVD published three CVEs against <strong>Jovancoding Network-AI</strong> within one minute of each other on 12 October 2026 (17:17:28Z&ndash;17:17:29Z), all sourced to <code>disclosure@vulncheck.com</code>, all fixed in <strong>5.15.2</strong>. Network-AI is a TypeScript multi-agent orchestrator with guardrails and adapters for 32 AI frameworks &mdash; a small project (78 stars, 13 forks, MIT, created February 2026) that this site has covered before, in May, for an <a href="/posts/2026/05/network-ai-cve-2026-46701-mcp-unauthenticated-cross-origin/">MCP cross-origin flaw</a>. The October batch is more interesting than the May one, because its headline record is the <em>second</em> bypass of the same security control in two months &mdash; and we read the code on both sides of both fixes.</p>
+
+        <ul>
+          <li><strong>CVE-2026-109331</strong> (CVSS 4.0 <strong>7.5</strong>, 3.1 7.4, CWE-436 Interpretation Conflict, versions 5.14.0 through before 5.15.2). The <code>ClaudeHookBridge</code> PreToolUse hook matches operator deny patterns against <em>only the first present candidate field</em> of a tool call. A prompt-injected agent can place the dangerous payload in <code>Write</code> content or an MCP script parameter beside a benign <code>file_path</code> or <code>command</code>, evading <code>denyPatterns</code> to write web shells or execute scripts.</li>
+          <li><strong>CVE-2026-109330</strong> (4.0 <strong>5.3</strong>, 3.1 4.3, CWE-1385, 5.0.0 through before 5.15.2). <code>DashboardServer.handleUpgrade</code> performs no Origin or token validation, so a cross-site WebSocket hijack lets a remote attacker lure a victim running the dashboard to a malicious page and read live agent topology: agent IDs, roles, task descriptions, token budgets.</li>
+          <li><strong>CVE-2026-109332</strong> (4.0 <strong>2.3</strong>, 3.1 3.1, CWE-346, npm <code>network-ai</code> before 5.15.2). <code>McpSseServer._handleRequest</code> reflects localhost Origins into <code>Access-Control-Allow-Origin</code> regardless of bind interface, so when the server binds a non-loopback address, an attacker page with a localhost Origin can read unauthenticated endpoints like <code>/health</code> cross-origin.</li>
+        </ul>
+
+        <h2>The same twelve lines, bypassed twice</h2>
+
+        <p>The August record is what makes the October record a story. On 13 August 2026, also via VulnCheck, <strong>CVE-2026-73614</strong> (4.0 8.7, 3.1 8.8, CWE-436, before 5.15.1) found that the same bridge truncated the target string to 500 characters <em>before</em> evaluating deny patterns, while Claude Code executes the full untruncated command &mdash; so dangerous content past byte 500 in a Bash command field bypassed the operator&rsquo;s hard-deny list and executed. That was fixed in 5.15.1. Seven weeks later, the October record shows the <em>untruncated remainder</em> was still only the first field. Two CVEs, two CVSS high scores, one helper function.</p>
+
+        <p>We read <code>lib/claude-hooks.ts</code> at tag <code>v5.14.0</code> first-hand. The vulnerable helper is short enough to quote in full:</p>
+
+        <pre><code>function extractTarget(toolName, toolInput) {
+  if (!toolInput) return toolName;
+  const candidates = ['command', 'file_path', 'filePath', 'path',
+                      'url', 'query', 'pattern', 'prompt'];
+  for (const key of candidates) {
+    const v = toolInput[key];
+    if (typeof v === 'string' &amp;&amp; v.length &gt; 0) return v.slice(0, 500);
+  }
+  ...
+}</code></pre>
+
+        <p>Both defects are visible in those eight lines: the loop returns at the <em>first</em> non-empty candidate (so <code>content</code>, <code>new_string</code> and every MCP tool parameter are never inspected), and the return value is sliced to 500 characters (so anything past the cut still executes). The caller, <code>matchesAny</code>, then tests the operator&rsquo;s patterns against the tool name and that one string only. The August fix removed the truncation for matching; the October fix removed the first-field-only inspection. Each fix closed the exact hole the previous CVE named, and neither fix noticed the other hole in the same expression.</p>
+
+        <p>The fixed file at <code>v5.15.2</code> &mdash; grown from 376 to 542 lines &mdash; is unusually honest about its own history. The replacement helpers cite the advisory IDs in their comments: <code>extractFullTarget</code> carries a &ldquo;MUST NOT be truncated&rdquo; warning referencing GHSA-743h-jr5x-mpcr (the August truncation record), <code>collectInputStrings</code> recursively gathers <em>every</em> string in the tool input so a payload &ldquo;cannot hide behind a benign primary field&rdquo; referencing GHSA-9p2w-prp8-5722 (this batch&rsquo;s record), and the old 500-character cut survives only as <code>truncateForDisplay</code>, marked display-only with an explicit &ldquo;never use this output for security matching&rdquo;. The fix also adds pattern hardening the CVEs never asked for: a 512-character cap on pattern sources and a nested-quantifier check against ReDoS. That is what a guardrail rewrite looks like when the author has been burned twice by the same function.</p>
+
+        <h2>The other two are the same mistake at different layers</h2>
+
+        <p>We verified both companions in the <code>v5.14.0</code> sources. <code>DashboardServer.handleUpgrade</code> in <code>lib/dashboard-server.ts</code> checks exactly one thing before completing the WebSocket handshake: that the <code>sec-websocket-key</code> header is present. That header is a protocol nonce, not a secret &mdash; every cross-site request can carry one &mdash; so there is no Origin check and no token check between a malicious page and the live agent-topology stream. The SSE flaw is the subtler twin: <code>_handleRequest</code> in <code>lib/mcp-transport-sse.ts</code> reflects any localhost-shaped Origin, and the non-loopback case gets only a stderr warning plus &ldquo;bearer auth on tool calls&rdquo; &mdash; which does nothing for the endpoints that deliberately take no auth, like <code>/health</code>. The <code>v5.15.2</code> code gates the reflection on a loopback bind with a comment citing GHSA-4pvg-m42h-c3x2. The pattern across all three October records is one the maintainers would probably now state themselves: a check that assumes the caller&rsquo;s context instead of verifying it &mdash; the first field stands in for the whole input, key presence stands in for authentication, a localhost Origin stands in for same-host.</p>
+
+        <h2>Disclosure timeline worth noting</h2>
+
+        <p>This batch is the well-behaved kind. Release <code>v5.15.2</code> shipped 27 September 2026 at 20:39:30Z; the three GitHub advisories (GHSA-9p2w-prp8-5722, GHSA-hr6v-mfxm-4438, GHSA-4pvg-m42h-c3x2, rated high, medium and low) were published within two minutes of the release; the CVEs followed on 12 October, fifteen days later. The current release is <code>v5.15.4</code> (29 September). Compare that with the batches this site keeps documenting where advisories name versions that were never published: here the fixed version existed before the advisory, and the advisory existed before the CVE. Sixteen advisories now sit on the repository &mdash; this is a maintainer pair that discloses, which is also why the repeated-bypass history is visible at all instead of buried.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Upgrade to at least 5.15.2</strong> (5.15.4 is current). Every October CVE in this batch, and the August truncation bypass, is closed there. This is the whole remediation for the two origin/transport issues.</li>
+          <li><strong>Re-read your ClaudeHookBridge deny patterns after upgrading.</strong> Pre-5.15.2, a pattern you tested against <code>command</code> never saw <code>content</code>; post-upgrade it matches recursively across all fields with a depth cap of 32. Patterns tuned to the old first-field behaviour (or that relied on truncation implicitly shortening matches) should be re-tested, and overly broad patterns will now match more often &mdash; fail-closed noise is the expected, correct side effect.</li>
+          <li><strong>Treat PreToolUse hooks as what they are.</strong> This bridge is the control that decides whether a prompt-injected agent&rsquo;s tool call executes. Two high-severity bypasses in two months in one helper means hook-based gating deserves the same adversarial review as any authentication boundary: test with payloads in the <em>second</em> field, past the length limit, nested one level deeper than the matcher looks.</li>
+          <li><strong>Do not expose the dashboard or the SSE transport beyond loopback without independent auth.</strong> The WebSocket hijack needs only a victim operator visiting a page; the CORS reflection only matters on non-loopback binds, which the server warns about but permits.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> All three CVE identifiers, NVD publication timestamps (12 October 2026, 17:17:28Z&ndash;17:17:29Z), CVSS 4.0 and 3.1 scores, CWE assignments, affected-version ranges and the VulnCheck source identifier were read first-hand from the NVD 2.0 API, as were CVE-2026-73614&rsquo;s fields (13 August 2026, 4.0 8.7 / 3.1 8.8, CWE-436, before 5.15.1). Advisory IDs, severities and publication timestamps (27 September 2026, 20:41:37Z&ndash;20:41:41Z) were read first-hand from the GitHub Security Advisories API for Jovancoding/Network-AI. The <code>extractTarget</code>/<code>matchesAny</code> code, candidate list, 500-character slice, <code>handleUpgrade</code> key-only check, and the SSE Origin-reflection branch are quoted or described from <code>lib/claude-hooks.ts</code>, <code>lib/dashboard-server.ts</code> and <code>lib/mcp-transport-sse.ts</code> read first-hand at tags <code>v5.14.0</code> and <code>v5.15.2</code> via raw.githubusercontent.com, including the fix comments citing both GHSAs. Release tags, timestamps, star/fork counts, repository description and push date were read first-hand from the GitHub API. Brave Search corroboration found only CVE-mirror pages and no analytical coverage. We did not install Network-AI, craft a bypass payload, or send requests to any deployment; the remediation guidance is our editorial analysis. We have no evidence of exploitation and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109331?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109331, ClaudeHookBridge deny-pattern bypass via first-field-only matching (7.5 / 7.4, CWE-436, 5.14.0 through before 5.15.2)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109330?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109330, DashboardServer cross-site WebSocket hijacking (5.3 / 4.3, CWE-1385, 5.0.0 through before 5.15.2)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109332?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109332, MCP SSE transport localhost-Origin reflection (2.3 / 3.1, CWE-346, before 5.15.2)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-9p2w-prp8-5722?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-9p2w-prp8-5722 &mdash; deny/allow gate inspects only first candidate field (high, published 27 September 2026)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-hr6v-mfxm-4438?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-hr6v-mfxm-4438 &mdash; dashboard WebSocket handshake with no Origin/auth check (medium)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-4pvg-m42h-c3x2?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-4pvg-m42h-c3x2 &mdash; MCP SSE transport reflects localhost CORS Origin regardless of bind (low)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/network-ai-5.0.0-before-5.15.2-cross-site-websocket-hijacking-via-dashboardserver?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Network-AI dashboard cross-site WebSocket hijacking (CVE-2026-109330)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/network-ai-before-5.15.2-cors-origin-validation-error-in-mcp-sse-transport?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Network-AI MCP SSE CORS origin validation error (CVE-2026-109332)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/blob/v5.14.0/lib/claude-hooks.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Jovancoding/Network-AI <code>lib/claude-hooks.ts</code> at <code>v5.14.0</code> &mdash; first-field <code>extractTarget</code> with 500-character slice</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Jovancoding/Network-AI releases &mdash; 5.15.2 (27 September 2026), current 5.15.4</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">One Hundred Records in Two Days: JeecgBoot’s Second Wave Turns to Enterprise Messaging Integrations</a></h3><p>NVD published 24 more JeecgBoot CVEs on 11 October 2026 (CVE-2026-108866 through 108888 plus 108891), all VulnCheck, all through 3.9.5, all with no fixed version. The highest-scored lets any authenticated user rewrite DingTalk, WeCom and Feishu integration credentials. Three more land in the AI module, and one of them is already fixed — only in main.</p><a class="text-link" href="/posts/2026/10/jeecgboot-second-wave-24-cves-thirdapp-airag-memory-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/wukong-aicrm-hrm-three-cves-yaqi-chao-october-2026/">The Session ID Is the Only Credential: Three Wukong CVEs Expose AI Chats and HR Records</a></h3><p>Three VulnCheck advisories credited to Yaqi Chao, published to NVD on 11 October 2026: an AI-chat session takeover in Wukong AICRM (CVE-2026-108689), an unauthenticated admin bypass (CVE-2026-108707, 9.3 critical) and a universal HR-admin role (CVE-2026-108708, 8.7 high) in Wukong_HRM. No fixed version for any of the three.</p><a class="text-link" href="/posts/2026/10/wukong-aicrm-hrm-three-cves-yaqi-chao-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">UTCP Patched the Same SSRF Four Times — and the Redirect Hop Was Still Open</a></h3><p>NVD published five CVEs for the Universal Tool Calling Protocol on 27 September 2026. Three are incomplete-fix variants of an SSRF class first patched in May: the redirect hop, the loopback manual, and the GraphQL prefix check each bypassed the previous mitigation.</p><a class="text-link" href="/posts/2026/09/utcp-five-cve-batch-incomplete-ssrf-fixes-redirect-oauth-tokenurl/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
