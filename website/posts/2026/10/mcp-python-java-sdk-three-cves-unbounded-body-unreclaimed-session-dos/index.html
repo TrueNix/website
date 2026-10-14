@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Buffer Everything, Expire Nothing: Three New CVEs in the Official MCP Python and Java SDKs — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-109527, CVE-2026-59951 (Python SDK) and CVE-2026-108395 (Java SDK) reached NVD on 14 October 2026: unauthenticated remote denial of service via unbounded request bodies and sessions that are never reclaimed. Fixes shipped in August and September; the CVE records arrived today." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/mcp-python-java-sdk-three-cves-unbounded-body-unreclaimed-session-dos/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Buffer Everything, Expire Nothing: Three New CVEs in the Official MCP Python and Java SDKs" />
+  <meta name="post:date" content="2026-10-14" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Buffer Everything, Expire Nothing: Three New CVEs in the Official MCP Python and Java SDKs</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-14">2026-10-14</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Three CVEs in the <strong>official Model Context Protocol SDKs</strong> reached NVD within the same hour today, <strong>14 October 2026</strong>, all status <em>Received</em>, all unauthenticated remote denial of service over the HTTP transports that production MCP deployments actually expose. <strong>CVE-2026-109527</strong> (Python SDK, CWE-770, <strong>CVSS 7.5</strong> <code>AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H</code>) names unbounded request-body buffering in the Streamable HTTP session manager, the SSE message endpoint, and the OAuth authorization-server routes. <strong>CVE-2026-59951</strong> (Python SDK, CWE-400, <strong>CVSS 4.0 6.9</strong>) names Streamable HTTP session state that is never reclaimed by default. <strong>CVE-2026-108395</strong> (Java SDK, CWE-770, <strong>CVSS 7.5</strong>, same network vector) names unbounded body reads in the Servlet-based SSE, Streamable HTTP, and Stateless server transports. The headline is not the severity &mdash; availability-only, no confidentiality or integrity impact &mdash; it is the location: the reference implementations the whole ecosystem builds on had no resource limits on their network surface.</p>
+        <p>The second headline is the timeline, and it is arguably the more important one. The fixes for all three shipped in <strong>August and September</strong>; the CVE records arrived <strong>today</strong>. Anyone whose vulnerability management keys on CVE feeds has been blind to these for up to eight weeks while the advisories and fixed releases sat in public. Details below, because the gap differs per record.</p>
+
+        <h2>One large request, two to three times its size in memory</h2>
+        <p><strong>CVE-2026-109527</strong> affects <code>mcp</code> on PyPI before 1.29.1 and 2.0.0 through 2.0.1, fixed in <strong>1.29.1 and 2.1.0</strong> (there is no fixed 2.0.x release). Per the maintainer advisory GHSA-fmmv-w9g8-j3gc, an affected server read the whole body of every HTTP request into memory before checking its size, and one large request grew the process&rsquo;s memory by two to three times the body size &mdash; so a client that could reach the server could exhaust its memory and take it offline, repeatedly. No credentials are needed against the OAuth endpoints (<code>/token</code>, <code>/register</code>, <code>/revoke</code>, <code>/authorize</code>), or against any server that does not require authentication, which is the default.</p>
+        <p>The fix arrived in two steps, and the staging matters. Versions 1.29.0 and 2.0.0 added a 4 MiB limit to the Streamable HTTP endpoint only; 1.29.1 and 2.1.0 extended it to the SSE transport&rsquo;s message endpoint and the OAuth authorization-server routes. Every HTTP endpoint the SDK provides now reads the body through one shared limit (default 4 MiB, tunable via <code>max_request_body_size</code>) and answers 413 as soon as a request declares or streams more, before any parsing. One honest caveat survives in the advisory and is worth repeating: code that drives <code>StreamableHTTPServerTransport</code> directly, without the session manager, does not get the limit and should bound request bodies itself. The framework fixed the paths it owns; the escape hatch you wired by hand is still yours.</p>
+        <p><strong>CVE-2026-108395</strong> is the same bug in the Java SDK&rsquo;s <code>mcp-core</code> artifact, and its details contain the nastiest line of the three records. All three Servlet-based transports buffered the entire incoming body with no maximum &mdash; and they did not check the <code>Content-Length</code> header, reading the body in a loop instead. A client using <strong>chunked transfer encoding could stream an arbitrarily large body past any declared-size check</strong>, driving heap usage without bound until <code>OutOfMemoryError</code> starved or crashed the process. A single request suffices. Affected lines are 0.18.x before 0.18.4, 1.x before 1.1.4, and 2.0.0; fixed in <strong>0.18.4, 1.1.4, and 2.0.1</strong>, which enforce a maximum body size across all three transports and reject oversized requests before the body is fully buffered. The advisory notes two mitigating factors worth weighing honestly: the transports&rsquo; existing Origin/Host allow-list, and authentication checks implemented outside the SDK, both of which read headers and may reject a request before the body is read. &ldquo;May&rdquo; is doing work in that sentence &mdash; header-gated rejection only helps if you actually configured those gates.</p>
+
+        <h2>Sessions that never die</h2>
+        <p><strong>CVE-2026-59951</strong> is the subtler of the Python pair and the one with the longest affected window: versions 1.8.0 through 1.29.1 and 2.0.0 through 2.1.1, fixed in <strong>1.30.0 and 2.2.0</strong>. Per GHSA-84m7-p3x7-pcfv, a Streamable HTTP server in stateful mode &mdash; the default for FastMCP, MCPServer, <code>streamable_http_app()</code>, and the session manager &mdash; never reclaimed session state. Sessions did not expire. A client DELETE ended the session but left its entry registered. A session whose first request was refused stayed registered with a running task. Each session kept its parsed initialize parameters, and the number of sessions was unlimited. A client that could reach the endpoint could grow server memory without bound using ordinary short requests; only a restart reclaimed it.</p>
+        <p>The fix bounds retention rather than eliminating it: idle sessions (default 30 minutes with nothing in flight) are closed and their IDs then answer 404; at most 10,000 sessions exist at once, with further opens answered 503; sessions are discarded on every end path &mdash; DELETE, expiry, or refused opening request. Both knobs are tunable and disableable, and the advisory is candid that a live session still holds its initialize parameters and that an invalid-parameters initialize still opens a session that expires like any other. The sentence we would underline for operators is this one: <strong>authentication limits who can open sessions, not how many a token holder can open</strong>. A valid credential plus a loop is still a complete exploit, which is exactly the shape that matters when MCP servers sit behind an agent framework holding long-lived tokens.</p>
+
+        <h2>The pattern, the gap, and the Go-shaped hole</h2>
+        <p>Step back and the three records describe one design assumption: the SDKs&rsquo; HTTP transports were written as though every client were trustworthy, so bodies could be buffered whole and sessions kept forever. That assumption was arguably fine when MCP servers were local stdio processes spawned by a desktop client. It is not fine now that the same SDKs serve Streamable HTTP to networks full of agents, browsers, and other people&rsquo;s infrastructure &mdash; and the advisories say so in their own &ldquo;am I affected&rdquo; sections: yes, if clients you do not fully trust can reach the endpoint.</p>
+        <p>This is also the third week in a row the unbounded-body shape has appeared in an MCP SDK on this site. The <a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">mcp-go record from 12 October</a> (CVE-2026-108859) is the identical bug &mdash; <code>ServeHTTP</code> calling <code>io.ReadAll</code> before validation &mdash; with one decisive difference: <strong>the Go SDK has no fixed version, while the Python and Java SDKs do</strong>. Three SDKs, one bug class, two fixed, one still open. If your fleet runs MCP servers in more than one language, that asymmetry is your patch-priority list. Our earlier <a href="/posts/2026/10/mcp-sdk-october-advisories-cross-origin-redirect-task-session-scanner-gap/">3 October SDK roundup</a> covered a different set of advisories (redirects, task.session leakage, scanner gaps) &mdash; none of today&rsquo;s three CVEs &mdash; which tells you something about the velocity here: the official SDKs are producing security advisories roughly as fast as anyone can write them up.</p>
+        <p>Finally, the disclosure gap deserves its own paragraph because it is actionable. The Java fix released <strong>19 August</strong> with its advisory the same day; the Python body-limit fix released <strong>24 August</strong>; the Python session-reclamation fix released <strong>7 September</strong> with advisories on <strong>30 September</strong>. The CVE records published <strong>today, 14 October</strong>. For seven to eight weeks, these were public advisories with public fixes and no CVE identifiers &mdash; invisible to every scanner, dashboard, and policy gate that keys on CVE feeds, which is most of them. The maintainers did the right thing (fix first, document publicly); the ecosystem&rsquo;s detection layer still has a single point of failure in the CVE publication pipeline. If your program treats &ldquo;no CVE&rdquo; as &ldquo;no vulnerability,&rdquo; these three records are a clean counterexample with dates attached.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade the SDKs.</strong> Python: <code>mcp&gt;=1.29.1</code> (1.x) or <code>&gt;=2.1.0</code> (2.x) for the body limit &mdash; note there is no fixed 2.0.x, so 2.0.0 and 2.0.1 must move lines &mdash; and <code>&gt;=1.30.0</code> / <code>&gt;=2.2.0</code> for session reclamation. Java: <code>mcp-core</code> 0.18.4, 1.1.4, or 2.0.1 matching your release line. If you only take one upgrade, take the session fix: it closes the slow-drip path that needs no large requests.</li>
+          <li><strong>Check the Go SDK separately.</strong> If you also run mark3labs/mcp-go, CVE-2026-108859 had no fixed version as of our 12 October briefing &mdash; the mitigations there are a reverse proxy with a body cap, not an upgrade.</li>
+          <li><strong>Cap body size at the edge regardless.</strong> A reverse proxy or gateway enforcing a request-body limit, or ASGI middleware in front of the server, closes all three body-read paths at once &mdash; including the hand-driven <code>StreamableHTTPServerTransport</code> path the SDK fix does not cover. The advisories recommend exactly this for deployments that cannot upgrade yet.</li>
+          <li><strong>Tune the session bounds to your host.</strong> The new defaults (30-minute idle expiry, 10,000 sessions) bound retention on a normal server; on a small host, lower <code>session_idle_timeout</code>, <code>max_sessions</code>, and <code>max_request_body_size</code> together. Where you need no per-session state, <code>stateless_http=True</code> removes the session surface entirely.</li>
+          <li><strong>Stop gating detection on CVE publication.</strong> Subscribe to the SDK repositories&rsquo; security advisories (GHSA-fmmv-w9g8-j3gc, GHSA-84m7-p3x7-pcfv, GHSA-4x8c-5vv7-973f) directly. These three were public and fixed weeks before they became CVEs.</li>
+        </ul>
+
+        <p><em>Verification note: all three CVE identifiers, NVD publication timestamps (14 October 2026, 17:18&ndash;18:17 UTC), CVSS vectors and scores, CWE assignments (CWE-770 twice, CWE-400 once), affected and fixed version ranges, vulnStatus values, and CNA attribution were read first-hand from the NVD 2.0 API. The mechanism descriptions, the 4 MiB limit and 413 behaviour, the two-step rollout of the Python body fix, the chunked-transfer-encoding detail, the session-retention specifics (DELETE and refused-open paths, retained initialize parameters), the fixed-version defaults (30-minute idle timeout, 10,000 sessions, 404/503 behaviours), the stdio/stateless exemptions, the direct-transport caveat, and the authentication-does-not-limit-count finding are as stated in the three maintainer advisories, fetched directly from GitHub on 14 October 2026. Release dates (Python 1.29.1/2.1.0 on 24 August, 1.30.0/2.2.0 on 7 September; Java 0.18.4/1.1.4/2.0.1 on 19 August) and advisory publication dates were read first-hand from the GitHub API. We installed no SDK, ran no server, sent no oversized or chunked request, and opened no sessions; everything above is read from source. Brave Search surfaced only CVE-mirror aggregators (Strix, Threat Radar, vuldb) and no analytical coverage.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109527?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109527, Python SDK unbounded request-body buffering (published 14 October 2026, CVSS 3.1 7.5, CWE-770, status Received)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-59951?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-59951, Python SDK unreclaimed Streamable HTTP sessions (published 14 October 2026, CVSS 4.0 6.9, CWE-400, status Received)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-108395?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-108395, Java SDK unbounded request-body reads (published 14 October 2026, CVSS 3.1 7.5, CWE-770, status Received)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-fmmv-w9g8-j3gc?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-fmmv-w9g8-j3gc &mdash; HTTP server transports and OAuth endpoints read request bodies with no size limit (fixed 1.29.1 / 2.1.0)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-84m7-p3x7-pcfv &mdash; Streamable HTTP sessions never reclaimed by default (fixed 1.30.0 / 2.2.0)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/java-sdk/security/advisories/GHSA-4x8c-5vv7-973f?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-4x8c-5vv7-973f &mdash; Unbounded request-body reads in mcp-core HTTP server transports (fixed 0.18.4 / 1.1.4 / 2.0.1)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</a></h3><p>On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/praisonai-cve-2026-57118-57143-june-fixes-october-records-launch-auth-fail-open/">Patched in June, Published in October: Two PraisonAI CVEs and the Fix That Needed a Second Fix</a></h3><p>CVE-2026-57118 (9.8, unauthenticated agent invocation) and CVE-2026-57143 (8.8, LLM-controlled SSRF in the default search tool) reached NVD on 12 October 2026 — 117 days after PraisonAI shipped both fixes on 17 June. We read both commits: the auth fix returns True when no token is configured, and the guard that makes it matter on an exposed host did not land until August.</p><a class="text-link" href="/posts/2026/10/praisonai-cve-2026-57118-57143-june-fixes-october-records-launch-auth-fail-open/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
