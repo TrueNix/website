@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix — al-ice.ai</title>
+  <meta name="description" content="VulnCheck published eighteen CWE-78 records between 15:16:59 and 15:17:18 UTC on 14 October 2026 — transcription wrappers, PDF and video converters, archive extractors — all the same bug: an attacker-controlled file name interpolated into a shell string. We read every record and all nineteen fix PRs: one researcher filed them, nine were merged, nine are still open, and two maintainers shipped fixes in the final hours before publication." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix" />
+  <meta name="post:date" content="2026-10-14" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-14">2026-10-14</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between <strong>15:16:59</strong> and <strong>15:17:18 UTC on 14 October 2026</strong> &mdash; nineteen seconds &mdash; NVD ingested eighteen CVE records with VulnCheck as the assigning CNA, every one of them CWE-78, and every one of them the same sentence written eighteen ways: a file name reaches a shell. Twelve are scored <strong>CVSS 4.0 9.3</strong> (<code>AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H</code>), one 9.2, one 8.7, four 8.5. All are status <em>Received</em>.</p>
+        <p>Individually these are small packages, and the temptation is to file the batch under &ldquo;npm long tail&rdquo; and move on. Two things make that the wrong call. The first is what the packages <em>do</em>: transcribe audio, convert documents, extract archives, generate thumbnails, stitch video, compress fonts. That is the exact middle layer of a modern ingestion pipeline, the layer an agent reaches for when a task says <em>summarise this recording</em> or <em>pull the text out of these PDFs</em>. The second is the split we found when we read every record and every linked pull request: <strong>nine of the eighteen have a fixed version, and nine do not</strong>. All nineteen fix PRs were filed by the same person, months ago.</p>
+
+        <h2>The batch, split by whether anyone merged the patch</h2>
+        <p>NVD version ranges encode the split precisely. A record that reads <em>before X</em> has a fix; a record that reads <em>through X</em> does not. Nine of each:</p>
+        <p><strong>Fixed.</strong> <code>git-diff</code> before 2.0.7 (CVE-2026-110634), <code>webp-converter</code> before 3.0.0 (CVE-2026-110635), <code>buildebooks</code> before 0.2.2 (CVE-2026-110637), <code>@mborne/extract</code> before 0.2.1 (CVE-2026-110639), <code>xhtml2pdf</code> before 0.2.19 (CVE-2026-110642), <code>video-stitch</code> before 2.0.0-beta.1 (CVE-2026-110645), <code>snappdf</code> 1.1.0 before 6.1.0 (CVE-2026-110646), <code>@offactory/compress-fonts</code> before 1.1.1 (CVE-2026-110648), <code>stills</code> before 25.24.2 (CVE-2026-110649).</p>
+        <p><strong>No fixed version exists.</strong> <code>office-converter</code> through 1.0.2 (CVE-2020-37282, a retroactive identifier on a package last published in 2015), <code>pypdftk</code> through 0.5 (CVE-2026-110636), <code>doc-recog</code> through 1.1.6 (CVE-2026-110638), <code>whisper-node</code> through 1.1.1 (CVE-2026-110640), <code>@runnerty/executor-decompress</code> through 3.1.1 (CVE-2026-110641), <code>transcribe2texts</code> through 1.0.6 (CVE-2026-110643), <code>nodejs-whisper</code> through 0.3.1 (CVE-2026-110644), <code>turnpress</code> through 0.4.2 (CVE-2026-110647), the <code>thumbnail</code> Python package through 1.5 (CVE-2026-110650).</p>
+        <p>For eight of those nine, the version named in the record is the version a fresh install gets today. We checked the npm registry and PyPI: <code>nodejs-whisper</code> 0.3.1 is <code>latest</code> (published 3 August 2026), <code>whisper-node</code> 1.1.1 is <code>latest</code> (published 29 November 2023), <code>thumbnail</code> is at 1.5, <code>pypdftk</code> at 0.5, <code>turnpress</code> at 0.4.2.</p>
+
+        <h2>One researcher, nineteen pull requests, four months of waiting</h2>
+        <p>Every fix PR referenced across the eighteen records was opened by the same GitHub account, <strong>zachariah-mithani</strong>, between <strong>21 June and 2 September 2026</strong>. We pulled the state of each one from the GitHub API. The distribution of maintainer responses is the most interesting artefact in the batch:</p>
+        <ul>
+          <li><strong>Merged within hours.</strong> <code>stills</code> PR #29 was opened 5 August at 17:11:53 UTC and merged at 17:23:44 &mdash; <strong>eleven minutes and fifty-one seconds</strong>. <code>git-diff</code> PR #16: ninety-one minutes. <code>@offactory/compress-fonts</code> PR #1: ninety-two minutes. <code>VideoStitch</code> PR #26: ten hours. A follow-up <code>stills</code> PR #30, titled &ldquo;Finish the shell-injection fix: two more paths reach a shell in 25.24.1,&rdquo; was merged the next day.</li>
+          <li><strong>Merged on the eve of publication.</strong> <code>@mborne/extract</code> PR #8, open since 2 September, was merged <strong>13 October at 19:29 UTC</strong>; v0.2.1 was tagged twelve minutes later and v0.3.0 half an hour after that. <code>buildebooks</code> PR #12, also open since early September, was merged <strong>13 October at 22:00 UTC</strong>, with npm 0.3.1 published at 22:15. Both landed under twenty hours before their CVE records went public. Coordinated disclosure deadlines are visible in commit timestamps if you know to look.</li>
+          <li><strong>Closed without merging, but fixed anyway.</strong> Two maintainers took the report and discarded the diff. For <code>xhtml2pdf</code>, PR #835 was closed; the <code>startViewer</code> fix instead arrived inside commit <code>f86380d</code>, a 48-file merge titled &ldquo;Development (#838)&rdquo; authored by Luis Z&aacute;rate on 12 September. For <code>webp-converter</code>, the maintainer explained the decision in the thread: <em>&ldquo;Rather than merge this diff directly, I rolled the fix into the larger 3.0.0 modernization, which rewrote the library in TypeScript.&rdquo;</em> Both are legitimate outcomes; both also mean a reader tracing the CVE to its linked PR sees &ldquo;closed, not merged&rdquo; and has to keep digging to learn the bug is actually dead.</li>
+          <li><strong>Still open.</strong> Nine, the oldest since 21 June.</li>
+        </ul>
+        <p>One exchange in the <code>webp-converter</code> thread deserves quoting because it is the step most of this batch is missing. On 1 September the reporter asked the maintainer to file a GitHub Security Advisory on the repository, noting it was needed &ldquo;to ensure downstream users and automated tools (<code>npm audit</code> / Dependabot) are notified to upgrade from older versions.&rdquo; A merged patch silently changes the future. An advisory is what reaches everyone already running the old version &mdash; which, for a package with 42,000 monthly downloads, is most of them.</p>
+
+        <h2>The code, read at the pinned commits</h2>
+        <p>We read the vulnerable source for each record we quote. The cleanest specimen is <code>whisper-node</code>, where <code>src/whisper.ts</code> builds the whisper.cpp invocation as a template literal with <em>no quoting at all</em>:</p>
+        <pre><code>export const createCppCommand = ({ filePath, modelName = null, modelPath = null, options = null }: CppCommandTypes) =&gt;
+
+  `./main ${getFlags(options)} -m ${modelPathOrName(modelName, modelPath)} -f ${filePath}`;</code></pre>
+        <p>The language flag is assembled the same way elsewhere in the file &mdash; <code>if(flags.language) s += " -l " + flags.language;</code> &mdash; which is why the CVE names both <code>filePath</code> and <code>whisperOptions.language</code> as injection points. The resulting string goes to <code>shelljs</code>&rsquo;s <code>exec()</code>. A space in a path is a bug report; a <code>$(...)</code> in a path is remote code execution.</p>
+        <p><code>nodejs-whisper</code> is the more instructive case, because its author <em>did</em> think about quoting. In <code>src/utils.ts</code> at tag v0.3.1:</p>
+        <pre><code>const command = `ffmpeg -nostats -loglevel error -y -i "${inputFilePath}" -ar 16000 -ac 1 -c:a pcm_s16le "${outputFilePath}"`
+const result = shell.exec(command)</code></pre>
+        <p>Double quotes defeat word-splitting and glob expansion. They do not defeat command substitution: inside double quotes, <code>sh</code> still expands <code>$(...)</code> and backticks. That is the entire difference between a path-with-spaces bug and a 9.3, and it is why this package scores identically to the one that used no quotes. Quoting is not escaping, and escaping is not the fix &mdash; the fix, in every merged patch in this batch, is the same one line of architecture: stop building a string, pass an argv array, drop the shell. <code>execFile</code> instead of <code>exec</code>, <code>subprocess.run([...])</code> instead of <code>os.system</code>.</p>
+        <p>The Python entries show the unquoted form. <code>thumbnail/thumbnail.py</code> concatenates and hands the result straight to <code>os.system</code>:</p>
+        <pre><code>command = 'ffmpeg -y -i '+input+' -vf thumbnail '+vidcommand+' -frames:v 1 '+output
+os.system(command)</code></pre>
+        <p>and <code>xhtml2pdf</code>&rsquo;s <code>startViewer</code>, in <code>pisa.py</code> at v0.2.18, had the macOS fallback <code>os.system('open "%s"' % filename)</code> &mdash; reachable from the CLI&rsquo;s <code>-s</code>/<code>--start-viewer</code> flag, and quoted in exactly the way that does not help.</p>
+
+        <h2>Why a batch of small packages belongs on this site</h2>
+        <p>Set aside the CVSS vectors for a moment and look at what the attacker controls. Not a request body, not a config file, not a model&rsquo;s tool call &mdash; <strong>a file name</strong>. That is a category of input almost nobody treats as hostile, because for thirty years the worst it did was break a build script. It arrives from object storage, from a zip someone uploaded, from an email attachment, from a scraper, from a previous pipeline stage that named the file after a field in a document it had just parsed.</p>
+        <p>In agent plumbing this gets sharper. An agent that is told to <em>transcribe the recordings in this bucket</em> enumerates names it did not choose and passes them to a wrapper it did not audit. The sandbox discussion around such a system is almost always about the model&rsquo;s tool calls &mdash; which commands it may run, which approval gate covers them. None of that is engaged here. The model never asked to run anything. A helper library turned a data value into a command three stack frames below the policy layer, which is the same place the <a href="/posts/2026/10/emacs-tramp-cve-2026-108976-incomplete-fix-filename-command-execution/">Emacs TRAMP filename RCE</a> lived, and the same reason the <a href="/posts/2026/10/roo-code-five-command-approval-bypasses-archived-repo-mistral-vibe/">five Roo Code approval bypasses</a> were unfixable by improving the approval list: the gate and the shell were parsing different languages.</p>
+        <p>VulnCheck itself documented the end state of this pattern two months ago, in a disclosure we had not previously covered. <strong>CVE-2026-14863</strong>, published 13 August 2026 by Valentin Lobstein, is the same bug in FileRun, a commercial self-hosted file manager: the thumbnail extractors paste an uploaded file path into a double-quoted string and call <code>exec()</code>, and the filename sanitiser lets <code>$()</code> through, so <em>&ldquo;a file named <code>$(payload).mp4</code> runs its payload the moment a thumbnail is generated.&rdquo;</em> Fixed in 2026.2.1 after four years in the codebase. The write-up also names the force behind batches like today&rsquo;s, in a sentence worth sitting with: <em>&ldquo;Open-source codebases are getting shredded by AI-assisted auditing, where every researcher and their LLM greps the same GitHub repos and finds the same bugs.&rdquo;</em></p>
+        <p>That is the honest framing for eighteen records that arrived in nineteen seconds. This is not eighteen pieces of deep research. It is one well-understood pattern &mdash; <em>untrusted file name reaches a shell-interpolated string</em> &mdash; applied at scale across a package ecosystem, with a real patch attached to each instance. The scarce resource is no longer finding these. It is getting someone to merge the fix and publish an advisory, and on that measure the batch is running at exactly fifty percent.</p>
+
+        <h2>Three details worth catching before you triage</h2>
+        <ul>
+          <li><strong><code>video-stitch</code> is listed as fixed and is not, by default.</strong> The record says &ldquo;before 2.0.0-beta.1,&rdquo; and that version does exist on npm &mdash; under the <code>next</code> dist-tag. The <code>latest</code> tag still points at <strong>1.7.1</strong>, published 25 June 2021. <code>npm install video-stitch</code> installs the vulnerable version today. A scanner reading only the fixed-version field will mark this one green.</li>
+          <li><strong>Popularity does not track maintenance.</strong> The two unfixed transcription wrappers are the widely used ones: <code>nodejs-whisper</code> drew <strong>57,354 downloads last month</strong> and <code>whisper-node</code> <strong>30,928</strong>, against 1,805 for the <code>stills</code> package whose maintainer merged in twelve minutes. <code>whisper-node</code>&rsquo;s repository has 307 stars, 31 open issues, and no push since <strong>5 August 2024</strong>; its newest npm release predates the current whisper.cpp CLI. It is not archived, so nothing on the package page warns you.</li>
+          <li><strong>Fixed upstream is not fixed downstream.</strong> <code>webp-converter</code>&rsquo;s fix came as a TypeScript rewrite released as 3.0.0; the vulnerable API lived in <code>src/webpconverter.js</code>, which no longer exists. That is a major-version migration, not a patch bump, and pinned dependents will not take it automatically. Same story for <code>snappdf</code> (1.1.0 &rarr; 6.1.0).</li>
+        </ul>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Grep your pipeline for the pattern, not the package list.</strong> Eighteen CVEs is a sample, not a census. Search for template literals and string concatenation feeding <code>child_process.exec</code>, <code>execSync</code>, <code>shelljs.exec</code>, <code>execa</code> with <code>shell: true</code>, <code>os.system</code>, and <code>subprocess</code> with <code>shell=True</code>. Any of those carrying a path variable is the same bug under a different CVE number.</li>
+          <li><strong>Upgrade where a fix exists:</strong> <code>git-diff</code> &ge; 2.0.7, <code>webp-converter</code> &ge; 3.0.0 (current 3.0.1), <code>buildebooks</code> &ge; 0.2.2, <code>@mborne/extract</code> &ge; 0.2.1, <code>xhtml2pdf</code> &ge; 0.2.19 (current 0.2.23), <code>snappdf</code> &ge; 6.1.0, <code>@offactory/compress-fonts</code> &ge; 1.1.1, <code>stills</code> &ge; 25.24.2. For <code>video-stitch</code> you must pin <code>2.0.0-beta.1</code> explicitly.</li>
+          <li><strong>For the nine with no fix, do not wait for one.</strong> Four of the nine packages have had no release in over five years. The practical mitigations are to wrap the call yourself with an argv-array spawn, or &mdash; cheaper and more robust &mdash; to never pass an externally supplied name through. Copy the input to a random, charset-restricted path (<code>[A-Za-z0-9._-]</code>, no leading dash) before invoking any converter, and map the result back afterwards. This also fixes the argument-injection variant that quoting and escaping both miss.</li>
+          <li><strong>Treat file names as untrusted input in your threat model, in writing.</strong> If a document&rsquo;s metadata, a model&rsquo;s output, or a remote server&rsquo;s <code>Content-Disposition</code> header can influence a name on disk, that name is attacker-controlled data with a path to <code>argv[0]</code>.</li>
+          <li><strong>If you maintain one of these packages, publish a GHSA.</strong> A merged patch protects people who upgrade. An advisory is what tells <code>npm audit</code>, Dependabot, and every SCA scanner that the old version is dangerous &mdash; and as of this writing, most of the nine fixed packages in this batch have no repository advisory at all.</li>
+        </ul>
+
+        <p><em>Verification note: all eighteen CVE identifiers, publication timestamps, CVSS 4.0 vectors and base scores, CWE assignments, affected and fixed version ranges, vulnStatus values, the VulnCheck CNA attribution, and every reference URL were read first-hand from the NVD 2.0 API. The state, title, author, creation time and merge time of all nineteen referenced pull requests, the maintainer and reporter comments quoted from the webp-converter thread, the xhtml2pdf fix commit f86380dad15b3a6810201d08755a3ee6b19d5063 (12 September 2026, Luis Z&aacute;rate, 48 files) and the buildebooks merge commit 123776c9 (13 October 2026 22:00:38 UTC) were read first-hand from the GitHub API. Vulnerable source was fetched directly at the commits and tags pinned in the CVE references: whisper-node src/whisper.ts at c72944cf, nodejs-whisper src/utils.ts at v0.3.1, thumbnail/thumbnail.py at 23b2e305, xhtml2pdf/pisa.py at v0.2.18, and stills lib/content/video.js at 66d5def1 &mdash; all code blocks above are verbatim from those files. Current versions, publish timestamps, dist-tags and last-month download counts came from the npm registry and PyPI JSON APIs on 14 October 2026; repository metadata (stars, open issues, archived status, last push) from the GitHub API. The FileRun comparison and both quoted sentences come from VulnCheck&rsquo;s own disclosure blog post for CVE-2026-14863, fetched directly. Brave Search returned only CVE-mirror aggregators for these identifiers and no analytical coverage. We installed none of these packages, crafted no file names, ran no converter, and executed no proof of concept; every mechanism described above is read from source.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110644?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110644, nodejs-whisper through 0.3.1 OS command injection in convertToWavType (published 14 October 2026, CVSS 4.0 9.3, CWE-78)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110640?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110640, whisper-node through 1.1.1 OS command injection via filePath and language</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110650?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110650, thumbnail through 1.5 OS command injection in generate_thumbnail</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110645?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110645, video-stitch before 2.0.0-beta.1 (the fixed version npm&rsquo;s latest tag does not point at)</a></li>
+          <li><a href="https://github.com/ariym/whisper-node/blob/c72944cfa48f5c74662ff17ee2dc1d5f7624393e/src/whisper.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">whisper-node src/whisper.ts &mdash; createCppCommand, the unquoted template literal (read at the pinned commit)</a></li>
+          <li><a href="https://github.com/ChetanXpro/nodejs-whisper/blob/v0.3.1/src/utils.ts?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">nodejs-whisper src/utils.ts at v0.3.1 &mdash; the double-quoted ffmpeg command passed to shelljs exec</a></li>
+          <li><a href="https://github.com/scionoftech/webp-converter/pull/53?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">webp-converter PR #53 &mdash; closed unmerged; maintainer thread on rolling the fix into the 3.0.0 TypeScript rewrite and the request to publish a GHSA</a></li>
+          <li><a href="https://github.com/shahkashani/stills/pull/30?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">stills PR #30 &mdash; &ldquo;Finish the shell-injection fix: two more paths reach a shell in 25.24.1&rdquo; (merged 6 August 2026)</a></li>
+          <li><a href="https://www.vulncheck.com/blog/filerun-thumbnail-command-injection-rce?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck &mdash; FileRun: When Your File Manager Runs Your Files (CVE-2026-14863, Valentin Lobstein, 13 August 2026)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">One Fix, One Docstring, One Untouched: Three agno CVEs Record What a 42,000-Star Agent Framework Decided to Treat as a Bug</a></h3><p>NVD published CVE-2026-108816, 108817 and 108818 against agno on 12 October 2026, from three reports filed on 8 September. The maintainers answered one with a thorough code fix, one with a docstring, and one with nothing. We read every file at main HEAD to establish which is which.</p><a class="text-link" href="/posts/2026/10/agno-three-cves-pythontools-codingtools-agentos-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Nine CVEs, Three Dead Fix PRs — vLLM’s October Batch and the Bookkeeping Problem Behind AI-Found Bugs</a></h3><p>CVE-2026-105752 through CVE-2026-105760 reached NVD on 5 October 2026 — nine vLLM flaws, every one credited to Patch the Planet and discovered with GPT-5.5-Cyber. We read the source at seven release tags: the fixes are real, but three of the nine point at pull requests that were never merged, and the machine-readable version ranges ship typos like ‘&gt;= 30.0.0’.</p><a class="text-link" href="/posts/2026/10/vllm-nine-cve-batch-patch-the-planet-unmerged-fix-prs/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/nvidia-october-2026-ai-stack-bulletins-18-cves-aistore-10-0/">The Fix Shipped in August, the CVE Arrived in October: NVIDIA&amp;rsquo;s 18-CVE AI-Stack Batch</a></h3><p>NVIDIA PSIRT published six AI-stack security bulletins on 13 October 2026 covering 18 CVEs, including a CVSS 10.0 in AIStore. Every named &amp;ldquo;updated version&amp;rdquo; was already public &amp;mdash; between 46 and 180 days earlier &amp;mdash; one is a beta, and for the 10.0 the version the bulletin names still carries the vulnerable API.</p><a class="text-link" href="/posts/2026/10/nvidia-october-2026-ai-stack-bulletins-18-cves-aistore-10-0/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
