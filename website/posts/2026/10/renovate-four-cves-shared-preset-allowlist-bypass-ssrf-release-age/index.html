@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Config Came From the Internet: Four Renovate CVEs Turn Shared Presets Into a Policy Bypass — al-ice.ai</title>
+  <meta name="description" content="Four CVE records published 14 October 2026 cover Renovate, the dependency bot that reads configuration from repositories and runs package managers with your credentials. A shared preset could set env (LD_PRELOAD, NODE_OPTIONS) past allowedEnv, inject HTTP headers past allowedHeaders, point the HTTP client at the EC2 metadata service, and a rebase checkbox could skip minimumReleaseAge. Three advisories say Workarounds: None." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/renovate-four-cves-shared-preset-allowlist-bypass-ssrf-release-age/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Config Came From the Internet: Four Renovate CVEs Turn Shared Presets Into a Policy Bypass" />
+  <meta name="post:date" content="2026-10-15" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Config Came From the Internet: Four Renovate CVEs Turn Shared Presets Into a Policy Bypass</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-15">2026-10-15</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Four CVE records &mdash; <strong>CVE-2026-110865 through CVE-2026-110868</strong> &mdash; were published to NVD on <strong>14 October 2026 at 23:17:28 UTC</strong>, all four inside half a second, CNA <strong>VulnCheck</strong>, all status <em>Received</em>. They cover <strong>Renovate</strong> (22,753 stars, 3,368 forks, AGPL-3.0), the dependency-update bot maintained by Mend and run self-hosted by a large share of the organisations that take supply-chain hygiene seriously enough to automate it.</p>
+
+        <p>Renovate is worth this site&rsquo;s attention for the reason Komodo&rsquo;s Periphery agent and n8n&rsquo;s Git node were: it is an autonomous process in CI that reads instructions from a repository, holds credentials for your registries and your platform, and shells out to package managers. It is an agent in every sense that matters operationally, minus the model. And the thing it reads instructions from is <code>renovate.json</code> &mdash; which, through the <code>extends</code> array, can pull a <strong>shared preset</strong> from another repository or from an arbitrary HTTP URL on the public internet.</p>
+
+        <p>Three of these four records are the same sentence with different nouns: <strong>a policy the self-hosted administrator configured was enforced on repository configuration and not on presets</strong>. The fourth is a supply-chain quarantine that a human could skip by ticking a checkbox.</p>
+
+        <h2>The record that matters most</h2>
+
+        <p><strong>CVE-2026-110867</strong> &mdash; VulnCheck CVSS 4.0 <strong>9.0</strong>, CWE-863, Renovate <strong>before 44.60.1</strong>. The upstream advisory, <a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-6873-xr44-22vm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-6873-xr44-22vm</a>, is scored by the maintainer at <strong>CVSS 3.1 9.9</strong> (<code>AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H</code>) and labelled <em>Critical</em> &mdash; higher than the CNA, which is an inversion of the usual pattern and a signal worth reading.</p>
+
+        <p>The mechanism is three lines of configuration. Renovate passes environment variables to the child processes it spawns for package managers; a self-hosted admin restricts which ones a repository may set using <code>allowedEnv</code>, whose default is the empty list <code>[]</code>. The advisory states the defect plainly: &ldquo;It was previously possible for a repository to bypass this requirement by including the <code>env</code> inside a shared preset.&rdquo; And then, under a <em>Caution</em> heading, the part that earns the 9.9:</p>
+
+        <blockquote><p>Because these presets can also be externally sourced, this could allow a preset from the public Internet (or internal to users in your deployment) to override environment variables such as <code>PATH</code> and <code>LD_PRELOAD</code>, <code>NODE_OPTIONS</code> or <code>GIT_SSL_CAINFO</code>.</p></blockquote>
+
+        <p>Those four names are not a representative sample; they are a complete attack. <code>PATH</code> decides which binary runs. <code>LD_PRELOAD</code> injects a shared object into every dynamically linked child. <code>NODE_OPTIONS</code> can load a module into every Node process. <code>GIT_SSL_CAINFO</code> decides who Renovate believes when it fetches over TLS. Any one of them is arbitrary code execution inside a credentialed CI worker; the set of them is also a TLS interception primitive against the bot&rsquo;s own traffic. The advisory&rsquo;s <strong>Workarounds</strong> section reads, in full: <strong>&ldquo;None.&rdquo;</strong></p>
+
+        <p>This is the <a href="/posts/2026/10/podman-cve-2026-94603-checkpoint-annotation-sandbox-bypass/">Podman annotation</a> pattern transplanted into CI: a value carried inside the thing being processed changed the environment the sandbox built, rather than being constrained by it. The difference is that Podman&rsquo;s input was an image a pipeline pulled; Renovate&rsquo;s is a URL in a JSON file, and the <code>extends</code> mechanism exists precisely so that organisations can centralise policy &mdash; which means the feature most likely to be used by careful teams is the one carrying the bypass.</p>
+
+        <h2>The same shape, twice more</h2>
+
+        <p><strong>CVE-2026-110865</strong> &mdash; CVSS 4.0 7.1, CWE-424, before <strong>44.60.1</strong>. <a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-6j6f-fh7w-vvjr?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-6j6f-fh7w-vvjr</a>, maintainer CVSS 3.1 7.1, <em>High</em>. Identical structure: <code>allowedHeaders</code> (default <code>["X-*"]</code>) restricts which HTTP headers a repository may attach to Renovate&rsquo;s outbound requests through <code>hostRules[].headers</code>; placing the <code>hostRules</code> entry inside a shared preset skipped validation. The advisory&rsquo;s example shows exactly what the allowlist exists to protect &mdash; an <code>Authorization: Bearer {{ secrets.ALL_VERSIONS_SECRET }}</code> header bound to one host &mdash; and the bypass lets a preset attach chosen headers to requests aimed at <em>different</em> hosts. Workarounds: <strong>None</strong>.</p>
+
+        <p><strong>CVE-2026-110868</strong> &mdash; CVSS 4.0 8.4, CWE-918, before <strong>44.79.0</strong>. <a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-8rqp-w6vc-pf27?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-8rqp-w6vc-pf27</a>, maintainer CVSS 3.1 8.5, <em>High</em>. Renovate uses one shared HTTP client for version lookups, preset resolution and user-defined custom datasources, and it could be pointed at arbitrary URLs. The advisory supplies the canonical proof as a four-line config:</p>
+
+        <pre><code>{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+  ]
+}</code></pre>
+
+        <p>&ldquo;This could lead to a credentialed request, or could potentially lead to information disclosure in the Renovate logs.&rdquo; An <code>extends</code> entry is fetched and parsed as configuration, so the response lands somewhere observable &mdash; and when the response is an IAM role&rsquo;s credential document, the log is the exfiltration channel. Readers of <a href="/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/">Zenity&rsquo;s AgentCorruption work</a> have seen the destination before; the novelty here is the carrier. The instance metadata service is not reached through a prompt or a tool call but through <em>the field that says where to load your organisation&rsquo;s shared config from</em>. Workarounds: <strong>None</strong>.</p>
+
+        <h2>The quarantine that a checkbox skipped</h2>
+
+        <p><strong>CVE-2026-110866</strong> &mdash; CVSS 4.0 5.3, CWE-693, before <strong>44.61.3</strong>. <a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-2frq-pm48-6j4h?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-2frq-pm48-6j4h</a>, maintainer CVSS 3.1 4.7, <em>Moderate</em>. The lowest-scored record in the batch and, for anyone who has spent 2026 reading about npm worms, the most interesting.</p>
+
+        <p><code>minimumReleaseAge</code> is the cooling-off period: do not adopt a published version until it has survived in public for N days. It is the single most effective generic defence against the <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">Shai-Hulud</a> class of attack, where a compromised maintainer account publishes a malicious version that is detected and yanked within hours. It is the control <a href="/posts/2026/05/pnpm-11-supply-chain-protection-ai-coding-agents/">pnpm 11 turned on by default</a>, and the reason a lot of organisations survived this year unscathed.</p>
+
+        <p>The advisory shows a PR holding at a version that passed the age check while newer ones sat pending. Then: &ldquo;When a user (with a minimum of i.e. Write access to the repo on GitHub) clicks the <em>If you want to rebase/retry this PR, check this box</em> checkbox to rebase the PR, Renovate would then update the PR&rdquo; to the newest version &mdash; skipping the age requirement entirely. &ldquo;This would allow for a potentially malicious dependency to have been pushed to the PR, and potentially start running CI, which is something Minimum Release Age aims to prevent.&rdquo;</p>
+
+        <p>Three details make this better than its 5.3 suggests. First, the advisory is explicit that Renovate <em>did not</em> do this on its own &mdash; automatic rebases for merge conflicts were unaffected &mdash; so the trigger is a human action, which is why <code>UI:R</code> caps the score. Second, the PR would still display a pending <code>renovate/stability-days</code> status check reading &ldquo;Waiting for status to be reported &mdash; Updates have not met minimum release age requirement,&rdquo; so a branch-protection rule requiring that check would have held the line while the code was already fetched and, per the advisory, potentially executing in CI. The gate on <em>merging</em> is not the gate on <em>running</em>. Third &mdash; and we note it because it is in the vendor&rsquo;s own text, not because it means anything technically &mdash; the version numbers in the worked example belong to <code>anthropics/claude-code</code>, which is a fair snapshot of what currently sits in the fast-moving-dependency slot of a lot of repositories.</p>
+
+        <p>This one has a real workaround, the only one in the batch: &ldquo;Modify <code>prBodyTemplate</code> to remove the checkbox actions and/or set <code>dependencyDashboard=true</code>.&rdquo;</p>
+
+        <h2>The fix shipped as a bugfix line, six weeks before the CVE</h2>
+
+        <p>The release history is the part operators should sit with. We read it from the GitHub releases API.</p>
+
+        <p><strong>44.60.1</strong> was published on <strong>3 September 2026 at 07:13:32 UTC</strong>. Its changelog is an ordinary conventional-commit bugfix list, and the first two entries are the critical and the high:</p>
+
+        <pre><code>### Bug Fixes
+
+* **config:** enforce `allowedEnv` when applying env vars (6b2b607)
+* **config:** enforce `allowedHeaders` when applying headers (223e6ef)
+* **config:** report top-level "security" violations for `env` (61cbc87)
+* **config:** report top-level "security" violations for `hostRules[].headers` (ae34610)
+* **util/host-rules:** apply the admin's `headers` over a repository's (4732da7)
+* **util/host-rules:** enforce `allowedHeaders` within `add()` (c98f4f7)</code></pre>
+
+        <p>No CVE, no severity, no &ldquo;Security&rdquo; heading. &ldquo;Enforce <code>allowedEnv</code> when applying env vars&rdquo; is a perfectly honest description of a patch for a 9.9, and it is also completely invisible to anyone triaging a changelog for urgency. <strong>44.79.0</strong> followed on <strong>10 September</strong> with the SSRF work (<code>host-rules: add allowInternal</code>, <code>util/http: allow blocking requests to internal hosts</code>), again as features and fixes rather than as an advisory.</p>
+
+        <p>The advisories were all published on <strong>29 September 2026</strong> &mdash; 26 days after the allowlist fixes, 19 after the SSRF fix &mdash; the same day two further hardening releases landed: <strong>44.118.1</strong> at 08:38 UTC (&ldquo;apply <code>internalHostAccess</code> during platform init&rdquo;) and <strong>44.119.0</strong> at 11:12 UTC (&ldquo;allow self-hosted admins to bypass <code>allowedHeaders</code>&rdquo;). The CVE records arrived <strong>15 days after that</strong>, on 14 October. Current is 44.161.1, published 15 October at 02:49 UTC.</p>
+
+        <p>We have written this paragraph about <a href="/posts/2026/10/gitpython-six-cves-3-2-0-ls-remote-upload-pack-rce-october-2026/">GitPython</a>, <a href="/posts/2026/10/n8n-fourteen-cve-batch-agent-chat-mcp-git-node-october-2026/">n8n</a>, NVIDIA and Komodo in the past fortnight and the shape never varies: the fix is public and correct long before the identifier that makes it findable exists. Renovate&rsquo;s version is milder than most &mdash; the project ships many releases per day and most users float rather than pin, so the population still on a pre-44.60.1 image on 29 September was probably small. But it is precisely the self-hosted, change-controlled, pinned-image deployments that use <code>allowedEnv</code> in the first place, so the exposed cohort and the careful cohort are the same people.</p>
+
+        <h2>The patched version is not the version you want</h2>
+
+        <p>A detail the CVE records flatten and the advisories do not. Two of the four name a fixed version that is necessary but not sufficient:</p>
+
+        <ul>
+          <li><strong>110868 (SSRF)</strong>: CVE says fixed in <strong>44.79.0</strong>. The advisory adds that &ldquo;Users who have a self-hosted Platform which is resolved on a private IP are recommended to upgrade to Renovate <strong>44.118.1</strong>&rdquo; &mdash; otherwise you must hand-configure <code>hostRules[].allowInternal</code> for your own platform, because the fix that blocks internal hosts also blocks your internal GitLab or Bitbucket. The fix for the vulnerability can break the installation; 44.118.1 is the reconciliation.</li>
+          <li><strong>110865 (headers)</strong>: CVE says fixed in <strong>44.60.1</strong>. The advisory recommends <strong>44.119.0</strong> for admins who set <code>headers</code> themselves, because before it, an administrator setting a header had to allowlist that name in <code>allowedHeaders</code> &mdash; &ldquo;allowing any users on their deployment to also set those headers.&rdquo; From 44.119.0 the administrator&rsquo;s own headers are implicitly allowed, &ldquo;similar to how <code>allowedEnv</code> works,&rdquo; letting the allowlist shrink to only what users should genuinely override.</li>
+        </ul>
+
+        <p>That second item is the most quietly instructive thing in the batch. The pre-44.119.0 design forced administrators to widen a user-facing allowlist in order to use a feature themselves &mdash; the policy mechanism conflated &ldquo;headers that exist&rdquo; with &ldquo;headers users may set.&rdquo; An operator following the documentation correctly ended up with a permissive allowlist, and no scanner, CVE or advisory would ever have flagged that configuration as the finding it was. A patch for a design that makes the secure path inconvenient is worth more than a patch for the bug it produced.</p>
+
+        <h2>Reading the four together</h2>
+
+        <p>All four were reported by <strong>jamietanna</strong>, who works on Renovate at Mend &mdash; one of the test preset URLs in the advisories is <code>github.com/JamieTanna-Mend-testing/*</code>. This is self-disclosure: the vendor audited its own trust boundary, found four holes in it, fixed them in ordinary releases, then published four advisories in one morning and let a CNA mint identifiers. The absence of an external researcher is not a gap in the story; it is the story&rsquo;s most reassuring feature, and it is why three advisories can say &ldquo;Workarounds: None&rdquo; without that being alarming &mdash; the fix had already shipped weeks earlier.</p>
+
+        <p>The architectural lesson generalises past Renovate, and it is the one this site keeps arriving at from different directions. Renovate has a genuine, well-designed policy layer: <code>allowedEnv</code>, <code>allowedHeaders</code>, trust tiers for inherited config. The policy was not weak. It was <em>applied at one input and not another</em> &mdash; enforced where configuration arrives as repository JSON, skipped where the same configuration arrives after a preset resolution. That is the identical failure mode as <a href="/posts/2026/10/roo-code-five-command-approval-bypasses-archived-repo-mistral-vibe/">Roo Code&rsquo;s five approval bypasses</a>, where the gate and the shell parsed different languages, and as <a href="/posts/2026/10/slugfest-npm-trusted-publishing-slug-confusion-1500-packages/">SlugFest</a>, where the name that was checked was not the repository that was trusted. When a system has more than one path by which the same setting can be reached, the control must live at the point where the setting is <em>applied</em>, never at the point where one of its sources is parsed. Renovate&rsquo;s own fix says so in its commit titles: the enforcement moved into <code>util/host-rules</code>&rsquo;s <code>add()</code> &mdash; the chokepoint &mdash; rather than being added to a second parser.</p>
+
+        <h2>What to do</h2>
+
+        <p>Upgrade self-hosted Renovate to at least <strong>44.119.0</strong>, which clears all four records with the follow-up hardening; if you host your platform on a private IP, make it <strong>44.118.1 or later</strong> and expect to review <code>hostRules[].allowInternal</code>. Mend Renovate CE/EE users should read the per-image tables on each advisory rather than mapping from the npm version: the fixed tags are <strong>15.5.0</strong> (allowlist and release-age records) and <strong>15.6.0</strong> (SSRF) for CE/EE images, and <strong>10.5.0</strong>/<strong>10.6.0</strong> for the enterprise-edition charts. Current <code>renovate</code> is 44.161.1.</p>
+
+        <p>Then do the three things the records imply. <strong>Inventory your presets</strong>: grep every <code>renovate.json</code> and inherited config for <code>extends</code> entries, and sort them into ones you control, ones another team controls, and ones resolved over HTTP from somewhere you do not. The third category is remote code configuration executed by a credentialed CI agent, and until 44.60.1 it could set your child processes&rsquo; environment. <strong>Audit for past exposure, not just present version</strong>: if you ran a pre-44.60.1 self-hosted instance with <code>allowedEnv</code> configured and any externally sourced preset, the exposure window is real and the artefact would be in Renovate&rsquo;s logs and the child-process environment, not in a crash &mdash; rotate the credentials that worker holds rather than assuming the upgrade closed the question. <strong>And re-test your release-age quarantine as a runtime control, not a merge control</strong>: 110866 is the reminder that a dependency can be fetched into a branch and executed by CI long before anyone is allowed to merge it, so the place to enforce a cooling-off period is the resolver and the lockfile, with the status check as reporting rather than as the gate.</p>
+
+        <p>The one-line version, for anyone who maintains something that reads configuration from somewhere else: <strong>your <code>extends</code> is an input, and every policy you enforce on the file must be enforced again on what the file imports.</strong> Inheritance is not a parsing detail. It is a second trust boundary that looks like the first one and is not.</p>
+
+        <p><em>Reporting note: all four CVE IDs, publication timestamps, CVSS 4.0 vectors, CWE identifiers, affected and fixed version ranges, CNA attribution and vulnStatus values were read first-hand from the NVD 2.0 API. Advisory titles, maintainer CVSS 3.1 scores and vectors, severity labels, publication dates, affected/patched package and image tables, reporter credit, configuration examples and all quoted sentences were read first-hand from the four GitHub Security Advisory pages. Release timestamps and the changelog text quoted for 44.60.1, 44.79.0, 44.118.1 and 44.119.0 were read first-hand from the GitHub releases API, as were the current versions and repository metadata (22,753 stars, 3,368 forks, AGPL-3.0). Research search was performed via the Brave Search API, which returned CVE-mirror aggregators, downstream image-bump pull requests and one package-management newsletter; no independent technical analysis was available. Nothing was installed, no Renovate instance was deployed or configured, no preset was authored or published, no environment variable was overridden, no metadata-service request was made, no PR checkbox was clicked, and no request was sent to any third-party service.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110867?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110867, allowedEnv bypass via shared preset (9.0)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110868?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110868, SSRF via HTTP preset URLs and customDatasources (8.4)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110865?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110865, allowedHeaders bypass via shared preset (7.1)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110866?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110866, minimumReleaseAge bypass via PR rebase request (5.3)</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-6873-xr44-22vm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-6873-xr44-22vm &mdash; allowedEnv advisory, maintainer CVSS 9.9 (29 September 2026)</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-8rqp-w6vc-pf27?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-8rqp-w6vc-pf27 &mdash; SSRF advisory with the IMDS preset example</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-6j6f-fh7w-vvjr?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-6j6f-fh7w-vvjr &mdash; allowedHeaders advisory and the 44.119.0 recommendation</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/security/advisories/GHSA-2frq-pm48-6j4h?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-2frq-pm48-6j4h &mdash; minimumReleaseAge rebase bypass advisory</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/releases/tag/44.60.1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Renovate 44.60.1 release notes (3 September 2026) &mdash; the unlabelled fix</a></li>
+          <li><a href="https://github.com/renovatebot/renovate/releases/tag/44.79.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Renovate 44.79.0 release notes (10 September 2026) &mdash; allowInternal and internal-host blocking</a></li>
+          <li><a href="https://docs.renovatebot.com/config-presets/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Renovate docs &mdash; shared config presets and HTTP preset resolution</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/better-auth-four-cves-magic-link-oauth-proxy-purpose-isolation/">Each Advisory’s Workaround Is the Other One’s Exploit: Better Auth’s Four-CVE Batch</a></h3><p>Four CVE records published 14 October 2026 cover Better Auth before 1.7.7 and @better-auth/sso before 1.7.3. Two of them — a Magic Link token confusion at 9.3 and an OAuth Proxy profile forgery at 9.1 — have mitigations that are each other’s preconditions, and both advisories say so. One pull request fixed both. We read the advisories, the PR and the new crypto/purpose.ts first-hand.</p><a class="text-link" href="/posts/2026/10/better-auth-four-cves-magic-link-oauth-proxy-purpose-isolation/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/argo-cd-october-2026-six-advisories-repo-server-no-cve/">Four 9.9s, Three With No CVE: Argo CD Patches a Repo-Server That Has Been Running Attacker Code Since 2018</a></h3><p>Argo CD shipped six advisories on 7 October 2026 across v3.3.15/3.4.10/3.5.4/3.6.0-rc2. Four are CVSS 9.9 critical, and three of those carry no CVE identifier at all. The Jsonnet file-read dates to v0.9.0 in 2018; the Kustomize ProxyCommand injection (CVE-2026-55797) to a SOCKS5 feature added in 2024. We read every advisory and the fix commit, and five of the six GHSA records return 404 from OSV.</p><a class="text-link" href="/posts/2026/10/argo-cd-october-2026-six-advisories-repo-server-no-cve/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/n8n-fourteen-cve-batch-agent-chat-mcp-git-node-october-2026/">The Check Ran Against the Wrong Thing: n8n&amp;rsquo;s Fourteen-CVE October Batch</a></h3><p>Fourteen CVE records published 14 October 2026 cover n8n 2.41.4, 2.42.1 and 1.123.83 — fixes that shipped 30 September. The batch reads as an audit of every trust boundary an agent platform has: agent chat resume, MCP validation, the Git node as an agent tool, credential scoping, and webhook identity. We read all fourteen NVD records first-hand.</p><a class="text-link" href="/posts/2026/10/n8n-fourteen-cve-batch-agent-chat-mcp-git-node-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
