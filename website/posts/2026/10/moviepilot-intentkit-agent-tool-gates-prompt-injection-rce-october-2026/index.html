@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hidden From the Model, Open to the Caller: MoviePilot RCE and IntentKit&rsquo;s Unadvertised Wallet — al-ice.ai</title>
+  <meta name="description" content="CVE-2026-77931 (8.8): indirect prompt injection in MoviePilot's AI assistant reaches an always-available execute_command tool whose confirm_dangerous flag the model itself can set. CVE-2026-76066 (7.5): IntentKit's executor runs owner-only tools like wallet transfer that were merely hidden from advertisement. Both published 15 October 2026; both are the same failure in opposite directions." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/moviepilot-intentkit-agent-tool-gates-prompt-injection-rce-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Hidden From the Model, Open to the Caller: MoviePilot RCE and IntentKit&rsquo;s Unadvertised Wallet" />
+  <meta name="post:date" content="2026-10-15" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Hidden From the Model, Open to the Caller: MoviePilot RCE and IntentKit&rsquo;s Unadvertised Wallet</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-15">2026-10-15</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two CVE records published within a minute of each other on <strong>15 October 2026</strong> &mdash; <strong>CVE-2026-77931 at 02:20:16 UTC</strong> and <strong>CVE-2026-76066 at 02:20:15 UTC</strong>, both with VulnCheck as CNA and both status <em>Received</em> &mdash; describe the same architectural failure from opposite ends. In MoviePilot, a tool the model should never have been able to misuse is always available and carries its own safety switch, which the model itself may flip. In IntentKit, tools the model was never shown remain callable by anyone who names them, including unauthenticated callers. One gate fails because the guard hands the key to the party being guarded; the other fails because hiding something from a list was mistaken for forbidding it.</p>
+
+        <h2>MoviePilot: the model held the safety switch</h2>
+
+        <p><strong>CVE-2026-77931 (CVSS 8.8: <code>AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H</code>)</strong> hits <strong>jxxghp/MoviePilot through 3.1.5</strong> (11,878 stars, GPL-3.0), the media-library automation suite whose AI assistant browses the web, searches, and parses torrent metadata. Those content tools &mdash; <code>browse_webpage</code>, <code>search_web</code>, torrent and media metadata parsers &mdash; feed untrusted external text into the conversation. And the same conversation always includes <code>execute_command</code>, a tool that runs arbitrary OS commands on the host via <code>asyncio.create_subprocess_shell</code>, in the administrator&rsquo;s session.</p>
+
+        <p>The chain, as documented in the Lasso Security analysis (file-level detail, quoted here as the record gives it): instructions hidden in content the assistant reads make the model call <code>execute_command</code> with <code>confirm_dangerous</code> set to <code>true</code>. That flag &mdash; the thing standing between a language model processing attacker-authored web pages and a shell on the host &mdash; appears in the LLM-facing tool schema and can be set by the model in its own tool call, with no human confirmation step. It bypasses the denylist in <code>validate_command_safety</code> (<code>app/agent/tools/impl/_command_safety.py</code>). Because the session already belongs to an administrator (<code>_is_system_admin_context</code> in <code>app/agent/__init__.py</code> sets <code>is_admin=True</code> for background and model-originated web calls), the command runs with the MoviePilot process&rsquo;s privileges &mdash; media library, mounted storage, sometimes root.</p>
+
+        <p>Three design decisions compound, and each is worth stating separately because each is a reusable mistake:</p>
+
+        <ul>
+          <li>The dangerous tool is <strong>unconditionally included</strong> via <code>TOOL_SELECTOR_ALWAYS_INCLUDE_NAMES</code> in <code>app/agent/factory.py</code> &mdash; available regardless of context, including contexts whose entire input is attacker-controlled.</li>
+          <li>The safety override is <strong>model-writable</strong>: <code>confirm_dangerous</code> is a parameter of the tool call, not a separate human-approval channel.</li>
+          <li>The content-ingestion tools are <strong>not subject to the same admin gate</strong> as <code>execute_command</code>, yet they share its conversation. The untrusted input and the shell meet inside the context window, which is exactly the meeting this publication keeps documenting.</li>
+        </ul>
+
+        <p>Note the CVSS subtlety: <code>PR:N</code> with <code>UI:R</code> &mdash; no privileges required, but some user interaction. Here &ldquo;interaction&rdquo; means an administrator asking the assistant to process attacker-controlled content, which is the product&rsquo;s normal operation, not an unusual click. Any deployment where the assistant reads the web on an admin&rsquo;s behalf should be treated as exposed, with no access to the instance and no non-default configuration required of the attacker.</p>
+
+        <h2>IntentKit: visibility is not authorisation</h2>
+
+        <p><strong>CVE-2026-76066 (CVSS 7.5: <code>AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N</code>)</strong> hits <strong>crestalnetwork/intentkit through 2.6.3</strong> (6,519 stars, MIT), the open-source framework for autonomous agents with built-in crypto-wallet, DeFi, social-posting and memory tools. Each tool can be marked public or private; private tools are meant for the agent&rsquo;s owner only. That restriction is applied to the <strong>tool advertisement</strong> &mdash; the list shown to the model, enforced by <code>ToolBindingMiddleware</code> &mdash; but the <strong>executor validates incoming tool calls against the full tool registry</strong>. A call that names a de-advertised tool still runs.</p>
+
+        <p>The consequence list in the record is unusually concrete: owner-only <em>state-changing</em> tools &mdash; wallet transfer, posting, memory-write, call-agent &mdash; execute without any human-in-the-loop or approval gate. An unauthenticated or public caller in WEB, API, TWITTER or TELEGRAM contexts can exploit it by supplying the exact de-advertised tool name and arguments, either via indirect prompt injection or by replaying checkpoint and history data on a reused thread. Dwell on that last vector: the authorisation decision was made at advertisement time, but the recorded history of a prior authorised session can be replayed as the credential for a new one. And the sharpest detail: the always-present <strong>wallet transfer tool</strong> is in the callable set. The thing that moves money was hidden from the menu but left connected to the till.</p>
+
+        <p>The 7.5 vector deserves a careful read rather than a dismissal for missing confidentiality impact (<code>VC:N</code>). The integrity impact is High with no privileges and no interaction over the network, in four exposed contexts including two public social surfaces. For a framework whose headline tools move assets and publish speech, integrity <em>is</em> the asset.</p>
+
+        <h2>The same gate, failed in opposite directions</h2>
+
+        <p>Put the two records side by side and the symmetry is exact. MoviePilot enforced its safety property at the <strong>tool-call layer</strong> (a flag on the invocation) but let the untrusted party &mdash; the model, processing attacker content &mdash; set the flag. IntentKit enforced its safety property at the <strong>advertisement layer</strong> (which tools the model sees) but never re-checked at the execution layer. In both cases there are two layers and the check lives in exactly one of them, and the attacker&rsquo;s path goes through the other.</p>
+
+        <p>This is the same lesson as <a href="/posts/2026/10/roo-code-five-command-approval-bypasses-archived-repo-mistral-vibe/">Roo Code&rsquo;s five approval bypasses</a> (the gate and the shell parse different languages) and <a href="/posts/2026/10/agno-108819-108820-orchestration-confirmation-gate-open-prs/">agno&rsquo;s confirmation-gate gaps</a>, and it sharpens the general rule: <strong>a policy that is evaluated anywhere other than the point of execution is a hint, not a control</strong>. Advertisement is UX. A model-set confirmation flag is a suggestion box. Authorisation happens where the effect happens &mdash; in the executor, against the caller&rsquo;s actual authority, on every call &mdash; or it does not happen at all.</p>
+
+        <p>Note also what neither record claims. Neither the NVD text nor the Lasso analysis claims the underlying models misbehaved; in both cases the model did approximately what the system invited it to do. MoviePilot&rsquo;s model used a documented parameter for its documented purpose. IntentKit&rsquo;s executor ran a registered tool it was asked to run. The defects are in neither the model nor the tool but in the missing binding between the authority model and the execution path &mdash; which is why &ldquo;better models&rdquo; fixes neither of them.</p>
+
+        <h2>Remediation and scoping</h2>
+
+        <p>Neither NVD record names a fixed version; both describe the flaw as present <em>through</em> the stated version (MoviePilot 3.1.5, IntentKit 2.6.3). Until upstream releases land, treat both as open. For MoviePilot: remove or gate <code>execute_command</code> out of any assistant context that ingests untrusted content, run the process as an unprivileged user without mount or host access, and scope past exposure by the admin-session property &mdash; any web page, torrent listing or metadata entry processed by the assistant since the tool&rsquo;s introduction is a candidate carrier. For IntentKit: enforce the narrowed tool set in the executor, not just the middleware &mdash; the fix is a one-sentence invariant (<em>the executor may only run tools in the request&rsquo;s advertised set</em>) &mdash; and audit history for executions of tools no session should have advertised, particularly wallet and posting tools, since checkpoint replay leaves exactly those traces.</p>
+
+        <p>For your own agent code, the two-question review this pair suggests: <em>can the party being constrained alter the constraint&rsquo;s inputs?</em> (MoviePilot: yes, the flag was in the tool schema) and <em>is the constraint re-evaluated where the effect occurs?</em> (IntentKit: no, advertisement is not execution). If either answer is wrong, you have one of these two CVEs with different names.</p>
+
+        <p><em>Reporting note: CVE IDs, publication timestamps (02:20:15/16 UTC, 15 October 2026), CVSS 3.1 and 4.0 vectors, CNA attribution (VulnCheck) and Received status were read first-hand from the NVD 2.0 API. Titles, severity assessments, affected files, root-cause analysis and impact statements were read first-hand from the linked Lasso Security vulnerability-database pages. Repository metadata (stars, forks, licences, push dates) was read first-hand from the GitHub repository API. No fixed versions are named in either record as of writing, and none is claimed here. Nothing was installed, no MoviePilot or IntentKit instance was deployed, no tool was invoked, no prompt-injection content was crafted, and no payload was executed. Brave Search returned only CVE-mirror aggregators besides the Lasso analyses; no vendor advisory or independent researcher writeup was available at the time of writing.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-77931?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-77931, MoviePilot indirect prompt injection to RCE (published 15 October 2026, 02:20 UTC, CVSS 8.8, Received)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-76066?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-76066, IntentKit executor tool authorisation bypass (published 15 October 2026, 02:20 UTC, CVSS 7.5, Received)</a></li>
+          <li><a href="https://www.lasso.security/vulnerability-database/cve-2026-77931?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Lasso Security &mdash; CVE-2026-77931: Confused-Deputy Remote Code Execution via Prompt Injection into Always-Available Command Execution Tool (affected files, root cause, impact assessment)</a></li>
+          <li><a href="https://www.lasso.security/vulnerability-database/cve-2026-76066?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Lasso Security &mdash; CVE-2026-76066: Tool Visibility Not Enforced at Execution (advertisement vs executor analysis, wallet-transfer detail)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/gitpython-six-cves-3-2-0-ls-remote-upload-pack-rce-october-2026/">The Guard Read the Keywords, the Attacker Used Positionals: GitPython&amp;rsquo;s Six-CVE 3.2.0 Security Release</a></h3><p>Six CVE records published 14 October 2026 cover GitPython before 3.2.0: ext:: remote-helper RCE, --upload-pack injection through the positional refspec, a branch name that reads arbitrary files, environment-variable disclosure, ReDoS, and a submodule symlink escape. The 3.2.0 security release shipped 30 September — fourteen days before the records.</p><a class="text-link" href="/posts/2026/10/gitpython-six-cves-3-2-0-ls-remote-upload-pack-rce-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-14">2026-10-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/kubeflow-model-registry-cve-2026-110220-controller-serviceaccount-token-ssrf/">A Tenant Annotation Decides Where Kubeflow&amp;rsquo;s Controller Sends Its Cluster Token</a></h3><p>CVE-2026-110220, published to NVD on 13 October 2026 and scored 7.1 (CWE-918), lets any namespace tenant who can create a KServe InferenceService name the host that the Kubeflow Model Registry controller talks to &amp;mdash; and the controller attaches its own Kubernetes ServiceAccount bearer token to that request. We read the chain first-hand at tag v0.3.17 and at main: the annotation is read unvalidated at controller.go:111, the token goes into the request context at :88-90, and the generated OpenAPI client adds the Authorization header at client.go:420-423. The shipped manifest binds the controller to a ClusterRoleBinding with patch and update on inferenceservices cluster-wide. v0.3.17 is the newest release. There is no fix.</p><a class="text-link" href="/posts/2026/10/kubeflow-model-registry-cve-2026-110220-controller-serviceaccount-token-ssrf/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-14">2026-10-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/open-webui-five-cves-cookie-forwarding-terminal-proxy-regex-engine-0-11-4/">The Cookie Jar Goes to the Tool Server: Open WebUI’s Five-CVE 0.11.4 Batch Hands Your Authority to Everyone It Talks To</a></h3><p>Five CVEs published 12 October 2026 against Open WebUI, all fixed in 0.11.4: CVE-2026-109292 forwards browser session cookies to third-party tool and terminal servers, CVE-2026-109572 lets any terminal user reach the admin Terminals API through the proxy, CVE-2026-109296 reaches disabled model backends by naming an index, and CVE-2026-109295/109298 turn model-invoked grep tools into event-loop stalls. Fix commits read first-hand.</p><a class="text-link" href="/posts/2026/10/open-webui-five-cves-cookie-forwarding-terminal-proxy-regex-engine-0-11-4/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
