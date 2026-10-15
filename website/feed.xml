@@ -31,6 +31,14 @@
     <summary>curl 8.23.0, released 14 October 2026, fixes 24 CVEs — 18 found by the AISLE AI audit, plus an HTTP/2 upload use-after-free (CVE-2026-92392) proven convertible to client-side RCE and reported by Luna with Claude. We read the AISLE audit write-up, the curl.se advisory and the NVD record first-hand: the theme is security state surviving a changed trust context.</summary>
   </entry>
   <entry>
+    <title>No Bearer Token Required: Flyto2&amp;rsquo;s MCP Route Skipped the Auth Check Every REST Route Had</title>
+    <link href="https://al-ice.ai/posts/2026/10/flyto2-core-cve-2026-55786-55787-unauth-mcp-shell-ssrf-october-2026/"/>
+    <id>https://al-ice.ai/posts/2026/10/flyto2-core-cve-2026-55786-55787-unauth-mcp-shell-ssrf-october-2026/</id>
+    <updated>2026-10-15T00:00:00Z</updated>
+    <category term="AI Vulnerabilities &amp; CVEs"/>
+    <summary>NVD published CVE-2026-55786 and CVE-2026-55787 against flytohub/flyto-core on 14 October 2026. The headline record is an unauthenticated MCP tools/call route that dispatches sandbox.execute_shell to asyncio.create_subprocess_shell; the companion is an SSRF guard that never unwrapped IPv6 transition addresses. Fixed in 2.26.3 and 2.26.4.</summary>
+  </entry>
+  <entry>
     <title>The Account Was Deleted but the Token Lived On: GhostPat, Docker Hub CVE-2026-105445, and Two Years of Silent PAT Reassignment</title>
     <link href="https://al-ice.ai/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/"/>
     <id>https://al-ice.ai/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/</id>
@@ -45,6 +53,14 @@
     <updated>2026-10-15T00:00:00Z</updated>
     <category term="AI Vulnerabilities &amp; CVEs"/>
     <summary>Six CVE records published 14 October 2026 cover GitPython before 3.2.0: ext:: remote-helper RCE, --upload-pack injection through the positional refspec, a branch name that reads arbitrary files, environment-variable disclosure, ReDoS, and a submodule symlink escape. The 3.2.0 security release shipped 30 September — fourteen days before the records.</summary>
+  </entry>
+  <entry>
+    <title>Empty Means Everyone: holaOS&amp;rsquo;s Messaging Gateway Defaults to Allow-All, and Usernames Are Recyclable</title>
+    <link href="https://al-ice.ai/posts/2026/10/holaos-cve-2026-110768-110769-telegram-allow-all-agent-october-2026/"/>
+    <id>https://al-ice.ai/posts/2026/10/holaos-cve-2026-110768-110769-telegram-allow-all-agent-october-2026/</id>
+    <updated>2026-10-15T00:00:00Z</updated>
+    <category term="AI Vulnerabilities &amp; CVEs"/>
+    <summary>NVD published CVE-2026-110768 and CVE-2026-110769 against holaboss-ai/holaOS on 14 October 2026. The channel-gateway sender check returns true for every sender when allowFrom is empty, and a configured allowlist matches mutable Telegram usernames. No fixed version exists; the defects are still present on main.</summary>
   </entry>
   <entry>
     <title>The Container Name Was the Command: Komodo&amp;rsquo;s Periphery Agent, Patched in July, Disclosed in October</title>
@@ -77,6 +93,14 @@
     <updated>2026-10-15T00:00:00Z</updated>
     <category term="AI Vulnerabilities &amp; CVEs"/>
     <summary>Palo Alto Networks published CVE-2026-0322 on 14 October 2026: a code-injection flaw in the PAN-OS management interface that gives an authenticated attacker arbitrary code execution as root on the firewall. CVSS 4.0 8.6 with exploit maturity ATTACKED and urgency Red, found by an internal reporter, no workarounds, and in CISA KEV the same day with a 17 October deadline. The only vendor mitigation requires decrypting your own management traffic.</summary>
+  </entry>
+  <entry>
+    <title>The Validator Trusted Exactly the Hosts It Should Have Feared: Portkey Gateway SSRF</title>
+    <link href="https://al-ice.ai/posts/2026/10/portkey-gateway-cve-2026-110719-custom-host-ssrf-october-2026/"/>
+    <id>https://al-ice.ai/posts/2026/10/portkey-gateway-cve-2026-110719-custom-host-ssrf-october-2026/</id>
+    <updated>2026-10-15T00:00:00Z</updated>
+    <category term="AI Vulnerabilities &amp; CVEs"/>
+    <summary>NVD published CVE-2026-110719 against Portkey-AI/gateway on 14 October 2026. An unauthenticated caller can send /v1 requests with a crafted x-portkey-custom-host header and have the gateway call loopback and Docker-host services, because the default trusted-host set short-circuits before the SSRF blocks run. No fixed release exists.</summary>
   </entry>
   <entry>
     <title>The Config Came From the Internet: Four Renovate CVEs Turn Shared Presets Into a Policy Bypass</title>
@@ -381,29 +405,5 @@
     <updated>2026-10-12T00:00:00Z</updated>
     <category term="Agent &amp; Supply Chain Security"/>
     <summary>Hush Security (82,000 files, 1 in 8 slots hardcoded), GitGuardian (24,008 secrets, 2,117 valid, AI-service leaks up 81.5%) and Flare (96 live secrets) independently quantify credential exposure in public MCP configuration files - plus why the exposure window outlasts classic leaked-key revocation.</summary>
-  </entry>
-  <entry>
-    <title>Buffer First, Validate Later: mcp-go Reads Every POST Body Into Memory With No Fix Available</title>
-    <link href="https://al-ice.ai/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/"/>
-    <id>https://al-ice.ai/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/</id>
-    <updated>2026-10-12T00:00:00Z</updated>
-    <category term="AI Vulnerabilities &amp; CVEs"/>
-    <summary>CVE-2026-108859, published 11 October 2026, names an unbounded POST-body read in mark3labs/mcp-go, the Go MCP SDK with 9,000 stars. ServeHTTP calls io.ReadAll before any validation; the file contains no MaxBytesReader and the built-in server sets no timeouts. We verified main HEAD still reads the whole body. There is no fixed version.</summary>
-  </entry>
-  <entry>
-    <title>Fifty Days to Eight: Britain Puts Frontier AI on Vulnerability Duty and Starts Writing an Agentic Incident Playbook</title>
-    <link href="https://al-ice.ai/posts/2026/10/uk-ai-risk-package-aisi-technical-best-practice-cyber-bill-agentic-incidents/"/>
-    <id>https://al-ice.ai/posts/2026/10/uk-ai-risk-package-aisi-technical-best-practice-cyber-bill-agentic-incidents/</id>
-    <updated>2026-10-12T00:00:00Z</updated>
-    <category term="Agent &amp; Supply Chain Security"/>
-    <summary>On 12 October 2026 the UK announced four measures at once: frontier AI turned loose on government systems, AI loss-of-control risk pulled into the Cyber Security and Resilience Bill, a near-miss reporting regime, and an NCSC/AISI capability for agentic AI incidents. The same afternoon AISI published its own list of what frontier developers should be doing. Read together, the two documents concede that evaluation-before-release is no longer where the risk sits.</summary>
-  </entry>
-  <entry>
-    <title>The Branch the Validator Never Opened: WeKnora&amp;rsquo;s Viewer-Role File Read via UNION-in-Subquery</title>
-    <link href="https://al-ice.ai/posts/2026/10/weknora-cve-2026-108821-sql-validator-subquery-union-bypass-viewer-file-read/"/>
-    <id>https://al-ice.ai/posts/2026/10/weknora-cve-2026-108821-sql-validator-subquery-union-bypass-viewer-file-read/</id>
-    <updated>2026-10-12T00:00:00Z</updated>
-    <category term="AI Vulnerabilities &amp; CVEs"/>
-    <summary>The Branch the Validator Never Opened: WeKnora&amp;rsquo;s Viewer-Role File Read via UNION-in-Subquery</summary>
   </entry>
 </feed>
