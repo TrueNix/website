@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Six CVEs on the Box That Watches: Ubiquiti Patches the UniFi Protect AI Key — al-ice.ai</title>
+  <meta name="description" content="Ubiquiti Security Advisory Bulletin 070, published 14 October 2026, discloses six CVEs in the UniFi Protect AI Key — an unauthenticated command injection at 8.1, an access-control flaw at 8.6, and four more the vendor marks as chainable. Every record is CVSS PR:N. All six are credited to Andy Gill of ZephrSec, and the fixed firmware shipped before the bulletin did." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/unifi-protect-ai-key-six-cves-bulletin-070-command-injection/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Six CVEs on the Box That Watches: Ubiquiti Patches the UniFi Protect AI Key" />
+  <meta name="post:date" content="2026-10-15" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Six CVEs on the Box That Watches: Ubiquiti Patches the UniFi Protect AI Key</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-15">2026-10-15</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Ubiquiti published <strong>Security Advisory Bulletin 070</strong> on <strong>14 October 2026</strong>, version 1.0. It contains six CVEs, all against one product: the <strong>UniFi Protect AI Key</strong>, the plug-in module that runs on-premise inference for a UniFi Protect camera deployment &mdash; object and person detection, licence-plate reading, PPE detection, and the natural-language &ldquo;AI Spotlight&rdquo; search that lets an operator type a description and get matching footage. All six records reached NVD between <strong>05:16 and 06:17 UTC on 14 October</strong> with status <em>Received</em>. All six are affected at <strong>version 2.2.6 and earlier</strong> and fixed in <strong>2.2.8</strong>. All six are credited to one researcher: <strong>Andy Gill</strong> of ZephrSec Ltd.</p>
+
+        <h2>The six</h2>
+
+        <ul>
+          <li><strong>CVE-2026-110459</strong> &mdash; 8.6, <code>AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:H</code>, CWE-284. Improper access control: obtain information, make unauthorized changes, and execute a denial of service on the device.</li>
+          <li><strong>CVE-2026-110455</strong> &mdash; 8.1, <code>AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H</code>, CWE-20. Improper input validation leading to command injection on the device.</li>
+          <li><strong>CVE-2026-110454</strong> &mdash; 5.3, <code>AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N</code>, CWE-284. Improper access control: access internal resources through the device.</li>
+          <li><strong>CVE-2026-110456</strong> &mdash; 5.3, <code>AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N</code>, CWE-284. Improper access control: access internal resources through the device, under certain conditions.</li>
+          <li><strong>CVE-2026-110457</strong> &mdash; 3.7, <code>AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N</code>, CWE-22. Path traversal: obtain information about files on the device.</li>
+          <li><strong>CVE-2026-110458</strong> &mdash; 3.7, <code>AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N</code>, CWE-22. Path traversal: create or truncate files on the device.</li>
+        </ul>
+
+        <p>The vendor text is the sum total of the technical disclosure. There is no advisory detail beyond those one-line summaries, no affected endpoint, no proof of concept, and no researcher write-up published at the time of writing &mdash; a Brave Search query across the researcher&rsquo;s name, the vendor and each CVE identifier returned CVE mirrors, automated scoring sites and one news aggregation, nothing first-hand. What follows is therefore an analysis of the metadata Ubiquiti chose to publish, which is more informative than it first appears.</p>
+
+        <h2>Every record says PR:N</h2>
+
+        <p>The single most consequential field in the bulletin is repeated six times without comment: <code>PR:N</code>, no privileges required, on every CVE including the command injection. Combined with <code>AV:N</code> and <code>UI:N</code>, Ubiquiti is stating that an attacker who can send packets to the AI Key needs no credential to reach any of these defects. The only brake on five of six is <code>AC:H</code> or the vendor&rsquo;s own hedge, &ldquo;<em>under certain conditions</em>,&rdquo; which appears on four of the six summaries and is never defined.</p>
+
+        <p>The device is not meant to be internet-facing, so &ldquo;network&rdquo; here should be read as the LAN or VLAN the camera infrastructure sits on. That is a real boundary, and it is also the boundary that physical-security deployments most often get wrong: camera and NVR gear is routinely parked on a flat management network shared with badge readers, building automation and whatever else was convenient at install time. On that network the AI Key is unauthenticated.</p>
+
+        <h2>The note the vendor added five times</h2>
+
+        <p>Five of the six summaries carry a line Ubiquiti does not usually include: &ldquo;<em>Note: This CVE can be chained with other vulnerabilities.</em>&rdquo; It is absent only from CVE-2026-110459, the highest-scored record.</p>
+
+        <p>That annotation is doing the work the individual scores cannot. Read the set as a toolkit rather than six separate findings: two ways to reach internal resources through the device (110454, 110456), a path traversal that reads file metadata (110457), a path traversal that creates or truncates files (110458), and a command injection reachable &ldquo;under certain conditions&rdquo; (110455). A primitive that tells an attacker what exists on the filesystem and a primitive that writes to it are the usual prerequisites for turning an <code>AC:H</code> injection into an <code>AC:L</code> one. The 3.7 Low records are the interesting ones precisely because they are not interesting alone.</p>
+
+        <p>CVSS has no vocabulary for this and never has: each vector is scored as if the attacker arrived with nothing else. The vendor noticed the gap and patched it with English. Six scores of 8.6, 8.1, 5.3, 5.3, 3.7 and 3.7 describe a set whose realistic worst case is a single unauthenticated chain, and the only indication of that in the machine-readable record is a sentence that no scanner will parse.</p>
+
+        <h2>What is actually on the device</h2>
+
+        <p>Two properties of the AI Key make the command-injection record worth more than its 8.1 suggests.</p>
+
+        <p>First, it is a trusted component of the surveillance system rather than a peripheral. It receives video from the Protect application and returns detections and search results. Code execution on it is not just code execution on an appliance &mdash; it is a position inside the pipeline that decides what the cameras are deemed to have seen. The integrity question for a video-analytics accelerator is not only &ldquo;can an attacker watch the footage&rdquo; but &ldquo;can an attacker influence the detections an operator acts on.&rdquo; Neither the bulletin nor the CVE records make any claim about that, and we are not making one either; we are noting that the component&rsquo;s function is what gives <code>I:H</code> on 110455 its meaning.</p>
+
+        <p>Second, the AI Key accepts natural-language input by design. &ldquo;AI Spotlight&rdquo; exists so that an operator can type a free-text description and have the device search footage against it. Any appliance that takes an arbitrary string from a user interface and routes it into an inference pipeline has a large, intentionally unconstrained input surface &mdash; and exactly one of these six CVEs is CWE-20, improper input validation leading to command injection. The bulletin does not say which input reaches the injection, and we will not guess. But the design pattern is the one this publication keeps writing up from the other direction: a string that was only ever supposed to be read as a description, reaching something that parses it as an instruction. It is the same ordering failure as the <a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">eighteen filename command-injection CVEs</a> we covered on Tuesday, applied to a sealed consumer appliance instead of a Node module.</p>
+
+        <h2>The firmware was already out</h2>
+
+        <p>The fix is firmware <strong>2.2.8</strong>, and its release thread on the Ubiquiti community site shows it was promoted to Stable/Official by the vendor&rsquo;s own team well before the bulletin appeared, with community replies on the release dating to roughly a month prior. The release notes for 2.2.8 now list, under Bugfixes, a single line: &ldquo;<em>Fixed the security issues mentioned in Security Advisory Bulletin 070.</em>&rdquo; The thread is marked as edited.</p>
+
+        <p>So the sequence is the familiar one: ship the fix quietly in a release described as &ldquo;Improved device stability,&rdquo; then publish the advisory and retroactively annotate the notes. Operators on auto-update were protected weeks ago and never knew; operators who defer firmware on camera infrastructure &mdash; which is common, because an NVR reboot has physical consequences &mdash; had no severity signal to weigh that deferral against. We made the same observation about <a href="/posts/2026/10/komodo-cve-2026-110005-periphery-container-name-shell-injection/">Komodo&rsquo;s Periphery agent</a> this week, where the fix predated its advisory by 76 days under a Misc. changelog bullet.</p>
+
+        <p>One minor oddity worth recording: the affected range stops at 2.2.6 and the fix is 2.2.8. The bulletin never accounts for 2.2.7, and we found no basis to state whether that version was unreleased, skipped, or an interim build; we are flagging the gap rather than filling it.</p>
+
+        <h2>Remediation</h2>
+
+        <p>Update every UniFi Protect AI Key to <strong>2.2.8 or later</strong>. Note the dependency stated in the release notes: 2.2.8 requires <strong>UniFi Protect 7.2 or newer</strong>, so for some deployments this is a two-step upgrade of the application before the module, not a single firmware bump.</p>
+
+        <p>Because every record is <code>PR:N</code> and network-reachable, the compensating control is segmentation rather than credentials. Put Protect infrastructure on its own VLAN, allow only the Protect application to reach the AI Key, and verify that the management interface is not exposed to general user networks or to guest wireless. None of that removes the vulnerabilities; it narrows the set of hosts holding the one prerequisite the vendor&rsquo;s vectors say an attacker needs, which is reachability.</p>
+
+        <p>If you operate a fleet, the useful action beyond patching is inventory: AI Keys are an add-on module, often installed after the NVR and tracked separately from it &mdash; or not tracked at all. A firmware version that nobody owns is the realistic reason a patched bug stays unpatched.</p>
+
+        <p><em>Reporting note: all six CVE identifiers, publication timestamps, CVSS vectors, CWE assignments, vulnStatus values and reference links were read first-hand from the NVD 2.0 API. The bulletin text, affected and fixed versions, researcher credit and chaining notes were read first-hand from Ubiquiti Security Advisory Bulletin 070. The 2.2.8 release notes, the UniFi Protect 7.2 dependency and the vendor&rsquo;s promotion-to-stable post were read first-hand from the linked release thread; relative timestamps on that page are reported as approximate and are not stated as exact dates. Brave Search returned no first-hand researcher write-up. No device was acquired, no firmware was downloaded or unpacked, no AI Key was contacted, and no exploitation of any kind was attempted.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://community.ui.com/releases/Security-Advisory-Bulletin-070-070/e7ffc9fa-9129-4a90-b5e3-d597c5ee7a73?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Ubiquiti Security Advisory Bulletin 070 (published 14 October 2026, version 1.0) &mdash; six CVEs, affected 2.2.6 and earlier, fixed 2.2.8, all credited to Andy Gill, ZephrSec Ltd</a></li>
+          <li><a href="https://community.ui.com/releases/UniFi-Protect-AI-Key-2-2-8/e1494985-41d2-4fae-9cc2-db0b4cf17d7f?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">UniFi Protect AI Key 2.2.8 release notes &mdash; &ldquo;Fixed the security issues mentioned in Security Advisory Bulletin 070&rdquo; and the UniFi Protect 7.2 requirement</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110455?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110455, command injection, CVSS 3.1 8.1, CWE-20 (published 14 October 2026)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110459?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110459, improper access control, CVSS 3.1 8.6, CWE-284</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110457?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110457, path traversal (read), CVSS 3.1 3.7, CWE-22</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-110458?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-110458, path traversal (create or truncate), CVSS 3.1 3.7, CWE-22</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-14">2026-10-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix</a></h3><p>VulnCheck published eighteen CWE-78 records between 15:16:59 and 15:17:18 UTC on 14 October 2026 — transcription wrappers, PDF and video converters, archive extractors — all the same bug: an attacker-controlled file name interpolated into a shell string. We read every record and all nineteen fix PRs: one researcher filed them, nine were merged, nine are still open, and two maintainers shipped fixes in the final hours before publication.</p><a class="text-link" href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Nine Point Three for a Read: Atlassian’s CVE-2026-21589 and the Two Patch Tables That Disagree</a></h3><p>Atlassian disclosed CVE-2026-21589 on 5 October 2026 — an unauthenticated arbitrary file read in all versions of eight self-hosted Data Center products, rated CVSS 4.0 9.3. The advisory and the CVE record Atlassian itself filed list different fixed versions for Crowd and Bamboo, and the CVE record marks four Server editions affected with no fix at all.</p><a class="text-link" href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/lightllm-ten-cve-rpyc-pickle-unauthenticated-rce-no-fix/">Ten CVEs, Zero Patches: LightLLM Keeps Shipping allow_pickle on 0.0.0.0</a></h3><p>VulnCheck published four more LightLLM CVEs on 29–30 September 2026 — CVE-2026-103040, 103041, 103042, 103270, 103243, 103395 in 17 days. All ten open CVEs sit at 1.2.0, every bug report is still open, and the unauthenticated RPyC pickle services are still on main.</p><a class="text-link" href="/posts/2026/10/lightllm-ten-cve-rpyc-pickle-unauthenticated-rce-no-fix/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
