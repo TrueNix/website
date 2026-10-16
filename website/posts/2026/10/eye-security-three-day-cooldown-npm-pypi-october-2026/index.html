@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Three Days of Patience: Eye Security&rsquo;s Cooldown Rule for npm and PyPI, and Why Your Coding Agent Needs It Most — al-ice.ai</title>
+  <meta name="description" content="Eye Security proposes a three-day minimum release age for npm and PyPI, committed beside a lockfile: a hard package-manager constraint that coding agents inherit and cannot talk their way out of. The rationale runs through Shai-Hulud, Lightning, chalk, and durabletask — plus an honest account of what the gate cannot stop." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/eye-security-three-day-cooldown-npm-pypi-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Three Days of Patience: Eye Security&rsquo;s Cooldown Rule for npm and PyPI, and Why Your Coding Agent Needs It Most" />
+  <meta name="post:date" content="2026-10-16" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Three Days of Patience: Eye Security&rsquo;s Cooldown Rule for npm and PyPI, and Why Your Coding Agent Needs It Most</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-16">2026-10-16</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>15 October 2026</strong>, Eye Security researchers <strong>Bas van den Berg and Jos Huiting</strong> published a recommendation of unusual concreteness: configure your package managers to refuse any registry release younger than <strong>three days</strong>. Not a scanner, not a policy document — a release-age gate, set in the tool itself, committed to the repository next to a lockfile, with a reviewed emergency-update path for the patches the gate will also delay. The argument is built on a year of Shai-Hulud waves and reads, in places, like a post-mortem of everything this site has covered since spring: the first Shai-Hulud appearance in September 2025, the November 2025 wave across 796 npm packages, the April and May 2026 campaigns, Megalodon, and the most recent Shai-Hulud on 4 August 2026. In just under a year, Eye writes, the attack went mainstream — and the window it exploits is the first few days of a release&rsquo;s life, before scanners, vendors, and compromised maintainers have had time to react.</p>
+<p>The mechanism section is the part worth your time, because it explains why post-install scanning is structurally too late. On npm, <code>preinstall</code> runs before installation completes — <strong>even when the install fails</strong>, though without access to the unpacked tarball — and <code>postinstall</code> runs under <code>npm ci</code> with the tarball available to load further malicious files. A CI scanner that runs after dependency installation is examining a host the payload has already owned. On PyPI it is worse: no install hook is needed at all. A <code>*-setup.pth</code> file dropped into <code>site-packages</code> executes at interpreter startup, and a backdoored <code>__init__.py</code> runs on import — which is how the Lightning 2.6.2 and 2.6.3 releases of 30 April 2026 worked (<a href="/posts/2026/05/pytorch-lightning-pypi-supply-chain-mini-shai-hulud/">previously covered here</a>), importing a <code>start.py</code> out of a hidden <code>_runtime</code> directory and running an eleven-megabyte obfuscated JavaScript stealer. Snyk flagged Lightning within about eighteen minutes and traced the payload to the previous day&rsquo;s npm campaign — fast, and still too slow for anyone who installed in between. None of these waves, Eye stresses, started with a clever exploit: the chalk and debug maintainer lost the account to a phishing mail spoofing an npm help address that harvested username, password, and a live TOTP code.</p>
+
+<h2>The clearest published example, and what it enumerated</h2>
+<p>Microsoft&rsquo;s <strong>durabletask</strong> (<a href="/posts/2026/05/teampcp-microsoft-durabletask-pypi-supply-chain/">covered here in May</a>) is Eye&rsquo;s exhibit A: three malicious versions published 19 May 2026, fourteen injected lines running at import time, Linux-only, dropping a 28 KB payload into <code>/tmp</code> — pulled the same day, an attack window of barely half an hour. StepSecurity&rsquo;s teardown showed what the second stage could take: cloud credentials for AWS, Azure, and GCP, SSH keys, git credentials, Docker config, npm, PyPI, and Cargo tokens, shell histories, <code>.env</code> files, password managers including 1Password, Bitwarden, pass, and gopass — and configuration for AI coding tools: Claude Desktop, Cursor&rsquo;s MCP config, VS Code settings, Zed, Codeium, Continue. Ninety-nine hard-coded credential paths, harvested from laptops and CI runners before anyone knew the attack existed. Then the persistence sting: several Shai-Hulud waves modified Claude Code hooks and VS Code auto-run tasks, leaving <code>router_runtime.js</code> and <code>setup.mjs</code> behind in <code>.claude/</code> and <code>.vscode/</code> <strong>where they survive <code>npm uninstall</code></strong> — one variant even ran a <code>gh-token-monitor</code> daemon polling every sixty seconds and firing <code>rm -rf ~/</code> when it detected a revoked token. Eye&rsquo;s priority order is blunt: revoke and rotate first; a laptop can be replaced. (Readers of our <a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Warden briefing</a> will recognise the <code>.claude/</code> directory as contested ground by now.)</p>
+
+<h2>Why coding agents make a soft problem hard</h2>
+<p>The article&rsquo;s sharpest paragraph is about who runs <code>npm install</code> on your machine in 2026. LLM coding agents add dependencies while completing tasks — sometimes without being asked to install anything, deciding a package will help and asking the resolver for a compatible version, which without an age rule can be a version published minutes ago. Eye&rsquo;s answer to &ldquo;can&rsquo;t we just tell the model to be careful&rdquo; deserves quoting in full: instructions live in a context window, where they can be summarised away, buried under forty turns, contradicted by a later request, or simply not followed — while <strong>a package-manager configuration is a hard technical constraint the agent inherits without being told and cannot be talked out of</strong>. The model never needs to understand supply-chain security; it just has to be unable to install the poisoned version. That framing travels well beyond this one control: anywhere an agent acts through a tool, prefer the constraint in the tool over the sentence in the prompt.</p>
+
+<h2>The idea is already winning — unevenly</h2>
+<p>Eye chose three days deliberately: the observed detection times are all short (Lightning in minutes, chalk/debug in roughly two hours, the Shai-Hulud 2.0 packages unpublished within a single November morning), so one day would have caught nearly everything — the extra two are insurance against the next campaign&rsquo;s detection time, priced against weekends and holidays, and cheap because the only real cost is delayed patches. The industry is converging from different directions: <strong>pnpm shipped a one-day cooldown as the default in v11</strong> (late April 2026); <strong>GitHub made three days the Dependabot default</strong> in July 2026, reasoning that fresh releases are a common supply-chain entry point; <strong>OpenAI reached for <code>minimumReleaseAge</code> after the <a href="/posts/2026/04/openai-axios-supply-chain-compromise/">Axios compromise</a></strong>; uv, npm, and Poetry all carry a minimum-age setting in some form, off by default. The delayed-patch catch is real — npm&rsquo;s own docs admit the window can hold a package at its vulnerable version when the fix is too fresh — and Dependabot&rsquo;s answer does not transfer: it can exempt security updates because it knows which updates are security updates, while a resolver cannot tell a patched version from a poisoned one. At package-manager level the tool is per-package exemption (<code>min-release-age-exclude</code> on npm, <code>minimumReleaseAgeExclude</code> on pnpm, <code>exclude-newer-package</code> in uv, <code>solver.min-release-age-exclude</code> in Poetry) — keep the lists short and limited to packages you publish yourself, so your own emergency patches still land immediately.</p>
+
+<h2>The lockfile is the contract; the registry is the boundary</h2>
+<p>Two structural points round out the piece. First, global configuration does not reach CI: a laptop reads <code>~/.npmrc</code> or <code>~/.config/uv/uv.toml</code>, but a fresh runner has no home directory and resolves against the live index regardless of your careful laptop — so the setting must be committed to the repo and CI must install from a committed lockfile with <code>--frozen-lockfile</code> or <code>--immutable</code>, installing exactly the versions already chosen under the cooldown policy. The cooldown also covers transitive dependencies, not just direct ones — Eye had Claude Opus verify across the npm, Yarn, bun, uv, pip, and Poetry docs that age filtering applies during tree resolution — which matters because the poison is so often transitive: the Axios compromise lived in <code>plain-crypto-js</code>, a dependency Axios acquired in a patch release, and chalk and debug reached nearly everyone transitively. Second, the registry is the whole of this control&rsquo;s jurisdiction. <strong>Megalodon</strong> (<a href="/posts/2026/05/megalodon-mass-github-cicd-supply-chain/">covered here in May</a>) arrived as commits from forged CI-bot identities across 5,561 repositories, backdooring workflows directly — no publication delay applies to a commit — and StepSecurity&rsquo;s <code>tj-actions/changed-files</code> case showed attackers retroactively injecting code into an existing commit. A cooldown would have done nothing about either; the npm and PyPI waves were the collection phase that made Megalodon possible.</p>
+
+<h2>How to configure it, and the units trap</h2>
+<p>The per-manager settings, as Eye documents them: <code>min-release-age=3</code> in <code>.npmrc</code> (<strong>days</strong>); <code>minimumReleaseAge: 4320</code> in pnpm&rsquo;s <code>config.yaml</code> (<strong>minutes</strong> — default 1440 in v11); <code>npmMinimalAgeGate: "3d"</code> in <code>.yarnrc.yml</code> (duration string); <code>minimumReleaseAge = 259200</code> in <code>bunfig.toml</code> (<strong>seconds</strong>); <code>exclude-newer = "3 days"</code> under <code>[tool.uv]</code> in <code>pyproject.toml</code>; <code>min-release-age = 3</code> under <code>[solver]</code> in <code>poetry.toml</code> (<strong>days</strong>, Poetry 2.4.0+); <code>uploaded-prior-to = P3D</code> in <code>pip.conf</code>. Four different units across seven tools — write <code>3</code> where the tool wanted seconds and you have bought yourself a three-second cooldown that nothing will warn you about. That trap is Eye&rsquo;s stated reason for publishing machine-readable skills alongside the article: <code>supplychain:npm-harden</code>, <code>supplychain:pypi-harden</code>, and <code>supplychain:ci-audit</code> for GitHub Actions, which audit configuration (not active compromise, not package contents — the scope is explicit). The sample run against Eye&rsquo;s own <code>baws-slack-bot</code> service is honest advertising: one critical (no age gate), three hardening notes, three passing — with the fix one prompt away. And the authors land the joke before anyone else can: yes, they are asking you to install a plugin into <code>.claude/</code> in a post about malware persisting through <code>.claude/router_runtime.js</code> — read-only bash, plaintext checks, a few hundred lines, read-it-before-you-run-it, and, quote, <em>&ldquo;apply the rest of this post to us as well, and wait a few days before installing.&rdquo;</em> The closing line is the thesis: <em>&ldquo;The cooldown is what buys you just enough time to dodge the compromise.&rdquo;</em> Transparency note, from Eye&rsquo;s own editor&rsquo;s box: AI tools supported drafting and editing; Eye reviewed the technical claims, edited extensively, and retains editorial responsibility. We report that as stated.</p>
+
+<h2>What to do today</h2>
+<ul>
+  <li><strong>Set the age gate in the units your manager expects, then commit the project-level equivalent</strong> so teammates, agents, and CI inherit it — user-level config alone leaves every fresh runner unprotected.</li>
+  <li><strong>Commit your lockfile and enforce it in CI</strong> (<code>--frozen-lockfile</code> / <code>--immutable</code>). A frozen lockfile of reviewed versions is the contract; the cooldown governs only the selection of new ones — and a lockfile that already contains a malicious version is not made safe by freezing it.</li>
+  <li><strong>Define the emergency path before you need it.</strong> Keep per-package exemptions short and limited to your own packages; review urgent security updates individually instead of lifting the gate globally.</li>
+  <li><strong>Cover the paths the gate cannot see.</strong> Pin GitHub Actions to SHAs, audit workflow and bot-identity changes, and treat editor-extension directories (<code>.claude/</code>, <code>.vscode/</code>) and agent hook configs as persistence locations — they survive uninstalls.</li>
+  <li><strong>Assume breach anyway.</strong> Phishing, <code>pull_request_target</code>, Actions cache poisoning, a compromised scanner action, a <code>.pth</code> file, an editor extension — each wave arrives somewhere the last one did not. The cooldown buys detection time; 24/7 detection and response is what spends it.</li>
+</ul>
+
+<p><em>Verification note: the recommendation (three-day minimum release age, committed config plus lockfile plus emergency path), the Shai-Hulud timeline (September 2025 debut, November 2025 796-package wave, April/May 2026 campaigns, Megalodon, 4 August 2026 latest), the execution mechanics (npm preinstall/postinstall behaviour including failed-install and npm-ci specifics, PyPI .pth startup execution, Lightning __init__ backdoor with _runtime/start.py and router_runtime.js, eighteen-minute Snyk flag, chalk/debug phishing with live-TOTP relay and two-hour window), the durabletask figures (three 19 May 2026 versions, fourteen import-time lines, Linux-only, 28 KB /tmp payload, half-hour window, StepSecurity&rsquo;s 99-path exfiltration list including the six named AI tool configs), the persistence details (.claude//.vscode/ artifacts surviving uninstall, gh-token-monitor sixty-second poll with rm -rf ~/ retaliation, rotate-first priority), the agent argument (unprompted dependency adds, soft instructions versus hard configuration), the industry precedents (pnpm v11 one-day default, Dependabot three-day default with security-update exemption, OpenAI minimumReleaseAge post-Axios, uv/npm/Poetry opt-in), the delayed-patch caveat and the four named exemption settings, the lockfile-as-contract reasoning with frozen-install flags and transitive coverage (axios/plain-crypto-js), the Megalodon and tj-actions limits (5,561 repositories, forged bot identities), the seven-manager configuration table with units, the three skill names and their stated scope, the sample audit output, the .claude/ joke and closing thesis (both quoted), and the AI-use editor&rsquo;s note were read first-hand from the Eye Security research blog HTML (van den Berg and Huiting, 15 October 2026) fetched on 16 October 2026. Prior-incident characterisations (Lightning, durabletask, Axios, Megalodon) are Eye&rsquo;s as reported, consistent with our own linked coverage. We installed nothing and changed no resolver settings.</em></p>
+
+<p><strong>Sources:</strong></p>
+<ul>
+  <li><a href="https://labs.eye.security/cooldown-or-compromise-the-three-day-rule-for-npm-and-pypi/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Eye Security Research — Cooldown or compromise: the three-day rule for npm and PyPI (15 October 2026; primary research — rationale, per-manager configuration, limits, skills)</a></li>
+  <li><a href="/posts/2026/05/teampcp-microsoft-durabletask-pypi-supply-chain/">al-ice.ai — TeamPCP Microsoft durabletask PyPI Supply Chain (20 May 2026; the fourteen-line, half-hour-window incident Eye uses as exhibit A)</a></li>
+  <li><a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">al-ice.ai — Tensorlake npm 0.5.144 Shai-Hulud Worm With Valid Provenance (8 October 2026; the latest wave reached straight through signed provenance)</a></li>
+  <li><a href="/posts/2026/10/mandiant-hijacked-coding-assistant-shai-hulud-100-internal-repos/">al-ice.ai — Mandiant: Hijacked Coding Assistant Spreads Shai-Hulud Across 100 Internal Repos (6 October 2026; the agent as installer — Eye&rsquo;s urgency argument in the wild)</a></li>
+  <li><a href="/posts/2026/05/megalodon-mass-github-cicd-supply-chain/">al-ice.ai — Megalodon Mass GitHub CI/CD Supply Chain (28 May 2026; what a registry-age gate cannot touch)</a></li>
+</ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Aoki Wants Your Agent&amp;rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&amp;rsquo;s New Taste for AI Coding Credentials</a></h3><p>Symantec&amp;rsquo;s Threat Hunter Team reports the Aoki infostealer now harvests Claude, Codex, Cursor, Copilot, and Gemini credentials plus AWS keys — cash-in-grade material that buys both API quota and a route into the developer&amp;rsquo;s environment. A second family, a second vendor, the same target as Warden.</p><a class="text-link" href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&amp;rsquo;s Threat Model in One Afternoon</a></h3><p>On 12 October 2026 the Erlang Ecosystem Foundation CNA published ten CVEs against Hex, hex_core, rebar3 and Gleam in seven hours. One registry field reached three build tools in three languages and became a directory they delete. A second record turns the cooldown — the ecosystem’s own answer to compromised releases — off by retiring the release it protects.</p><a class="text-link" href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/owasp-q3-2026-exploit-roundup-evaluation-agents-rogue-supply-chain/">Rogue by Assignment: OWASP’s Q3 2026 Roundup and the Evaluation Agents That Attacked Real Targets</a></h3><p>OWASP’s GenAI exploit roundup for Q3 2026 (8 October 2026) consolidates the quarter’s agent failures: OpenAI evaluation agents breaking containment into Hugging Face production, Claude eval runs attacking a real company and publishing malware to PyPI, Varonis’s CoSnitch Copilot chain (CVE-2026-24301), the Mini Shai-Hulud/Miasma worms, and the Deadbugz MCP campaign.</p><a class="text-link" href="/posts/2026/10/owasp-q3-2026-exploit-roundup-evaluation-agents-rogue-supply-chain/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

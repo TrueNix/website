@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aoki Wants Your Agent&rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&rsquo;s New Taste for AI Coding Credentials — al-ice.ai</title>
+  <meta name="description" content="Symantec&rsquo;s Threat Hunter Team reports the Aoki infostealer now harvests Claude, Codex, Cursor, Copilot, and Gemini credentials plus AWS keys — cash-in-grade material that buys both API quota and a route into the developer&rsquo;s environment. A second family, a second vendor, the same target as Warden." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Aoki Wants Your Agent&rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&rsquo;s New Taste for AI Coding Credentials" />
+  <meta name="post:date" content="2026-10-16" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Aoki Wants Your Agent&rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&rsquo;s New Taste for AI Coding Credentials</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-16">2026-10-16</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>15 October 2026</strong>, Symantec&rsquo;s <strong>Threat Hunter Team</strong> reported that a little-documented infostealer it tracks as <strong>Aoki</strong> (aka Aokigahara) has added AI coding assistants to its shopping list. Recent samples harvest credential and session files for <strong>Claude, OpenAI&rsquo;s Codex, Cursor, Codeium, and Gemini</strong> — specifically <code>.claude.json</code>, Claude desktop cookies, ChatGPT cookies, and the Codex <code>config.toml</code> and <code>.env</code> files — alongside tokens for <strong>GitHub Copilot, Cursor, Google Gemini, JetBrains AI Assistant, and Kiro</strong>, plus AWS credentials. Older samples collected browsers, wallets, and password managers but nothing AI-related, so the capability is a recent addition — and, the researchers say, an expanding one.</p>
+<p>This lands six days after our <a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Warden Stealer briefing</a>, and the proximity is the story, not a duplication. Warden is a marketed malware-as-a-service product whose AI-agent collection became an official, price-hiked feature in v1.9. Aoki is something else: a sparsely documented family, first seen earlier in 2026, with <strong>no known threat group behind it and no links to any existing malware family</strong>, quietly growing the same appetite. Two independent data points in a week, from two different vendors, describing two different codebases converging on the same target. The agent config directory is now simply where the credentials are.</p>
+
+<h2>What Aoki takes, and the one exception that matters</h2>
+<p>The AI haul is files that authenticate, not files that contain code. API keys, OAuth and session tokens, saved credentials — the material an attacker needs to act <strong>under a legitimate developer&rsquo;s identity and API quota</strong>, reaching the connected repositories, cloud services, and CI/CD pipelines behind the account, and slipping past safeguards that assume requests come from a trusted user. Symantec draws the significance line bluntly: like stolen card data, a stolen AI key can be cashed in directly — resold, or burned through on the victim&rsquo;s account in the practice sometimes called LLMjacking. Unlike card data, it also hands over a route into the developer&rsquo;s wider environment. And there is one exception to the no-source-code rule that defenders should sit with: the <strong>Cursor local-state database</strong>, which can cache chat context and code snippets. Stealing the session file there means stealing fragments of the codebase and the conversation about it — context an attacker can mine for secrets, architecture, and the next target.</p>
+
+<h2>The rest of the list says &ldquo;money&rdquo;</h2>
+<p>Aoki&rsquo;s non-AI targeting is sprawling, and its shape points at financial motive. Dozens of browsers (Chromium family, Firefox forks, WebView2, and a long tail of regional builds); more than sixty wallet browser extensions plus desktop wallets from Exodus to Ledger Live; a filename hunt for <code>mnemonic</code>, <code>privatekey</code>, <code>passphrase</code>, <code>12word</code>, and <code>24word</code>; Discord tokens across the stock clients and a dozen third-party mods; Telegram sessions (<code>tdata</code>, 64Gram, AyuGram, and others); Steam, Roblox, Epic, Battle.net, and Riot gaming files; Outlook registry passwords and Thunderbird profiles; FileZilla, WinSCP, and CoreFTP credentials; OpenVPN, NordVPN, ProtonVPN, and PIA configurations; password-manager stores including KeePass config, Bitwarden, 1Password, Dashlane, and RoboForm — plus a survey of which security products are installed. The researchers also read the Telegram and Discord interest as victim-graph expansion: sessions that lead to the victim&rsquo;s contacts, who become the next victims. The malware itself is unglamorous by design — no backdoor command list, just collect-everything and exfiltrate to a <code>/gate</code> endpoint. Most newer samples phone home to a single domain; two use a domain of their own; older samples used a bare IP over unencrypted HTTP on port 8080. Symantec detects the family as <strong>Infostealer.Aoki</strong> and publishes file hashes plus three network IoCs: <code>dobeqnesmot[.]cc</code>, <code>hjazfioe[.]surf</code>, and <code>neihite[.]cc</code>.</p>
+
+<h2>What to do</h2>
+<ul>
+  <li><strong>Say it again for the new family: the agent config directory is a credential store.</strong> <code>~/.claude.json</code>, Codex <code>config.toml</code>/<code>.env</code>, Cursor state, Copilot and Gemini tokens — restrict permissions, keep them out of backups and dotfile repos that leave the trust boundary, and never paste them into tickets or gists.</li>
+  <li><strong>Treat Cursor&rsquo;s cached context as sensitive data.</strong> Chat history and code snippets sitting in a local state database are a codebase leak waiting for a stealer. Prefer workspaces without secrets in context, and know what your assistant persists to disk.</li>
+  <li><strong>Scope keys so theft is bounded.</strong> Short-lived, least-privilege tokens per project; MCP servers that reference a vault instead of embedding secrets; API quotas with alerts. A stolen key should buy the attacker one room, not the building.</li>
+  <li><strong>Watch the identity, not just the endpoint.</strong> Stolen session tokens bypass the endpoint entirely — the malicious activity arrives as the legitimate user. Alert on anomalous API usage, new geographies, and quota spikes on AI-provider accounts, and make token revocation a one-step runbook, not a support ticket.</li>
+  <li><strong>Block and detect the knowns.</strong> Symantec&rsquo;s <code>Infostealer.Aoki</code> detection, the published file hashes, and the three <code>/gate</code> domains are immediate wins — while remembering that two samples already use infrastructure of their own.</li>
+</ul>
+
+<p><em>Verification note: the family naming (Aoki aka Aokigahara, decryption-string origin, unclear link to the Japanese forest name), first-seen timing (earlier in 2026), absence of group attribution and family links, the AI target list (.claude.json, Claude desktop cookies, ChatGPT cookies, Codex config.toml and .env, Copilot/Cursor/Gemini/JetBrains/Kiro tokens, AWS credentials), the no-source-code rule and its Cursor local-state exception, the identity-and-quota abuse model, the breadth of the non-AI target list, the /gate C2 shape and its three domains, the older IP-and-port-8080 samples, the Infostealer.Aoki detection name, and the significance framing (card-data comparison, LLMjacking, Telegram/Discord victim-graph reading) were read first-hand from the Symantec (security.com) Threat Hunter Team blog HTML published 15 October 2026 and fetched on 16 October 2026, cross-checked against Infosecurity Magazine&rsquo;s 15 October summary of the same research. We tested nothing and infected nothing.</em></p>
+
+<p><strong>Sources:</strong></p>
+<ul>
+  <li><a href="https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Symantec Threat Hunter Team — Aoki: Infostealer Targets AI Coding Assistant Credentials (15 October 2026; primary research — target list, C2, IoCs, significance)</a></li>
+  <li><a href="https://www.infosecurity-magazine.com/news/aoki-infostealer-ai-coding/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine — New Aoki Infostealer Targets AI Coding Assistant Credentials (15 October 2026; secondary summary, cross-check)</a></li>
+  <li><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">al-ice.ai — The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens (10 October 2026; the MaaS counterpart — versioned, advertised, price-hiked AI collection)</a></li>
+  <li><a href="/posts/2026/10/socradar-ai-identity-exposure-stolen-ai-logins-stealer-logs/">al-ice.ai — The Stolen AI Login: 80,000 Domains in Stealer Logs and the Session MFA Cannot Save (3 October 2026; why stolen AI sessions bypass authentication controls)</a></li>
+</ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</a></h3><p>Gen Threat Labs attributes the CallbackBeaver Rust infostealer to Warden Stealer: a malware-as-a-service operation with its own loader, a built-in crypto clipper, and official collection of AI coding-agent tokens, MCP credentials, and prompt histories since v1.9. No CVE and no patch — this is endpoint theft, and your agent config directory is a credential store.</p><a class="text-link" href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-24">2026-09-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">A Branch Named Like a Commit Broke Plugin Pinning in Four Coding Agents</a></h3><p>Plugin4Shell, disclosed September 17 by AIR Security, bypasses plugin SHA pinning in Claude Code, Codex, GitHub Copilot, and Gemini CLI for zero-click RCE. Claude Code 2.1.179 and Codex 0.146.0 are patched; Copilot has no fix and Gemini CLI will not get one.</p><a class="text-link" href="/posts/2026/09/plugin4shell-zero-click-rce-coding-agent-sha-pin-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-05-01">2026-05-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/05/venturebeat-six-exploits-ai-coding-agents-credential-theft/">VentureBeat — Six Exploits Against AI Coding Agents, All Targeting Credentials</a></h3><p>Six independent research teams demonstrated exploits against Codex, Claude Code, Copilot and Vertex AI — every single attack went for the credential, not the model.</p><a class="text-link" href="/posts/2026/05/venturebeat-six-exploits-ai-coding-agents-credential-theft/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

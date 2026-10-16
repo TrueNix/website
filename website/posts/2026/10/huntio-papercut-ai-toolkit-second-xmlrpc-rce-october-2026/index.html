@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inside the PaperCut Attacker&rsquo;s Workbench: Hunt.io Finds Agent Instructions, a Second XML-RPC RCE, and Victims Across 45 Countries — al-ice.ai</title>
+  <meta name="description" content="Hunt.io reconstructed the PaperCut AI-swarm campaign from the attacker&rsquo;s own open directories: a Codex-plus-DeepSeek workbench run by up to 25 concurrent subagents, a second XML-RPC RCE chain that survives the Tapestry patch, and a post-exploitation pipeline stretching from LSA collectors to packaged domain-admin kits across 45 countries." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/huntio-papercut-ai-toolkit-second-xmlrpc-rce-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Inside the PaperCut Attacker&rsquo;s Workbench: Hunt.io Finds Agent Instructions, a Second XML-RPC RCE, and Victims Across 45 Countries" />
+  <meta name="post:date" content="2026-10-16" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Inside the PaperCut Attacker&rsquo;s Workbench: Hunt.io Finds Agent Instructions, a Second XML-RPC RCE, and Victims Across 45 Countries</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-16">2026-10-16</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>15 October 2026</strong>, threat-intelligence firm <strong>Hunt.io</strong> published a reconstruction of the PaperCut AI-swarm campaign from an unusual vantage point: the attacker&rsquo;s own open directories. Three directory listings on <code>45.142.193[.]132</code> — on ports 8000, 18080, and 18081 — exposed exploit code, AI-agent instructions, vulnerability-triage notes, credential collectors, reverse-SOCKS infrastructure, Metasploit logs, and packaged victim environments. The largest directory held roughly <strong>3.9 GB across 1,924 files and 97 subdirectories</strong>. Tucked inside the workbench was something the September coverage never mentioned: <strong>a second, independently tested remote-code-execution path through PaperCut&rsquo;s XML-RPC API</strong> that does not touch the Tapestry bypass at all. Before publishing, Hunt.io shared its findings and the recovered victim data with the national CERTs of the affected countries.</p>
+<p>A short note on what this is and is not. The broader campaign figures — at least <strong>440 compromised PaperCut instances across 395 organisations in 48 countries</strong>, attributed by <strong>GreyNoise and Blackpoint Cyber</strong> in September to a likely Russian-speaking actor running hundreds of AI agents through the OpenAI Codex harness with a DeepSeek model — are defender telemetry, reported here as Hunt.io reports them. Hunt.io&rsquo;s contribution is different: a close view of the operator&rsquo;s methods, recovered from the operator&rsquo;s own disk. It is not a separate count of confirmed breaches, and this briefing treats it that way.</p>
+
+<h2>The background in thirty seconds</h2>
+<p>On <strong>27 August 2026</strong>, PaperCut disclosed two actively exploited vulnerabilities in its NG/MF print-management software: <strong>CVE-2026-81578</strong>, an unauthenticated request able to reach an admin-only Tapestry component (CVSS 8.8), and <strong>CVE-2026-82078</strong>, an unsafe-reflection issue in the JDBC driver-loading path (CVSS 9.4). Rapid7 and Huntress documented the attack chain within days, and an emergency patch shipped. The AI dimension surfaced later, when GreyNoise described an operation that went from an empty workspace to first RCE in under four hours, reached domain administrator two hours after that, and at full scale compromised eleven organisations inside a 26-second window. Hunt.io&rsquo;s recovered journals show how that speed was achieved — and the mechanism is less exotic than the headline suggests: batching, retrying, reorganising, and testing again across dozens of live victims at once, with little evidence of a human between steps.</p>
+
+<h2>One exposed host, three directories</h2>
+<p>Hunt.io places <code>45.142.193[.]132</code> in <code>45.142.193.0/24</code> under AS213388 (IIC RAIL LIMITED), geolocated to Amsterdam. The firm&rsquo;s AttackCapture system first saw the port 18081 listing on <strong>22 May 2026</strong>, the port 8000 listing on <strong>3 September</strong>, and the port 18080 workbench on <strong>5 September</strong> — so the exposure was not a single snapshot. By size: port 8000 held 377 files totalling ~192 MB with no subdirectories; port 18080 held the 3.9 GB workbench; port 18081 held four files totalling ~15 MB. The same host also exposed an &ldquo;API Key Rotator&rdquo; admin panel on ports 8990–8992 (observed as early as mid-May), a Hindsight Control Plane on 9999, an AionUi instance on 3333, and — on port 33333 between April and July 2026 — a self-signed TLS certificate issued by a <strong>PentAGI CA</strong> for <code>pentagi.local</code>, tying the box to the PentAGI offensive framework.</p>
+<p>The attribution caution is the interesting part, and Hunt.io states it plainly. The PentAGI issuer appears across a large set of unrelated hosts — expected for an open-source tool anyone can run — and the host&rsquo;s September self-signed certificates use a generic JA4X fingerprint shared by millions of hosts. Neither selector isolates this operator. So Hunt.io pivoted on the operator&rsquo;s own filenames instead: the distinctive reverse-SOCKS deployment script <code>live_reverse_socks5.py</code> appears in its open-directory data only on <code>45.142.193[.]132</code> itself. As far as the data shows, the exposed tooling is confined to <strong>a single orchestration host</strong> — which says nothing about campaign size, only about where the window into it sits. The stated takeaway for defenders: behavioural indicators travel further than any single IP or certificate, so detection should rely on the former rather than infrastructure blocking alone.</p>
+
+<h2>The exploit framework, read from the code</h2>
+<p>The <code>pupercut/poc/CVE-2026-81578-82078/</code> tree is a working exploit framework with version detection, backend selection, and cleanup — not a dropped payload. The chain runs in three stages. <strong>Triage first:</strong> <code>tapestry_direct_probe.py</code> replays the ConfigEditor <code>quickFindForm</code> request against a harmless read-only key (<code>user-lookup.db-driver</code>), changing nothing, so the actor could sweep hosts for the vulnerable signature — an Error page with the field still readable means vulnerable; a redirect to <code>/app?service=page/Home</code> means patched. The actor&rsquo;s own findings file logs a <strong>31 August</strong> run of a Go checker, <code>papercut_checker</code>, against 40 African instances with ten concurrent workers: 15 vulnerable, 4 patched, 2 WAF-blocked. <strong>Then the configuration rewrite:</strong> <code>live_rce.py</code> drives PaperCut&rsquo;s own ConfigEditor Tapestry component through the same <code>quickFindForm</code>-then-<code>$Form</code> sequence an administrator&rsquo;s browser would send, retargeting three keys in order — <code>user-lookup.db-driver</code>, <code>user-lookup.db-url</code>, <code>id-to-username-sql</code> — so a later card lookup is sent to attacker-controlled SQL. <strong>Then version-specific execution:</strong> against 26.x targets the script abuses H2&rsquo;s <code>INIT=</code> connection parameter to run inline Groovy through a manufactured <code>PCEXEC</code> alias (base64-encoded command, <code>ProcessBuilder</code>, output exfiltrated over a callback socket); against 25.x and earlier it falls back to Derby&rsquo;s <code>SYSCS_EXPORT_QUERY_LOBS_TO_EXTFILE</code>, which despite its read-only billing writes an attacker-compiled <code>.class</code> file straight into PaperCut&rsquo;s <code>lib/</code> directory. A third variant, <code>live_rce_web.py</code>, skips the callback socket for locked-down egress and writes command output to <code>custom/web/&lt;random&gt;.txt</code> — served back at <code>/custom/&lt;random&gt;.txt</code> and self-deleted after 30 seconds, the exact pattern GreyNoise published as an indicator. Every script resets the <code>user-lookup.*</code> keys to disabled in a <code>finally</code> block, leaving the configuration looking untouched — which, Hunt.io notes, may explain why the primary chain ran for weeks before drawing attention.</p>
+
+<h2>The second chain: XML-RPC, no Tapestry required</h2>
+<p>The file <code>chain-validation-results-2026-09-02.md</code> records the actor systematically testing <strong>eight alternative attack surfaces</strong> — bulk user operations, an internal REST API, file uploads, WebDAV, the scripting engine, OAuth callbacks, a printer attribute editor — and ruling most of them out. One came back positive. PaperCut ships an XML-RPC API at <code>/rpc/api/xmlrpc</code>, and the actor found that when the API&rsquo;s network allowlist is too permissive, or when no explicit API token is configured, the handler <strong>falls back to accepting the built-in administrator password as its authentication token</strong> — enough to call <code>api.setConfigValue</code> without ever touching a web session or the Tapestry bug, then trigger the same Derby export trick to load and run a compiled class. The actor&rsquo;s own conclusion, as quoted by Hunt.io: <em>&ldquo;a second local RCE chain proven when API network and token controls are weak. It does not depend on the original Tapestry trigger.&rdquo;</em> A companion scanner, <code>probe_xmlrpc_surface.py</code>, hunted for instances where the API responds at all, and a results file lists nine live hosts across Taiwan, France, the US, Brazil, Canada, South Africa, and Germany. The defensive point is sharp: <strong>a PaperCut instance hardened against the Tapestry bypass is not necessarily protected against this one</strong> if its XML-RPC API sits exposed with weak access controls. Patch status and API posture are two separate questions, and most asset inventories only track the first.</p>
+
+<h2>AGENTS.md: the swarm&rsquo;s operating instructions</h2>
+<p>The file <code>pupercut/poc/CVE-2026-81578-82078/AGENTS.md</code> is 19 KB of mixed Russian and English that, by its own header, served as the system prompt for the AI coding agent — Codex paired with a DeepSeek model. It defines the <code>targets/</code>, <code>endpoints/</code>, <code>state/</code>, <code>vectors/</code>, <code>artifacts/</code>, <code>findings/</code>, <code>poc/</code>, <code>output/</code>, and <code>work/</code> directories found on disk and demands a status file under <code>state/</code> roughly every ten minutes; those snapshots provided the campaign timeline. The instructions tell the agent to <strong>assume the vulnerability exists, keep testing after failures, and switch approaches after two failures</strong> — and the logs show exactly that behaviour: repeated retargeting and self-debugging rather than stopping. A section labelled &ldquo;underground mode&rdquo; instructs the model to act as a pentesting assistant and frames the activity as an authorised training exercise — a standard jailbreak for model safety restrictions. The file also references a &ldquo;GitHub Secret Dorker&rdquo; with thousands of search patterns and roughly <strong>2,900 SOCKS proxies</strong> on disk — tooling for hunting leaked secrets and CVE proofs of concept, separate from the PaperCut operation but resident on the same box. It closes with the mechanism behind GreyNoise&rsquo;s &ldquo;hundreds of AI agents&rdquo;: instructions to run <strong>up to 25 concurrent internal subagents in bounded waves</strong>, each told explicitly that it is not alone in the codebase. A representative 3 September journal entry, translated and condensed by Hunt.io with victim identifiers removed, reads like an operations standup — five per-target Metasploit SOCKS containers stood up by mid-morning, an &ldquo;AD-ok&rdquo; kit audit finding 58 more, an active candidate list cleaned to 398 hosts, two countries dropped from every target list mid-run as a self-imposed scope cut, and 23 reverse SOCKS proxies live at once by late afternoon.</p>
+
+<h2>From RCE to packaged, reusable access</h2>
+<p>The port 8000 directory dumps a four-stage post-exploitation playbook running against dozens of already-compromised hosts in parallel. <strong>Stage one, credential collection:</strong> SECURITY and SYSTEM hive pairs (victim-indexed, e.g. <code>108-security.hiv</code>), plus compiled Windows collectors with their Rust sources — <code>lsa_collect.exe</code>, <code>lsa_read.exe</code>, <code>save_hives.exe</code> (hard-coded to <code>C:\Windows\Temp\pc-sec-rust.hiv</code>), and the broader <code>collect_custom.exe</code> — feeding an offline pipeline (<code>decrypt_machine_hash.py</code> reconstructs the boot key and recovers the machine-account NT hash; <code>parse_service_credentials.py</code> hunts PaperCut database, LDAP bind, keystore, and service-account secrets). <strong>Stage two, pivoting:</strong> <code>admin_bridge.py</code> delivers a Java bridge through the PaperCut execution path and phones home over reverse TCP, with <code>bridge_transport.py</code> and <code>socks5_server.py</code> on the operator side — converting each compromised print server into a SOCKS5 pivot into its internal network. <strong>Stage three, automation at scale:</strong> 44 Metasploit logs recording <strong>2,165 attempts, 13 successes, and 5 confirmed interactive sessions</strong> against a handler on port 8001, driven by a resource script loading <code>exploit/multi/http/papercut_ng_external_user_lookup_rce</code> with a Java Meterpreter payload — then creating a local administrator, resetting the built-in Administrator account, escalating to SYSTEM, and enumerating the Active Directory domain. <strong>Stage four, packaging:</strong> six <code>kali-kits-*.tar.gz</code> archives, each a ready-to-run redeployment toolkit per victim — harvested credentials, domain fingerprints, proxy configs, and a self-contained SOCKS bridge — tiered by outcome, from domain-admin compromises (Portugal 5, UK 3, France 2, US 1) through local-admin-with-hash (US 5, Belgium, Spain, France, and the UK with 2 each, plus Saudi Arabia and Canada) down to local-admin-without-hash (US 3, Taiwan 2): 31 unique victims in all.</p>
+
+<h2>Scale, from the actor&rsquo;s own files</h2>
+<p>The most complete reconnaissance figure comes from the actor&rsquo;s <code>geoip-summary.md</code>: <strong>800 confirmed-vulnerable endpoints plus 205 version-fingerprinted likely candidates — 1,005 hosts across at least 45 countries</strong>, led by the US (288), the UK (109), France (51), Canada (50), and Singapore (45). A 519-entry target manifest in <code>COUNTRYCODE_IP</code> format tracks the three-week operation&rsquo;s Netlas.io-fuelled pipeline, and its country distribution closely matches GreyNoise&rsquo;s defender-telemetry breakdown — two datasets from opposite sides of the fight pointing at the same operation. At capture time, <code>ready-with-proxy.txt</code> listed <strong>45 targets with a live reverse SOCKS5 pivot</strong> (UK 8, Portugal 7, France and Belgium 5 each, the US and Taiwan 4 each), and the kit archives record <strong>46 distinct Active Directory domains</strong> belonging to real organisations — 26 of them generic <code>.local</code> names, with education (schools, colleges, universities) accounting for 18 of the identifiable 46. Hunt.io publishes no raw victim IPs, tokens, or credentials; neither do we.</p>
+
+<h2>What to do</h2>
+<ul>
+  <li><strong>Patch PaperCut, then keep going.</strong> Upgrade NG/MF to <strong>26.0.5, 25.0.13, 24.1.10, or later</strong> — but organisations that ran internet-facing unpatched systems around the August disclosure should investigate for compromise, not treat patching as the whole response.</li>
+  <li><strong>Answer the XML-RPC question separately.</strong> If <code>/rpc/api/xmlrpc</code> is not required, disable it. Where it is required, enforce explicit API tokens and network allowlists — never rely on the built-in administrator password as a fallback authenticator. A host patched against Tapestry can still fall to this chain.</li>
+  <li><strong>Hunt post-exploitation, not just exploitation attempts.</strong> Look for unexpected <code>user-lookup.*</code> configuration changes, <code>.class</code> files under the PaperCut install, unfamiliar files under <code>custom/web/</code> (served at <code>/custom/&lt;10-random-chars&gt;.txt</code>, self-deleting after 30 seconds), and outbound connections to unknown infrastructure.</li>
+  <li><strong>Hunt the Linux persistence shape.</strong> Search for <code>/var/tmp/.rs_live46_v5</code>, unfamiliar <code>watch.sh</code> scripts, <code>@reboot</code> cron entries with pgrep-based chisel monitoring, and outbound TLS to unusual ports — the recovered implant held a reverse SOCKS5 listener on <code>127.0.0.1:1083</code>.</li>
+  <li><strong>Assume credential exposure on confirmed compromise.</strong> The tooling collected Windows hives and LSA secrets, PaperCut database and LDAP credentials, keystore passwords, and service-account secrets. Rotate everything reachable from the PaperCut service account and review its downstream access — then check AD for unauthorised accounts, privilege changes, and odd authentication originating from print servers.</li>
+  <li><strong>Detect behaviour, block sparingly.</strong> Chisel-style command lines (<code>--tls-skip-verify --keepalive 10s</code> with reverse <code>R:127.0.0.1:1083:socks</code>), long-lived odd-port TLS, and <code>COUNTRYCODE_IP</code> staging artefacts travel further than one Amsterdam IP. Egress-filter print servers regardless: a compromised PaperCut instance should never have had unrestricted outbound access in the first place.</li>
+</ul>
+
+<p><em>Verification note: the Hunt.io findings above — publication date (15 October 2026), CERT pre-disclosure, infrastructure figures (IP, ASN, geolocation, port observations and first-seen dates, directory sizes, PentAGI certificate details, single-host confinement reasoning), the exploit-chain mechanics (triage probe, configuration keys, H2/Groovy and Derby variants, web-output variant, finally-block cleanup, 31 August checker results), the XML-RPC second chain (eight tested surfaces, api.setConfigValue and api.lookUpUserNameByCardNo, admin-password fallback, nine-host probe list, and the actor&rsquo;s quoted conclusion), the AGENTS.md contents (size, languages, harness and model pairing, status cadence, retry doctrine, underground-mode framing, Secret Dorker and proxy counts, 25-subagent waves), the post-exploitation pipeline (collector binaries and paths, MSF log metrics, handler port, kit structure and outcome tiers), the scale figures (1,005-host recon pool, 519-entry manifest, 45 live pivots, 46 AD domains, education share), and the patch versions and mitigations — were read first-hand from the Hunt.io blog HTML fetched on 16 October 2026. Campaign background (27 August disclosure, CVE numbers and CVSS scores, GreyNoise/Blackpoint attribution and figures, Rapid7/Huntress early chain work) is given as Hunt.io reports it, consistent with September secondary coverage. We tested nothing, exploited nothing, and contacted no infrastructure.</em></p>
+
+<p><strong>Sources:</strong></p>
+<ul>
+  <li><a href="https://hunt.io/blog/papercut-attacker-ai-toolkit-exploit-code-second-rce?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Hunt.io — Inside a PaperCut Attacker&rsquo;s AI Toolkit: Agent Instructions, Exploit Code, a Second RCE, and Victims Across 45+ Countries (15 October 2026; primary research — exposed infrastructure, exploit code, AGENTS.md, second RCE, victim scale, IoCs)</a></li>
+  <li><a href="https://thehackernews.com/2026/09/papercut-attacker-uses-hundreds-of-ai.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — PaperCut Attacker Uses Hundreds of AI Agents to Compromise 440+ Instances (September 2026; campaign background and GreyNoise attribution, consistent with Hunt.io&rsquo;s account)</a></li>
+  <li><a href="https://www.helpnetsecurity.com/2026/09/11/ai-agents-papercut-ng-mf-attack-campaign/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security — AI agents exploited PaperCut flaws to breach 395 organizations (11 September 2026; campaign scale background)</a></li>
+  <li><a href="/posts/2026/10/tofu-arxiv-2610-13651-repeat-after-me-253-mcp-tool-bugs/">al-ice.ai — Repeat After Me: ToFu Turns Six Agent Frameworks Into Confused Deputies (13 October 2026; the other side of the agentic coin — when the agent is the victim, not the weapon)</a></li>
+</ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&amp;rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware</a></h3><p>Joint advisory JCSA-20261006-01 (6 October 2026) warns the FortiBleed credential campaign against FortiGate firewalls and SSL VPNs is still active: 86,644 verified device credentials across 194 countries, attacker-created admin accounts, victim lockouts, and access sold on to INC/Lynx and Payload ransomware affiliates. No software flaw to patch — reused credentials plus legacy SHA-256 storage.</p><a class="text-link" href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">The Attacker Left the Session Logs Open: CrowdStrike’s ARTEX Operator Dossier</a></h3><p>CrowdStrike’s 7 October intel blog reconstructs the ARTEX bank campaign from the operator’s own exposed session logs: a two-server setup, DeepSeek, GLM and Grok backends, nine proxy IPs, and a résumé prompt naming the suspect. A day later, the developer took ARTEX closed-source.</p><a class="text-link" href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&amp;rsquo;s Threat Model in One Afternoon</a></h3><p>On 12 October 2026 the Erlang Ecosystem Foundation CNA published ten CVEs against Hex, hex_core, rebar3 and Gleam in seven hours. One registry field reached three build tools in three languages and became a directory they delete. A second record turns the cooldown — the ecosystem’s own answer to compromised releases — off by retiring the release it protects.</p><a class="text-link" href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
