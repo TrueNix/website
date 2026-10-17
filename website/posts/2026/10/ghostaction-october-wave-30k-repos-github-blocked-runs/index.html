@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GhostAction&rsquo;s October Burst, Fully Counted: 30,000 Repos, Three Payload Versions, and the Runs GitHub Stopped — al-ice.ai</title>
+  <meta name="description" content="GitGuardian&rsquo;s 13 October update closes the books on GhostAction&rsquo;s October burst: 30,000+ repositories across 3,000 users and orgs via roughly 1,900 compromised accounts, a payload that evolved through three versions in a single day, and a platform intervention — GitHub blocking the malicious workflow from 9 October — that left the follow-up waves on 10 and 12 October firing blanks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/ghostaction-october-wave-30k-repos-github-blocked-runs/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GhostAction&rsquo;s October Burst, Fully Counted: 30,000 Repos, Three Payload Versions, and the Runs GitHub Stopped" />
+  <meta name="post:date" content="2026-10-17" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GhostAction&rsquo;s October Burst, Fully Counted: 30,000 Repos, Three Payload Versions, and the Runs GitHub Stopped</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-17">2026-10-17</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>13 October 2026</strong>, GitGuardian <a href="https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">updated</a> its GhostAction tracking post with the final accounting of the October burst: between <strong>8 and 12 October</strong>, with the major spike on <strong>8–9 October</strong>, the operator targeted <strong>more than 30,000 repositories across 3,000 users and organisations</strong> after compromising the GitHub accounts of <strong>about 1,900 users</strong>, attempting to extract <strong>3,174 secrets</strong> from public repositories&rsquo; CI. This is the third installment of a story we have tracked twice already — our <a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">7 October briefing on the September wave</a> (772 repositories, the finding that the campaign never stopped) and our <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">9 October briefing on Socket&rsquo;s 8 October burst report</a> (346 repositories, the new git-history sweep). The update is not a reprint. It contains three things neither earlier briefing had: a payload that visibly evolved through three versions inside a single day, the operator&rsquo;s own batch ledger, and the day the platform stepped in.</p>
+
+        <h2>Three payload versions in one afternoon</h2>
+        <p>GitGuardian describes the new wave as more experimental and manual than previous ones, and the payload history supports that reading. The first version kept the classic Actions-secret theft and added a history-scanning stage: eleven secret-detection regexes covering AWS key IDs, GitHub and GitLab personal access tokens, AI-related secrets, and other cloud credentials, run against both the working tree and <code>git log -p --all</code>. GitGuardian notes the telling detail that scanning repository contents only pays off against private repositories — for public ones the history is already visible — which reads as intent to reach further than public CI. This version went to about 1,800 repositories. The second version added context retrieval around AWS key IDs and case-insensitive matching, and was deployed onto roughly a hundred repositories the first version had already hit — a patch release aimed at existing victims. The final version extended that context capture into the history scan, and that is the version that went industrial: first 160 previously observed victims, then, twenty minutes later, 28,000 new repositories on 8–9 October. Note the pattern-count discrepancy honestly: Socket&rsquo;s 8 October snapshot counted thirteen credential patterns where GitGuardian&rsquo;s first-version analysis counts eleven regexes. The two teams observed different slices of a payload that was changing under observation, so treat the counts as snapshots, not as a contradiction to adjudicate.</p>
+
+        <h2>The attacker keeps a ledger, and it leaked into our telemetry</h2>
+        <p>The update&rsquo;s most useful table is one the operator built for themselves. Six batch labels, carried as a query parameter on the exfiltration endpoint, split the wave into trackable batches: an untagged first version (1,713 commits), <code>bling</code> and <code>blingnew</code> first-version batches, a <code>blingnew</code> second-version batch of 101, a <code>monami</code> third-version batch of 159, and then the <code>new</code> batch — 29,431 commits at 14:07 on 8 October, all of which executed. Two further third-version batches followed: <code>mnsft</code> (84 commits, 10 October) and <code>security</code> (65 commits, 12 October), neither of which executed. This is the same operational habit as the September wave&rsquo;s per-injection <code>?inj=</code> tracking API, and it serves defenders twice: the labels segment the incident timeline per repository, and the parameter itself is a huntable egress marker alongside the unchanged endpoint, <code>193.32.204.199</code>. An adversary instrumenting their own campaign for attribution is doing part of your incident scoping for you — if you log the query strings.</p>
+
+        <h2>9 October: the defence moved from accident to intervention</h2>
+        <p>The September wave was blunted by an accident of platform design: GitHub held most injected-workflow runs for first-time-contributor approval, so of 3,669 runs only 499 executed. The October wave was blunted by an action: GitGuardian reports that <strong>GitHub started preventing the malicious workflow from running on 9 October</strong>, which is why the <code>mnsft</code> and <code>security</code> batches — pushed on 10 and 12 October with the most evolved payload — could extract nothing. That is a genuine escalation in the platform&rsquo;s role, from passive gate to active participant, and it is the reason the final damage is far smaller than 30,000 repositories suggests. Two cautions come with it. First, a blocked run is only protective if you know it happened: any repository with an <em>executed</em> run from the 8–9 October window — GitGuardian&rsquo;s table marks every batch through <code>new</code> as executed — must be treated as exfiltrated, and the absence of the workflow file today says nothing about whether its runs executed last week. Second, platform intervention is a control you neither own nor are notified through in your own tooling; the September lesson (approval gating holds only where defaults are intact) has an October counterpart (blocking holds only while the platform recognises the implant). Both times the defence belonged to someone else&rsquo;s settings page.</p>
+
+        <h2>The victims overlap, so the credentials were never rotated</h2>
+        <p>GitGuardian notes that part of the October victims had already been observed in the September 2025 and August 2026 waves — the operator is, in part, walking back through doors left open by unrotated secrets compromised months or years ago. That lands exactly on our 7 October finding: 92 &ldquo;update&rdquo; commits repointing year-old implants, and only 16% of September victims cleaned by 5 October. It also sharpens the DevOpsGPT lesson from the same report — one compromised account exploited by multiple unrelated actors — into a general rule for this campaign: rotating the secrets the workflow named is necessary but not sufficient. The GitHub credential that authenticated the push is itself compromised material, quite possibly sitting in an infostealer log or an old commit, and it is shared infrastructure for whoever holds a copy. Every October victim whose push credential predates the wave needs that credential found and revoked, not just the exfiltrated CI secrets rotated — or the next burst, with a fourth payload version, walks in the same way.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Hunt the batch markers, not just the endpoint.</strong> Search egress logs for <code>193.32.204.199</code> including the batch query parameter (<code>?c=bling</code>, <code>blingnew</code>, <code>monami</code>, <code>new</code>, <code>mnsft</code>, <code>security</code>) — the label tells you which payload version and which commit window hit you. Search orgs for <code>security-audit.yml</code> plus the older <code>github_actions_security.yml</code> and <code>security-check.yml</code> filenames.</li>
+          <li><strong>Audit run records, not the tree.</strong> A deleted workflow proves nothing. Check Actions run history for the injected workflows: any <em>executed</em> run in the 8–9 October window means the named secrets plus any tree/history matches were transmitted. Runs from the 10 and 12 October batches should show as prevented — verify that rather than assuming it.</li>
+          <li><strong>Revoke the push credential, then rotate the loot.</strong> Find the token, PAT, or session that authenticated each malicious commit — check the organisation audit log by account and push window — and revoke it along with every secret the workflow named. Treat overlapping victims of earlier waves as compromised at the account level until proven otherwise.</li>
+          <li><strong>Scan full history on any repo the v3 payload touched.</strong> The final payload captured context lines around AWS key IDs from both tree and history. <code>git log -p --all</code> including unreachable objects, AWS CloudTrail review for the exposure window, and new-IAM-principal checks apply to every executed-run repository.</li>
+          <li><strong>Watch for the fourth version.</strong> The operator iterated v1 to v3 within hours and pushed twice more after the platform intervened. Monitor for new filenames, new batch labels on the same endpoint, and new endpoints — the September-to-October continuity says the campaign adapts rather than stops.</li>
+        </ul>
+        <p><em>Our verification was read-only and external: we read GitGuardian&rsquo;s updated report directly for the October wave scope (30,000+ repositories, 3,000 users/orgs, ~1,900 accounts, 3,174 secrets), the three payload versions and their deployment order, the six batch labels with commit counts and execution outcomes, the 9 October GitHub intervention and the inert 10/12 October batches, the endpoint continuity, and the victim-overlap finding. The 8 October Socket burst figures and the September-wave run statistics are carried from our earlier briefings, linked below. Press tallies published 15–16 October match GitGuardian&rsquo;s figures and are treated as corroboration, not as sources. We executed no workflow, reproduced no payload stage, and omit matched-pattern details that would make the stealer reusable.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.gitguardian.com/ghostaction-github-actions-supply-chain-attack-returns/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitGuardian — &ldquo;The campaign that never stopped: tracking GhostAction from 2025 to 2026&rdquo; (updated 13 October 2026; October 8–12 wave scope, v1–v3 payload evolution, six batch labels with commit counts and execution outcomes, GitHub run-blocking from 9 October, victim overlap with earlier waves)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">al-ice.ai — &ldquo;GhostAction Learned to Read Git History&rdquo; (9 October 2026; Socket&rsquo;s 8 October burst, henrywoo/kitao accounts, thirteen-pattern sweep, Pyxel publishing-credential exposure)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">al-ice.ai — &ldquo;It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty&rdquo; (7 October 2026; September-wave scope, approval-gating run statistics, 16% cleanup, 92 &ldquo;update&rdquo; commits, DevOpsGPT multi-actor case)</a></li>
+          <li><a href="https://socket.dev/blog/ghostaction-cloud-credentials?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Socket — &ldquo;New GhostAction Wave Hits Hundreds of Repos, Expanding Beyond CI/CD Secrets to Cloud Credentials&rdquo; (9 October 2026; 8 October burst mechanics and update-window figures)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">GhostAction Learned to Read Git History — the October Burst Sweeps the Whole Tree for Cloud and AI Keys</a></h3><p>Socket reported 9 October 2026 that a new GhostAction burst on 8 October pushed security-audit.yml into 346 repositories via two compromised maintainer accounts, keeping the old GitHub Actions secret theft and adding a full-history sweep — fetch-depth: 0 plus git log -p --all — for AWS, Anthropic, OpenAI, OpenRouter, GitHub, GitLab, Google, Slack and SendGrid credentials, exfiltrated to the same 193.32.204.199 endpoint. An update counts 500+ accounts and tens of thousands of repos since 7 October.</p><a class="text-link" href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty</a></h3><p>GitGuardian reports the GhostAction GitHub Actions supply-chain campaign pushed a secret-stealing workflow to 772 public repositories between 31 August and 30 September 2026, exfiltrating 26 secrets from 13 repos. Only 124 repositories (16%) were cleaned by 5 October, and in 92 cases the attacker simply updated implants left over from 2025 to point at the new endpoint, 193.32.204.199.</p><a class="text-link" href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Patching Was Never the Fix: FBI and Secret Service Say FortiBleed&amp;rsquo;s 86,644 Stolen FortiGate Credentials Now End in Lockouts and Ransomware</a></h3><p>Joint advisory JCSA-20261006-01 (6 October 2026) warns the FortiBleed credential campaign against FortiGate firewalls and SSL VPNs is still active: 86,644 verified device credentials across 194 countries, attacker-created admin accounts, victim lockouts, and access sold on to INC/Lynx and Payload ransomware affiliates. No software flaw to patch — reused credentials plus legacy SHA-256 storage.</p><a class="text-link" href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
