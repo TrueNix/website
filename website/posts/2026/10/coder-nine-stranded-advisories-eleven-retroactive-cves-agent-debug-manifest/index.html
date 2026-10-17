@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Everything After 10 August Is Invisible: Coder&rsquo;s Nine Stranded Advisories and Eleven Retroactive CVEs — al-ice.ai</title>
+  <meta name="description" content="VulnCheck published eleven Coder CVEs in 8.6 seconds on 17 October 2026, with identifiers spanning 2024, 2025 and 2026. Every one is a retroactive number for a Coder repository advisory that shipped without a CVE. We swept all 37 of Coder&rsquo;s advisories against the GitHub global database and OSV and found a clean cutoff: all 28 published through 2 July resolve; all 9 published from 10 August onward return 404 in both. One of the nine is critical. A Coder 2.35.0 deployment scans completely clean in OSV while a vendor-published high-severity credential-theft advisory names it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/coder-nine-stranded-advisories-eleven-retroactive-cves-agent-debug-manifest/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Everything After 10 August Is Invisible: Coder’s Nine Stranded Advisories and Eleven Retroactive CVEs" />
+  <meta name="post:date" content="2026-10-17" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Everything After 10 August Is Invisible: Coder&rsquo;s Nine Stranded Advisories and Eleven Retroactive CVEs</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-17">2026-10-17</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>At <strong>19:16:27.860Z on 17 October 2026</strong>, NVD began publishing eleven CVEs against <a href="https://github.com/coder/coder?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Coder</a>, the self-hosted remote development platform whose repository description reads, verbatim, <em>&ldquo;Secure environments for developers and their agents.&rdquo;</em> The last of the eleven landed at <strong>19:16:36.497Z</strong> &mdash; an <strong>8.6-second window</strong>, all assigned by <code>disclosure@vulncheck.com</code>, all still at <code>vulnStatus: Received</code>. The identifiers themselves are the first oddity: <strong>CVE-2024-58398</strong>, <strong>CVE-2025-71435</strong>, and <strong>CVE-2026-111926</strong> through <strong>CVE-2026-111934</strong>. Three year-prefixes in one burst.</p>
+
+        <p>None of these are new vulnerabilities. Every one is a <strong>retroactive identifier for a Coder repository security advisory that the vendor published, correctly and with a shipped fix, without ever obtaining a CVE</strong> &mdash; the oldest of them almost two years ago. We traced all eleven through their NVD reference URLs to a GitHub advisory, and confirmed via the repository security-advisory API that all eleven of those advisories carry <code>cve_id: null</code> to this day.</p>
+
+        <p>That alone would be a modest housekeeping story. The reason it is not is what we found when we stopped looking at the eleven and swept all <strong>37</strong> of Coder&rsquo;s repository advisories against the GitHub <em>global</em> advisory database and OSV.</p>
+
+        <h2>A cutoff you can set your watch by</h2>
+
+        <p>We queried every advisory ID against <code>api.github.com/advisories/&lt;GHSA&gt;</code> (the global database that feeds Dependabot) and against <code>api.osv.dev/v1/vulns/&lt;GHSA&gt;</code>. The result is not a scattering of gaps. It is a date:</p>
+
+        <ul>
+          <li><strong>All 28 advisories published from 4 March 2024 through 2 July 2026 return HTTP 200 in both</strong> &mdash; global database and OSV, with proper <code>Go</code> ecosystem coordinates on <code>github.com/coder/coder/v2</code> and, in most cases, a <code>GO-2026-xxxx</code> Go vulnerability database alias.</li>
+          <li><strong>All 9 advisories published from 10 August 2026 onward return HTTP 404 in both.</strong> Every single one.</li>
+        </ul>
+
+        <p>The nine stranded records are GHSA-7v78-w67v-pm2g, GHSA-h58h-qvv5-xvwg, GHSA-73wg-wxvv-9r4j, GHSA-98qx-9p2x-c4wh, GHSA-cvrm-2xxr-hpcv and GHSA-hrhj-hpwc-9hmc (all 10 August), GHSA-vprw-xcrv-287h (11 August), <strong>GHSA-vx42-ghc9-gw65 (1 September, rated <em>critical</em>)</strong> and GHSA-24vh-q7rg-243w (13 October). Something in the path between Coder&rsquo;s repository advisories and the global database stopped working between <strong>2 July and 10 August 2026</strong>, and has not resumed since.</p>
+
+        <p>This inverts the scanner-gap story we have written repeatedly this month. In <a href="/posts/2026/10/runwasi-cve-2026-47218-precompiled-oci-layer-wasi-sandbox-escape/">runwasi</a> and <a href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">Wheels</a>, records were unfindable because the project had no coordinate any scanner could resolve. Coder has an <em>excellent</em> coordinate. It is a Go module, it is indexed, and OSV holds 20 Coder advisories with clean version ranges. The vulnerabilities here are invisible not because the ecosystem is unmapped but because <strong>nine correctly-written advisories never left the repository they were filed in</strong>.</p>
+
+        <h2>The measurement that should worry operators</h2>
+
+        <p>We asked OSV the question a dependency scanner actually asks &mdash; a package-version query for <code>github.com/coder/coder/v2</code>:</p>
+
+        <ul>
+          <li><strong>Version 2.34.0 &rarr; 40 records returned.</strong> Comprehensive, and none of them is any of the nine.</li>
+          <li><strong>Version 2.20.0 &rarr; 40 records returned.</strong> Likewise.</li>
+          <li><strong>Version 2.35.0 &rarr; <em>zero records returned.</em></strong></li>
+        </ul>
+
+        <p>Zero is the dangerous answer, because <strong>2.35.0 is explicitly named as affected</strong> by GHSA-h58h-qvv5-xvwg &mdash; the <em>high</em>-severity workspace-proxy credential theft, whose own affected range is <code>&gt;= 2.35.0, &lt; 2.35.4</code>. An operator running Coder 2.35.0 who scans with osv-scanner, Dependabot, or any commercial SCA keyed on these feeds gets a clean bill of health for a deployment the vendor has published a credential-theft advisory against, with a patch available since 10 August. The scanner is not broken and the configuration is not wrong. The record simply is not there to match.</p>
+
+        <h2>GHSA-h58h: the prefix that was good enough</h2>
+
+        <p>Of the nine, this is the one with real teeth, and it is worth reading because the defect is a single optional character in a SQL pattern. <code>GetWorkspaceProxyByHostname</code> validated a redirect target&rsquo;s host with a PostgreSQL <code>SIMILAR TO</code> pattern, quoted from the advisory: <code>'[^:]*://' || hostname || '([:/]?%)*'</code>. Because the trailing delimiter group was optional &mdash; <code>[:/]?</code> rather than <code>[:/]</code> &mdash; the expression degraded from an exact-host match into a <strong>prefix match</strong>. The advisory&rsquo;s own example: <code>syd.co</code> matched <code>syd.coder-proxy.example.com</code>.</p>
+
+        <p>The consequence, quoted: when an authenticated victim opens a crafted <code>/api/v2/applications/auth-redirect?redirect_uri=...</code> link, Coder &ldquo;treats the attacker&rsquo;s prefix domain as a trusted proxy, mints an <code>application_connect</code>-scoped API key for the victim, and 302-redirects the browser to the attacker&rsquo;s domain with the encrypted key in the query string.&rdquo; And then the detail that turns a leak into a takeover: <strong>&ldquo;The key is not bound to the host it was issued for,&rdquo;</strong> so the attacker replays the blob against the genuine proxy and obtains a cookie carrying the victim&rsquo;s full-lifetime workspace-app credential. The fix makes the delimiter mandatory &mdash; <code>([:/]%)*</code> &mdash; so a host that is merely a prefix no longer matches, while ports and paths still do.</p>
+
+        <p>One remediation caveat we verified rather than assumed. The advisory&rsquo;s patch table names four backports: v2.35.4, v2.34.8, v2.33.12 and v2.29.20, with release lines 2.30 through 2.32 declared end-of-life and explicitly unpatched. Enumerating the repository&rsquo;s tags, <strong>v2.35.4, v2.34.8 and v2.29.20 exist; v2.33.12 does not</strong> &mdash; public tags on the 2.33 line stop at v2.33.11. Operators pinned to 2.33 should confirm with Coder where that build lives before planning an upgrade against it.</p>
+
+        <h2>CVE-2026-111926: the debug port inside the box you put the agent in</h2>
+
+        <p>The lowest-rated of the eleven is the one that belongs in this feed. Coder&rsquo;s workspace agent runs a debug HTTP server bound by default to <code>127.0.0.1:2113</code> &mdash; we confirmed the default in <code>cli/agent.go</code> at tag v2.34.0 &mdash; and it is unauthenticated. At the same tag, <code>agent/agent.go</code> registers <code>r.Get("/debug/manifest", a.HandleHTTPDebugManifest)</code>, and the handler we read in full does exactly one interesting thing: <code>json.NewEncoder(w).Encode(sdkManifest)</code>. The whole manifest, including the <code>EnvironmentVariables</code> map with its values, to anything that can open a loopback socket.</p>
+
+        <p>Coder rated it <strong>low</strong>, and the advisory states the reasoning plainly and fairly: <em>&ldquo;the same environment variables are already inherited by processes the owner runs,&rdquo;</em> so the practical impact is &ldquo;disclosing template-set environment values to co-tenant Unix users who could not otherwise read the owner&rsquo;s environment.&rdquo; The dedicated Secrets store is not exposed. VulnCheck scored it <strong>4.8 medium</strong> (CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:N/VA:N), CWE-200, affected <code>&gt;= 2.10.0, &lt; 2.34.8</code>.</p>
+
+        <p>We think the vendor&rsquo;s threat model is correct for the product as it was built, and increasingly incomplete for the product as it is being sold. The reasoning holds because the owner&rsquo;s own processes already inherit the environment &mdash; which is a statement about a human developer who typed the command. It reads differently when the long-running process in that workspace is an autonomous coding agent consuming untrusted repository content, issue text and web pages. A single <code>curl http://127.0.0.1:2113/debug/manifest</code> is an unremarkable-looking diagnostic command, it requires no privilege escalation, it touches no file the agent was told to avoid, and it returns the cloud keys and registry tokens the template injected. The boundary the advisory reasons about is the Unix user. The boundary operators think they are buying, from a vendor whose tagline is &ldquo;environments for developers <em>and their agents</em>,&rdquo; is the workspace. This is the same mismatch we described when <a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">Arcane&rsquo;s delegated-admin CVEs</a> turned permissions designed for junior staff into permissions handed to automation.</p>
+
+        <p>The fix, read first-hand, is small and good. PR <strong>#26904</strong> by <code>sreya</code>, opened 2026-07-01T00:25:22Z and merged the same day at 15:46:35Z (+55/&minus;1 across two files, 32 of the added lines being tests), redacts the values and preserves the keys. Its code comment states the threat model more bluntly than the severity rating does:</p>
+
+        <blockquote><p><code>// Redact env values. This endpoint is unauthenticated on loopback,<br>// reachable by any process regardless of Unix user. Keys are preserved<br>// so operators can still see which variables are configured.</code></p></blockquote>
+
+        <p>Empty values are preserved deliberately, &ldquo;which carry no secret,&rdquo; and the marker <code>***REDACTED***</code> is a named constant chosen to match <code>sanitizeEnv</code> in <code>support/support.go</code> &mdash; so a support bundle and this endpoint agree. We confirmed the redaction is still present on <code>main</code> at time of writing. Note the gap it closes is forty days wide on the disclosure side: the fix merged 1 July, the advisory published 10 August.</p>
+
+        <h2>The rest of the eleven, briefly</h2>
+
+        <ul>
+          <li><strong>CVE-2026-111928</strong> (GHSA-7v78, medium, <code>&gt;= 2.0.0 &lt; 2.34.8</code>): the <code>acl_allow</code> rule in <code>coderd/rbac/policy.rego</code> checks organization membership for group ACL entries but not for per-user ones, and member removal does not scrub stale entries &mdash; so an offboarded user keeps API access to org-scoped templates and workspaces.</li>
+          <li><strong>CVE-2026-111929</strong> (GHSA-hrhj, medium, <code>&gt;= 2.30.0 &lt; 2.34.8</code>): the provisioner daemon <code>DownloadFile</code> gRPC handler serves other organizations&rsquo; cached Terraform module archives to anyone with an org-scoped provisioner key and a file UUID.</li>
+          <li><strong>CVE-2026-111930</strong> (GHSA-cvrm, medium, <code>&gt;= 2.26.0 &lt; 2.34.8</code>): <code>GET /api/v2/workspaces/{id}/acl</code> checks workspace read access, then fetches group members with an elevated system context &mdash; harvesting emails, login types and timestamps for low-privilege callers.</li>
+          <li><strong>CVE-2026-111934</strong> (GHSA-vprw, medium): <code>ExtractRealIPAddress</code> trusts the leftmost client-supplied <code>X-Forwarded-For</code> value, defeating per-IP rate limits on login and one-time-passcode endpoints and falsifying audit logs.</li>
+          <li><strong>CVE-2026-111931</strong> and <strong>CVE-2024-58398</strong> are open redirects; <strong>CVE-2026-111932</strong> is owner-role stored HTML injection into the dashboard and SMTP notifications; <strong>CVE-2026-111933</strong> is login user enumeration via a placeholder hash derived from the string <code>"hunter2"</code>; <strong>CVE-2025-71435</strong> is an API key outliving OIDC expiry when no refresh token is issued.</li>
+          <li><strong>CVE-2026-111927</strong> is GHSA-h58h, dissected above &mdash; the only <em>high</em> in the batch.</li>
+        </ul>
+
+        <p>Worth noting for context: Coder&rsquo;s June advisory batch, which <em>did</em> propagate normally, includes a dedicated AI Bridge cluster &mdash; CVE-2026-55436 (AI Bridge Proxy skips TLS certificate verification in default configuration, high), CVE-2026-55435 (suspended users retain access to the AI Bridge LLM proxy) and CVE-2026-55434. Those resolve in OSV today. The platform&rsquo;s AI surface is being audited; the question this run raises is whether the findings reach anyone.</p>
+
+        <h2>On the credits, and what we are not claiming</h2>
+
+        <p>Six of the nine stranded advisories, and both older repo-only ones, credit <strong>&ldquo;Anthropic&rsquo;s Security Team&rdquo;</strong> with reference identifiers in the form <code>ANT-2026-22461</code>, <code>ANT-2026-22460</code>, <code>ANT-2026-22440</code>, <code>ANT-2026-22459</code>, <code>ANT-2026-22456</code>, <code>ANT-2026-22453</code>, <code>ANT-2026-22433</code> and <code>ANT-2026-22432</code>; GHSA-h58h additionally credits <strong>Adam Korczynski of Ada Logics</strong> for validating and reporting. That identifier format matches the one used on Anthropic&rsquo;s public coordinated-disclosure dashboard, which describes using Claude models to find vulnerabilities in open-source software.</p>
+
+        <p>We checked that dashboard directly and <strong>found no entry for <code>coder/coder</code> and none of these ANT identifiers</strong> in its published ledger, which was last updated 2026-10-02 and states that it publishes only findings whose disclosure window has closed. <strong>We therefore do not claim these findings were model-discovered.</strong> What the primary sources support is narrower and still notable: Anthropic&rsquo;s security team reported a cluster of issues in the platform that hosts coding agents, the vendor fixed and published them, and the records then failed to reach any feed.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Do not treat a clean Coder scan as evidence of anything right now.</strong> Nine vendor advisories &mdash; one critical &mdash; are absent from the global advisory database and OSV. Read <a href="https://github.com/coder/coder/security/advisories?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">the repository advisory list</a> directly and diff it against whatever your tooling reports.</li>
+          <li><strong>Prioritise GHSA-vx42-ghc9-gw65 first, not the new CVEs.</strong> It is the only <em>critical</em> in the set, it concerns malicious packages served from an unauthorized registry server, it affects everything below 2.37.0 with patches in 2.37.0, 2.36.4, 2.35.7 and 2.34.9 &mdash; and because VulnCheck&rsquo;s backfill stopped at the August batch, it still has <strong>no CVE and no feed presence at all</strong>.</li>
+          <li><strong>Upgrade, then stop putting secrets in template environment variables.</strong> 2.34.8 or later closes the manifest leak, but the advisory&rsquo;s own workaround is the durable control: use the workspace Secrets mechanism, because template environment values are inherited by every process in the workspace &mdash; which now includes agents acting on untrusted input.</li>
+          <li><strong>Re-derive org offboarding.</strong> CVE-2026-111928 means removing a user from an organization did not revoke per-user ACL grants. Audit existing ACL entries on org-scoped templates and workspaces against current membership; the stale grants persist after upgrading.</li>
+          <li><strong>If you are on the 2.33 line, confirm your target build exists.</strong> The advisory names v2.33.12; the public tag list stops at v2.33.11.</li>
+          <li><strong>Add &ldquo;does the advisory propagate?&rdquo; to your own release checklist.</strong> The generalisable lesson here is not about Coder&rsquo;s code. A repository advisory that is never published to the global database is, from every consumer&rsquo;s perspective, a private note. If you maintain software, request the CVE and verify the GHSA resolves at <code>api.github.com/advisories/</code> after publication &mdash; it is a one-line check that Coder&rsquo;s pipeline has been failing silently for 68 days.</li>
+        </ul>
+
+        <p><em>Verification note: all eleven CVE identifiers, publication timestamps, CVSS vectors, CWEs, vulnStatus values, source identifiers and reference URLs were read first-hand from the NVD 2.0 API; the CVE-to-GHSA mapping was derived from those reference URLs. All 37 Coder repository advisories &mdash; summaries, descriptions, severities, CWEs, affected and patched version ranges, ecosystem coordinates, credits and publish timestamps &mdash; were read first-hand via the GitHub repository security-advisory API, and every quoted sentence is verbatim from those records. The global-database and OSV status of all 37 was measured directly, one HTTP request each, as were the OSV package-version queries for github.com/coder/coder/v2 at 2.20.0, 2.34.0 and 2.35.0. The <code>/debug/manifest</code> handler, its route registration and the 127.0.0.1:2113 default were read first-hand from agent/agent.go and cli/agent.go at tag v2.34.0; PR #26904 metadata and its complete diff, including the code comment quoted above, were read first-hand from the GitHub pulls and commits APIs, and the redaction constant was confirmed still present on main. Release tags, publish timestamps, the absence of a v2.33.12 tag, and repository metadata (17,063 stars, 1,636 forks, Go, AGPL-3.0, created 22 December 2021) are from the GitHub API. The VulnCheck advisory page for CVE-2026-111926 was read directly. Absence from CISA KEV was measured against catalog version 2026.10.16 (1,748 entries), which contains no Coder records of any kind; there is no evidence of exploitation of any issue described here. Anthropic&rsquo;s coordinated-disclosure dashboard was fetched and searched directly. Brave Search was used for discovery only and returned no independent technical analysis of these records &mdash; solely automated CVE mirrors. Nothing was installed; no Coder deployment was created or contacted; no workspace, template, proxy or provisioner key was configured; no redirect link was crafted; no endpoint was queried; no proof-of-concept was executed. No third-party request was sent beyond reading the cited public records.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/coder/coder/security/advisories?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">coder/coder repository security advisories (37 records; 9 published from 10 August 2026 onward absent from the global database)</a></li>
+          <li><a href="https://github.com/coder/coder/security/advisories/GHSA-h58h-qvv5-xvwg?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-h58h-qvv5-xvwg &mdash; Workspace proxy hostname prefix match lets an attacker-controlled domain steal a victim&rsquo;s workspace app credential (CVE-2026-111927)</a></li>
+          <li><a href="https://github.com/coder/coder/security/advisories/GHSA-73wg-wxvv-9r4j?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-73wg-wxvv-9r4j &mdash; Unauthenticated agent debug manifest endpoint exposes environment variable values (CVE-2026-111926)</a></li>
+          <li><a href="https://github.com/coder/coder/security/advisories/GHSA-vx42-ghc9-gw65?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-vx42-ghc9-gw65 &mdash; Malicious Packages Served from Unauthorized Registry Server (critical, 1 September 2026, still no CVE)</a></li>
+          <li><a href="https://github.com/coder/coder/pull/26904?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">coder/coder PR #26904 &mdash; fix: redact env var values in agent debug manifest endpoint</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/coder-from-2.10.0-before-2.34.8-information-disclosure-via-agent-debug-manifest?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck advisory &mdash; Coder information disclosure via agent /debug/manifest (CVE-2026-111926)</a></li>
+          <li><a href="https://red.anthropic.com/2026/cvd/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic coordinated vulnerability disclosure dashboard (last updated 2026-10-02)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">The Delete Tool Did Not Ask: Wheels Ships Nine CVEs, Eleven Advisories, and an MCP Surface That Trusted Its Caller</a></h3><p>Nine CVEs (CVE-2026-111443 through CVE-2026-111451) published 16 October 2026 for the Wheels CFML framework, mapping to nine of eleven GitHub advisories. CVE-2026-111451 names the threat source verbatim: a CI variable, a branch name, or an AI agent driving the CLI&amp;rsquo;s MCP tools &amp;mdash; and one of those MCP tools deletes recursively without confirmation. Two advisories, including a critical 9.8 SQL injection, got no CVE at all, and OSV has none of them.</p><a class="text-link" href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/nginx-ui-ten-advisories-pseudo-versions-remediation-release-new-cve/">Ten Advisories, One Release, Zero Version Numbers: nginx-ui’s 9 October Batch Points at Git Hashes</a></h3><p>On 9 October 2026, ten advisories landed against nginx-ui (11,500+ stars) — one critical RCE, eight high, one moderate, from nine separate reporters. Every fix shipped in July or September. Not one advisory names a release tag: all ten point at Go pseudo-versions. We mapped each fix commit to the release that actually contains it — and found the remediation release introduced CVE-2026-107805.</p><a class="text-link" href="/posts/2026/10/nginx-ui-ten-advisories-pseudo-versions-remediation-release-new-cve/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">Twenty AI Platforms in Eighteen Seconds: VulnCheck&amp;rsquo;s 122-CVE Batch and the Decorator That Only Looked Like Auth</a></h3><p>VulnCheck published 122 CVEs to NVD between 18:17:38.950 and 18:17:56.980 on 16 October 2026. Twenty of them, across sixteen self-hosted AI products, are the same defect: the AI feature holds provider keys, chat transcripts and system prompts, and nobody wrote the authorisation check. We read the source for EFAK, 99AI, LangChat, DataBuff and StaffDeck first-hand &amp;mdash; and measured that all twenty records are indexed in OSV and GitHub with no package coordinate at all.</p><a class="text-link" href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
