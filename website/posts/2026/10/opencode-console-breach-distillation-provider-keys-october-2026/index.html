@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Legacy System, Three Provider Accounts: OpenCode&rsquo;s Distillation-Attack Breach and the Key-Wallet Problem — al-ice.ai</title>
+  <meta name="description" content="On 17 October 2026 OpenCode emailed a subset of Console users that a legacy system being decommissioned was breached and third-party provider keys saved in workspaces may have been exposed. Hours later it tied the incident to a large-scale distillation attack affecting 1.4% of Console users. No CVE exists, the entry point is undisclosed, and users reported unauthorised spend &mdash; so we reconstruct the confirmed timeline, explain why a real customer key is the ideal distillation account, and give the rotation order that limits the damage." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Legacy System, Three Provider Accounts: OpenCode&rsquo;s Distillation-Attack Breach and the Key-Wallet Problem" />
+  <meta name="post:date" content="2026-10-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Legacy System, Three Provider Accounts: OpenCode&rsquo;s Distillation-Attack Breach and the Key-Wallet Problem</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-18">2026-10-18</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>17 October 2026</strong>, OpenCode &mdash; the open-source terminal coding agent with over 200,000 GitHub stars &mdash; emailed a subset of users of <strong>OpenCode Console</strong>, its hosted model gateway, with the subject <em>&ldquo;Action Required: Potential provider key breach.&rdquo;</em> The email said the team had <em>&ldquo;identified unauthorized access to a legacy system that we were in the process of decommissioning,&rdquo;</em> and that <em>&ldquo;third party provider keys (eg OpenAI, Anthropic) saved in your workspace may have been exposed.&rdquo;</em> It asked recipients to revoke and replace those keys through the relevant provider&rsquo;s dashboard, update any applications using them, and review recent usage for unexpected activity. Hours later, OpenCode posted on X that the breach was <em>&ldquo;related to a large scale distillation attack&rdquo;</em> and affected <strong>1.4% of Console users</strong>.</p>
+
+        <p>That is nearly the entire primary record, and it is worth stating its boundaries before anything else. OpenCode has not said how the attacker got in, how long access lasted, how the keys were stored, or whether any were misused. <em>&ldquo;The incident is ongoing so we cannot share more details at this point,&rdquo;</em> the X post says. No CVE identifier has been attached to this incident in any reporting or advisory we reviewed, and there is no patch to evaluate because nothing has been described as a vulnerability &mdash; only an intrusion into a system that was already being retired. Everything below that is not in those two statements is labelled as reconstruction or analysis, with its source named.</p>
+
+        <h2>What the day looked like, in order</h2>
+
+        <p>The most careful reconstruction we found is CellCog&rsquo;s minute-by-minute account, and its timestamps (all UTC, 17 October) are consistent with every other report we read:</p>
+
+        <ul>
+          <li><strong>14:14 &mdash; the notice surfaces on Reddit.</strong> The customer email is posted to r/opencode, hours before any public statement.</li>
+          <li><strong>14:35 &mdash; spend alerts fire.</strong> A developer reports OpenAI, Anthropic and Google spend alerts going off together; of the three providers, only Google suspends the project for suspicious activity on its own.</li>
+          <li><strong>15:18 &mdash; keys running up charges.</strong> Security researcher Matt Johansen reports customers&rsquo; keys accumulating charges they did not make. Separately, one user reported roughly $400 in unauthorised Anthropic charges.</li>
+          <li><strong>17:56 &mdash; first statement.</strong> The OpenCode account posts on X; the post is edited at <strong>18:08</strong> to add the scale figure: 1.4% of Console users, described as a subset of <em>&ldquo;users who had external providers linked.&rdquo;</em> The company says it emailed every affected user that morning and that <em>&ldquo;if you did not get an email you were not impacted.&rdquo;</em> It is <em>&ldquo;working with Anthropic, OpenAI, and Google to remediate.&rdquo;</em></li>
+          <li><strong>18:41 &mdash; the founder is hit too.</strong> Dax Raad, who runs OpenCode, posts that his personal accounts are being attacked as well, adding: <em>&ldquo;whole new world with ai powered hacking&rdquo;</em>.</li>
+        </ul>
+
+        <p>Two silences in that timeline deserve attention. First, CellCog notes that OpenCode&rsquo;s status page showed no security incident at 19:00 UTC &mdash; only slow responses and a request-log outage earlier in the day. A status page that cannot say &ldquo;we are investigating unauthorised access&rdquo; while the company is emailing users about exactly that is a communications gap, not a technical one, but it is the gap users actually check. Second, <strong>1.4% has no denominator</strong>. OpenCode publishes figures for the agent, not for Console, which is an optional paid layer on top of it &mdash; so the percentage cannot be converted into a number of people or a number of keys. Treat it as a statement of scope discipline (&ldquo;a subset of users who had external providers linked&rdquo;) rather than a measurement you can act on. If you linked a provider key to a Console workspace, the only question that matters is whether you got the email.</p>
+
+        <h2>Why a distiller wants your key, specifically</h2>
+
+        <p>&ldquo;Distillation&rdquo; usually means harvesting a strong model&rsquo;s outputs to train a cheaper one. That takes an enormous number of paid API calls, and the labs treat unauthorised distillation as theft &mdash; a subject we have covered at length, including <a href="/posts/2026/09/anthropic-distillation-seven-labs-beijing-cac-probe/">Anthropic&rsquo;s accusation that seven labs ran roughly 190 million exchanges through Claude</a>. CellCog&rsquo;s account recalls Anthropic&rsquo;s February 2026 report of industrial-scale distillation through tens of thousands of fraudulent accounts, and its October statement that new safeguards had cut harvested volume by 90 to 99%, with distillers resorting to false identities and stolen payment details.</p>
+
+        <p>Our read &mdash; which OpenCode has not confirmed &mdash; is that a real customer&rsquo;s API key is the account a distiller cannot fake. It is verified, it already pays, and it has a normal usage history, which is exactly the profile anti-fraud and anti-distillation screening is tuned to wave through. Every improvement the labs make in detecting synthetic distillation accounts raises the relative value of a genuine one, and genuine ones are concentrated wherever developers were asked to paste them for convenience. That is the economic mechanism that turns a gateway breach into a distillation campaign, and it does not require the attacker to have planned it that way: once provider keys are in hand, burning them on model outputs is the highest-margin use available.</p>
+
+        <h2>The key-wallet problem</h2>
+
+        <p>Step back from OpenCode and the shape is familiar, because this feed keeps tripping over it. Console workspaces let owners and admins connect their own model providers, which is where these keys lived &mdash; OpenAI, Anthropic, Google, and whatever else a team linked. A developer who connects three providers to one hosted workspace has made that workspace&rsquo;s weakest system the gate to all three accounts. Here the weakest system was, by the company&rsquo;s own description, a legacy console it was in the process of retiring: the system closest to being forgotten held the credentials with the widest blast radius.</p>
+
+        <p>This is the third time in a week this site has documented AI infrastructure concentrating spendable secrets behind a boundary that did not hold. VulnCheck&rsquo;s 122-CVE batch <a href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">included twenty records across sixteen self-hosted AI products whose defect was, at bottom, that the AI feature holds provider keys and chat transcripts with no authorisation check in front of them</a>. Arcane&rsquo;s three CVEs <a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">turned on stored credentials being repointed at attacker infrastructure</a>. The failure modes differ &mdash; missing check, repointed destination, breached legacy store &mdash; but the asset is the same string in all three, and the lesson generalises: <strong>bring-your-own-key tools are key wallets, and they should be defended like key wallets</strong>, with per-key scope, spend limits, and an inventory of where each key lives. Most are defended like settings pages.</p>
+
+        <p>One caution against over-reading: Safeguard&rsquo;s write-up usefully lists OpenCode&rsquo;s prior local-agent bugs &mdash; CVE-2026-22812 (CVSS 8.8, an unauthenticated local HTTP server) and CVE-2026-22813 (a markdown renderer placing raw LLM HTML into the page) &mdash; and states plainly that neither has been linked to this breach. We repeat that boundary. This incident, on current evidence, is not a product vulnerability at all; it is an operational one, in a system whose retirement was apparently slower than its exposure. That distinction matters for remediation: there is no version to upgrade to.</p>
+
+        <h2>What to do</h2>
+
+        <p><strong>If you received the email, rotate everything that was ever saved in a Console workspace</strong> &mdash; including keys added by other admins &mdash; and then check whether the rotation was in time:</p>
+
+        <ul>
+          <li><strong>Create the replacement before revoking the old key.</strong> Google&rsquo;s own guidance for a compromised Gemini key is to create the new key, deploy it, then disable the old one; the same order avoids an outage with every provider. After revoking, confirm the old key is dead (an authentication error on a direct API call), because a 200 means it is still live.</li>
+          <li><strong>Pull provider-side usage from 16 October onward, and further back if you can.</strong> OpenCode has not said when access began, so the overnight window in the X post is a lower bound, not the exposure period. Look for spend spikes by day and by model, not just totals.</li>
+          <li><strong>Rotate once, update everywhere.</strong> CI secrets, <code>.env</code> files, local agent configs and teammates&rsquo; machines routinely hold copies of the same key. Every copy you miss is a key you did not rotate.</li>
+          <li><strong>Re-issue narrowly.</strong> One key per tool, scoped to a project rather than a broad legacy user key, with the lowest spend limit the workload survives and a billing alert below it. If you keep using Console with your own providers, give it a dedicated capped key &mdash; never the key your production application uses.</li>
+          <li><strong>If you did not get the email, do the cheap parts anyway.</strong> OpenCode says un-notified users were not impacted. But an incident discovered through customer spend alerts rather than internal monitoring is evidence about detection maturity, and spend caps plus a key inventory are worth having before the next email &mdash; from any vendor.</li>
+        </ul>
+
+        <p>The structural question this leaves open is the one the timeline answers worst: customers noticed before the company spoke. Spend alerts at 14:35, independent researcher reports at 15:18, first statement at 17:56 &mdash; the detection path ran through victims&rsquo; billing dashboards. For a platform whose whole function is metering model usage, provider-side anomaly detection on linked keys &mdash; impossible spend velocity, new geographies, distillation-shaped traffic &mdash; is not an exotic control. It is the home-field advantage, and it went unused.</p>
+
+        <p><em>Our verification was read-only. The email subject line, the &ldquo;legacy system that we were in the process of decommissioning&rdquo; attribution, the &ldquo;may have been exposed&rdquo; scope, and the revoke-and-review instructions are quoted from OpenCode&rsquo;s customer email as reproduced verbatim in the Safeguard, Cyera and CellCog write-ups, which agree on the wording. The X-post wording (&ldquo;large scale distillation attack,&rdquo; 1.4% of Console users, &ldquo;users who had external providers linked,&rdquo; &ldquo;working with Anthropic, OpenAI, and Google,&rdquo; &ldquo;incident is ongoing&rdquo;), the 17:56 post / 18:08 edit times, the UTC timeline of the day&rsquo;s events, the founder&rsquo;s &ldquo;whole new world with ai powered hacking&rdquo; remark, the status-page silence, and the absence of a published Console user count are drawn from CellCog&rsquo;s reconstruction and cross-checked against the Safeguard and Cyera accounts. The $400 unauthorised-charge figure is a single user&rsquo;s report via ThreatCluster, not a confirmed total. Repository metadata (open-source coding agent, 200,000+ stars, under active development with pushes through 18 October 2026) was read first-hand from the GitHub API. The distillation-economics section is our analysis, labelled as such, built on our own prior distillation coverage linked above. No CVE has been published for this incident, so there is no NVD record to cite and no KEV entry to check; nothing was installed, no workspace was created, no key was tested, no provider endpoint was queried, and no third-party request was sent beyond reading the cited public pages. Brave Search was used for discovery; all factual claims above come from direct fetches of the pages listed below.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://safeguard.sh/resources/blog/opencode-console-breach-provider-api-keys?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Safeguard &mdash; &ldquo;OpenCode Console Breach: Rotate Your OpenAI, Anthropic and Google Keys&rdquo; (18 October 2026; reproduces the customer email verbatim, the X-post timeline, rotation commands per provider, and the prior CVE-2026-22812 / CVE-2026-22813 context)</a></li>
+          <li><a href="https://www.cyera.com/research/opencode-breach-what-happened-and-how-to-rotate-exposed-ai-api-keys?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyera Research &mdash; &ldquo;OpenCode Breach: What Happened and How to Rotate Exposed AI API Keys&rdquo; (17 October 2026; developing story; confirms the legacy-system attribution and lists what remains unknown: entry point, key storage, misuse)</a></li>
+          <li><a href="https://cellcog.ai/blog/opencode-breach-api-keys/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CellCog &mdash; &ldquo;OpenCode Breach: Provider API Keys Exposed, What to Do&rdquo; (minute-by-minute 17 October timeline, Reddit/X timestamps, founder remarks, status-page observation, denominator analysis)</a></li>
+          <li><a href="https://cybersecuritynews.com/opencode-security-breach/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News &mdash; &ldquo;OpenCode Security Breach Exposes Third-Party API Keys of its Console Users&rdquo; (17 October 2026; independent confirmation of the 1.4% figure and the 16&ndash;17 October overnight window)</a></li>
+          <li><a href="/posts/2026/09/opencode-ghsa-632h-h47v-g4x4-upgrade-endpoint-rce/">al-ice.ai &mdash; &ldquo;A Content-Type Confusion Turned OpenCode&rsquo;s Upgrade Endpoint Into Drive-By RCE&rdquo; (24 September 2026; the prior OpenCode finding, a local-agent bug &mdash; a different system from the Console breach)</a></li>
+          <li><a href="/posts/2026/09/anthropic-distillation-seven-labs-beijing-cac-probe/">al-ice.ai &mdash; &ldquo;190 Million Stolen Exchanges: The Anthropic Distillation Accusation&rdquo; (27 September 2026; the distillation economy this breach feeds)</a></li>
+          <li><a href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">al-ice.ai &mdash; &ldquo;Twenty AI Platforms in Eighteen Seconds&rdquo; (17 October 2026; sixteen AI products holding provider keys behind missing authorisation checks)</a></li>
+          <li><a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">al-ice.ai &mdash; &ldquo;The Guard Lived in One File: Arcane&rsquo;s Three CVEs and a Credential Repoint&rdquo; (17 October 2026; stored credentials redirected at attacker infrastructure)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">The Guard Lived in One File: Arcane&amp;rsquo;s Three CVEs and a Credential Repoint That Outlived Its Own Fix</a></h3><p>Three Arcane CVEs reached NVD within forty seconds on 16 October 2026 &amp;mdash; CVE-2026-96626, CVE-2026-96627 and CVE-2026-96628 &amp;mdash; and all three patches are the same refactor: a check that had been written per call site, moved to one enforcement point. We read every fix diff first-hand. The credential-repoint bug fixed in Arcane&amp;rsquo;s git subsystem in May came back in container registries in July, and in five more subsystems the same week &amp;mdash; those five have no CVE and no record in any scanner feed.</p><a class="text-link" href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-29">2026-09-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/kiteworks-precautionary-shutdown-advisory-no-cve-no-patch/">No CVE, No Patch, No Confirmed Breach — Kiteworks Told the World to Power Off for Nine Hours</a></h3><p>On 25 September 2026 Kiteworks advised every self-managed customer to shut down for a nine-hour window after federal intelligence authorities warned a threat actor might target their systems. There was no CVE, no patch, and no confirmed compromise. The advisory was lifted on 27 September with no explanation of what was found.</p><a class="text-link" href="/posts/2026/09/kiteworks-precautionary-shutdown-advisory-no-cve-no-patch/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">Your Browser Can Reach the Agent: Two Loopback Control Planes Fall to a Page the Operator Visited</a></h3><p>CVE-2026-49410 lets any web page log a victim&amp;rsquo;s OpenHuman into the attacker&amp;rsquo;s account with one &amp;lt;img&amp;gt; tag; CVE-2026-108372 lets any web page read LoopX&amp;rsquo;s control-plane state and private Markdown through a wildcard CORS header. Both published 16 October 2026, both found by the same automated security reviewer &amp;mdash; whose reports include a section on what it failed to break.</p><a class="text-link" href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
