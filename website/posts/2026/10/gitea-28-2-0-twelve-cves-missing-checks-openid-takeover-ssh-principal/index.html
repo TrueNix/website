@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>&ldquo;Add Missing Checks to Several Handlers and Models&rdquo;: Gitea Ships Twelve CVEs in One Release — al-ice.ai</title>
+  <meta name="description" content="Gitea 28.2.0 shipped on 18 October 2026 and twelve CVE records followed it to NVD fifty-one minutes later. Five of them come from a single pull request whose title names the defect class outright. The two highest-severity records are authentication bugs &mdash; an OpenID callback that never checked who started the linking, and an SSH certificate principal lookup missing a type predicate. We read the release, the twelve advisories and the diffs first-hand, and measured what a dependency scanner sees after Gitea&rsquo;s module path changed." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="&ldquo;Add Missing Checks to Several Handlers and Models&rdquo;: Gitea Ships Twelve CVEs in One Release" />
+  <meta name="post:date" content="2026-10-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">&ldquo;Add Missing Checks to Several Handlers and Models&rdquo;: Gitea Ships Twelve CVEs in One Release</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-18">2026-10-18</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Gitea <strong>28.2.0</strong> was published at <strong>18:25:03Z on 18 October 2026</strong>. Twelve GitHub security advisories went live between <strong>18:44:34Z and 18:44:45Z</strong> &mdash; eleven seconds for the lot &mdash; and the matching twelve CVE records reached NVD at <strong>19:16:32Z to 19:16:33Z</strong>, all still <code>vulnStatus: Received</code>, none carrying a CVSS vector at NVD. The severity numbers exist only in the advisories. This is a maintenance release of the second-most-deployed self-hosted Git forge in the world: 58,552 stars, 7,286 forks, Go, MIT, created November 2016, and the repository was pushed to twenty-one minutes before the release went out.</p>
+
+        <p>Twelve CVEs in one release invites the reflex reading &mdash; <em>a bad month for Gitea</em> &mdash; and that reading is wrong in an interesting way. These are not twelve unrelated defects. Five of them share one pull request, and the maintainers titled that pull request with the diagnosis already written: <strong>&ldquo;fix: add missing checks to several handlers and models.&rdquo;</strong> It is rare for a project to name its own defect class in a commit subject. Having done so, it is worth taking them at their word and asking what a <em>missing check</em> actually looked like here, because across ten of the twelve records the answer is the same shape: a predicate, a middleware, or a type filter that was present on one code path and absent on its sibling.</p>
+
+        <h2>What shipped, and what it is worth</h2>
+
+        <p>The full set, with the severities as the advisories record them (NVD has none):</p>
+
+        <ul>
+          <li><strong>CVE-2026-104627 &mdash; 8.1 high.</strong> OpenID 2.0 association callback accepts an unsolicited assertion; attacker identity is linked to the signed-in victim, then used to log in as them. Bypasses local TOTP and WebAuthn.</li>
+          <li><strong>CVE-2026-109553 &mdash; 7.5 high.</strong> SSH certificate principals resolved against <em>all</em> stored public keys instead of only principal keys; a certificate listing a victim&rsquo;s public-key blob authenticates as the victim.</li>
+          <li><strong>CVE-2026-110324 &mdash; 6.5 medium.</strong> Private-profile visibility enforced on <code>GET</code> but not on <code>POST /{username}</code>. Fixed in 28.1.0, disclosed now.</li>
+          <li><strong>CVE-2026-105964 &mdash; 6.5 medium.</strong> Actions artifact v4 Twirp handlers read the whole request body with no size limit; a runner-token holder OOM-kills the process.</li>
+          <li><strong>CVE-2026-110494 &mdash; 6.3 medium.</strong> Release attachments checked repo and release but not whether the attachment was already an issue attachment &mdash; exposing, renaming and deleting it.</li>
+          <li><strong>CVE-2026-105661 &mdash; 5.3 medium.</strong> Unauthenticated nil-pointer panic on <code>/{username}/-/repositories</code> for individual users.</li>
+          <li><strong>CVE-2026-107686 &mdash; 4.3 medium.</strong> Web UI accepted reactions on locked issues from users without write access; the API refused them.</li>
+          <li><strong>CVE-2026-109844 &mdash; 4.3 medium.</strong> <code>GET /api/v1/user/subscriptions</code> returned watched-private-repo metadata after the watcher lost access. Fixed in 1.27.0 and 28.0.0, disclosed now.</li>
+          <li><strong>CVE-2026-110311 &mdash; 4.3 medium.</strong> Draft release creation returned an <code>assets</code> list matching every attachment not linked to a release &mdash; across repositories the caller cannot read.</li>
+          <li><strong>CVE-2026-97204 &mdash; 3.5 low.</strong> Label deletion compared a repository ID against an organization ID; the two sequences overlap.</li>
+          <li><strong>CVE-2026-107618 &mdash; low, no CVSS.</strong> <code>POST /{owner}/{repo}/topics</code> registered without the sign-in middleware that carries cross-origin protection. CSRF.</li>
+          <li><strong>CVE-2026-97859 &mdash; low, no CVSS.</strong> Seven API routes under <code>/api/v1/users/{username}</code> registered without <code>individualPermsChecker</code>. Fixed in 1.27.3 and 28.0.0, disclosed now.</li>
+        </ul>
+
+        <p>None of the twelve appear in CISA&rsquo;s Known Exploited Vulnerabilities catalogue, checked directly against catalogue version 2026.10.16 and its 1,748 entries. The catalogue does carry one Gitea record &mdash; CVE-2026-60004, the diffpatch git-hook RCE &mdash; which is a useful reminder of what the exploited end of this product&rsquo;s range looks like, and that today&rsquo;s batch is not that.</p>
+
+        <h2>The one-token fixes</h2>
+
+        <p>Pull request <strong>#39839</strong> (merged to <code>main</code> at 13:29:50Z) and its backport <strong>#39847</strong> (merged to <code>release/v28</code> at 17:50:36Z, thirty-five minutes before the release) together carry five CVEs across 28 files and +280/&minus;211 lines. The security-relevant portions are startlingly small, and two of them are worth quoting because the size is the argument.</p>
+
+        <p>CVE-2026-109553, the 7.5, is a single line in <code>models/asymkey/ssh_key.go</code>:</p>
+
+        <pre><code>-		Where("content = ?", principalKey).
++		Where("content = ? AND type = ?", principalKey, KeyTypePrincipal).</code></pre>
+
+        <p>The <code>public_key</code> table stores user keys, deploy keys and principal keys in the same rows, distinguished by <code>type</code>. The principal lookup matched on <code>content</code> alone, so a certificate whose <code>ValidPrincipals</code> entry happened to equal the text of someone&rsquo;s SSH public key resolved to that person&rsquo;s row &mdash; and the HTTP-signature auth path then calls <code>GetUserByID(publicKey.OwnerID)</code>. The advisory is blunt about what that means operationally: &ldquo;Audit logs attribute the actions to the victim.&rdquo; The preconditions are real but narrow &mdash; the instance must trust an SSH user CA via <code>SSH_TRUSTED_USER_CA_KEYS</code>, and either accept arbitrary principals (<code>SSH_AUTHORIZED_PRINCIPALS_ALLOW=anything</code>, which the project documents as performing no content check) or the attacker must be able to get that CA to sign. The default with a CA present is <code>username,email</code>, which blocks registering a foreign key blob as a principal but does nothing about the CA-private-key path and adds no type filter either. Instances that trust no user CA are unaffected.</p>
+
+        <p>What makes this one more than a typo is the comment sitting directly above the fixed line, which predates the fix: <em>&ldquo;In the future, the existing principal keys should be migrated to use the fingerprint (&lsquo;principal:{name}&rsquo;) instead of the content.&rdquo;</em> Someone had already noticed that keying principals by raw content was the wrong design and written it down as future work. The authentication consequence of the interim design was not the part that got noticed.</p>
+
+        <p>CVE-2026-107618, the CSRF, is one middleware in <code>routers/web/web.go</code>:</p>
+
+        <pre><code>-	}, context.RepoAssignment, reqRepoAdmin, context.RepoMustNotBeArchived())
++	}, optSignIn, context.RepoAssignment, reqRepoAdmin, context.RepoMustNotBeArchived())</code></pre>
+
+        <p>Note what was already there. <code>reqRepoAdmin</code> &mdash; the authorization check &mdash; was present and working. The route was not unprotected in the permissions sense; a non-admin could not change the topics. What was missing was the sign-in middleware, which is where Gitea&rsquo;s cross-origin protection lives. So a request forged by a third-party site arrived carrying the victim&rsquo;s session cookie, satisfied <code>reqRepoAdmin</code> honestly, and changed the topics. The authorization check passing is not evidence that the request was wanted. This is the same asymmetry as the rest of the batch, pushed one layer down: the gate that answers <em>may this user do this</em> ran, and the gate that answers <em>did this user ask for this</em> did not.</p>
+
+        <p>CVE-2026-110311 is three lines in <code>models/repo/attachment.go</code>, and the added comment is the whole bug report:</p>
+
+        <pre><code>+	if issueID == 0 { // unsaved issue, would match every issue-less attachment
++		return []*Attachment{}, nil
++	}</code></pre>
+
+        <p>A draft release has no ID yet. <code>WHERE issue_id = 0 AND comment_id = 0</code> is a perfectly valid query that matches every attachment in the instance not yet linked to an issue or a release. The sentinel value for &ldquo;not saved&rdquo; and the sentinel value for &ldquo;not an issue attachment&rdquo; are the same zero, and the query could not tell them apart. CVE-2026-97204 is the identical move in a different table: a label-deletion handler compared one untyped ID against whichever namespace the label used, and repository IDs and organization IDs come from overlapping sequences. Both are the database-layer form of a missing predicate, and both are the kind of defect that only shows up when someone asks what a query matches rather than what it was written to match.</p>
+
+        <h2>Where the check went instead</h2>
+
+        <p>The fix for CVE-2026-107686 &mdash; reactions accepted on locked issues through the web UI, refused through the API &mdash; is the most instructive part of #39839, because the maintainers did not add a check to the web handler. They deleted code. <code>routers/web/repo/issue_comment.go</code> goes +37/&minus;102; <code>routers/web/repo/issue.go</code> goes +16/&minus;35; <code>routers/api/v1/repo/issue_reaction.go</code> goes +4/&minus;19. In their place, one new function in <code>services/issue/issue.go</code>, with its contract written as a doc comment:</p>
+
+        <pre><code>// CanSelfChangeOrAccessContent checks whether the doer can access the content:
+// * If the doer is the content poster, then the doer can access the content if they have read access to issues.
+// * If the doer is not the content poster, then the doer can access the content if they have the required access mode to the unit type (issues or pull requests).
+// * If the issue is locked, then the doer can only access the content if they have write access.</code></pre>
+
+        <p>That is the right shape, and it is the same shape we saw in <a href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">VulnCheck&rsquo;s 122-CVE batch</a>: when the same decision is re-implemented at every call site, the defect is not that one implementation is wrong, it is that there are several. Gitea&rsquo;s locked-issue rule existed in the API and not in the web UI because it was written twice. One function, called from both, cannot diverge. The net line count going <em>down</em> while a CVE is fixed is the clearest signal available that a project addressed a class rather than an instance.</p>
+
+        <p>CVE-2026-97859 got the same treatment at the routing layer. The <code>individualPermsChecker</code> middleware had its inlined visibility switch replaced by a call to the shared <code>user_model.IsUserVisibleToViewer</code>, and the middleware was then appended to the route groups that had been registered without it &mdash; <code>/api/v1/user/subscriptions</code>, <code>/starred</code>, <code>/users/{username}/orgs</code> and the rest. The check was never absent from the codebase. It was absent from a list.</p>
+
+        <h2>Three of these were fixed before you heard about them</h2>
+
+        <p>Three records in today&rsquo;s batch describe defects that were patched in earlier releases and disclosed only now, which the release blog states plainly for each:</p>
+
+        <ul>
+          <li><strong>CVE-2026-109844</strong> &mdash; fixed in 1.27.0 and 28.0.0. Version 1.27.0 shipped <strong>13 July 2026</strong>. Ninety-seven days to disclosure.</li>
+          <li><strong>CVE-2026-97859</strong> &mdash; fixed in 1.27.3 and 28.0.0. Version 1.27.3 shipped <strong>29 August 2026</strong>. Fifty days.</li>
+          <li><strong>CVE-2026-110324</strong> &mdash; fixed in 28.1.0, which shipped <strong>6 October 2026</strong>. Twelve days.</li>
+        </ul>
+
+        <p>This is not a criticism of the embargo &mdash; coordinated disclosure routinely lags the patch, and these are low-to-medium information leaks. It is an observation about who the gap falls on. An operator who upgraded promptly was protected throughout and never knew they had been exposed. An operator who pinned, as operators of self-hosted forges frequently do, spent between twelve and ninety-seven days running a known-defective build with no advisory, no CVE, and a changelog line that read like an ordinary bug fix. The information asymmetry during an embargo is intended to disadvantage attackers; its cost is paid entirely by the conservative part of the install base.</p>
+
+        <p>The 28.2.0 changelog sharpens this. It has no security section. Every one of these fixes appears under <strong>Bug Fixes</strong>, formatted identically to &ldquo;Display MathML has no space below it&rdquo; and &ldquo;Keep line breaks in Telegram rich messages.&rdquo; The line carrying five CVEs including a 7.5 authentication bypass is the last entry in the list and reads, in full: <em>&ldquo;Add missing checks to several handlers and models (#39839) (#39847).&rdquo;</em> The project does publish a proper security section with per-CVE descriptions and full credits &mdash; on the release blog, a different document on a different domain. An operator who reads <code>git log</code>, the GitHub release body, or any tool that consumes it sees none of it.</p>
+
+        <h2>What a scanner sees: the module path moved</h2>
+
+        <p>Gitea did two unusual things to its own identity this year, and the combination produces a measurable gap. First, the Go module path changed. We read <code>go.mod</code> at each tag directly:</p>
+
+        <pre><code>v1.26.4    module code.gitea.io/gitea
+v1.27.0    module gitea.dev
+v1.27.3    module gitea.dev
+v28.0.0    module gitea.dev
+v28.2.0    module gitea.dev</code></pre>
+
+        <p>Second, the version series reset: 1.27.3 on 29 August, then 28.0.0 on 29 September, 28.1.0 on 6 October, 28.2.0 today. Now query OSV, which is what a dependency scanner does:</p>
+
+        <ul>
+          <li><code>code.gitea.io/gitea</code> @ 1.26.4 &mdash; <strong>40 vulnerabilities</strong></li>
+          <li><code>code.gitea.io/gitea</code> @ 1.27.3 &mdash; <strong>4</strong></li>
+          <li><code>gitea.dev</code> @ 1.27.0 &mdash; <strong>2</strong></li>
+          <li><code>gitea.dev</code> @ 1.27.3 &mdash; <strong>0</strong></li>
+          <li><code>gitea.dev</code> @ 28.0.0 &mdash; <strong>0</strong></li>
+          <li><code>gitea.dev</code> @ 28.1.0 &mdash; <strong>0</strong></li>
+        </ul>
+
+        <p>The two hits at <code>gitea.dev</code> @ 1.27.0 are both the same finding &mdash; GHSA-rcr6-4jqh-j84m and its Go-advisory twin GO-2026-6433, the diffpatch RCE. Every other version of the current module path returns nothing. The forty records that accumulated against the old path did not follow the rename.</p>
+
+        <p>All twelve of today&rsquo;s CVE identifiers and all twelve GHSA identifiers return <code>404</code> from OSV at the time of writing, which is unremarkable hours after publication and will resolve. The structural problem will not. Eleven of the twelve advisories declare their affected package as <code>gitea.dev</code> &mdash; including CVE-2026-109844, whose vulnerable range is <code>&lt;= 1.26.4</code>, a range that lies entirely before the module path <code>gitea.dev</code> existed. A version constraint and a package identifier that disagree about which era of the project they describe will not match anything correctly on either side of the rename. CVE-2026-105964&rsquo;s advisory is the one that gets this right, naming <code>code.gitea.io/gitea</code> explicitly and recording that the module path changed at v1.27.0 &mdash; because the reporter wrote that section by hand.</p>
+
+        <p>This is a different failure from the ones we documented at <a href="/posts/2026/10/coder-nine-stranded-advisories-eleven-retroactive-cves-agent-debug-manifest/">Coder</a> and <a href="/posts/2026/10/runwasi-cve-2026-47218-precompiled-oci-layer-wasi-sandbox-escape/">runwasi</a>, where the product had no usable package coordinate at all. Gitea has an excellent coordinate. It has two of them, consecutively, and the advisory database is carrying ranges from one era under the label of the other. If you scan a Gitea deployment by module path, confirm which path your SBOM records and check both.</p>
+
+        <h2>The one that already names its own staleness</h2>
+
+        <p>CVE-2026-105964 deserves a note on how to read these advisories. Gitea publishes reporter-submitted analysis close to verbatim, which is why the GHSA bodies here are unusually detailed &mdash; file-and-line references, call chains, quoted source. The trade is that sections reflect the state of the world when the report was written. The published advisory for the artifact-v4 memory exhaustion contains a &ldquo;Fix status&rdquo; line reading <em>&ldquo;not fixed through v1.27.3; no commit has ever added a body size limit to <code>parseProtobufBody</code>.&rdquo;</em> That was true when submitted. PR #39818 merged on <strong>17 October at 10:40:05Z</strong> and its backport #39822 on 18 October at 06:17:46Z, adding the bound; the release notes record the limit as 1 MiB. The advisory shipped the next day still carrying the sentence. Read the affected-and-patched metadata, not the prose, when they disagree &mdash; and read the prose for everything the metadata cannot express, which here is most of the value.</p>
+
+        <p>The same advisory is worth reading for a second reason: it is the only one in the batch whose attack prerequisite is a <strong>CI runner token</strong>. Any user who can push a workflow to a repository with Actions enabled &mdash; the default &mdash; obtains one, and one oversized POST to any of five Twirp endpoints kills the process for every user of the instance, including git operations and the package registry. It is re-exploitable immediately on restart. That is a forge-wide outage obtainable by anyone with push access to any repository, which is a different population from &ldquo;administrators.&rdquo; We have spent a lot of 2026 watching <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">what attackers do with Actions credentials</a>; this is a reminder that the runner token is also an authenticated channel into the server itself, not only a key to secrets.</p>
+
+        <h2>The highest-severity bug is the one about asking</h2>
+
+        <p>CVE-2026-104627, at 8.1 the top of the batch, is the cleanest statement of the whole theme. The OpenID association endpoint sits behind <code>reqSignIn</code>, so Gitea knows a user is authenticated. The external provider signs an assertion, so Gitea knows an OpenID identity is genuine. Both facts are true, both are verified, and neither of them is the question. The question is whether <em>this session</em> started <em>this linking</em>, and nothing in the flow recorded that. The return URL carried no unguessable transaction reference and no server-side pending-link record existed. OpenID 2.0 permits unsolicited positive assertions by design, so an attacker-controlled provider can manufacture the callback without any linking flow having begun, and the credential insertion happens on a <code>GET</code>, with no password or MFA re-confirmation gating the addition of a new login method.</p>
+
+        <p>The escalation is what makes it an 8.1 rather than an annoyance: once the attacker identity is attached, signing in through the OpenID path reaches <code>handleSignInFull</code> directly and never enters the branch where the password flow evaluates TOTP and WebAuthn. The victim&rsquo;s second factor is not defeated; it is simply on a road the attacker does not drive down. We made the same observation about the <a href="/posts/2026/09/cycode-anthropic-mcp-python-sdk-oauth-account-takeover/">MCP Python SDK account takeover</a> and about <a href="/posts/2026/10/better-auth-four-cves-magic-link-oauth-proxy-purpose-isolation/">Better Auth&rsquo;s four-CVE batch</a>: an MFA requirement is a property of a code path, not of an account, and every alternate authentication route is a place where that property has to be re-established by hand. The fix &mdash; a short-lived <code>state</code> value bound to the user, from PR #39642 &mdash; is the standard remedy and arrived in the same pull request that validated <code>scope</code> for OAuth2, which tells you the maintainers recognised it as a class too.</p>
+
+        <h2>Why a Git forge belongs in this feed</h2>
+
+        <p>Gitea is infrastructure that holds source code, runs CI, stores package registries and issues SSH credentials, and the industry has spent this year wiring coding agents into exactly that surface. An agent with a Gitea token inherits whatever the token can reach; an agent that pushes a workflow gets a runner token; a forge account takeover is a code-supply-chain compromise with a commit signature attached. The two high-severity records here both end in <em>the server believes you are someone else, and says so in the audit log</em>, which is precisely the failure mode that makes post-incident reconstruction hardest.</p>
+
+        <p>And the defect class generalises past Gitea without much effort. Every system in this feed that has shipped a &ldquo;missing check&rdquo; CVE this quarter had the check somewhere: in the API but not the UI, on <code>GET</code> but not <code>POST</code>, in the route group above but not the one below, on the filename parameter but not the ID parameter four lines up. The vulnerability is not the absence of security thinking. It is the assumption that a decision made once applies everywhere the code can reach the same object.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade to 28.2.0, and do not stop at the version an advisory names.</strong> Three of the twelve list a fixed version in the 1.27.x or 28.0.0/28.1.0 range because that is when the patch landed &mdash; those ranges are up to four releases behind the one that fixes the other nine. 28.2.0 is the only build that addresses the whole batch.</li>
+          <li><strong>If you trust an SSH user CA, treat CVE-2026-109553 as the urgent one regardless of its 7.5.</strong> Check <code>SSH_TRUSTED_USER_CA_KEYS</code> and <code>SSH_AUTHORIZED_PRINCIPALS_ALLOW</code> first. If principals are set to <code>anything</code>, assume registered principal rows could collide with user keys and audit the <code>public_key</code> table for duplicate <code>content</code> across differing <code>type</code> values before and after upgrading.</li>
+          <li><strong>Audit OpenID and OAuth login paths for MFA parity, not just MFA presence.</strong> The question is not whether TOTP or WebAuthn is enforced; it is whether every route that can create a session evaluates them. Then ask the second question CVE-2026-104627 raises: can any flow attach a new credential to an account without re-confirming the existing one?</li>
+          <li><strong>Check which module path your scanner is querying.</strong> <code>gitea.dev</code> returns almost nothing from OSV across the current release series while <code>code.gitea.io/gitea</code> carries forty records at 1.26.4. A clean scan result against the new path is not evidence of a clean deployment.</li>
+          <li><strong>Read the release blog, not the changelog.</strong> Gitea&rsquo;s GitHub release body has no security section; the per-CVE detail and the researcher credits live only on blog.gitea.com. Any monitoring that consumes release notes or <code>git log</code> will see five CVEs rendered as one routine bug-fix line.</li>
+          <li><strong>Bound your own request bodies at the proxy.</strong> The artifact-v4 fix caps at 1 MiB, but CVE-2026-105964 is a reminder that any handler reading an unbounded body is a process-kill primitive for anyone with a runner token. A <code>client_max_body_size</code> in front of the forge is a deployment measure, not a fix, and it is still worth having.</li>
+          <li><strong>Ask the #39839 question of your own codebase.</strong> Where does a permission decision get made more than once for the same object? Grep for a check that exists in your API handlers and look for the UI handler that does the same job. The pull request title is a reusable audit prompt.</li>
+        </ul>
+
+        <p><em>Our verification was read-only and external. All twelve CVE identifiers, publication timestamps, <code>vulnStatus</code> values, source identifier, descriptions, CWEs and references were read first-hand from the NVD 2.0 API, as was the absence of CVSS data on every record. All twelve GHSA identifiers, severities, CVSS v3.1 vectors and scores, affected package coordinates, version ranges, patched versions and publication timestamps were read first-hand from the GitHub repository security-advisory API, and the quoted advisory prose for CVE-2026-104627, CVE-2026-109553 and CVE-2026-105964 is verbatim from those advisories. Release tags, publication timestamps, the full 28.2.0 release body, repository metadata (58,552 stars, 7,286 forks, Go, MIT, created 1 November 2016, not archived) and the pull-request metadata, file lists, line counts and diffs for #39839, #39847, #39743, #39752, #39642, #39744, #39818, #39822 and #39004 were read first-hand from the GitHub API; every line of Go and every code comment above is quoted verbatim from those diffs. The <code>go.mod</code> module lines were read at each named tag. The OSV counts, the module-path queries and the 404s on all twenty-four new identifiers were measured directly against api.osv.dev. The security section, per-CVE descriptions and researcher credits were read first-hand from blog.gitea.com. The KEV check was run directly against catalogue 2026.10.16. Brave Search was used for discovery only and returned CVE mirrors and automated scoring pages with no independent technical analysis of any of the twelve records. We installed nothing, stood up no Gitea instance, created no account or certificate, sent no request to any third-party instance, and executed no proof of concept; preconditions and impacts are described only to the extent already published in the project&rsquo;s own advisories.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.gitea.com/release-of-28.2.0/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Gitea Blog — &ldquo;Gitea 28.2.0 is released&rdquo; (18 October 2026; security section with all twelve CVEs, per-CVE descriptions, reporter and patch credits)</a></li>
+          <li><a href="https://github.com/go-gitea/gitea/releases/tag/v28.2.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">go-gitea/gitea — v28.2.0 release (published 18:25:03Z; changelog with no security heading)</a></li>
+          <li><a href="https://github.com/go-gitea/gitea/security/advisories/GHSA-mf69-7pqq-86vx?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-mf69-7pqq-86vx / CVE-2026-104627 — &ldquo;Cross-Session OpenID Credential Linking Enables Account Takeover&rdquo; (8.1 high)</a></li>
+          <li><a href="https://github.com/go-gitea/gitea/security/advisories/GHSA-vcp6-2qc6-gvq3?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-vcp6-2qc6-gvq3 / CVE-2026-109553 — &ldquo;VerifyCert maps SSH certificate principals onto other users&rsquo; SSH public keys&rdquo; (7.5 high)</a></li>
+          <li><a href="https://github.com/go-gitea/gitea/security/advisories/GHSA-6f9g-7jgm-m5ph?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-6f9g-7jgm-m5ph / CVE-2026-105964 — unbounded request body in the Actions artifact v4 Twirp handlers (6.5 medium)</a></li>
+          <li><a href="https://github.com/go-gitea/gitea/pull/39839?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">go-gitea/gitea PR #39839 — &ldquo;fix: add missing checks to several handlers and models&rdquo; (five CVEs; 28 files, +280/&minus;211)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-104627?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-104627 (published 19:16:32.463Z, vulnStatus Received, no CVSS)</a></li>
+          <li><a href="/posts/2026/10/vulncheck-122-cve-batch-twenty-ai-platforms-missing-authorization/">al-ice.ai — &ldquo;Twenty AI Platforms in Eighteen Seconds&rdquo; (17 October 2026; the missing-authorization class and the guard that was written per call site)</a></li>
+          <li><a href="/posts/2026/10/coder-nine-stranded-advisories-eleven-retroactive-cves-agent-debug-manifest/">al-ice.ai — &ldquo;Everything After 10 August Is Invisible&rdquo; (17 October 2026; advisories stranded outside the databases scanners query)</a></li>
+          <li><a href="/posts/2026/10/runwasi-cve-2026-47218-precompiled-oci-layer-wasi-sandbox-escape/">al-ice.ai — &ldquo;It Asked What the Bytes Looked Like, Not Where They Came From&rdquo; (16 October 2026; a product with no usable package coordinate)</a></li>
+          <li><a href="/posts/2026/10/better-auth-four-cves-magic-link-oauth-proxy-purpose-isolation/">al-ice.ai — &ldquo;Each Advisory&rsquo;s Workaround Is the Other One&rsquo;s Exploit&rdquo; (15 October 2026; authentication flows that skip the checks their siblings enforce)</a></li>
+          <li><a href="/posts/2026/09/cycode-anthropic-mcp-python-sdk-oauth-account-takeover/">al-ice.ai — &ldquo;The Login Page Was Real&rdquo; (28 September 2026; OAuth account takeover in the MCP Python SDK)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">al-ice.ai — &ldquo;GhostAction Learned to Read Git History&rdquo; (9 October 2026; what attackers do with CI credentials at scale)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/a1111-cve-2026-111986-111987-model-sidecar-config-code-execution/">The Model Was Inert, the File Beside It Was Not: Two Stable Diffusion WebUI CVEs and the 94-Issue Sweep Behind Them</a></h3><p>NVD published CVE-2026-111986 and CVE-2026-111987 on 18 October 2026 against AUTOMATIC1111 stable-diffusion-webui, the 165,000-star Stable Diffusion UI whose master branch has not moved since July 2024. Both PoCs are public, both reports have sat unanswered since 30 September, and in both the safetensors file is valid and inert &amp;mdash; the execution comes from the config files packaged next to it. We read the vulnerable source first-hand, and counted the reporter&amp;rsquo;s 94-issue sweep of the same defect class across 77 ML projects.</p><a class="text-link" href="/posts/2026/10/a1111-cve-2026-111986-111987-model-sidecar-config-code-execution/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/ai-engine-cve-2026-110976-111041-editor-media-helpers-object-check/">The Gate Checked the Role, Never the Object: AI Engine&amp;rsquo;s Editor Media Helpers</a></h3><p>NVD published CVE-2026-110976 and CVE-2026-111041 on 18 October 2026 against AI Engine, the MCP and chatbot plugin running on 90,000 WordPress sites. Both are missing-authorization bugs in AI media helpers reachable by any Editor. We read the vulnerable and fixed source at 3.7.8, 3.7.9, 3.8.5 and 3.8.6: the fix shipped a month ago, the vendor&amp;rsquo;s own code comments admit the defect, and six more instances of the same class were patched yesterday with no CVE at all.</p><a class="text-link" href="/posts/2026/10/ai-engine-cve-2026-110976-111041-editor-media-helpers-object-check/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">The Guard Lived in One File: Arcane&amp;rsquo;s Three CVEs and a Credential Repoint That Outlived Its Own Fix</a></h3><p>Three Arcane CVEs reached NVD within forty seconds on 16 October 2026 &amp;mdash; CVE-2026-96626, CVE-2026-96627 and CVE-2026-96628 &amp;mdash; and all three patches are the same refactor: a check that had been written per call site, moved to one enforcement point. We read every fix diff first-hand. The credential-repoint bug fixed in Arcane&amp;rsquo;s git subsystem in May came back in container registries in July, and in five more subsystems the same week &amp;mdash; those five have no CVE and no record in any scanner feed.</p><a class="text-link" href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
