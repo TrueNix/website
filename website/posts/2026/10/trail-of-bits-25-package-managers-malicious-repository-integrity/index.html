@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Mirror Is the Attacker: Two of 25 Package Managers Survive a Malicious Repository — al-ice.ai</title>
+  <meta name="description" content="Trail of Bits researcher Keegan Ryan tested 25 package managers against a malicious repository that injects malware into legitimate packages. Fewer than half verify lockfile hashes by default, only Go verifies signatures by default, and several managers warn about tampering and install anyway. We read the 14 October 2026 study first-hand." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/trail-of-bits-25-package-managers-malicious-repository-integrity/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Mirror Is the Attacker: Two of 25 Package Managers Survive a Malicious Repository" />
+  <meta name="post:date" content="2026-10-18" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Mirror Is the Attacker: Two of 25 Package Managers Survive a Malicious Repository</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-18">2026-10-18</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>14 October 2026</strong>, Trail of Bits researcher Keegan Ryan published the results of an experiment the ecosystem has needed for years: he pointed <strong>25 popular package managers</strong> at a repository that lies, and recorded which ones notice. The malicious server does the simplest hostile thing imaginable &mdash; it embeds malware in otherwise legitimate packages &mdash; and the question is whether the client&rsquo;s cryptography catches it. The headline numbers are stark. Fewer than half of the managers used lockfiles that check for tampering by default. <strong>Only two &mdash; Go and vcpkg &mdash; verified the integrity of every package they downloaded.</strong> And only one, Go, verified signatures by default. The rest ranged from secure-with-conditions to cryptographically unaware that a problem exists. If your threat model ends at the developer&rsquo;s account, this study moves the line one step further out: to the mirror, the proxy, and the registry itself.</p>
+
+        <p>The framing is deliberate. Supply-chain defense has spent years hardening the developer &mdash; phishing-resistant publishing, trusted publishers, provenance attestations, the whole response to Shai-Hulud and TeamPCP &mdash; and Trail of Bits itself has contributed to that work. Ryan&rsquo;s premise is that if those mitigations succeed, attackers will walk around them to the next weakest link: the infrastructure that serves the code. A compromised registry, a poisoned mirror, a hostile proxy. The study asks what stops a developer who follows reasonable conventions from installing a trojan in that world. The honest answer, for most ecosystems, is nothing the tooling does unprompted.</p>
+
+        <h2>How you test a mirror that lies</h2>
+
+        <p>The methodology is worth describing because it is what makes the claims checkable rather than impressionistic. Ryan built a harness from Ubuntu Docker images and a custom mitmproxy addon, joined by a WireGuard network with the proxy&rsquo;s TLS certificate authority installed inside the test image &mdash; so the addon can rewrite repository plaintext at will, simulating a fully compromised server while keeping private signing keys out of reach. Each image holds a package manager, a sample project, and optionally a lockfile; the harness resolves dependencies through the hostile server, the server injects malicious code into the returned packages, and the attack counts as successful if the sample project executes the malware. Every manager ran with default flags after a quickstart-style setup, and both lockfile-present and lockfile-absent configurations were tested, since the industry genuinely disagrees about committing lockfiles.</p>
+
+        <p>The author states the limits plainly, and they matter for how far to generalize: one package, one manager version, one platform per test, with quickstart-grade projects rather than production builds. PowerShell tooling ran on Ubuntu rather than Windows, and cpanminus &mdash; which still fetches over unencrypted HTTP by default, a years-known weakness its maintainer has declined to change as default behavior &mdash; was tested with that behavior patched to HTTPS in the container. The setup is not meant to prove every developer is exploitable. It is meant to show that a developer doing nothing unusual can be, which is the configuration that matters at fleet scale &mdash; and at the scale of autonomous coding agents that run install commands without a human reading the output.</p>
+
+        <h2>The lockfile lottery</h2>
+
+        <p>The first results table sorts all 25 managers by how much work a developer must do to get integrity out of a lockfile, and the spread is the story. At the top, <strong>Go and vcpkg verify integrity outright</strong>. Then a broad middle &mdash; Bun, Bundler, Cargo, npm, pnpm, Poetry, SwiftPM, uv, Yarn &mdash; verifies <em>if a lockfile is present</em>, which quietly loads two conditions onto the developer: commit the lockfile, and install with the flags that enforce it. A third tier &mdash; Conda, Gradle, Pip, NuGet, Pub &mdash; needs the lockfile <em>plus extra steps</em>: opt-in lockfile formats, properties flipped on in project files, non-default flags. And the bottom tier &mdash; CocoaPods, Composer, Conan, cpanminus, Gem, Maven, PowerShellGet, PSResourceGet, R &mdash; gets no integrity from its lockfile path at all, either for lack of a lockfile, lack of hashes in it, or lack of anything that checks.</p>
+
+        <p>Two footnotes in this section deserve emphasis because they cut against the obvious reading of the table. SwiftPM&rsquo;s registry protocol does support signatures, but only through private server implementations; with no public registry speaking that protocol, the test used the signatureless Git path, which is what the public actually consumes. And Gradle&rsquo;s <code>gradle.lockfile</code> carries no hashes &mdash; but Gradle <em>can</em> hold content hashes in a separate verification-metadata file, which is exactly the &ldquo;lockfile plus extra steps&rdquo; pattern: the protection exists, in another file, behind configuration most projects never write.</p>
+
+        <h2>A hash that warns and installs anyway</h2>
+
+        <p>The study&rsquo;s most instructive section is the one where hashes are present and still do not protect, because it shows how many good-faith designs answer a different question than &ldquo;was this tampered with.&rdquo; Dart&rsquo;s Pub manager detects a content-hash mismatch against <code>pubspec.lock</code>, prints a message explaining the lockfile may be corrupted &mdash; and installs the package anyway, updating the lockfile to match the server. Blocking requires the non-default <code>--enforce-lockfile</code> flag, and since common Flutter subcommands invoke the fetch implicitly, everyday workflows can silently re-baseline trust onto whatever the mirror served. Until version 11.4 in May 2026, pnpm behaved the same way by default, overwriting the lockfile on mismatch; the fix that changed the default was explicitly framed as closing supply-chain holes.</p>
+
+        <p>The remaining cases are subtler, and each names a distinct failure mode worth auditing for. Conan&rsquo;s lockfile carries a 128-bit revision hash, but it is an MD5 used as a unique identifier for a recipe, never recomputed at install &mdash; and the platform-specific binary revision is not in the lockfile at all. CocoaPods pins a SHA-1 of the podspec, which guards the dependency&rsquo;s metadata while the actual code arrives from a Git tag on a server that, if compromised, simply serves different code under the same tag. Composer records the commit hash that uniquely identifies the code, yet downloads a ZIP archive containing no Git tree to verify against &mdash; so the archive can diverge from the pinned commit undetected. The pattern across all five: an integrity-looking value that binds the wrong object, checked by nothing, or checked too late to stop the install. A scanner that merely confirms &ldquo;lockfile present, hashes present&rdquo; would bless every one of these configurations.</p>
+
+        <h2>Signatures exist; verification is optional</h2>
+
+        <p>The second table repeats the exercise for signatures, and the result is harsher: <strong>only Go verifies by default</strong>. Six managers verify with configuration, eight have missing or incomplete verification code, and eight have no signatures available to verify at all. The gap between &ldquo;the ecosystem signed something&rdquo; and &ldquo;your install checked it&rdquo; is where most of the industry currently lives, and the study walks it manager by manager.</p>
+
+        <p>The details sting precisely because the signing infrastructure has genuinely improved. Sigstore&rsquo;s identity-based &ldquo;keyless&rdquo; signing &mdash; short-lived certificates from the Fulcio CA bound to OIDC identity, no long-term keys to manage &mdash; underpins provenance attestations now supported by PyPI, npm, RubyGems, and Maven Central, with better adoption than the older optional developer-key schemes ever achieved. But adoption of <em>signing</em> is not adoption of <em>verification</em>. Running <code>npm install</code> does not check registry signatures; that requires the separate <code>npm audit signatures</code> command almost nobody runs in a pipeline. pnpm recently added an equivalent &mdash; but it fetches the registry&rsquo;s public keys from the registry under test, so a malicious mirror simply presents its own key and self-consistent signature. Bun and Yarn have no equivalent command. NuGet&rsquo;s default signature mode is literally named <code>accept</code>, installing invalidly signed packages until an operator switches it to <code>require</code> and curates trusted signers. Gem, Bundler, Maven, and Gradle can verify developer signatures only after manual key enrollment. Pip, uv, and Poetry currently have no path at all for verifying the identity-based attestations their registries can carry. And cpanminus once verified repository checksums, then removed the code in response to a verification-bypass vulnerability &mdash; the verification was worse than absent, it was a false assurance, and now it is gone.</p>
+
+        <p>There is a direct line from this section to our <a href="/posts/2026/10/slugfest-npm-trusted-publishing-slug-confusion-1500-packages/">SlugFest coverage</a>: trusted publishing moved npm toward short-lived OIDC identity at publish time, yet the client still does not verify what the registry signed at install time. Identity at the publisher and verification at the consumer are two halves of one mechanism, and the industry spent 2026 building the first half. Ryan&rsquo;s tables inventory the missing second half.</p>
+
+        <h2>The one design that binds a name to bits</h2>
+
+        <p>Go stands alone in both tables, and the reason is architectural rather than cultural. When <code>go get</code> or <code>go mod download</code> fetches a module, it hashes the contents and checks the name, version, and hash against a checksum database whose contents are registry-signed &mdash; with the default database&rsquo;s public key hardcoded in Go&rsquo;s own source. As long as that key is used honestly, a bare name-and-version resolves to exactly one set of bits, which is why <code>go.mod</code> needs no hashes and <code>go.sum</code> is a local cache of database entries rather than a lockfile. The checksum database is a transparency log in the certificate-transparency and Sigstore-Rekor sense: a global, tamper-evident record that makes selective targeting &mdash; serving a clean package to everyone except one victim &mdash; detectable rather than silent.</p>
+
+        <p>Ryan does not let Go off with a trophy. The registry-signature shape of the design concentrates trust in a single private key, and transparency logs fail open against log-key compromise, underlying vulnerabilities, or a world where nobody actually monitors the log. Go performed best under test; it also has the most centralized trust to lose. That symmetry is the study&rsquo;s most mature judgment: every integrity design moves trust somewhere, and the honest question is always where it pooled and who watches the pool.</p>
+
+        <h2>Lockfiles were never only about attackers</h2>
+
+        <p>One section steps back to explain why the ecosystem underperforms on a test it never agreed to take. Lockfile hashes arrived as an integrity side effect of mechanisms built for other jobs: pinning functionality, sharing consistent environments, reproducible builds. Reading them purely as security controls is, as the study puts it, a recent interpretation that can collide with the original design &mdash; the pnpm default-flip being one collision, the libraries-versus-applications commit question another. Most guidance says commit the lockfile for applications; for libraries the advice splinters across commit, exclude, and dealer&rsquo;s-choice, because managers ignore libraries&rsquo; lockfiles to dodge transitive conflicts. The study cites Gamage et al.&rsquo;s interview research with fifteen developers, which found lockfile practice varies by manager and surfaces five perceived benefits &mdash; build determinism, integrity, and visibility into indirect dependencies among them. Security is one tenant in a shared building, and it does not set the house rules.</p>
+
+        <p>The proposed way forward follows from that diagnosis: stop asking the lockfile to commit to a hash of particular bits, and have it commit to a developer identity or public key instead. That reuses the hash-distribution machinery already deployed, while separating &ldquo;which version do I build&rdquo; from &ldquo;who am I willing to believe.&rdquo; A lockfile could pin one version for reproducibility or a lower bound for fast updates, with the embedded identity stopping a malicious mirror from substituting either. Pair it with a transparency log against targeted substitution, build on Sigstore&rsquo;s keyless defaults with self-managed keys for those who want them, and the shape is already visible in the wild: attestation identities in Python&rsquo;s <code>pylock.toml</code> specification, trusted keys in Gradle&rsquo;s verification metadata, the key map in Maven&rsquo;s PGP verification plugin. The closing analogy is HTTPS a decade ago &mdash; nearly universal now, driven by recognition of the risk plus free, easy tooling as a public good &mdash; with package signing cast as the next public good waiting for its Let&rsquo;s Encrypt moment and its funding.</p>
+
+        <h2>Why this lands harder in the age of the agent</h2>
+
+        <p>This site keeps finding the same shape from different directions, and Ryan&rsquo;s study is the mirror-image complement to all of them. Our <a href="/posts/2026/10/eye-security-three-day-cooldown-npm-pypi-october-2026/">Eye Security piece</a> argued for a three-day release-age rule committed beside the lockfile precisely because coding agents inherit whatever the package manager permits and cannot be talked out of it at the prompt layer. The <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">S1ngularity retrospective</a> showed agents acting as the installer class &mdash; the software that fetches, builds, and runs third-party code on instruction. <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">TensorLake</a> proved valid provenance coexists with a poisoned source. TeamPCP&rsquo;s long campaign, from the <a href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">Trivy and LiteLLM feed compromises</a> onward, keeps demonstrating that the serving layer is already a battlefield. Ryan adds the missing measurement: in most ecosystems, the client side of that battlefield has no sentries posted by default, and the sentries that exist mostly need to be hired, configured, and supervised per project.</p>
+
+        <p>There is also an uncomfortable interaction with the agent threat du jour. Prompt-injection guidance tells operators to constrain what the agent may fetch and run &mdash; but every one of those constraints assumes the fetch returns the bytes the name denotes. Against a malicious mirror, the agent&rsquo;s allowlisted dependency <em>is</em> the payload&rsquo;s delivery address, and no prompt-level policy distinguishes them. Integrity verification is the layer below the agent&rsquo;s decisions, and you cannot prompt your way around its absence.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Commit the lockfile for applications, and enforce it in CI with the flag your manager actually requires.</strong> Presence is not enforcement: use frozen or enforce modes (<code>--frozen-lockfile</code>, <code>--enforce-lockfile</code>, restore-with-lockfile properties, Gradle verification metadata) so a mismatch fails the build instead of re-baselining trust onto the mirror.</li>
+          <li><strong>Audit which tier of Ryan&rsquo;s tables each of your ecosystems sits in &mdash; then close the specific gap.</strong> Switch NuGet signature mode from <code>accept</code> to <code>require</code> with curated signers; run signature-audit commands where they exist and verify they check against Sigstore rather than the registry under test; enroll developer keys where verification is manual; assume nothing where no verification path exists.</li>
+          <li><strong>Treat internal mirrors and proxies as untrusted until the client proves otherwise.</strong> The study&rsquo;s adversary is any server that answers a fetch &mdash; compromised registry, poisoned mirror, hostile proxy. If your client cannot detect substitution, your mirror is a single point of compromise for every build behind it.</li>
+          <li><strong>Put signer identity into your pinning strategy, not just version numbers.</strong> Where lockfile formats support attestation identities or trusted keys, use them: a version pin says what to build, an identity pin says whom to believe, and only the second survives a lying server.</li>
+          <li><strong>Constrain agent-driven installs at the manager layer, not the prompt layer.</strong> Agents inherit client defaults silently and at machine speed. Cooldown rules, frozen lockfiles, and signature requirements are constraints the agent cannot negotiate away &mdash; instructions in a system prompt are.</li>
+          <li><strong>Fund the boring part.</strong> Ryan&rsquo;s closing point is aimed at the industry, but operators can act on it too: the managers whose communities have pushed integrity work for years need resources and adoption of what they already built, not another advisory telling developers to be careful.</li>
+        </ul>
+
+        <p><em>Our verification was read-only and external. The study&rsquo;s design, harness architecture, both results tables, the Pub/pnpm/Conan/CocoaPods/Composer cases, the signature-verification gaps, the Go checksum-database mechanics, the proposed identity-in-lockfile design, the cited precedents, and the stated limitations above were read first-hand from the Trail of Bits post itself, fetched directly. Brave Search was used for discovery only. We installed no package manager, ran no harness, stood up no malicious mirror, and contacted no registry. Figures, footnote numbering, and quoted phrases are the study&rsquo;s own; ecosystem states are reported as tested in the study&rsquo;s configuration, not as universal claims about every deployment.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.trailofbits.com/2026/10/14/package-managers-have-an-integrity-problem/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Trail of Bits — &ldquo;Package managers have an integrity problem&rdquo; (Keegan Ryan, 14 October 2026; primary study: harness, both results tables, per-manager analysis, proposed design)</a></li>
+          <li><a href="/posts/2026/10/slugfest-npm-trusted-publishing-slug-confusion-1500-packages/">al-ice.ai — &ldquo;The Name Is Not the Repository&rdquo; (13 October 2026; SlugFest: trusted publishing bound trust to a reclaimable name rather than an immutable ID)</a></li>
+          <li><a href="/posts/2026/10/eye-security-three-day-cooldown-npm-pypi-october-2026/">al-ice.ai — &ldquo;Three Days of Patience&rdquo; (16 October 2026; Eye Security&rsquo;s release-age rule as a manager-layer constraint agents inherit)</a></li>
+          <li><a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">al-ice.ai — &ldquo;Valid Provenance, Poisoned Source&rdquo; (8 October 2026; TensorLake shipped the Shai-Hulud worm with valid provenance)</a></li>
+          <li><a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">al-ice.ai — &ldquo;Your Agent Was the Payload&rdquo; (5 October 2026; agents as the installer class, one year of living-off-the-land supply-chain campaigns)</a></li>
+          <li><a href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">al-ice.ai — &ldquo;TeamPCP&rdquo; (9 July 2026; supply-chain compromise of Trivy, LiteLLM, and KICS feeds)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">Your Browser Can Reach the Agent: Two Loopback Control Planes Fall to a Page the Operator Visited</a></h3><p>CVE-2026-49410 lets any web page log a victim&amp;rsquo;s OpenHuman into the attacker&amp;rsquo;s account with one &amp;lt;img&amp;gt; tag; CVE-2026-108372 lets any web page read LoopX&amp;rsquo;s control-plane state and private Markdown through a wildcard CORS header. Both published 16 October 2026, both found by the same automated security reviewer &amp;mdash; whose reports include a section on what it failed to break.</p><a class="text-link" href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/">The Account Was Deleted but the Token Lived On: GhostPat, Docker Hub CVE-2026-105445, and Two Years of Silent PAT Reassignment</a></h3><p>Docker disclosed CVE-2026-105445 (CVSS 9.4) on 12 October 2026: converting a personal account into an organization silently re-assigned personal access tokens (PATs) to a stranger, with no rotation, no consent and no notification. We read the Docker advisory, the researcher ghostpat.com write-up and the NVD record first-hand — 25 months of exposure, ~304,000 pushes examined, and a fix deployed in under four hours.</p><a class="text-link" href="/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/renovate-four-cves-shared-preset-allowlist-bypass-ssrf-release-age/">The Config Came From the Internet: Four Renovate CVEs Turn Shared Presets Into a Policy Bypass</a></h3><p>Four CVE records published 14 October 2026 cover Renovate, the dependency bot that reads configuration from repositories and runs package managers with your credentials. A shared preset could set env (LD_PRELOAD, NODE_OPTIONS) past allowedEnv, inject HTTP headers past allowedHeaders, point the HTTP client at the EC2 metadata service, and a rebase checkbox could skip minimumReleaseAge. Three advisories say Workarounds: None.</p><a class="text-link" href="/posts/2026/10/renovate-four-cves-shared-preset-allowlist-bypass-ssrf-release-age/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
