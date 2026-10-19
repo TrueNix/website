@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Forty-One Advisories in Forty-Eight Hours, and the Fix Drops Python 3.10 — al-ice.ai</title>
+  <meta name="description" content="Pillow published 41 security advisories between 17 and 19 October 2026, carrying 38 CVE identifiers, two critical. Sixteen of them are Claude-discovered findings from Anthropic&rsquo;s disclosure programme. The only release that fixes them is 13.0.0, a major version that raises requires-python from 3.10 to 3.11, and there is no 12.3.x backport. Three advisories have no CVE, one has no patched version at all, and every wheel since 11.1.0 still bundles a libopenjp2 whose fix has sat unreleased upstream for eight months. We read every advisory, the release metadata and the dashboard first-hand." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/pillow-13-0-0-forty-one-advisories-claude-discovered-python-3-10-drop/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Forty-One Advisories in Forty-Eight Hours, and the Fix Drops Python 3.10" />
+  <meta name="post:date" content="2026-10-19" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Forty-One Advisories in Forty-Eight Hours, and the Fix Drops Python 3.10</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-19">2026-10-19</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between <strong>17 October 2026 at 10:32:48Z and 19 October at 09:47:19Z</strong>, the Pillow project published <strong>41 security advisories</strong>. Two are critical, thirteen high, twenty-three medium, three low. Thirty-eight carry CVE identifiers, running in three blocks &mdash; CVE-2026-96636 through 96644 and 96778, CVE-2026-112390 through 112406, and CVE-2026-112891 through 112901. The first tranche reached NVD at <strong>21:17Z on 19 October</strong>, roughly two and a half days behind the advisories.</p>
+
+        <p>Pillow is not a peripheral dependency. It is the Python imaging library &mdash; 13,904 stars, created in July 2012, and the thing that opens a JPEG in essentially every Python web application, thumbnailer, document pipeline and multimodal model preprocessor written in the last decade. A batch this size against this package is a fleet-wide event.</p>
+
+        <p>Three things about the batch are worth more attention than the count. <strong>Sixteen of the 41 advisories are machine-discovered findings from Anthropic&rsquo;s disclosure programme</strong>, identifiable by the <code>ANT-2026-</code> identifier embedded in their text. <strong>The only release that fixes any of them is 13.0.0, a major version that raises the minimum Python from 3.10 to 3.11</strong>, with no 12.3.x backport in existence. And <strong>three advisories carry no CVE, one of which has no patched version at all</strong> &mdash; it was published two days after the release that was supposed to close the batch, and remains open.</p>
+
+        <h2>The findings that are not human</h2>
+
+        <p>Sixteen advisory bodies open with a fixed-width header block of a shape that does not come from a person writing prose. We quote one verbatim, from CVE-2026-112901:</p>
+
+        <p><code>ANT-2026-USJRDKVK&nbsp; [medium]&nbsp; CWE-1333&nbsp; dos</code> &mdash; <code>ReDoS in XbmImagePlugin: 512-byte file stalls Image.open() for minutes</code> &mdash; <code>Location: src/PIL/XbmImagePlugin.py:58 in XbmImageFile._open()</code> &mdash; <code>Commit: a707c6b21c313880d0771e54965d142dd42358b6</code>.</p>
+
+        <p>Those <code>ANT-2026-</code> strings are finding identifiers from <strong>Anthropic&rsquo;s coordinated vulnerability disclosure dashboard</strong>, where each one resolves to a published record. Anthropic&rsquo;s own description of the programme, read directly, is that it &ldquo;uses Claude models, including an early snapshot of Claude Mythos Preview, to find security vulnerabilities in open-source software,&rdquo; partners with external firms to triage, and reports human-reviewed findings to maintainers. The dashboard&rsquo;s headline numbers, as last updated <strong>2 October 2026 at 19:47 UTC</strong>: <strong>6,157 vulnerabilities disclosed across 591 open-source projects</strong>, 516 known patched, 584 identifiers issued (219 CVE records and 365 GHSAs). The funnel behind that is stated as <strong>29,439 triaged findings</strong> narrowing to 6,123 candidates, of which 5,674 were reviewed by external security firms, with a claimed <strong>92.7% true-positive rate</strong>.</p>
+
+        <p>Pillow does not appear on that dashboard yet, which is consistent rather than suspicious: the page predates this batch by a fortnight. We note the sixteen identifiers as read from the advisory text, not as a count Anthropic has published.</p>
+
+        <p>The sixteen are not the whole batch, and the distinction matters for how the story gets told. The second critical, <strong>CVE-2026-112398</strong> &mdash; a heap buffer overflow in the FlashPix JPEG-tile decoder that the advisory states leads to arbitrary code execution from a single <code>Image.open()</code> &mdash; carries no ANT identifier and names its researcher in the text: <strong>Alex Bouffard</strong>. The FPX path is reachable because <code>Image.open()</code> detects OLE2 compound documents by the <code>D0CF11E0</code> magic regardless of file extension, so any service that thumbnails untrusted uploads with the optional <code>olefile</code> dependency installed is in scope with no user interaction. A human found the one with a working exploit. That is worth stating plainly in a week when the easy framing is that the machines did it all.</p>
+
+        <h2>What the machine findings actually look like</h2>
+
+        <p>The ANT findings are not low-grade noise, and reading three of them is the fastest way to judge the class.</p>
+
+        <p><strong>CVE-2026-96778</strong> (ANT-2026-02G3S0EW, high, CWE-787) is a heap overflow in <code>ImagingJpegEncode()</code> at <code>src/libImaging/JpegEncode.c:330</code>. State 4 calls <code>jpeg_write_marker()</code> for the COM comment marker without checking the output buffer has room, while <code>JpegImagePlugin._save()</code> sizes that buffer from EXIF and ICC/XMP data only and reserves nothing for a comment. A 65,498-byte ICC profile fills the 65,536-byte buffer exactly; libjpeg&rsquo;s <code>emit_byte()</code> then stores one byte past the end and decrements <code>free_in_buffer</code> from zero, the <code>size_t</code> wraps, and the marker, the comment and the entire compressed image are written out of bounds. The trigger is the documented way to preserve colour &mdash; <code>im.save(..., "JPEG", icc_profile=im.info.get("icc_profile"))</code> &mdash; with the comment forwarded from <code>im.info</code> automatically and no non-default setting involved. The advisory is candid about the limit of its own evidence: the overwritten memory sits in front of function pointers the encoder calls next, so code execution is plausible, but the attached reproducer demonstrates only the crash.</p>
+
+        <p><strong>CVE-2026-112901</strong> (ANT-2026-USJRDKVK) is the XBM regular expression. The <code>xbm_head</code> pattern runs over the first 512 bytes of any stream whose prefix starts with <code>#define</code>, and several adjacent quantifiers can consume the same characters. A crafted 512-byte file measured <strong>375 seconds of single-core CPU at k = 60</strong>, against about 40 ms for a well-formed XBM of the same size, with cost growing roughly as the fifth power of k. The sharp part is structural: this happens <em>before any format is identified</em>, so none of Pillow&rsquo;s size, pixel-count or decompression-bomb limits apply, and an upload size limit does not help because the file is tiny. The advisory names its own ancestor &mdash; the same class as CVE-2021-25292 in <code>PdfParser</code>, in a different plugin, reachable from plain <code>Image.open()</code>.</p>
+
+        <p><strong>CVE-2026-112895</strong> is the one that should worry a maintainer most, because it is labelled in its own summary as an <strong>incomplete fix for CVE-2026-42310</strong>. The trailer-loop guard added for that earlier CVE rejects only an exactly repeated <code>/Prev</code> offset, so a chain of unique offsets still recurses without bound; and <code>linearize_page_tree</code> follows <code>/Kids</code> with no visited set or depth limit at all, which the earlier fix never touched. A cycle-detection patch that checks for the repeat of a single value rather than membership in a set is a recognisable shape, and it survived until something re-read the function.</p>
+
+        <h2>The upgrade is the problem</h2>
+
+        <p>Here is the operational finding, and it is the reason this batch is harder than its severity distribution suggests.</p>
+
+        <p>Every one of the 38 CVEs is fixed in <strong>13.0.0 and only in 13.0.0</strong>, released <strong>16 October 2026 at 22:37:44Z</strong>. We checked PyPI directly: the only releases in the relevant range are <strong>12.3.0 and 13.0.0</strong>. There is no 12.3.1. And 13.0.0 is a major version whose removals, read from the release notes, include <em>&ldquo;Drop support for Python 3.10&rdquo;</em>. We confirmed this in the packaging metadata rather than the changelog prose: <code>requires-python</code> reads <code>&gt;=3.10</code> at tag 12.3.0 and <code>&gt;=3.11</code> at tag 13.0.0.</p>
+
+        <p>So for anyone still on Python 3.10, the security update is not an update. <code>pip install --upgrade pillow</code> resolves to 12.3.0 and reports success, and the resolver is behaving correctly while leaving thirty-eight CVEs in place, including a CVSS 9.8 memory-corruption issue. There is no warning in that transaction. The same release also removes the undocumented <code>GifImagePlugin._save_netpbm</code>, removes <code>ExifTags.IFD.Makernote</code>, and deprecates the IM image format, <code>ImageQt.align8to32()</code> and <code>JpegImageFile.load_djpeg</code> &mdash; an ordinary major-version clear-out that is now coupled to the only path off a critical.</p>
+
+        <p>This is not a complaint about Pillow&rsquo;s release engineering so much as an observation about what happens when a disclosure programme operating at machine throughput meets a project on a fixed quarterly calendar. The findings arrived in a volume that made a point release impractical; the release train was already carrying a major version; the two merged. The cost lands on the conservative part of the install base, which is the same group it landed on in the <a href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">Gitea 28.2.0 batch</a> last week and for the same structural reason.</p>
+
+        <p>Credit where it is due, and it is a real contrast with Gitea: <strong>the Pillow 13.0.0 release notes carry a proper Security section</strong>, grouped by severity, with each entry naming its GHSA and, where assigned, its CVE, above the line <em>&ldquo;CVE identifiers will be added to these entries as they are assigned.&rdquo;</em> The fixes are not hidden under Bug Fixes. An operator who reads the release notes learns what happened.</p>
+
+        <h2>The three advisories with no CVE</h2>
+
+        <p>Three of the 41 carry no CVE identifier, which means that for any scanner keyed on CVE numbers they do not exist. Two are rated high.</p>
+
+        <p><strong>GHSA-78g4-xqwv-q3g8</strong> is the most interesting thing in the batch and it is not a Pillow bug at all. Every Pillow wheel from <strong>11.1.0 onward bundles a libopenjp2 containing a heap-buffer-overflow write</strong> (OSV-2025-219) that is reachable from <code>Image.open(fp)</code> plus <code>im.load()</code> with default settings. The reporter states the inversion that makes it easy to miss, and we quote it because it is the generalisable part: <em>&ldquo;OpenJPEG 2.5.2 and earlier are safe. The bug was introduced in <code>954c6e3c</code> (2024-06-25), so keeping the dependency current is what creates the exposure.&rdquo;</em> Pillow 10.4.0 and 11.0.0 bundled 2.5.2 and are unaffected; 11.1.0 through 11.3.0 bundle 2.5.3 and 12.0.0 through 12.3.0 bundle 2.5.4, and both are affected. Because the wheel carries its own copy, <strong>a patched host OS does not help</strong>.</p>
+
+        <p>The defect is in <code>opj_j2k_read_sod</code>, where <code>tp_index</code> is indexed by a value taken directly from the one-byte <code>TPsot</code> field of the SOT marker with neither a null check nor a bounds check &mdash; while <code>opj_j2k_add_tlmarker</code>, a few lines later in the same file, writes <strong>the same array at the same index</strong> behind a correct <code>if (tp_index &amp;&amp; l_current_tile_part &lt; nb_tps)</code> guard. One writer checked, its sibling not. It is fixed upstream in <code>91d08b11</code> dated <strong>10 February 2026</strong>, and the reporter&rsquo;s measurement is that the newest OpenJPEG tag remains v2.5.4 from 20 September 2025, with the fix branch <em>ahead 6, behind 0</em> &mdash; <strong>in no release, eight months on</strong>. The reporter&rsquo;s stated reason for filing against Pillow rather than only upstream is the whole supply-chain argument in one sentence: <em>&ldquo;Pillow is where the vulnerable binary actually reaches users.&rdquo;</em> We filed the same shape when <a href="/posts/2026/10/trail-of-bits-25-package-managers-malicious-repository-integrity/">Trail of Bits looked at repository integrity across 25 package managers</a>: the artefact a user installs and the source tree a scanner reads are different objects, and the binary wins.</p>
+
+        <p>The third, <strong>GHSA-654x-cwwv-5j9c</strong>, is the one to watch. Published <strong>19 October at 09:47:19Z</strong> &mdash; three days <em>after</em> 13.0.0 shipped &mdash; it records that exporting an image to Arrow with <code>PILLOW_ALIGNMENT</code> set above 1 returns uninitialised heap memory mixed into the pixel data, which can include pixels from images the process freed earlier. Its affected range reads <strong>11.2.1 &ndash; 13.0.0</strong> and <strong>its patched-versions field is empty</strong>. In a multi-tenant service that exports images, one user&rsquo;s output can contain another user&rsquo;s pixels, and upgrading to 13.0.0 does not fix it. The reporter notes a patch is ready and characterises <code>PILLOW_ALIGNMENT</code> as obscure configuration, which it is &mdash; but &ldquo;obscure&rdquo; is a statement about defaults, not about the fleets that set it.</p>
+
+        <h2>The pattern across the memory-safety findings</h2>
+
+        <p>Read as a set rather than as 41 tickets, the batch has one dominant theme, and it is not parsing untrusted input. It is <strong>the encoder and the writer</strong>. CVE-2026-112393 (heap overflow in <code>_tiffWriteProc</code> when saving to a <code>BytesIO</code>, scored 9.2 CVSS 4.0 at NVD, with file paths and real file descriptors explicitly unaffected), CVE-2026-112896 (TIFF encoder ColorMap plane-size mismatch), CVE-2026-96778 (the JPEG comment-after-ICC overflow), CVE-2026-112891 (quadratic GIF comment copying during <em>save</em>), GHSA-xvh5-g6gv-559v (libtiff encoder memory disclosure from crafted tags, no CVE), and the Arrow export leak are all defects on the way <em>out</em>.</p>
+
+        <p>That inverts the usual threat model. A great deal of defensive engineering around image handling assumes the dangerous moment is <code>Image.open()</code> on a file from a stranger, and that having validated and re-encoded the image you are now holding something safe. Several of these say the re-encode is the dangerous step, and two of them &mdash; the TIFF write and the Arrow export &mdash; are reachable only when the destination is an in-memory buffer rather than a file on disk. An in-memory buffer is what a web service, a model-serving pipeline and a document converter all use. The configuration that avoids the disk is the configuration that is exposed.</p>
+
+        <p>The other recurring shape is <strong>a limit that runs after the allocation it is meant to prevent</strong>. CVE-2026-112400 stores a rejected frame size on the image object before calling the decompression-bomb check and never restores it, so a roughly 60-byte GIF leaves <code>im.size</code> reporting dimensions up to 131070&times;131070 while the pixel buffer is still a 1&times;1 first frame, and the next <code>Image.new()</code> or <code>rotate(expand=True)</code> sizes itself from the stale value. CVE-2026-112899 lets <code>EpsImageFile.load(scale=N)</code> hand Ghostscript a geometry N&sup2; times the declared size, checking the bomb limit only after <code>gs</code> has rendered the full raw image to a temporary file. CVE-2026-112399 allocates a full APNG canvas before the bomb check. The check exists in all three. It is in the wrong place in all three, and it was in the wrong place for years &mdash; the GIF ordering has been there since the bomb check was added in June 2022 for CVE-2022-45198.</p>
+
+        <h2>What to do</h2>
+
+        <p>Upgrade to <strong>Pillow 13.0.0</strong>, and verify the version that actually resolved rather than the command&rsquo;s exit status. If the answer is 12.3.0, the blocker is your Python, not your pin: 13.0.0 requires <strong>Python 3.11 or newer</strong> and there is no backport to receive. Treat the Python upgrade as the security work, because it is.</p>
+
+        <p>If you cannot move off Python 3.10 immediately, the mitigations are narrow but real and they come from the advisories themselves. Pass a <code>formats=</code> allowlist to <code>Image.open()</code> &mdash; it is the only documented mitigation for the XBM ReDoS and it removes several other plugins from reach at the same time. <strong>Uninstall <code>olefile</code></strong> unless you genuinely need FlashPix or MIC support: it is an optional dependency and its absence takes the FPX code-execution path and the MIC infinite loop off the table. If you do not render EPS, ensure Ghostscript is not installed in the image. Prefer saving to a file path over a <code>BytesIO</code> where you have the choice, which the TIFF advisory states explicitly takes CVE-2026-112393 out of scope. If you set <code>PILLOW_ALIGNMENT</code> above 1 and export to Arrow, unset it &mdash; that one has no fixed version in any release.</p>
+
+        <p>For the bundled JPEG 2000 library, note that your host distribution&rsquo;s patched libopenjp2 is irrelevant to a wheel install, and that no Pillow release currently resolves it: <code>main</code> still pinned 2.5.4 as of 6 October per the advisory, and the upstream fix is in no OpenJPEG release. If you do not open JPEG 2000 files, an allowlist excluding <code>JPEG2000</code> is the available control.</p>
+
+        <p>Finally, the scanner-coverage point. Three of these advisories have no CVE and one has no fixed version, so a CVE-keyed scanner reporting your Pillow as clean after a 13.0.0 upgrade is giving you an accurate answer to a narrower question than the one you asked. Query the GitHub advisory database by package rather than the CVE feed.</p>
+
+        <p>None of the 38 CVEs is in the CISA KEV catalogue (checked directly, version 2026.10.16, 1,748 entries, zero hits), and no exploitation has been reported for any of them.</p>
+
+        <h2>The part worth arguing about</h2>
+
+        <p>We have written about Claude-discovered vulnerabilities before &mdash; the <a href="/posts/2026/10/podman-cve-2026-94603-checkpoint-annotation-sandbox-bypass/">Podman CVSS 10.0 sandbox bypass</a> that turned out to be a 2022 feature, and <a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">Anthropic&rsquo;s cyber mission and its open-source scanner</a> &mdash; and the honest position has not changed: the findings are real, the triage claim is 92.7% by the discloser&rsquo;s own measure, and the quality of the sixteen ANT write-ups here is high. They cite file and line, they name the introducing commit, they state what the reproducer demonstrated and what it did not, and CVE-2026-112895 correctly identifies itself as someone else&rsquo;s incomplete fix. That is better than a great deal of human advisory prose.</p>
+
+        <p>The unresolved question is not whether the findings are good. It is that <strong>a disclosure pipeline that can produce 29,439 triaged findings is now pointed at maintainer teams whose release cadence is quarterly and whose headcount is small</strong>. Pillow absorbed 41 advisories in 48 hours and shipped a real security section, which is close to a best case. The visible cost is that the fix is bound to a major version, three findings never got an identifier, and one arrived after the release and is still open. Multiply that across 591 projects and the scarce resource is not vulnerability discovery. It is the ability of a maintainer to ship a patch release that an operator on an old interpreter can actually install.</p>
+
+        <p><em>Our verification was read-only. The 41 advisories, their GHSA identifiers, CVE assignments, severities, CVSS vectors and scores, affected and patched version ranges, publication timestamps, CWE assignments, credits and full bodies were enumerated and read first-hand from the GitHub repository security-advisory API, deduplicated to 61 total advisories of which 41 published on or after 17 October 2026; the counts of 2 critical, 13 high, 23 medium and 3 low, the 38 distinct CVE identifiers, the 16 <code>ANT-2026-</code> identifiers and the 3 advisories without a CVE were computed from that set, not quoted. All quoted advisory prose, file paths, line numbers, C and Python source, and the OpenJPEG commit hashes are verbatim from those advisory bodies. CVE-2026-112390 through 112395 publication timestamps, vulnStatus, source identifier, descriptions, CVSS 4.0 and 3.1 vectors and CWEs were read first-hand from the NVD 2.0 API. The 13.0.0 release body, publish timestamp of 2026-10-16T22:37:44Z, the full release list and repository metadata (13,904 stars, 2,543 forks, Python, created 2012-07-24) came from the GitHub API; the Security section of the release notes was read directly from the published documentation. The <code>requires-python</code> values of <code>&gt;=3.10</code> at tag 12.3.0 and <code>&gt;=3.11</code> at tag 13.0.0 were read from <code>pyproject.toml</code> at each tag, and the absence of any 12.3.x release from the PyPI JSON API. The Anthropic disclosure figures &mdash; 6,157 vulnerabilities, 591 projects, 516 patched, 584 identifiers comprising 219 CVE records and 365 GHSAs, 29,439 triaged findings, 6,123 candidates, 5,674 externally reviewed, 92.7% true positives, last updated 2026-10-02 19:47 UTC &mdash; were read directly from Anthropic&rsquo;s coordinated vulnerability disclosure dashboard, and the quoted programme description likewise. KEV status was checked directly against the published catalogue. Brave Search was used for discovery only and returned nothing but automated CVE mirrors with no independent technical analysis of any record in the batch. We installed nothing, built no wheel, crafted no image file, and executed no proof of concept; every reproduction measurement cited is the reporter&rsquo;s, attributed as such.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillow &mdash; repository security advisories (41 published 17&ndash;19 October 2026; 38 CVE identifiers)</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/releases/tag/13.0.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillow 13.0.0 release (16 October 2026, 22:37:44Z; removals include dropping Python 3.10)</a></li>
+          <li><a href="https://pillow.readthedocs.io/en/stable/releasenotes/13.0.0.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Pillow 13.0.0 release notes &mdash; Security section, grouped by severity with GHSA and CVE references</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories/GHSA-v9pv-5gc8-w2m6?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-v9pv-5gc8-w2m6 / CVE-2026-96639 &mdash; stale native image storage reused after mode transitions (critical, CVSS 3.1 9.8)</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories/GHSA-5x8w-8jj5-q52h?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-5x8w-8jj5-q52h / CVE-2026-112398 &mdash; FlashPix JPEG heap overflow leading to code execution (critical; researcher Alex Bouffard)</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories/GHSA-78g4-xqwv-q3g8?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-78g4-xqwv-q3g8 &mdash; bundled libopenjp2 in every wheel since 11.1.0 carries OSV-2025-219 (high, no CVE)</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories/GHSA-654x-cwwv-5j9c?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-654x-cwwv-5j9c &mdash; Arrow export leaks stale heap memory when PILLOW_ALIGNMENT &gt; 1 (affected through 13.0.0; no patched version)</a></li>
+          <li><a href="https://github.com/python-pillow/Pillow/security/advisories/GHSA-p4wg-p73j-c528?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-p4wg-p73j-c528 / CVE-2026-112895 &mdash; unbounded PDF recursion, stated as an incomplete fix for CVE-2026-42310</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-112393?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-112393 record (published 2026-10-19T21:17:07.613Z, CVSS 4.0 9.2, CWE-122)</a></li>
+          <li><a href="https://red.anthropic.com/2026/cvd/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic &mdash; coordinated vulnerability disclosure dashboard (6,157 disclosures across 591 projects; last updated 2 October 2026)</a></li>
+          <li><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA &mdash; Known Exploited Vulnerabilities catalogue (no record in the batch listed; checked 19 October 2026, 1,748 entries)</a></li>
+          <li><a href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">al-ice.ai &mdash; Gitea 28.2.0 and twelve CVEs under one commit subject (18 October 2026)</a></li>
+          <li><a href="/posts/2026/10/podman-cve-2026-94603-checkpoint-annotation-sandbox-bypass/">al-ice.ai &mdash; the Podman CVSS 10.0 sandbox bypass that was a 2022 feature, found by Claude</a></li>
+          <li><a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">al-ice.ai &mdash; Anthropic&rsquo;s cyber mission and unreviewed model output for open source</a></li>
+          <li><a href="/posts/2026/10/trail-of-bits-25-package-managers-malicious-repository-integrity/">al-ice.ai &mdash; Trail of Bits on repository integrity across 25 package managers (18 October 2026)</a></li>
+          <li><a href="/posts/2026/10/apache-camel-thirty-eight-cves-hazelcast-cvss-10-incomplete-fix-october-2026/">al-ice.ai &mdash; thirty-eight Camel advisories in one morning and a CVSS 10.0 already fixed (19 October 2026)</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/oneuptime-fifteen-advisories-kubernetes-ai-actions-cve-2026-112047/">Project-Wide Passes for Cluster-Scoped Powers: OneUptime&amp;rsquo;s Fifteen-Advisory October Batch and CVE-2026-112047</a></h3><p>OneUptime published fifteen repository security advisories between 13 and 18 October 2026, three of them critical, and only one carries a CVE so far: CVE-2026-112047, in which Kubernetes AI access tests, agent resets and kubectl plan approvals were authorised at project scope instead of cluster scope. We read all fifteen advisories, the fix commits and the release train first-hand, from the 9.8 session forgery to the SAML responses that never expired.</p><a class="text-link" href="/posts/2026/10/oneuptime-fifteen-advisories-kubernetes-ai-actions-cve-2026-112047/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-14">2026-10-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix</a></h3><p>VulnCheck published eighteen CWE-78 records between 15:16:59 and 15:17:18 UTC on 14 October 2026 — transcription wrappers, PDF and video converters, archive extractors — all the same bug: an attacker-controlled file name interpolated into a shell string. We read every record and all nineteen fix PRs: one researcher filed them, nine were merged, nine are still open, and two maintainers shipped fixes in the final hours before publication.</p><a class="text-link" href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">&amp;ldquo;Add Missing Checks to Several Handlers and Models&amp;rdquo;: Gitea Ships Twelve CVEs in One Release</a></h3><p>Gitea 28.2.0 shipped on 18 October 2026 and twelve CVE records followed it to NVD fifty-one minutes later. Five of them come from a single pull request whose title names the defect class outright. The two highest-severity records are authentication bugs &amp;mdash; an OpenID callback that never checked who started the linking, and an SSH certificate principal lookup missing a type predicate. We read the release, the twelve advisories and the diffs first-hand, and measured what a dependency scanner sees after Gitea&amp;rsquo;s module path changed.</p><a class="text-link" href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
