@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Unguessable ID Dies on First Click: 6,800 Meta Muse Share Pages Listed in Passive DNS &mdash; al-ice.ai</title>
+  <meta name="description" content="Claroc's GhostShares research, published 18 October 2026 and updated 20 October, found more than 6,800 Meta Muse conversation-share hostnames in a single passive-DNS query against cf.metaaiusercontent.com. Muse builds each share's hostname from the conversation's own title plus a random ID, so DNS publishes both the index and the key the moment the intended recipient clicks. After Ars Technica put the findings to Meta on 20 October, Meta said it is suspending the feature." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/claroc-ghostshares-meta-muse-passive-dns-share-links/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Unguessable ID Dies on First Click: 6,800 Meta Muse Share Pages Listed in Passive DNS" />
+  <meta name="post:date" content="2026-10-20" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Unguessable ID Dies on First Click: 6,800 Meta Muse Share Pages Listed in Passive DNS</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-20">2026-10-20</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Claroc's research team published <strong>GhostShares</strong> on <strong>18 October 2026</strong> and updated it on the 20th. The finding is small enough to state in one sentence and awkward enough to deserve the long version: when a user asks Meta's <strong>Muse</strong> agent to share a conversation, Muse publishes the conversation at a hostname <em>built out of the conversation's own title</em>, and public DNS then indexes that hostname for anyone who cares to look. One passive-DNS query against the content domain <code>cf.metaaiusercontent.com</code> returned, after filtering out wildcard-scan noise, <strong>more than 6,800 share hostnames</strong> &mdash; readable by name, like a table of contents.</p>
+
+        <p>On 20 October, after <strong>Ars Technica</strong>'s Dan Goodin put the research to Meta, Meta said it is <strong>suspending the feature</strong>. Claroc rechecked 40 shares that had opened without an account earlier in the month; none opened, and the hostnames serving their content now error. The hostnames themselves, titles included, remain in passive-DNS history.</p>
+
+        <h2>Why the random ID was never the control</h2>
+
+        <p>Muse's share address is a title slug plus a random identifier. The identifier is long enough that nobody is guessing it, and Claroc is explicit that they did not try: <em>&ldquo;Guessing was never the point.&rdquo;</em> The first time anyone opens the share &mdash; including the colleague it was legitimately sent to &mdash; their resolver performs a lookup, and a passive-DNS provider whose resolvers observe that lookup records the <em>entire hostname</em>, random ID and all. The secret is published by the act of using it.</p>
+
+        <p>This is the part worth generalising beyond Muse. Capability-URL designs across the industry lean on the same assumption: the path segment is unguessable, therefore the resource is private. That assumption holds only while the secret stays off the wire in a position that gets logged. Put it in a <em>path</em> under HTTPS and it is reasonably well hidden. Put it in a <em>hostname</em> and you have handed it to the global DNS infrastructure, which exists to record and republish names. Muse made the second choice, and then made it worse by prefixing the ID with a human-readable description of the contents, so a scraped hostname list doubles as a triage queue: a reader can tell which pages are worth opening before opening any of them.</p>
+
+        <p>Meta did take the precaution everyone learned to take after 2025. Muse's <code>robots.txt</code> asks search and AI crawlers to stay off the share paths &mdash; the control that OpenAI reached for when shared ChatGPT conversations turned up in Google results, and that Grok lacked when hundreds of thousands of conversations were indexed. Claroc's point is that <code>robots.txt</code> governs crawling, not access, and their discovery channel never touched a search engine. Nor is passive DNS the only one: they note that <strong>urlscan.io already holds more than 75 saved scans</strong> of Muse share pages, which is an ordinary public search box.</p>
+
+        <h2>What was behind the links</h2>
+
+        <p>Claroc opened only a few hundred of the 6,800 and left the rest. Most were unremarkable &mdash; small-business sites, listings, event calendars, pages whose owners presumably wanted them seen. A minority were not. Described by category only, with no names or links, the six they highlight are: a candidate's notes preparing for a confidential executive-search call with a frontier AI lab, naming the lab's internal contact and the meeting time; a national marketing company's internal revenue review marked for its CEO; a small-business owner's loan application with the amount requested; a to-do list containing a bank fraud alert with a partial account number and transaction amount; a real-estate investor's internal performance report with two property addresses and exact return, income and mortgage figures; and a workplace's full-year staff vacation calendar listing dozens of employees.</p>
+
+        <p>The research makes a sharp observation about the first of those that is easy to skim past. The biography in a call-prep document might be assembled from public sources &mdash; but <em>the meeting is not public</em>. Who is quietly talking to whom, and when, is a private fact constructed out of public parts, and the share page hands it to anyone who can query a domain-name dataset. That is a different harm from a leaked file, and it is the harm that scales when an assistant's output is a narrative rather than a document.</p>
+
+        <h2>Nobody broke anything</h2>
+
+        <p>There is no CVE here and there will not be one. No authentication was bypassed, no bug was exploited, no rate limit was evaded. Every page was public because a user asked Muse to make it public, and Muse did exactly that; every hostname came from a commercial passive-DNS provider, not from brute force. Claroc disclosed to Meta's bug bounty programme on <strong>8 October 2026</strong> with reproduction steps, performed its content review on 7&ndash;8 October, and re-opened exactly one page afterwards &mdash; on 18 October, to capture a redacted screenshot. What it continued to watch through DNS alone is that the share tier kept minting new hostnames: <strong>27 on the last day it looked</strong>.</p>
+
+        <p>Muse launched on <strong>8 September 2026</strong>. A month of ordinary use produced 6,800 publicly indexed conversation pages. That ratio, not the six anecdotes, is the number for security teams to carry: the exposure here is a function of adoption, and it accumulates silently because each individual share is a sanctioned action by a user who was told only that &ldquo;people with the link&rdquo; could see it.</p>
+
+        <h2>The governance gap this exposes</h2>
+
+        <p>Claroc's framing of why a settings review misses this is the most transferable part of the write-up. Each share is a request an employee makes, one conversation at a time, and the app carries it out as documented. What makes the share findable &mdash; how the URL and hostname are constructed, and the fact that DNS records them &mdash; appears in none of the sharing controls a reviewer would inspect. An approval is a snapshot of the moment it was signed; the shares happen afterwards. That is the same structural problem we saw in the <a href="/posts/2026/09/imdea-popets-conversational-ai-trackers-permalinks-grok-canary/">IMDEA PoPETs work on conversational-AI trackers and permalinks</a> and in <a href="/posts/2026/07/grok-build-whole-repository-upload-privacy/">Grok's whole-repository upload behaviour</a>: the privacy outcome is decided by a transport detail that no product setting surfaces.</p>
+
+        <p>The practical items, which apply to every AI assistant your staff use and not just the one Meta has now suspended: find out who is already using it, because consumer AI agents need no admin rollout; say explicitly in your AI-usage guidance that asking an assistant to share a conversation publishes a public page, and that in some products the title becomes a public DNS name; treat the creation of an AI share link as an outbound data transfer and alert on it if your tooling can see SaaS and AI activity; and if nothing in your stack can see it, block the app and its content domain at the proxy or DNS filter as a blunt stopgap.</p>
+
+        <p>The last suggestion is the one worth acting on today regardless of Muse's status: run the same query yourself. Search passive DNS and urlscan for the content domains of the AI and SaaS tools your people actually use, then create a share and watch what lands in the hostname. Whatever you can retrieve, so can anyone with the same ordinary access. Meta closed this one in twelve days from report to suspension, which is fast. The design pattern that produced it is not unique to Meta.</p>
+
+        <p><em>Our verification was read-only. The methodology, the 6,800-hostname figure, the <code>cf.metaaiusercontent.com</code> content domain, the title-plus-random-ID hostname construction, the six exposure categories, the urlscan.io count, the 8 October bug-bounty disclosure, the 27 new hostnames observed, the 8 September Muse launch date and the 20 October update stating Meta is suspending the feature were read first-hand from Claroc's GhostShares post, which is itself the primary research and carries the dated update. The suspension and Meta's response are independently reported by Ars Technica (Dan Goodin, 20 October 2026). We did not query passive DNS, did not open any Muse share page, and did not attempt to reproduce the enumeration; no request was sent to Meta infrastructure. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.claroc.io/ghostshares-muse-passive-dns?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Claroc Research Team &mdash; &ldquo;GhostShares: A Shared Muse Chat Exposed Prep for a Confidential Call With a Frontier AI Lab Leader&rdquo; (18 October 2026, updated 20 October 2026)</a></li>
+          <li><a href="https://arstechnica.com/security/2026/10/meta-muse-exposes-users-personal-and-business-secrets-when-they-share-conversations/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Ars Technica &mdash; &ldquo;Meta Muse exposes users&rsquo; personal and business secrets when they share conversations&rdquo; (Dan Goodin, 20 October 2026; Meta&rsquo;s suspension statement)</a></li>
+          <li><a href="/posts/2026/09/imdea-popets-conversational-ai-trackers-permalinks-grok-canary/">al-ice.ai &mdash; IMDEA at PoPETs on conversational-AI trackers and permalinks</a></li>
+          <li><a href="/posts/2026/07/grok-build-whole-repository-upload-privacy/">al-ice.ai &mdash; Grok Build&rsquo;s whole-repository upload and the privacy question</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-05-02">2026-05-02</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/05/arxiv-indirect-prompt-injection-wild-empirical-study/">ArXiv — Indirect Prompt Injection in the Wild: 15.3K Instances Across 24.8M Hosts</a></h3><p>First large-scale empirical study of indirect prompt injections on the web identifies 15.3K validated instances across 11.7K pages, with compliance rates up to 8% on smaller models.</p><a class="text-link" href="/posts/2026/05/arxiv-indirect-prompt-injection-wild-empirical-study/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/signals-corps-http-header-prompt-injection-217-million-responses/">Nobody Sees the Headers Except Your Agent: 7,959 Sites Are Already Writing to AI in HTTP Response Metadata</a></h3><p>Signals Corps read the HTTP response headers of 217,097,223 pages from Common Crawl&amp;rsquo;s September 2026 archive and found 7,959 sites sending text addressed to AI agents. 7,271 are pointers to llms.txt files and MCP servers, 139 record whether the client was judged a bot, and 30 are injection attempts. The sharper result is the tool survey: whether any of it reaches your model depends entirely on which fetch tool your agent uses, and a shell with curl -i passes all of it.</p><a class="text-link" href="/posts/2026/10/signals-corps-http-header-prompt-injection-217-million-responses/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-11169-skill-constellations-dated-copy-network-agent-skills/">Only 20.9% of Agent Skills Follow Their Source: arXiv:2610.11169 Dates 2.2 Million Copies and Finds Stars Point the Wrong Way</a></h3><p>Skill Constellations reconstructs the first dated copy network of agent skills from git history — 2,193,119 adoptions across GitHub. Only 20.9% of copies follow a later edit of their source, 11.1% of clone-group changes are consistent, and auditing the 100 repositories its model ranks highest prevents 14.9% of later high-risk adoptions against 0.5% for the 100 most starred.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-11169-skill-constellations-dated-copy-network-agent-skills/">Read briefing →</a></article></div>
+    </aside>
+    </main>

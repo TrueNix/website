@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agent Sessions First, Cloud Keys Second: The OVHcloud CLI Release Hijack &mdash; al-ice.ai</title>
+  <meta name="description" content="OVHcloud's advisory GHSA-862f-55f5-vmvw, published 20 October 2026, describes a compromised developer account swapping the binaries on five already-published ovhcloud-cli releases for 1h33 on 19 October. The stealer's file list opens with VS Code, Cursor, Continue, Cody, OpenCode, Hermes and Claude agent state, and only then reaches AWS, GCP, Azure and SSH. Root cause: a Glassworm-infected VS Code extension installed on a developer's personal MacBook on 20 October 2025, and a repository that never had release immutability switched on." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/ovhcloud-cli-release-hijack-ghsa-862f-agent-state-stealer/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Agent Sessions First, Cloud Keys Second: The OVHcloud CLI Release Hijack" />
+  <meta name="post:date" content="2026-10-20" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Agent Sessions First, Cloud Keys Second: The OVHcloud CLI Release Hijack</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-20">2026-10-20</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>20 October 2026 at 12:49 UTC</strong>, OVHcloud published <strong>GHSA-862f-55f5-vmvw</strong>, a high-severity advisory on its own <code>ovh/ovhcloud-cli</code> repository, describing what happened to its command-line tool the previous afternoon. A compromised developer account replaced the downloadable binaries attached to <strong>five already-published releases &mdash; v0.11.0 through v0.15.0 &mdash;</strong> with a recompiled, backdoored build. The window OVHcloud measures at <strong>1h33</strong>, between <strong>14:47 and 16:21 CEST on 19 October</strong>. Roughly <strong>250 downloads</strong> landed inside it.</p>
+
+        <p>The advisory is unusually complete for a same-week incident writeup: full timeline, MD5s, IOCs, root cause, and a candid paragraph about why the company's GitHub presence was held to a lower standard than its internal CI. It is worth reading in full. But the detail that belongs on this site is the stealer's shopping list, because of the order it is written in.</p>
+
+        <h2>The file list starts with the assistants</h2>
+
+        <p>OVHcloud enumerates what the malicious binary collected. The list opens with developer-AI state and only afterwards arrives at the cloud:</p>
+
+        <ul>
+          <li>VS Code and Cursor <code>globalStorage/state.vscdb</code> SQLite databases</li>
+          <li>The <strong>Continue</strong> extension's <code>index.sqlite</code>, under both VS Code and Cursor</li>
+          <li><strong>Sourcegraph Cody</strong> <code>chat-history.db</code>, under both editors</li>
+          <li><strong>OpenCode</strong>'s local database (<code>~/.local/share/opencode/opencode.db</code> and <code>~/.config/opencode/opencode.db</code>)</li>
+          <li>The <strong>Hermes</strong> agent's <code>~/.hermes/sessions</code> and <code>~/.hermes/.hermes_history</code></li>
+          <li>The <strong>Claude</strong> agent's entire <code>~/.claude</code> directory</li>
+        </ul>
+
+        <p>Then, and only then: AWS credentials, config and CLI cache; <code>gcloud</code> <code>credentials.db</code> and <code>access_tokens.db</code>; the Azure profile and <code>msal_token_cache.json</code>; Docker config; <code>~/.kube/config</code>; npm config; <code>doctl</code>; the whole of <code>~/.ssh</code>; Terraform credentials; <code>.netrc</code>; and the global <code>.gitconfig</code>.</p>
+
+        <p>A credential stealer that reads <code>~/.aws/credentials</code> is 2015. A credential stealer that reads a coding agent's <em>chat history database</em> is a different proposition, and the authors clearly thought it was the better haul. Agent session stores are not credential files, so nobody rotates them, nobody scans them, and no secret-scanning CI rule covers them &mdash; yet they contain pasted tokens, internal hostnames, architecture discussions, ticket contents and the transcript of whatever the developer was debugging that week. The same targeting shape has now appeared in the <a href="/posts/2026/04/bitwarden-cli-shai-hulud-ai-coding-assistant-targeting/">Shai-Hulud variant that went after AI coding assistants</a> and in the <a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">OpenCode console breach</a>. This is the third independent campaign in six months to treat agent state as a first-class exfiltration target, and the first to do it from a major cloud provider's own release page.</p>
+
+        <h2>What the release page still shows</h2>
+
+        <p>We checked the GitHub Releases API against the advisory rather than taking it on trust, and the asset tables corroborate it precisely. Releases <strong>v0.10.0 and v0.16.0 each carry ten assets</strong>: a checksums file plus nine platform archives. Each of the five hijacked releases &mdash; <strong>v0.11.0, v0.12.0, v0.13.0, v0.14.0 and v0.15.0 &mdash; now carries exactly four</strong>, and the same four every time: <code>Js_wasm</code>, <code>Linux_i386</code>, <code>Windows_arm64</code> and <code>Windows_i386</code>. Every surviving asset still bears its original 2026 upload timestamp (14 April, 29 May, 25 August, 31 August, 16 September respectively), so those four were never touched.</p>
+
+        <p>The six names missing from each release are the five platform builds OVHcloud lists as malicious &mdash; Darwin arm64, Darwin x86_64, Linux arm64, Linux x86_64, Windows x86_64 &mdash; plus the checksums file. In other words, the attacker swapped exactly the builds people actually run and skipped the wasm, i386 and Windows-on-ARM archives entirely. The deletion OVHcloud performed at 16:21 is still legible in the asset table as a negative image of the attack.</p>
+
+        <p>The clean release corroborates the timeline too: <strong>v0.16.0 was published at 17:16:54 UTC on 19 October</strong>, which is 19:16 CEST, matching the advisory's entry to the minute. And the malicious build's own Go module metadata, reproduced in the advisory, reads <code>v0.15.1-0.20261013083505-5ead8ef9b43d+dirty</code> with <code>vcs.revision 5ead8ef9b43d</code> &mdash; a real commit in the repository, the 13 October merge of PR #296. The attacker compiled from genuine upstream source, marked dirty, with the stealer bolted on as an <em>envchecker</em> module. Source code and build chain were not touched; only the artefacts were.</p>
+
+        <h2>A year of dwell time, and one missing checkbox</h2>
+
+        <p>OVHcloud's root-cause section is the part defenders should sit with. The developer account was compromised when the developer installed the VS Code extension <strong><code>color-picker-universal 2.8.91</code></strong> on their <strong>personal MacBook on 20 October 2025</strong>. The extension made Solana RPC calls using wallet <code>BjVeAjPrSKFiingBn4vZvghsGj9KCE8AJVtbc9S8o8SC</code>, attributed to the <strong>Glassworm</strong> actor, and registered a persistent NodeJS <code>plist</code> service talking to <code>162.33.177[.]177</code>. Several of the same account's personal repositories were compromised in March 2026 with that wallet. The release swap itself was not performed from that MacBook &mdash; it was done with stolen keys.</p>
+
+        <p>So: infection 20 October 2025, exploitation 19 October 2026. Three hundred and sixty-four days of dwell time between a marketplace extension and a cloud provider's release page. We have covered Glassworm's <a href="/posts/2026/10/glassworm-vscode-color-themes-hidden-loaders-marketplace-open-vsx/">colour-theme loaders on the VS Code Marketplace and Open VSX</a> and the <a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">developer-targeting botnet takedown</a>; this is what the long tail of that campaign buys an operator a year later. The malicious CLI's own exfiltration reuses the family's signature trick, resolving its drop point through public Solana RPC endpoints under wallet <code>BHaDaVbdCYFNaKZGn7yLXFneWoJHZgLiBYkHxVrjyALF</code> before uploading the archive to <code>hxxps://45.32.148[.]174/upload</code>.</p>
+
+        <p>And the control that would have stopped it is one setting. OVHcloud states it plainly: <em>&ldquo;The main issue was that the GitHub repository was not appropriately configured to ensure release immutability.&rdquo;</em> Immutable releases have since been enabled across the whole organisation, the compromised account suspended, every repository's logs reviewed, and v0.16.0 shipped with a signed tag. The company is candid that its GitHub org ran looser than its internal, audited CI because developers are allowed to attach personal GitHub accounts &mdash; <em>&ldquo;as do most of tech companies,&rdquo;</em> the advisory notes, correctly.</p>
+
+        <h2>Checking whether you are affected</h2>
+
+        <p>The exposure test is narrow and mechanical. If you downloaded or updated <code>ovhcloud-cli</code> between <strong>14:47 and 16:21 CEST on 19 October 2026</strong> and ran it, treat every secret on that machine as compromised &mdash; including, per the list above, anything that passed through an agent session on that host. Downloads of v0.11.0&ndash;v0.15.0 before that date are unaffected; <code>&lt;= v0.10.0</code> and <code>&gt;= v0.16.0</code> are unaffected.</p>
+
+        <p>Two local artefacts settle the question without executing anything. The advisory publishes MD5s for all five malicious binaries (<code>6f2f086239f3d88eb2750e871901927d</code> Darwin arm64, <code>347e65eb7f2d78d1c6872690272a6cc3</code> Darwin x86_64, <code>01f57206d37c28cf711677f612052913</code> Linux arm64, <code>301bff0b51980b9e76c93633e7cfd3bd</code> Linux x86_64, <code>6a3cf153338c416169cda2fe704c8848</code> Windows x86_64) &mdash; hash your copy, do not run it. And the stealer creates a directory named <code>envchecker-</code> followed by nine or ten digits in the system temp folder on every run, and never cleans it up; its presence is a positive indicator, and its contents are an inventory of exactly what left.</p>
+
+        <p>The broader lesson is the one the asset table makes concrete. A release page is mutable storage unless you have explicitly made it otherwise, and a checksums file sitting next to the binaries it describes is not an integrity control when the same account can rewrite both. Signed tags, release immutability and published provenance are the only artefacts that survive an account compromise &mdash; everything else is the attacker's to edit. OVHcloud's own next-steps list converges on the same three items, and it took 250 downloads to get there.</p>
+
+        <p><em>Our verification was read-only. The incident narrative, timeline, malware target list, IOCs, MD5 hashes, root cause and remediation steps were read first-hand from OVHcloud's advisory GHSA-862f-55f5-vmvw on the <code>ovh/ovhcloud-cli</code> repository (published 20 October 2026, 12:49:39 UTC). The release asset tables, upload timestamps, v0.16.0 publication time and the existence of commit 5ead8ef9b43d were independently read from the GitHub REST API. No malicious artefact was downloaded, hashed, executed or contacted; no IOC was resolved or probed. Defanged indicators are reproduced as published. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/ovh/ovhcloud-cli/security/advisories/GHSA-862f-55f5-vmvw?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OVHcloud &mdash; GHSA-862f-55f5-vmvw, &ldquo;ovhcloud-cli security incident &mdash; October 19th, 2026&rdquo; (20 October 2026; timeline, target list, IOCs, MD5s, root cause)</a></li>
+          <li><a href="https://github.com/ovh/ovhcloud-cli/issues/300?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ovh/ovhcloud-cli issue #300 &mdash; the customer report that opened the investigation</a></li>
+          <li><a href="https://github.com/ovh/ovhcloud-cli/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">ovh/ovhcloud-cli releases &mdash; asset tables for v0.10.0 through v0.16.0</a></li>
+          <li><a href="/posts/2026/10/glassworm-vscode-color-themes-hidden-loaders-marketplace-open-vsx/">al-ice.ai &mdash; Glassworm's colour-theme loaders on the VS Code Marketplace and Open VSX</a></li>
+          <li><a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">al-ice.ai &mdash; The Glassworm developer-targeting botnet takedown</a></li>
+          <li><a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">al-ice.ai &mdash; The OpenCode console breach and provider keys</a></li>
+          <li><a href="/posts/2026/04/bitwarden-cli-shai-hulud-ai-coding-assistant-targeting/">al-ice.ai &mdash; Shai-Hulud starts targeting AI coding assistants</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">The Backup App Is the Identity: ConnectWise&amp;rsquo;s Credential and 300 Microsoft 365 Tenants</a></h3><p>On 15 October 2026 an attacker used a compromised credential belonging to the ConnectWise Cloud Backup (formerly SkyKick) application to sign into customer Microsoft 365 tenants from 144.172.64.128, moving tenant-to-tenant seconds apart. Huntress, which broke the news on 16 October, had by 19 October tied nearly 1,000 Entra tenants to the activity with roughly 300 successful sign-ins. ConnectWise shut off Cloud Backup access on 17 October. MFA never entered the picture &amp;mdash; application sign-ins have no MFA prompt &amp;mdash; and in one tenant a second ConnectWise app granted itself Global Administrator and minted fresh client secrets.</p><a class="text-link" href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Aoki Wants Your Agent&amp;rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&amp;rsquo;s New Taste for AI Coding Credentials</a></h3><p>Symantec&amp;rsquo;s Threat Hunter Team reports the Aoki infostealer now harvests Claude, Codex, Cursor, Copilot, and Gemini credentials plus AWS keys — cash-in-grade material that buys both API quota and a route into the developer&amp;rsquo;s environment. A second family, a second vendor, the same target as Warden.</p><a class="text-link" href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/curl-8230-aisle-audit-24-cves-http2-uaf-client-rce/">Eighteen More After Zero: curl 8.23.0 Fixes 24 CVEs as the AISLE Audit Closes Its Second Release</a></h3><p>curl 8.23.0, released 14 October 2026, fixes 24 CVEs — 18 found by the AISLE AI audit, plus an HTTP/2 upload use-after-free (CVE-2026-92392) proven convertible to client-side RCE and reported by Luna with Claude. We read the AISLE audit write-up, the curl.se advisory and the NVD record first-hand: the theme is security state surviving a changed trust context.</p><a class="text-link" href="/posts/2026/10/curl-8230-aisle-audit-24-cves-http2-uaf-client-rce/">Read briefing →</a></article></div>
+    </aside>
+    </main>
