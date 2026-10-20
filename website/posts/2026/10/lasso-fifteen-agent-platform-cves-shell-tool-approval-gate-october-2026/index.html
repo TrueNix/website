@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Gate Was Called and Threw the Answer Away: Fifteen Agent-Platform CVEs in Ten Seconds — al-ice.ai</title>
+  <meta name="description" content="Between 01:17:10Z and 01:17:20Z on 20 October 2026, NVD published fifteen VulnCheck-assigned CVEs against ten open-source AI agent platforms holding roughly 128,000 GitHub stars &mdash; Letta, Coze Studio, Langchain-Chatchat, DB-GPT, OpenSRE, EvoScientist, LangAlpha, Aix-DB, piflow and JoySafeter. Credited to Lasso Security, the batch states one defect ten ways: the agent has a shell, and the gate in front of it is absent, mocked, or hard-coded to approve. We read every cited line of source at the pinned commits, and found Coze Studio&rsquo;s year-old fix never reached the file its own debug target loads." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/lasso-fifteen-agent-platform-cves-shell-tool-approval-gate-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Gate Was Called and Threw the Answer Away: Fifteen Agent-Platform CVEs in Ten Seconds" />
+  <meta name="post:date" content="2026-10-20" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Gate Was Called and Threw the Answer Away: Fifteen Agent-Platform CVEs in Ten Seconds</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-20">2026-10-20</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between <strong>01:17:10.103Z and 01:17:20.410Z on 20 October 2026</strong> &mdash; a window of ten and a half seconds &mdash; NVD published <strong>fifteen CVE records against ten open-source AI agent platforms</strong>. Every one was assigned by VulnCheck as CNA; every one carries a reference to a Lasso Security advisory; the three credits that are published name <strong>Noy Pearl, Michael Sromin and Ophir Dror</strong>. The ten projects hold roughly <strong>128,000 GitHub stars</strong> between them, and the batch is not ten findings. It is one finding stated ten ways: <em>the agent has a tool that runs shell commands, and the thing standing in front of that tool is absent, mocked, or hard-coded to say yes.</em></p>
+
+        <p>We read every line of source the advisories cite, at the exact commits they pin. What follows is that reading. The most useful part is not any single record &mdash; it is that four different teams, working in four different languages, independently built the same hole, and in three cases wrote a comment next to it explaining that they had.</p>
+
+        <h2>The batch</h2>
+
+        <p>Fifteen identifiers, ten projects, one publication window. Scores shown are the CVSS 4.0 base scores recorded at NVD.</p>
+
+        <ul>
+          <li><strong>Letta</strong> (25,196&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-77936</strong> (9.3 critical, CWE-1188), <strong>CVE-2026-77937</strong> (8.6 high, CWE-639), <strong>CVE-2026-77938</strong> (7.1 high, CWE-526). Through 0.16.8.</li>
+          <li><strong>Coze Studio</strong> (21,731&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-77934</strong> (8.7 high, CWE-1188), <strong>CVE-2026-77935</strong> (8.7 high, CWE-639).</li>
+          <li><strong>DB-GPT</strong> (20,164&#9733;, MIT) &mdash; <strong>CVE-2026-77932</strong> (9.3 critical, CWE-306), <strong>CVE-2026-77933</strong> (9.3 critical, CWE-1392). Through 0.8.2.</li>
+          <li><strong>Langchain-Chatchat</strong> (38,697&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-75128</strong> (9.3 critical, CWE-306). Through 0.3.1.3.</li>
+          <li><strong>OpenSRE</strong> (12,239&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-109444</strong> (8.7 high, CWE-862). Through 0.1.2026.10.19.</li>
+          <li><strong>LangAlpha</strong> (1,827&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-109440</strong> (8.6 high), <strong>CVE-2026-109441</strong> (6.9 medium, CWE-653). Through 2026.09.07.</li>
+          <li><strong>EvoScientist</strong> (4,992&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-77930</strong> (8.7 high, CWE-862). 0.1.0 before 0.2.5.</li>
+          <li><strong>Aix-DB</strong> (2,253&#9733;, no license) &mdash; <strong>CVE-2026-77926</strong> (8.7 high, CWE-749). Version 1.2.4.</li>
+          <li><strong>piflow</strong> (541&#9733;, no license) &mdash; <strong>CVE-2026-109442</strong> (9.3 critical, CWE-306). 2.0.0 through 2.0.1.</li>
+          <li><strong>JoySafeter</strong> (314&#9733;, Apache-2.0) &mdash; <strong>CVE-2026-109443</strong> (8.7 high, CWE-653). Through 1.0.0.</li>
+        </ul>
+
+        <p>Six of the ten repositories have <strong>no SECURITY.md</strong> (Coze Studio, DB-GPT, Langchain-Chatchat, EvoScientist, piflow, LangAlpha); four do (Letta, OpenSRE, Aix-DB, JoySafeter). None of the fifteen identifiers appears in the CISA Known Exploited Vulnerabilities catalogue, which we checked directly: catalogue version 2026.10.16, 1,748 entries, zero hits.</p>
+
+        <h2>&ldquo;Mock User Info&rdquo; &mdash; the comment that is also the vulnerability</h2>
+
+        <p>The sharpest record in the batch is <strong>CVE-2026-77932</strong>, because the defect is annotated. DB-GPT&rsquo;s <code>packages/dbgpt-serve/src/dbgpt_serve/utils/auth.py</code> is thirty-nine lines long. The whole of its authentication is this, read verbatim at the pinned commit <code>83609c47</code>:</p>
+
+        <pre><code>def get_user_from_headers(user_id: Optional[str] = Header(None)):
+    try:
+        # Mock User Info
+        if user_id:
+            return UserRequest(
+                user_id=user_id, role="admin", nick_name=user_id, real_name=user_id
+            )
+        else:
+            return UserRequest(
+                user_id="001", role="admin", nick_name="dbgpt", real_name="dbgpt"
+            )</code></pre>
+
+        <p>Both branches return <code>role="admin"</code>. The <code>else</code> branch &mdash; the one taken when <em>no header is supplied at all</em> &mdash; returns a hard-coded administrator named <code>dbgpt</code>. This is a FastAPI dependency, which means it is wired into route signatures and looks, at every call site, exactly like authentication. The comment is honest and two words long, and it has been load-bearing for long enough that <code>/api/v1/chat/react-agent</code> now sits behind it with a <code>code_interpreter</code> and a <code>shell_interpreter</code> attached. We have written about <a href="/posts/2026/10/dbgpt-cve-2026-51862-51869-sandbox-fallback-skill-upload-rce/">DB-GPT&rsquo;s sandbox fallback and skill-upload RCEs</a> before; those were bugs in a control, and this is the absence of one. Note the second record, <strong>CVE-2026-77933</strong>: the shipped <code>docker-compose.yml</code> publishes MySQL on all interfaces with a static root password, so the code execution lands next to a database that needs no further work.</p>
+
+        <h2>&ldquo;return True&rdquo;, with the policy explicitly discarded</h2>
+
+        <p>OpenSRE is an AI site-reliability agent: it triages alerts from Grafana and Loki and can act on them. <strong>CVE-2026-109444</strong> points at <code>tools/interactive_shell/subprocess_presenter.py</code>, and the function is the entire story:</p>
+
+        <pre><code>    def execution_allowed(
+        self,
+        policy: ExecutionPolicyResult,
+        *,
+        action_summary: str,
+    ) -&gt; bool:
+        _ = (policy, action_summary)
+        return True</code></pre>
+
+        <p>Read what that middle line does. <code>_ = (policy, action_summary)</code> is the Python idiom for <em>I know these arguments exist and I am deliberately not using them.</em> The approval machinery runs. A policy result is computed and handed to the gate. The gate assigns it to a throwaway and returns <code>True</code>. This is the headless presenter used on non-interactive surfaces &mdash; the Slack gateway and scheduled runs &mdash; so on exactly the paths where no human is watching, the gate that exists to summon a human approves unconditionally. The agent reads alert text an attacker can influence, and the commands inherit the process environment, which on an SRE agent is where production credentials live. The pinned commit <code>8eba8c93</code> dates from <strong>19 October 2026</strong>, the day before publication: the researchers pinned to current <code>main</code> because there is nothing else to pin to.</p>
+
+        <h2>One unauthenticated POST, one always-registered shell</h2>
+
+        <p><strong>CVE-2026-75128</strong> is the simplest and, by population, probably the largest. Langchain-Chatchat has <strong>38,697 stars</strong> &mdash; the most-starred project in the batch &mdash; and <code>libs/chatchat-server/chatchat/server/api_server/tool_routes.py</code> is forty-eight lines total:</p>
+
+        <pre><code>@tool_router.post("/call", response_model=BaseResponse)
+async def call_tool(
+    name: str = Body(examples=["calculate"]),
+    tool_input: dict = Body({}, examples=[{"text": "3+5/2"}]),
+):
+    if tool := get_tool(name):
+        try:
+            result = await tool.ainvoke(tool_input)</code></pre>
+
+        <p>There is no authentication dependency in the signature, no allow-list, and &mdash; per Lasso&rsquo;s reading of <code>server/utils.py</code> &mdash; the per-tool <code>use</code> flag that operators set to keep dangerous tools away from the agent gates only <em>the agent&rsquo;s</em> tool list, not this route. The shell tool is always imported and therefore always registered. One POST naming it runs a command as root in the shipped Docker image. The remediation question answers itself from the repository metadata: the last release is <strong>v0.3.1, July 2024</strong>, and the last push to the repository was <strong>10 November 2025</strong>. This project has not moved in eleven months. Nearly thirty-nine thousand stars, an unauthenticated command-execution route, and no maintainer on the other end. We covered <a href="/posts/2026/04/langchain-chatchat-cve-2026-30617-mcp-rce/">Langchain-Chatchat&rsquo;s MCP RCE in April</a>; the project was already quiet then.</p>
+
+        <h2>Letta: the switch exists, and the file that starts the server does not flip it</h2>
+
+        <p>Letta&rsquo;s three records are the clearest illustration of a pattern we keep meeting: the security control is implemented, tested and documented, and the default deployment path never reaches it. <code>letta/server/rest_api/app.py</code>, lines 797&ndash;799:</p>
+
+        <pre><code>    if (os.getenv("LETTA_SERVER_SECURE") == "true") or "--secure" in sys.argv:
+        print(f"▶ Using secure mode with password: {random_password}")
+        app.add_middleware(CheckPasswordMiddleware, password=random_password)</code></pre>
+
+        <p>The middleware is good. It is also opt-in, and the <code>compose.yaml</code> the project ships does not set <code>LETTA_SERVER_SECURE</code> &mdash; we read all sixty-six lines; the variable does not appear. The same file publishes the PostgreSQL port to the host (<code>"${LETTA_PG_PORT:-5432}:5432"</code>) with <code>POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}</code>, i.e. the password <code>letta</code> unless you knew to override it. That is <strong>CVE-2026-77936</strong> at 9.3: every route open, including <code>POST /v1/tools/run</code>, which executes Python.</p>
+
+        <p><strong>CVE-2026-77937</strong> is the one that survives turning the switch on. In <code>letta/server/rest_api/dependencies.py</code>, the acting identity is a request header:</p>
+
+        <pre><code>def get_headers(
+    actor_id: Optional[str] = Header(None, alias="user_id"),</code></pre>
+
+        <p>The code immediately after validates the <em>format</em> of that value &mdash; it must match <code>user-&lt;uuid4&gt;</code> or the request is rejected with <code>LettaInvalidArgumentError</code>. Format is checked; authority is not. A caller asserts who they are and is believed, so a shared password buys you a perimeter and nothing inside it. This is the same shape as the caller-supplied identity defects we examined in <a href="/posts/2026/10/caller-supplied-identity-wanwu-astron-thclaws-october-2026/">Wanwu, Astron and THCLAWS</a>: a validator that confirms a string is well-formed and is then mistaken for one that confirms it is true.</p>
+
+        <p><strong>CVE-2026-77938</strong> closes the loop. In <code>letta/services/tool_sandbox/base.py</code>, the environment handed to a local tool subprocess begins at line 487 with <code>env = os.environ.copy() if is_local else {}</code>. The layering comment above it is careful and correct about precedence, and the base layer is the entire server environment: <code>LETTA_PG_URI</code>, <code>POSTGRES_PASSWORD</code>, provider API keys. Anyone who can run a tool can read them. Letta&rsquo;s newest release, <strong>0.16.8</strong>, shipped <strong>14 May 2026</strong>; the repository is actively developed (last push 18 October 2026) but has not cut a release in five months, so there is currently no tag to upgrade to.</p>
+
+        <h2>The finding the metadata hides: Coze Studio&rsquo;s fix went to the wrong file</h2>
+
+        <p>This is where reading the source changes the answer. <strong>CVE-2026-77934</strong> is recorded as affecting <em>&ldquo;Coze Studio before 0.5.0&rdquo;</em>, which reads as resolved &mdash; v0.5.0 was published on <strong>29 October 2025</strong>, nearly a year before the identifier. The cited fix is commit <code>fcf40d10</code>, <em>&ldquo;feat(infra): Set the Code Runner environment to sandbox by default (#2339)&rdquo;</em>, dated 17 October 2025. We pulled it: <strong>one file changed, one line added, one line removed.</strong> It flips <code>docker/.env.example</code> from <code>CODE_RUNNER_TYPE="local"</code> to <code>"sandbox"</code>.</p>
+
+        <p>But Lasso&rsquo;s advisory does not name <code>.env.example</code>. It names <strong><code>.env.debug.example</code> line 235</strong>, and describes the affected deployment as the one started with <code>make</code> or <code>make debug</code>. So we checked both files at <code>main</code>, today:</p>
+
+        <ul>
+          <li><code>docker/.env.example</code> at <code>main</code> &mdash; <strong>no <code>CODE_RUNNER_TYPE</code> line at all</strong> (at tag v0.5.1 it reads <code>"sandbox"</code>, line 263).</li>
+          <li><code>docker/.env.debug.example</code> at <code>main</code> &mdash; line 235: <strong><code>export CODE_RUNNER_TYPE="local"</code></strong>. Identical at tag v0.5.1.</li>
+        </ul>
+
+        <p>The hardening landed in one file and its sibling was never touched. The affected-version metadata &mdash; <em>before 0.5.0</em> &mdash; is therefore accurate about the file the NVD reference happens to pin and wrong about the deployment the advisory actually describes: the debug target&rsquo;s default is <code>local</code> on current <code>main</code>, in v0.5.0 and in v0.5.1. An operator who reads &ldquo;fixed in 0.5.0&rdquo; and runs <code>make debug</code> is running the vulnerable configuration. And the surrounding comment block in that file has always said so plainly: <em>&ldquo;local: using venv, no env isolation&rdquo;</em>. The documentation was never wrong. The default was.</p>
+
+        <p>Two further notes. The import filter Coze Studio applies to user Python is a keyword filter, and Lasso reports <code>__import__()</code> walks past it &mdash; a blocklist outcome we have now recorded often enough to treat as the expected one. And <strong>CVE-2026-77935</strong>, the cross-space IDOR, is unfixed through 0.5.1. We read <code>backend/application/workflow/workflow.go</code> at the pinned commit: <code>SaveWorkflow</code> calls <code>checkUserSpace(ctx, uid, req.SpaceID)</code> and then, fifteen lines later, <code>Save(ctx, mustParseInt64(req.WorkflowID), req.GetSchema())</code>. The check confirms <em>you belong to the space you named</em>. Nothing confirms <em>the workflow you named belongs to that space</em>. Pair your own <code>spaceID</code> with someone else&rsquo;s <code>workflowID</code> and the gate passes honestly, having answered a question nobody needed the answer to. The repository&rsquo;s last push was <strong>29 July 2026</strong>, so no fix is imminent.</p>
+
+        <h2>The shared primitive: deepagents, and the gate you have to ask for</h2>
+
+        <p>Four of the ten projects &mdash; EvoScientist, Aix-DB, piflow and LangAlpha &mdash; build on LangChain&rsquo;s Deep Agents, and the defects cluster there in a way worth stating precisely. <code>create_deep_agent</code> supplies an execution tool by default; the human-in-the-loop gate is something the integrator <em>opts into</em>, via <code>interrupt_on</code>. Four teams did not opt in.</p>
+
+        <p>Aix-DB&rsquo;s <code>enhanced_common_agent.py</code> is the most legible example, and the parameter that matters is not the backend but its second argument:</p>
+
+        <pre><code>            backend=LocalShellBackend(
+                root_dir=str(workdir),
+                inherit_env=True,
+                timeout=120
+            ),</code></pre>
+
+        <p><code>inherit_env=True</code> is why CVE-2026-77926 is scored as credential exposure and not merely command execution: the shell the chat agent drives starts with the server&rsquo;s datasource credentials and model API keys already in its environment. Directly beneath that call sits a large commented-out <code>middleware=[...]</code> block &mdash; summarisation and context-editing middleware, disabled. The middleware slot that would have carried an approval gate is present in the file, and empty.</p>
+
+        <p>piflow is the same construction without the authentication: <code>@app.post("/chat")</code> in <code>server.py</code> takes a request and a thread ID, logs a preview, and hands it to the engine &mdash; no dependency, no token &mdash; while <code>agents/tools.py</code> exposes <code>@tool def exec_shell(command: str)</code>. LangAlpha assembles <code>tools: list[Any] = [execute_code_tool, bash_tool, bash_output_tool, ...]</code> with no <code>interrupt_on</code>, and its second record is a one-word default: <code>network_mode: str = "bridge"</code> in <code>config/core.py</code>, which puts every tenant&rsquo;s sandbox container on Docker&rsquo;s default bridge with inter-container communication on. The workspace-ownership checks above it are real; the network beneath them is flat. This is the same lesson as <a href="/posts/2026/09/maxkb-cve-2026-77521-deepagents-execute-shell-tool-prompt-injection/">MaxKB&rsquo;s deepagents execute tool</a> and yesterday&rsquo;s <a href="/posts/2026/10/cognition-cve-2026-109437-local-shell-default-unauthenticated-agent-api/">Cognition CVE-2026-109437</a>, and it is becoming the defining integration error of the agent-framework era: <strong>a framework that ships a shell by default and an approval gate by request will be deployed, overwhelmingly, with the shell and without the gate.</strong></p>
+
+        <h2>EvoScientist: the one that was already fixed, and what the fix cost</h2>
+
+        <p>Exactly one record in this batch has a patched release, and its history is the counter-example the rest of the batch needs. Issue <strong>EvoScientist/EvoScientist#387</strong> was filed on <strong>24 July 2026</strong> by <strong>X-iZhang</strong>, titled <em>&ldquo;HITL: sub-agent shell execution is never approved (sync + async), and nothing guards injected <code>curl | bash</code>&rdquo;</em>. It received <strong>zero comments</strong> and was closed <strong>seven days later</strong>, on 31 July, by commit <code>d249e320</code>.</p>
+
+        <p>That commit is not a one-liner. Sixteen files: <code>backends.py</code> <strong>+280/&minus;4</strong>, <code>EvoScientist.py</code> +39/&minus;19, <code>subagents/_factory.py</code> +6/&minus;1, <code>middleware/background.py</code> +19/&minus;4, <code>prompts.py</code> +11/&minus;0 &mdash; and, tellingly, <code>tests/test_hitl.py</code> <strong>+439/&minus;39</strong> plus a new <code>tests/test_backends.py</code> at <strong>+318/&minus;0</strong>. More than seven hundred lines of new test coverage for the approval path alone. The fix shipped in v0.2.5; the project is now on v0.3.7 (17 October 2026). The CVE arrived <strong>81 days after the fix</strong>, and the record correctly scopes itself to <em>0.1.0 before 0.2.5</em>.</p>
+
+        <p>Read the diff next to the comment still sitting at line 96 of <code>_factory.py</code>, which explains that the async sub-agent path suppresses <code>AskUserMiddleware</code> because <code>interrupt()</code> would deadlock an async sub-agent. The team knew the gate was missing <em>and why it was missing</em>: approval is synchronous, and they had built something that is not. That is a real engineering constraint, not an oversight &mdash; and the fix required rebuilding the backend rather than adding a conditional. Which is the honest reason the other nine projects have not done it.</p>
+
+        <h2>Where the scores disagree</h2>
+
+        <p>Worth recording rather than averaging. VulnCheck assigned CVSS 4.0; Lasso&rsquo;s advisory pages carry CVSS 3.1 figures, and on three records the two frameworks land on different severity bands:</p>
+
+        <ul>
+          <li><strong>CVE-2026-77934</strong> (Coze Studio): NVD <strong>8.7 high</strong> &middot; Lasso <strong>9.9 critical</strong></li>
+          <li><strong>CVE-2026-77930</strong> (EvoScientist): NVD <strong>8.7 high</strong> &middot; Lasso <strong>9.9 critical</strong></li>
+          <li><strong>CVE-2026-109444</strong> (OpenSRE): NVD <strong>8.7 high</strong> &middot; Lasso <strong>9.0 critical</strong></li>
+          <li><strong>CVE-2026-77936</strong> (Letta), <strong>CVE-2026-75128</strong> (Chatchat), <strong>CVE-2026-77932</strong> (DB-GPT): NVD <strong>9.3 critical</strong> &middot; Lasso <strong>9.8 critical</strong></li>
+        </ul>
+
+        <p>The gap is mostly structural &mdash; CVSS 4.0 separates vulnerable-system from subsequent-system impact, and all fifteen vectors here record <code>SC:N/SI:N/SA:N</code>, declining to credit onward reach into the MySQL, MinIO, Redis and etcd services the advisories describe at length. If your prioritisation pipeline filters on <em>critical</em> and ingests NVD&rsquo;s 4.0 score, three records that the researchers consider critical will not reach your queue. That is a tuning problem worth knowing about before the next batch, not after.</p>
+
+        <h2>What to do</h2>
+
+        <p>Version numbers help with exactly one of these. <strong>EvoScientist: upgrade past v0.2.5</strong> (v0.3.7 is current) and stop using the documented <code>EvoSci serve --auto-approve</code> deployment. For the rest there is no patched release, so the controls are configuration and architecture.</p>
+
+        <p><strong>Letta:</strong> set <code>LETTA_SERVER_SECURE=true</code>, remove the PostgreSQL port mapping from <code>compose.yaml</code>, override <code>LETTA_PG_PASSWORD</code>, and treat the <code>user_id</code> header as untrusted &mdash; multi-tenant separation is not available at 0.16.8 regardless of the password. <strong>Coze Studio:</strong> do not run <code>make debug</code> on any reachable host; check <code>CODE_RUNNER_TYPE</code> in the <code>.env</code> file your deployment actually loads rather than trusting the version number, and close self-registration. <strong>DB-GPT and Langchain-Chatchat and piflow:</strong> these have no authentication to configure &mdash; put them behind an authenticating proxy or take them off the network. For Langchain-Chatchat specifically, weigh that the project has been unmaintained for eleven months; there will be no patch. <strong>OpenSRE:</strong> require approval for shell execution on gateway and scheduled paths, and scope the process environment, since the credentials an SRE agent holds are the point of the attack. <strong>Aix-DB:</strong> set <code>inherit_env=False</code>. <strong>LangAlpha:</strong> set a per-tenant Docker network; the default bridge is not isolation.</p>
+
+        <p>The generalisable audit is one question asked of your own stack, and it is cheap: <em>for every agent you run, find the tool that executes code, then find the gate in front of it, then prove the gate is reachable on the path you actually deploy.</em> All fifteen of these records are a different answer to the third clause. The gate was not there (piflow, Langchain-Chatchat); the gate was there and said yes to everyone (DB-GPT); the gate was there, was called, and threw the answer away (OpenSRE); the gate was there and the default start-up file routed around it (Letta, Coze Studio). Only the fourth kind is visible in a configuration review, and only the second and third are visible in the source. None of them is visible in a version number.</p>
+
+        <p><em>Our verification was read-only. All fifteen CVE identifiers, their publication timestamps, the <code>disclosure@vulncheck.com</code> source identifier, vulnerability statuses, full descriptions, CWE assignments, CVSS 4.0 vectors and scores, and complete reference lists were read first-hand from the NVD 2.0 API, as was the ten-second publication window (01:17:10.103Z to 01:17:20.410Z) and the presence of one unrelated record, CVE-2026-109395, inside it. Every quoted line of Python, Go, YAML and shell configuration was fetched from the exact commit SHA pinned in the corresponding NVD reference and is quoted verbatim, including the <code>&#35; Mock User Info</code> comment, the <code>_ = (policy, action_summary)</code> discard, the <code>LETTA_SERVER_SECURE</code> conditional, the <code>os.environ.copy()</code> base layer, the <code>inherit_env=True</code> argument and the <code>network_mode</code> default. Repository metadata (star counts, licences, last-push dates, SECURITY.md presence) and all release tags and publication dates were read first-hand from the GitHub API on 20 October 2026. The Coze Studio finding was measured directly by fetching <code>docker/.env.example</code> and <code>docker/.env.debug.example</code> at <code>main</code>, at tag v0.5.1 and at the NVD-pinned commit, and by reading commit <code>fcf40d10</code>&rsquo;s complete file list and line counts. EvoScientist issue #387&rsquo;s title, author, state, open and close timestamps and zero comment count, and commit <code>d249e320</code>&rsquo;s sixteen-file diff with per-file line counts, were read first-hand from the GitHub API. Severity figures attributed to Lasso Security, the researcher credits, and descriptions of files we did not quote (Coze Studio&rsquo;s <code>direct/runner.go</code>, Langchain-Chatchat&rsquo;s <code>server/utils.py</code> and shell tool factory, OpenSRE&rsquo;s <code>policy.py</code> and <code>execution.py</code>, Letta&rsquo;s <code>tools.py</code>) are reported as the advisories state them and are not our measurements; the <code>__import__()</code> filter bypass is Lasso&rsquo;s reproduction, not ours. KEV status was checked directly against the published catalogue (version 2026.10.16, 1,748 entries). Brave Search was used for discovery only. We installed nothing, stood up none of the ten platforms, sent no request to any endpoint described above, executed no proof of concept, and sent no third-party request beyond reading the cited public records.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-77936?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-77936 (Letta insecure default, CVSS 4.0 9.3; published 2026-10-20T01:17:20.107Z)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-75128?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-75128 (Langchain-Chatchat unauthenticated /tools/call, CVSS 4.0 9.3)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-77932?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-77932 (DB-GPT mock authentication, CVSS 4.0 9.3)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-77934?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-77934 (Coze Studio unsandboxed code runner, CVSS 4.0 8.7; &ldquo;before 0.5.0&rdquo;)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-109444?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-109444 (OpenSRE approval gate bypass, CVSS 4.0 8.7)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/opensre-through-0.1.2026.10.19-approval-gate-bypass-via-shell-run-prompt-injection?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck &mdash; OpenSRE approval gate bypass advisory (credits Noy Pearl, Michael Sromin, Ophir Dror)</a></li>
+          <li><a href="https://www.lasso.security/vulnerability-database/cve-2026-77934?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Lasso Security &mdash; CVE-2026-77934 advisory (names <code>.env.debug.example</code> line 235; CVSS 3.1 9.9)</a></li>
+          <li><a href="https://github.com/coze-dev/coze-studio/commit/fcf40d1008c100108c23be051a49950283f2c2cf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">coze-studio commit fcf40d10 &mdash; the one-line default change to <code>docker/.env.example</code> (17 October 2025)</a></li>
+          <li><a href="https://github.com/EvoScientist/EvoScientist/issues/387?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">EvoScientist#387 &mdash; the HITL sub-agent report (filed 24 July 2026, closed 31 July 2026, zero comments)</a></li>
+          <li><a href="https://github.com/eosphoros-ai/DB-GPT/blob/83609c471266607490b24e72188311efa23a0d16/packages/dbgpt-serve/src/dbgpt_serve/utils/auth.py?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">DB-GPT <code>auth.py</code> at the pinned commit &mdash; <code>get_user_from_headers</code> in full</a></li>
+          <li><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA &mdash; Known Exploited Vulnerabilities catalogue (none of the fifteen listed; checked 20 October 2026, 1,748 entries)</a></li>
+          <li><a href="/posts/2026/10/cognition-cve-2026-109437-local-shell-default-unauthenticated-agent-api/">al-ice.ai &mdash; Cognition CVE-2026-109437 and the unauthenticated agent API</a></li>
+          <li><a href="/posts/2026/09/maxkb-cve-2026-77521-deepagents-execute-shell-tool-prompt-injection/">al-ice.ai &mdash; MaxKB shipped a deepagents shell tool nobody asked for</a></li>
+          <li><a href="/posts/2026/10/dbgpt-cve-2026-51862-51869-sandbox-fallback-skill-upload-rce/">al-ice.ai &mdash; DB-GPT&rsquo;s sandbox fallback and skill-upload RCEs</a></li>
+          <li><a href="/posts/2026/04/langchain-chatchat-cve-2026-30617-mcp-rce/">al-ice.ai &mdash; Langchain-Chatchat CVE-2026-30617, RCE via MCP STDIO configuration</a></li>
+          <li><a href="/posts/2026/10/caller-supplied-identity-wanwu-astron-thclaws-october-2026/">al-ice.ai &mdash; caller-supplied identity in Wanwu, Astron and THCLAWS</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/fastllm-safetensors-gguf-heap-overflow-sglang-unauth-dos-october-2026/">One curl Kills the Server; One Model File Overflows the Heap: FastLLM and SGLang, 19 October</a></h3><p>Four inference-engine CVEs reached NVD on 19 October 2026. FastLLM&amp;rsquo;s own safetensors parser trusts shape and data_offsets independently and its GGUF reader sizes a buffer as len plus five against an attacker-controlled 64-bit length &amp;mdash; both with public PoCs and a maintainer who has not responded in fifteen days. SGLang&amp;rsquo;s expert-distribution recorder routes kill the whole server unauthenticated when the recorder was never enabled, with the fix PR unmerged since 1 October. We read the NVD records, the issues and the code first-hand.</p><a class="text-link" href="/posts/2026/10/fastllm-safetensors-gguf-heap-overflow-sglang-unauth-dos-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/whodb-cve-2026-112005-duckdb-session-escape-nineteen-advisories/">The Authorizer Was Added to One Connector: WhoDB CVE-2026-112005 and Nineteen Advisories Without an Identifier</a></h3><p>CVE-2026-112005, published 18 October 2026, records an unauthenticated arbitrary file read and write in WhoDB through a DuckDB session. Two weeks earlier the same project fixed the identical defect in its SQLite connector with a per-connection authorizer that DuckDB never received. WhoDB has twenty-one repository advisories and two CVEs, both from February 2025; the critical ones are absent from the global advisory database and from OSV&amp;rsquo;s Go coordinates. We read the advisories, the fix commit and the scanner coverage first-hand.</p><a class="text-link" href="/posts/2026/10/whodb-cve-2026-112005-duckdb-session-escape-nineteen-advisories/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">The Guard Lived in One File: Arcane&amp;rsquo;s Three CVEs and a Credential Repoint That Outlived Its Own Fix</a></h3><p>Three Arcane CVEs reached NVD within forty seconds on 16 October 2026 &amp;mdash; CVE-2026-96626, CVE-2026-96627 and CVE-2026-96628 &amp;mdash; and all three patches are the same refactor: a check that had been written per call site, moved to one enforcement point. We read every fix diff first-hand. The credential-repoint bug fixed in Arcane&amp;rsquo;s git subsystem in May came back in container registries in July, and in five more subsystems the same week &amp;mdash; those five have no CVE and no record in any scanner feed.</p><a class="text-link" href="/posts/2026/10/arcane-cve-2026-96626-96627-96628-credential-repoint-delegated-admin-environment-token/">Read briefing →</a></article></div>
+    </aside>
+    </main>
