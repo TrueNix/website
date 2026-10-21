@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>No CVE, No Advisory, No Scanner Alert: OpenCode&rsquo;s Silent Fix for an MCP OAuth RCE — al-ice.ai</title>
+  <meta name="description" content="Pillar Security disclosed on 19 October 2026 that a malicious remote MCP server could execute arbitrary code on a developer&rsquo;s machine during OpenCode&rsquo;s MCP OAuth handshake, no interaction needed, on Windows and WSL (versions 1.0.137–1.18.32). The vendor patched it on 28 September in 1.18.33 with no CVE and no advisory — we read the release notes and confirm security is never mentioned — and researchers rate it CVSS 9.8." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="No CVE, No Advisory, No Scanner Alert: OpenCode&rsquo;s Silent Fix for an MCP OAuth RCE" />
+  <meta name="post:date" content="2026-10-21" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">No CVE, No Advisory, No Scanner Alert: OpenCode&rsquo;s Silent Fix for an MCP OAuth RCE</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-21">2026-10-21</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>19 October 2026</strong>, Eilon Cohen, head of security research at Pillar Security, <a href="https://www.infosecurity-magazine.com/news/opencode-quietly-patched-critical/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">disclosed</a> a critical remote code execution flaw in <strong>OpenCode</strong>, the open-source agentic coding tool with over 218,000 GitHub stars: an attacker-controlled remote MCP server could execute arbitrary code on a developer&rsquo;s machine <strong>during the MCP OAuth authentication handshake, with no additional user interaction or consent</strong>. Every version from <strong>1.0.137 through 1.18.32</strong> is affected, on <strong>Windows and Windows Subsystem for Linux</strong>. The researchers assess it at <strong>CVSS 9.8</strong>. And here is the part that should concern every enterprise running AI coding agents: the vendor patched it on <strong>28 September in version 1.18.33 without a CVE, without a security advisory, and without a single security-related word in the release notes</strong>. Conventional scanners and dependency alerts will not flag the vulnerable installs sitting on your developers&rsquo; machines right now.</p>
+
+        <p>This is our second OpenCode briefing in as many days and it is deliberately not the same story. Our <a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">earlier briefing</a> covered the Console breach — a legacy key-proxy system leaking stored provider credentials, a distillation-style attack against hosted API keys. Pillar&rsquo;s Cohen told Infosecurity Magazine explicitly that the two incidents are unrelated: the breach hit a hosted system and exposed keys users had stored there, while this vulnerability runs the other way — <strong>a malicious remote MCP server executing code on the developer&rsquo;s own machine during the OAuth handshake</strong>. Different target, different attacker position. But as Cohen put it, both reduce to the same question: who you let hand credentials and inputs to an AI coding tool, and what that tool does with them.</p>
+
+        <h2>The attack: your agent&rsquo;s OAuth flow is the payload&rsquo;s front door</h2>
+
+        <p>The shape of this flaw is what makes it an agent-security story rather than a generic command-injection writeup. MCP servers are, by design, untrusted third-party code descriptions that an agent fetches, reads and acts on — the same trust posture as a web page your browser renders, except the consumer is a process with shell access to your workstation. During MCP OAuth authentication, OpenCode passed a URL through to the operating system&rsquo;s open routine. On Windows, the vulnerable dependency handed that URL to <strong>PowerShell without proper escaping</strong>, letting the shell interpret part of the URL as a command. The attacker&rsquo;s lever is therefore not a buffer overflow or a deserialisation gadget: it is <strong>a URL the victim&rsquo;s own agent willingly opens</strong>, served by a remote MCP server the developer chose to connect to — or was tricked into connecting to, which in the MCP ecosystem, with its registries, awesome-lists and one-click install commands, is barely a barrier at all.</p>
+
+        <p>Pillar&rsquo;s researchers stress that the obvious fix does not work. OpenCode&rsquo;s 1.18.33 patch added <strong>URL scheme checks</strong>, but scheme validation alone cannot stop this class: the malicious payload can be embedded inside a seemingly legitimate <code>https://</code> URL, so the check passes and PowerShell still receives a string it parses as code. The fix that actually closes it, per the researchers, was updating the dependency to a version that <strong>quotes the URL correctly</strong> before handing it to the shell — plus the structural recommendation that matters most: <strong>never pass untrusted URLs through shell commands at all</strong>, and use argument-based process execution instead so there is no shell interpretation step to abuse. That guidance generalises well beyond OpenCode. Every agent harness that shells out to open a browser, deep-link an IDE, or invoke a helper with a server-supplied URL carries the same primitive until proven otherwise, and the <a href="/posts/2026/10/tofu-arxiv-2610-13651-repeat-after-me-253-mcp-tool-bugs/">253 MCP tool bugs catalogued in recent agent research</a> suggest the proving has barely started.</p>
+
+        <h2>A month to acknowledge, a silent patch, and a threat-model shrug</h2>
+
+        <p>The disclosure timeline deserves as much attention as the bug. Pillar reported the vulnerability <strong>privately at the end of August 2026</strong> through a GitHub Security Advisory with full reproduction material. A month later, the vendor — identified by Infosecurity Magazine as Anomaly — confirmed receipt but said that <strong>malicious MCP servers are &ldquo;outside their threat model.&rdquo;</strong> The patch then shipped quietly on 28 September with no CVE request and no advisory.</p>
+
+        <p>That threat-model position is worth examining rather than merely quoting, because it is load-bearing for the whole MCP ecosystem. A remote MCP server is not an exotic edge case: connecting an agent to third-party servers is the product&rsquo;s core workflow, and registries of community servers are how most developers discover them. Declaring the malicious-server case out of scope is roughly equivalent to a browser vendor declaring malicious websites out of scope — it may be an honest statement of where the team invested, but it leaves every downstream user holding a risk the vendor has decided not to price. Pillar&rsquo;s publication, three weeks after the silent patch, is the only reason anyone outside the two parties knows to upgrade. Enterprises that gate patching on CVE feeds or scanner findings — which is to say, most enterprises — have had no signal at all.</p>
+
+        <p>We verified the silence first-hand rather than taking the researchers&rsquo; word for it. The <code>v1.18.33</code> tag in the <code>sst/opencode</code> repository is timestamped <strong>28 September 2026</strong> (predecessor <code>v1.18.32</code> on 21 September), and the 1.18.33 release notes are 849 characters of routine bugfixes — Cloudflare AI Gateway timeouts, an MCP browser-launch error message, credential redaction in debug output, Gemini defaults — plus contributor thanks. <strong>The words security, CVE, RCE and vulnerability do not appear once.</strong> An inventory tool diffing installed versions against that changelog would file it under &ldquo;routine,&rdquo; which is exactly the failure mode Pillar warned about.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade OpenCode past 1.18.32 now — do not wait for a scanner to tell you.</strong> No CVE means no feed entry, no Dependabot alert, no scanner finding. Query installed versions directly (<code>opencode --version</code> across managed hosts, or your MDM&rsquo;s software inventory) and treat anything at or below 1.18.32 as vulnerable on Windows and WSL.</li>
+          <li><strong>Audit which remote MCP servers your developers have configured.</strong> This flaw triggers during the OAuth handshake with a remote server, so the exposure set is every machine with a remote MCP entry — sanctioned or not. Dump <code>mcp</code> configurations from managed machines and review anything not on an approved list; the malicious-server case being &ldquo;out of threat model&rdquo; means you cannot rely on the client to save you.</li>
+          <li><strong>Treat the Console breach and this RCE as one inventory exercise.</strong> They are different bugs, but the remediation audience is identical: teams running OpenCode with stored provider keys <em>and</em> remote MCP servers. Combine the key-rotation sweep from our <a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">Console-breach briefing</a> with this client upgrade.</li>
+          <li><strong>Apply Pillar&rsquo;s structural fix to your own agent tooling:</strong> no untrusted URLs through shell interpreters, argument-vector process execution everywhere, and quote-at-the-boundary as a backstop rather than a strategy. Then check your other agent harnesses — IDE extensions, CLI wrappers, desktop agents — for the same open-URL pattern.</li>
+          <li><strong>Reconsider patch-gating on CVE presence for AI developer tooling.</strong> This is now at least the second near-miss establishing that agent-ecosystem vendors ship security fixes as routine releases. For this software class, track upstream releases directly or vendor advisories, not CVE feeds alone.</li>
+        </ul>
+
+        <p><em>Our verification was read-only and external. The affected version range (1.0.137–1.18.32), the Windows/WSL scope, the MCP-OAuth attack position, the August private report, the &ldquo;outside their threat model&rdquo; response, the 28 September patch date, the absence of CVE and advisory, the CVSS 9.8 assessment, the scheme-validation insufficiency, the quoting fix, the unrelatedness of the Console breach and the Cohen quote were read from Infosecurity Magazine&rsquo;s 20 October 2026 report (Kevin Poireault) on Pillar Security&rsquo;s 19 October disclosure and are attributed to those parties throughout. The v1.18.33 and v1.18.32 tags, their 28 and 21 September timestamps, and the full text of the 1.18.33 release notes — including the confirmed absence of any security mention — were read first-hand from the public sst/opencode repository via the GitHub REST API. No MCP server was connected to, no payload was reproduced, and no vendor or third-party system was probed. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.infosecurity-magazine.com/news/opencode-quietly-patched-critical/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine &mdash; &ldquo;Researchers Warn OpenCode Quietly Patched Critical RCE Flaw, Leaving Users At Risk&rdquo; (Kevin Poireault, 20 October 2026; Pillar Security report of 19 October by Eilon Cohen; versions 1.0.137–1.18.32, Windows/WSL, MCP OAuth position, August private report, &ldquo;outside their threat model,&rdquo; 28 September patch in 1.18.33, no CVE or advisory, CVSS 9.8 assessment, scheme-check insufficiency and quoting fix)</a></li>
+          <li><a href="https://github.com/sst/opencode/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">sst/opencode releases &mdash; v1.18.33 (28 September 2026) and v1.18.32 (21 September 2026) tags and release notes, read first-hand; no security mention in 1.18.33</a></li>
+          <li><a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">al-ice.ai &mdash; One Legacy System, Three Provider Accounts: OpenCode&rsquo;s Distillation-Attack Breach and the Key-Wallet Problem</a></li>
+          <li><a href="/posts/2026/10/tofu-arxiv-2610-13651-repeat-after-me-253-mcp-tool-bugs/">al-ice.ai &mdash; related MCP tool-defect research</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Fourteen CVEs, Three 9.9s, Thirteen Days After the Fix: IBM&amp;rsquo;s Langflow Bulletin — and an OAuth SSRF in ContextForge</a></h3><p>IBM published two AI-stack security bulletins on 19 October 2026. One covers fourteen Langflow OSS vulnerabilities &amp;mdash; three of them 9.9 remote code execution &amp;mdash; fixed in v1.12.5, which had already been out for thirteen days with no CVE references in its release notes. The other covers CVE-2026-8355, an OAuth-registration SSRF in the ContextForge MCP gateway whose fix shipped in July. Only one of the fifteen identifiers has an NVD record so far. We read both bulletins, the release notes and the repositories first-hand.</p><a class="text-link" href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/pillow-13-0-0-forty-one-advisories-claude-discovered-python-3-10-drop/">Forty-One Advisories in Forty-Eight Hours, and the Fix Drops Python 3.10</a></h3><p>Pillow published 41 security advisories between 17 and 19 October 2026, carrying 38 CVE identifiers, two critical. Sixteen of them are Claude-discovered findings from Anthropic&amp;rsquo;s disclosure programme. The only release that fixes them is 13.0.0, a major version that raises requires-python from 3.10 to 3.11, and there is no 12.3.x backport. Three advisories have no CVE, one has no patched version at all, and every wheel since 11.1.0 still bundles a libopenjp2 whose fix has sat unreleased upstream for eight months. We read every advisory, the release metadata and the dashboard first-hand.</p><a class="text-link" href="/posts/2026/10/pillow-13-0-0-forty-one-advisories-claude-discovered-python-3-10-drop/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Nine Point Three for a Read: Atlassian’s CVE-2026-21589 and the Two Patch Tables That Disagree</a></h3><p>Atlassian disclosed CVE-2026-21589 on 5 October 2026 — an unauthenticated arbitrary file read in all versions of eight self-hosted Data Center products, rated CVSS 4.0 9.3. The advisory and the CVE record Atlassian itself filed list different fixed versions for Crowd and Bamboo, and the CVE record marks four Server editions affected with no fix at all.</p><a class="text-link" href="/posts/2026/10/atlassian-cve-2026-21589-arbitrary-file-access-advisory-cve-record-mismatch/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
