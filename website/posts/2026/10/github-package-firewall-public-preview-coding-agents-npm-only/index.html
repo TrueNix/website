@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitHub Ships a Package Firewall, and Names Coding Agents as Endpoints That Need One &mdash; al-ice.ai</title>
+  <meta name="description" content="GitHub's package firewall entered public preview on 20 October 2026: a proxy between endpoints and upstream registries, with cooldown, Advisory Database and attestation-downgrade policy. The changelog lists coding agents alongside Actions runners as the endpoints to put behind it. It is npm-only, Enterprise Cloud-only, and it inspects nothing that is not routed through it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/github-package-firewall-public-preview-coding-agents-npm-only/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="GitHub Ships a Package Firewall, and Names Coding Agents as Endpoints That Need One" />
+  <meta name="post:date" content="2026-10-21" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">GitHub Ships a Package Firewall, and Names Coding Agents as Endpoints That Need One</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-21">2026-10-21</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>20 October 2026</strong>, GitHub put a <strong>package firewall</strong> into public preview. The changelog states the threat model in its first sentence: &ldquo;An increasing number of malware attacks exploit systems at package installation time, harvesting credentials on CI/CD hosts or developer workstations without even running the package&rsquo;s code.&rdquo;</p>
+
+        <p>The mechanism is a proxy. It &ldquo;sits between endpoints like Actions runners or coding agents and the upstream package repositories, inspecting both metadata requests and package downloads for signs of malicious activity.&rdquo; Administrators set enterprise policy; endpoints are reconfigured to point at the firewall instead of at the registry; metadata lookups and downloads are evaluated against the policy on the way through. A package blocked in error goes through an exception request workflow &ldquo;similar to other GitHub Advanced Security features.&rdquo;</p>
+
+        <p>Three policy controls are named for the preview: <strong>a configurable cooldown period</strong>, <strong>checks against the GitHub Advisory Database</strong> for malware or vulnerability alerts, and <strong>supply-chain checks such as attestation downgrades</strong>.</p>
+
+        <h2>The endpoint list is the news</h2>
+
+        <p>Vendors have shipped registry proxies for years. What is new is which machines GitHub thinks need to sit behind one. &ldquo;Actions runners or coding agents&rdquo; puts the autonomous agent in the same sentence as the build runner, as a first-class install-time endpoint with its own network path to npm.</p>
+
+        <p>That matches what the incident record has been saying all year. The <a href="/posts/2026/10/ovhcloud-cli-release-hijack-ghsa-862f-agent-state-stealer/">OVHcloud CLI release hijack</a> shipped a stealer that read editor and agent state &mdash; VS Code and Cursor <code>state.vscdb</code>, Continue, Cody, OpenCode, Hermes and Claude session data &mdash; <em>before</em> it went looking for AWS, GCP, Azure or SSH credentials. The <a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">GhostAction second stage</a> targeted <code>.claude</code> and <code>.gemini</code> credential files. An agent workstation is now a credential concentration point, and until this week it was also, in most enterprises, an unmanaged one: whatever network route the agent used to run <code>npm install</code> was the route nobody had put a policy on.</p>
+
+        <h2>Cooldown is the control that would have mattered</h2>
+
+        <p>Of the three policies, the cooldown is the one with a measurable track record in this year&rsquo;s incidents, and it is the one the preview makes configurable rather than fixed.</p>
+
+        <p>The OVHcloud hijack had a window of roughly <strong>one hour and thirty-three minutes</strong> between the malicious release assets appearing and their removal, during which around <strong>250 downloads</strong> occurred. The <a href="/posts/2026/10/eye-security-three-day-cooldown-npm-pypi-october-2026/">three-day cooldown research we covered earlier this month</a> argues the same point from the other end: the great majority of malicious npm and PyPI versions are identified and pulled within days of publication, so a policy that simply declines to install anything newer than N days converts most of these campaigns into a non-event for the organisations that apply it.</p>
+
+        <p>Advisory Database checks are the weaker leg, and this week supplies the reason why. The <a href="/posts/2026/10/mcp-typescript-sdk-five-cves-shared-server-regression-off-by-default/">five MCP TypeScript SDK CVEs published on 20 October</a> were fixed by releases that went to npm on 2 October &mdash; eighteen days earlier. A database check is only as current as the database, and a disclosure lag of that size is invisible to a policy engine. The cooldown works because it makes no claim about what a package contains; it only bets that someone else will find the bad ones first. That is a different and more robust kind of control than a lookup.</p>
+
+        <h2>What the preview does not cover</h2>
+
+        <p>Reading the changelog closely, the limits are stated plainly and they are substantial.</p>
+
+        <ul>
+          <li><strong>npm only.</strong> &ldquo;Currently the package firewall only supports npm packages.&rdquo; PyPI, the other half of nearly every AI supply-chain incident in our archive &mdash; and the registry that carries the model and agent tooling &mdash; is not in the preview.</li>
+          <li><strong>GitHub Enterprise Cloud only</strong>, including data-resident deployments. Not Team, not Free, not Enterprise Server.</li>
+          <li><strong>It only sees traffic you point at it.</strong> The changelog is explicit that endpoints &ldquo;need configuration to use the firewall for their requests instead of pointing directly at the upstream package registries.&rdquo; This is the critical operational property: the firewall is opt-in per endpoint, not an enforcement boundary. A developer laptop, a self-hosted runner, a container image that bakes in a registry URL, or an agent that opens its own HTTP client with a default <code>registry.npmjs.org</code> all route around it and nothing reports that they did.</li>
+          <li><strong>Free now, metered later.</strong> The service is free during the preview and &ldquo;will be charged based on metered usage, similar to Actions billing&rdquo; at general availability. Per-install-volume pricing is worth modelling before a policy is written that makes the firewall mandatory.</li>
+        </ul>
+
+        <p>The third point deserves the weight. A firewall that an endpoint can decline to use is a configuration-coverage problem wearing a network-security name. The honest way to deploy this is to treat routing coverage as the metric &mdash; which of your runners, images, developer machines and agent harnesses actually resolve through the proxy &mdash; and to assume the uncovered remainder is where the next install-time payload lands. Egress controls that block direct registry access, where they are available, are what turn an opt-in proxy into a chokepoint.</p>
+
+        <h2>Assessment</h2>
+
+        <p>This is a sound, unglamorous control aimed at the right failure, and the fact that GitHub names coding agents as endpoints is a useful piece of vendor acknowledgement for anyone trying to get agent workstations into scope internally. It is also a preview with one ecosystem, one SKU and a bypass that is simply &ldquo;do not configure it&rdquo;.</p>
+
+        <p>Our reading for teams running AI coding agents at any scale: turn it on for the runners and agent fleets you control, set the cooldown to a value you can defend from your own incident history rather than a default, and spend the rest of the effort on the question the firewall cannot answer for you &mdash; how many machines in your estate can still reach npm directly. Install-time malware does not need the agent to be tricked. It needs the agent to install something.</p>
+
+        <p><em>Verification note: every quoted phrase, policy control and limitation above is taken from GitHub&rsquo;s changelog entry &ldquo;GitHub package firewall in public preview,&rdquo; dated 20 October 2026, retrieved directly on 21 October 2026. We quote the changelog&rsquo;s own wording for the threat model, the proxy architecture, the three named policy controls, the npm-only scope, the GitHub Enterprise Cloud availability and the preview-to-metered billing statement. We have not tested the product; no access to a GitHub Enterprise Cloud tenant with the preview enabled was used for this briefing, and no claim is made here about its detection efficacy. Figures cited from earlier incidents link to our prior briefings, where their primary sources are recorded.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.blog/changelog/2026-10-20-github-package-firewall-in-public-preview/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Changelog &mdash; GitHub package firewall in public preview (20 October 2026)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-jm63-cq47-j5jp?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-jm63-cq47-j5jp / CVE-2026-111770 &mdash; one of the five MCP SDK advisories published 20 October, eighteen days after the fix reached npm</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/mandiant-hijacked-coding-assistant-shai-hulud-100-internal-repos/">The Assistant Was the Trojan Horse — A Hijacked Coding Session Carried Shai-Hulud Into 100 Internal Repos</a></h3><p>Mandiant’s AI Risk and Resilience Report 2026 documents a SaaS-provider intrusion where a hijacked AI coding assistant session recommended a poisoned PyPI package; the install led to stolen GitHub OAuth tokens and Shai-Hulud spreading across ~100 internal repositories. Step one — owning the suggestion — is the new part.</p><a class="text-link" href="/posts/2026/10/mandiant-hijacked-coding-assistant-shai-hulud-100-internal-repos/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">&amp;ldquo;Add Missing Checks to Several Handlers and Models&amp;rdquo;: Gitea Ships Twelve CVEs in One Release</a></h3><p>Gitea 28.2.0 shipped on 18 October 2026 and twelve CVE records followed it to NVD fifty-one minutes later. Five of them come from a single pull request whose title names the defect class outright. The two highest-severity records are authentication bugs &amp;mdash; an OpenID callback that never checked who started the linking, and an SSH certificate principal lookup missing a type predicate. We read the release, the twelve advisories and the diffs first-hand, and measured what a dependency scanner sees after Gitea&amp;rsquo;s module path changed.</p><a class="text-link" href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">The Delete Tool Did Not Ask: Wheels Ships Nine CVEs, Eleven Advisories, and an MCP Surface That Trusted Its Caller</a></h3><p>Nine CVEs (CVE-2026-111443 through CVE-2026-111451) published 16 October 2026 for the Wheels CFML framework, mapping to nine of eleven GitHub advisories. CVE-2026-111451 names the threat source verbatim: a CI variable, a branch name, or an AI agent driving the CLI&amp;rsquo;s MCP tools &amp;mdash; and one of those MCP tools deletes recursively without confirmation. Two advisories, including a critical 9.8 SQL injection, got no CVE at all, and OSV has none of them.</p><a class="text-link" href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
