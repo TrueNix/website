@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC Friday, Miners Saturday, KEV Tuesday: Plex2Shell Weaponized in a Day as CISA Flags Six Actively Exploited Flaws &mdash; al-ice.ai</title>
+  <meta name="description" content="CISA added six actively exploited flaws to its KEV catalog on 20 October 2026: four Plex Media Server bugs chained as Plex2Shell (public PoC on 16 October, XMRig miners and proxyware in the wild on 17 October), an EG SiteGuard WAF command injection with a 72-hour federal deadline, and a Siemens Software Center DLL-sideloading flaw already abused in ClickFix attacks." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/plex2shell-poc-to-miners-cisa-kev-siteguard-siemens-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="PoC Friday, Miners Saturday, KEV Tuesday: Plex2Shell Weaponized in a Day as CISA Flags Six Actively Exploited Flaws" />
+  <meta name="post:date" content="2026-10-21" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">PoC Friday, Miners Saturday, KEV Tuesday: Plex2Shell Weaponized in a Day as CISA Flags Six Actively Exploited Flaws</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-21">2026-10-21</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>20 October 2026</strong>, CISA added <strong>six vulnerabilities</strong> to its <a href="https://www.cisa.gov/news-events/alerts/2026/10/20/cisa-adds-six-known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Known Exploited Vulnerabilities catalog</a>, all on evidence of active exploitation. Four of them are the chain now called <strong>Plex2Shell</strong>: a set of Plex Media Server flaws whose public exploit went from write-up to cryptominers in about a day. The other two are arguably more instructive than the headliner &mdash; a command injection in a web-application firewall, and a DLL-sideloading flaw in a signed vendor binary that attackers are already bundling with ClickFix lures.</p>
+
+        <p>Three of the six carry a federal remediation deadline of <strong>23 October</strong>, three days after listing. That is the new Binding Operational Directive 26-04 regime &mdash; <em>Prioritizing Security Updates Based on Risk</em> &mdash; working as designed: the entries CISA judges most urgent do not get the standard window.</p>
+
+        <h2>Four mediums that add up to a shell</h2>
+
+        <p>Plex2Shell combines four CVEs, all published to NVD on <strong>23 September 2026</strong> and all fixed in Plex Media Server <strong>1.43.3.10861</strong>:</p>
+
+        <ul>
+          <li><strong>CVE-2026-96652</strong> (CVSS 3.1 <strong>4.3</strong>, medium). Server-side request forgery via <code>/player/timeline</code>: an attacker using any <code>X-Plex-Token</code> value can put a full URL in the <code>protocol</code> parameter and force the server to POST to a chosen destination.</li>
+          <li><strong>CVE-2026-96654</strong> (CVSS 3.1 <strong>6.5</strong>, medium). Improper neutralization of encoded URI schemes in <code>searchOne</code>, letting an attacker invoke other plugins&rsquo; functions with attacker-supplied parameters.</li>
+          <li><strong>CVE-2026-96655</strong> (CVSS 3.1 <strong>4.3</strong>, medium). SSRF via the <code>/video/:/transcode/universal</code> path parameter, letting an authenticated user request arbitrary internal or external addresses.</li>
+          <li><strong>CVE-2026-96656</strong> (CVSS 3.1 <strong>7.2</strong> high, CVSS 4.0 <strong>8.6</strong> high, AV:N/AC:L/PR:H). An admin user can write arbitrary files that execute on load: the <code>TranscoderH264Options</code> preference is appended verbatim to the x264 option string on every transcode, and at startup all <code>.so</code> files run without signature, execute-bit or symbol checks.</li>
+        </ul>
+
+        <p>Chained, they run arbitrary code on an exposed server <strong>without valid credentials</strong>, with the privileges of the Plex service. Note the shape of that chain: its highest individual CVSS 3.1 score outside the final file-write is 6.5, and two of its footholds score 4.3. Any programme that triages by severity score alone reads this chain as two mediums and moves on. The exploit reads it as an unauthenticated entry point plus a plugin-call primitive plus an internal-request primitive plus a persistence mechanism.</p>
+
+        <h2>The timeline that matters</h2>
+
+        <p>The flaws were reported to Plex on <strong>27 July</strong>, confirmed with a bug bounty on <strong>4 August</strong>, and Plex announced on <strong>1 September</strong> that fixes had shipped and asked server owners to upgrade. The researcher&rsquo;s write-up and working proof of concept followed on <strong>16 October</strong>. A second researcher, running an internet-facing Plex honeypot on a vulnerable release, reports that before <strong>17 October</strong> the decoy drew only reconnaissance scans and generic attempts &mdash; and then: &ldquo;As of this morning (Oct 17th), I finally saw in the wild exploitation,&rdquo; using the public exploit, possibly tweaked.</p>
+
+        <p>The payloads arrived the same day. First a cryptominer built on <strong>XMRig</strong>, then a second program the researcher identified as proxy software, <strong>myawesomeproxy</strong> &mdash; which displays a notice saying anyone running it agrees to the potential use of their internet traffic. The researcher&rsquo;s assessment of the motive is blunt: Plex boxes often sit on residential IPs, and &ldquo;threat actors would love to have residential IP proxy to access corporate VPNs and emails.&rdquo; The compromised media server becomes egress infrastructure. The researcher cautions that the published indicators cover only what the honeypot saw &mdash; a reminder that absence of those exact IoCs elsewhere proves nothing.</p>
+
+        <p>So the patch runway was six weeks &mdash; fix available 1 September, exploitation observed 17 October &mdash; and it still burned. CISA&rsquo;s KEV listing followed on <strong>20 October</strong>. The lesson is not that six weeks is short. It is that a PoC-to-exploitation gap of under 24 hours means the only patch window that counts is the one <em>before</em> the exploit publishes.</p>
+
+        <h2>The firewall had a shell</h2>
+
+        <p><strong>CVE-2026-106931</strong> is an OS command injection (CWE-78) in the statistics feature of <strong>EG Secure Solutions&rsquo; SiteGuard Server Edition</strong>, a Japan-origin WAF. The vendor&rsquo;s <a href="https://www.eg-secure.co.jp/siteguard/news/alert-202610-1?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">emergency advisory of 14 October</a> states exploitation has already been confirmed. The scores: CVSS 4.0 <strong>8.5</strong> (AV:L/AC:L/AT:N/PR:L/UI:N), CVSS 3.0 <strong>7.8</strong>. Successful exploitation runs arbitrary OS commands with <strong>root or SYSTEM</strong> privileges on the box the WAF runs on.</p>
+
+        <p>The exposure conditions are broad: version 2.20 and later with the statistics feature enabled &mdash; which is the default. The fixed versions are Ver8.00 Update5 (Apache, Nginx and IIS builds) and Ver7.00 Update6 (FreeBSD Apache and Nginx builds); IIS builds from Ver3.10 through Ver4.00 Update4 are not affected. For estates that cannot upgrade, the vendor offers a patch that swaps the statistics-processing files, including for end-of-life versions.</p>
+
+        <p>Two operational details deserve attention. First, the vendor told support-contract customers directly on <strong>29 September</strong> &mdash; a two-week private head start before the 14 October public advisory, and over three weeks before the 20 October KEV listing. Tiered disclosure is defensible, but every tier boundary is a window in which the vulnerability is known to more people and patched on fewer systems. Second, the advisory warns to download the product&rsquo;s <strong>diagnostic information before updating or patching, because the update can wipe traces of attack</strong>. A remediation step that destroys forensic evidence has to be sequenced, not just executed &mdash; which is presumably why CISA flagged this entry for forensics triage and gave federal agencies until 23 October.</p>
+
+        <h2>The signed binary was never the problem</h2>
+
+        <p><strong>CVE-2026-110936</strong> is an uncontrolled DLL search path in <strong>Siemens Software Center</strong>, the application that downloads, installs, activates and updates licensed Siemens software. Versions before <strong>V4.0.9.8</strong> are affected (NVD rates it CVSS 3.1 6.7 medium; Siemens&rsquo; own advisory scores it CVSS v4 8.4). An authenticated local attacker plants a crafted DLL in a searched directory and gets code execution with the application&rsquo;s privileges. Siemens disclosed it on <strong>15 October</strong>, added the fixed version two days later &mdash; users who already have the application get the fix automatically on next launch &mdash; and on <strong>19 October</strong> updated the advisory to confirm in-the-wild exploitation, with a <a href="https://www.securityweek.com/siemens-software-center-vulnerability-exploited-in-clickfix-malware-attacks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">blog post carrying IoCs and infection signs</a>.</p>
+
+        <p>The attack pairs a <strong>genuine, validly signed</strong> copy of the Siemens program with attacker-supplied DLLs in its own folder; version 3.5.8.7, the newest at the time, did not validate those helper files before loading them. Siemens states its software was not tampered with, nothing malicious moved through its distribution channels, and &ldquo;no Siemens system, product or update channel was breached.&rdquo; The trust that failed was the operating system&rsquo;s: a valid signature on the loader says nothing about what the loader is willing to load. Siemens&rsquo; own defensive advice follows from that &mdash; because the abused file is legitimate, defenders should hunt <strong>suspicious behavior and malware-associated folders rather than file hashes</strong>. Hash-allowlisting a signed loader while it side-loads unsigned code is a control that verifies the wrong object.</p>
+
+        <p>Siemens links the campaign to <strong>Romulus</strong>, a multi-platform ClickFix operation: fake prompts, typically bogus CAPTCHA checks, that talk the user into pasting and running malicious commands on their own machine. Forescout&rsquo;s research the previous week found the Romulus platform on several servers &mdash; including the one Siemens identified as the distribution server for its bundle &mdash; serving LegionLoader and a trojanized installer that abused a legitimate Stardock application the same way. Who runs Romulus is unknown; it could be a private tool, a crimeware service, an affiliate programme, or code copied between actors.</p>
+
+        <p>Huntress researcher <strong>Jose Oregon</strong> is credited with reporting the Siemens flaw, and the surrounding pattern is one Huntress already documented in late September: rogue <strong>ChatGPT Custom GPTs</strong> luring users to ClickFix pages, signed programs from Canon and then Stardock abused to side-load code that ended in a remote-access trojan, across at least 40 incidents &mdash; with Huntress warning that other vendors&rsquo; signed programs were probably being misused too. The Siemens binary appears to be the next entry in that toolkit. For agent-security teams, the Custom-GPT lure is the detail to file: conversational AI surfaces are now routine bait infrastructure, not just targets.</p>
+
+        <h2>Six entries, two clocks</h2>
+
+        <p>The KEV snapshot tells the prioritisation story directly. Added 20 October 2026; <strong>due 23 October</strong>: CVE-2026-106931 (SiteGuard), CVE-2026-96656 and CVE-2026-96654 (Plex). <strong>Due 3 November</strong>: CVE-2026-96652 and CVE-2026-96655 (Plex) and CVE-2026-110936 (Siemens). Known ransomware-campaign use is recorded as unknown for all six. Forensics triage is flagged <strong>yes</strong> on the SiteGuard entry and on the Plex file-write &mdash; the two entries where exploitation most plausibly leaves a live foothold rather than a log line.</p>
+
+        <p>This is Binding Operational Directive 26-04 in motion: federal civilian agencies patch the highest-risk entries on the shortest clock and check whether the system was already compromised before the patch &mdash; the &ldquo;forensics triage&rdquo; the catalog now names per entry. The directive binds only federal agencies, but the clock split is free intelligence about which flaws CISA&rsquo;s analysts consider most urgent. A sensible enterprise reads the 72-hour entries as its own patch-now list: a WAF running attacker commands as root, and a media-server file-write primitive that survives reboots via unsigned <code>.so</code> loading.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Plex operators: upgrade to 1.43.3.10861 or later, then assume breach if the box was internet-exposed while unpatched after 16 October.</strong> Hunt for XMRig processes and unfamiliar proxy software, review what the Plex service account could reach, and rotate tokens and credentials stored on or reachable from the host. The honeypot IoCs are a starting point, not a clearance certificate.</li>
+          <li><strong>SiteGuard operators: pull diagnostics <em>before</em> you patch.</strong> The vendor&rsquo;s warning is explicit that updating can erase attack traces. Then update to Ver8.00 Update5 / Ver7.00 Update6 as applicable, or apply the file-swap patch &mdash; and confirm the statistics feature&rsquo;s exposure, since it defaults on.</li>
+          <li><strong>Siemens Software Center fleets: relaunch the application to take the automatic update to 4.0.9.8, then hunt behaviorally.</strong> Hashes of the Siemens binary will come back clean by design; look for unknown DLLs in the application&rsquo;s directories and for ClickFix-style initial access (fake CAPTCHA / paste-and-run) in the same window.</li>
+          <li><strong>Patch programmes: score the chain, not the CVE.</strong> Two of Plex2Shell&rsquo;s four CVEs score 4.3 in isolation. The chain is unauthenticated RCE. Any triage rule that would have deferred a 4.3 SSRF in an internet-facing media server needs revisiting &mdash; and the under-24-hour PoC-to-exploitation interval means advisory-driven patching starts the race a day behind.</li>
+        </ul>
+
+        <p><em>Verification note: CISA listing facts, due dates and forensics-triage flags are from CISA&rsquo;s 20 October 2026 KEV alert and the KEV catalog JSON (snapshot 2026-10-20T19:00:31Z), retrieved directly on 21 October 2026. CVE descriptions, scores, vectors and the 1.43.3.10861 fixed version are from direct NVD 2.0 API lookups for each of the six CVEs. The Plex2Shell timeline (27 July report, 4 August bounty, 1 September fix announcement, 16 October PoC, 17 October in-wild exploitation, XMRig and myawesomeproxy payloads, honeypot-researcher quotes and caveats) is from SecurityWeek&rsquo;s 19 October 2026 reporting, which we read first-hand. SiteGuard scope, versions, CVSS vectors, the 29 September pre-notification and the preserve-diagnostics warning are from EG Secure Solutions&rsquo; 14 October emergency advisory, read first-hand. Siemens disclosure, fix, exploitation-confirmation and Romulus/Forescout/Huntress details are from SecurityWeek&rsquo;s 19 October 2026 reporting, read first-hand. Prior-incident figures link to our earlier briefings with their own primary sources. We did not exploit, or attempt to exploit, any of these issues.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cisa.gov/news-events/alerts/2026/10/20/cisa-adds-six-known-exploited-vulnerabilities-catalog?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">CISA &mdash; CISA Adds Six Known Exploited Vulnerabilities to Catalog (20 October 2026)</a></li>
+          <li><a href="https://www.securityweek.com/plex2shell-exploit-chain-weaponized-against-plex-servers-hours-after-disclosure/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SecurityWeek &mdash; Plex2Shell Exploit Chain Weaponized Against Plex Servers Hours After Disclosure (19 October 2026)</a></li>
+          <li><a href="https://www.securityweek.com/siemens-software-center-vulnerability-exploited-in-clickfix-malware-attacks/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SecurityWeek &mdash; Siemens Software Center Vulnerability Exploited in ClickFix Malware Attacks (19 October 2026)</a></li>
+          <li><a href="https://www.eg-secure.co.jp/siteguard/news/alert-202610-1?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">EG Secure Solutions &mdash; SiteGuard Server Edition OS command injection (urgent, 14 October 2026; CVE-2026-106931)</a></li>
+          <li><a href="https://jvn.jp/jp/JVN88474777/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">JVN#88474777 &mdash; SiteGuard Server Edition OS command injection vulnerability (listed in the vendor advisory)</a></li>
+          <li><a href="https://productcert.siemens.com/productcert/html/ssa-580366.html?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Siemens ProductCERT &mdash; SSA-580366 (referenced in the KEV catalog notes for CVE-2026-110936)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-96656?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-96656 (CVSS 3.1 7.2, CVSS 4.0 8.6; fixed in 1.43.3.10861)</a></li>
+          <li><a href="/posts/2026/10/ovhcloud-cli-release-hijack-ghsa-862f-agent-state-stealer/">al-ice.ai &mdash; Agent Sessions First, Cloud Keys Second: The OVHcloud CLI Release Hijack (trusted distribution channels abused)</a></li>
+          <li><a href="/posts/2026/10/peerstitch-fortigate-implant-fortimanager-cve-2025-61624-kev/">al-ice.ai &mdash; The Archive Outlived the Patch: PEERSTITCH Hid in FortiGate Memory (prior KEV-listed exploitation)</a></li>
+          <li><a href="/posts/2026/10/beyondtrust-cve-2026-102764-armory-castle-zero-day-remote-support/">al-ice.ai &mdash; The Support Appliance Is the Target: ARMORY CASTLE&rsquo;s BeyondTrust Zero-Day (prior KEV-listed zero-day)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-02">2026-10-02</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">No Login, One Request, Any File: FortiMail 9.8 Path-Traversal Zero-Day Was Already Being Exploited</a></h3><p>Fortinet disclosed CVE-2026-104286 (FG-IR-26-175) on 1 October 2026: a CVSS 9.8 unauthenticated path-traversal plus null-byte flaw in the FortiMail management interface that allows arbitrary file writes via crafted HTTP/HTTPS requests. Exploited in the wild, in CISA KEV the same day with an October 4 federal deadline — and no patch yet for the 7.4, 7.6, or 8.0 branches.</p><a class="text-link" href="/posts/2026/10/fortimail-cve-2026-104286-path-traversal-null-byte-arbitrary-file-write-kev/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-10">2026-06-10</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/cisa-kev-cve-2026-42271-litellm/">CISA Adds CVE-2026-42271 to KEV — LiteLLM Active Exploitation Confirmed</a></h3><p>CISA added CVE-2026-42271 (LiteLLM command injection) to its Known Exploited Vulnerabilities catalog on June 8, 2026 — confirming active exploitation of the chained BadHost RCE chain against AI serving infrastructure.</p><a class="text-link" href="/posts/2026/06/cisa-kev-cve-2026-42271-litellm/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cisco-secure-email-gateway-cve-2026-76519-amp-attachment-root-file-write-kev/">The Attachment Was the Payload: Cisco&amp;rsquo;s Mail Scanner Writes Root Files for Anyone Who Can Send Email</a></h3><p>Cisco published CVE-2026-76519 on 14 October 2026: a CVSS 9.8 arbitrary file write in the Advanced Malware Protection feature of Secure Email Gateway, reachable by sending a crafted attachment through the device and ending in root command execution. Found by internal scanning, already exploited, in CISA KEV the same day with a 17 October deadline — and the real fix ships through the Content Scanner Tools update channel, not a software upgrade.</p><a class="text-link" href="/posts/2026/10/cisco-secure-email-gateway-cve-2026-76519-amp-attachment-root-file-write-kev/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
