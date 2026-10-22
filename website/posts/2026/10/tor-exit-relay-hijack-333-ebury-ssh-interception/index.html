@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Tenth of the Exits Were Listening: 333 Tor Relays Hijacked for SSH Interception &mdash; al-ice.ai</title>
+  <meta name="description" content="On 2 October 2026, 333 compromised Tor exit relays &mdash; roughly one in ten &mdash; began redirecting SSH connections to interception servers that stole passwords, observed typed commands, and seeded the Ebury backdoor onto victims&rsquo; servers. The operators never knew: the attacker had held their machines since August. We reconstruct the campaign from the researcher&rsquo;s first-hand writeup and the Tor network health team&rsquo;s response." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/tor-exit-relay-hijack-333-ebury-ssh-interception/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Tenth of the Exits Were Listening: 333 Tor Relays Hijacked for SSH Interception" />
+  <meta name="post:date" content="2026-10-22" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Tenth of the Exits Were Listening: 333 Tor Relays Hijacked for SSH Interception</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-22">2026-10-22</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>Friday 2 October 2026 at 09:35</strong>, <strong>333 infected Tor exit relays</strong> began a coordinated campaign to intercept SSH connections and harvest whatever unencrypted data they could. The Tor network has roughly 3,000 exit relays, so about <strong>one in ten exits</strong> was working for the attacker. The campaign ran for three days before the network health team finished burning it down &mdash; and the most unsettling part is that the relay operators whose machines did the intercepting had been compromised since <strong>August</strong> without noticing.</p>
+
+        <p>The full reconstruction comes from the researcher who found it. Writing under the handle KABA on <strong>20 October 2026</strong> in a post titled <em>&ldquo;How I got over 300 Tor exit nodes removed,&rdquo;</em> he describes tripping over the interception himself on Friday morning: his own SSH connection, exiting through one of the infected relays, was silently redirected to an attacker server, and only the host-key warning told him something was wrong. We read the writeup first-hand; what follows is his account, cross-checked against the Tor Project&rsquo;s operator mailing list and secondary reporting.</p>
+
+        <h2>Two harvests from one botnet</h2>
+
+        <p>The attack appears to have had two primary goals. First, <strong>bulk collection of unencrypted mail traffic</strong>: by blocking certain ports on the compromised relays, the attacker shaped their exit policies so those exits carried mostly plaintext mail. Second, <strong>active SSH interception</strong>: any SSH connection on port 22 traversing one of the 333 exits was redirected to one of <strong>12 SSH interception servers</strong> under the attacker&rsquo;s control.</p>
+
+        <p>Encrypted web traffic was forwarded normally, so nothing looked broken. The trap only closed on SSH users &mdash; and only on the ones who clicked past the warning. KABA reproduces what he saw: the familiar <code>WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!</code> banner with an ED25519 fingerprint that was not his server&rsquo;s. A user who stops there loses nothing. A user who overrides the warning and logs in anyway hands the attacker three things:</p>
+
+        <ul>
+          <li><strong>The password</strong>, typed into the attacker&rsquo;s server.</li>
+          <li><strong>Everything typed afterwards</strong>: the interceptor opens a relayed connection to the real server and observes each command (a live man-in-the-middle).</li>
+          <li><strong>The server itself</strong>: a second parallel connection infects the victim&rsquo;s machine with <strong>Ebury</strong>, the OpenSSH backdoor and credential stealer for Linux &mdash; the same malware family the attackers had deployed, version <strong>1.8.3</strong>, on the relay hosts back in August.</li>
+        </ul>
+
+        <p>That last step is what elevates this above passive sniffing. Every careless login grew the botnet by one server, and every one of those servers presumably held keys, credentials, and onward access worth harvesting in turn.</p>
+
+        <h2>A two-month head start nobody noticed</h2>
+
+        <p>The relay compromises predate the interception campaign by roughly two months. According to KABA&rsquo;s writeup, the attackers gained access to the relay servers in <strong>August</strong> and quietly deployed their Ebury 1.8.3 payload. The Tor network health team&rsquo;s announcement to operators, quoted in the post, describes the pattern: <em>&ldquo;It seems the attacker is gaining access to Linux based hosts and when these machines are running non-exits they are editing the torrc file and turning them into exits to be able to carry out the SSH attack.&rdquo;</em> In other words, ordinary compromised Linux boxes were converted into exit relays on demand &mdash; the exit flag itself was part of the attack infrastructure, provisioned by editing <code>/etc/tor/torrc</code> and restarting the daemon.</p>
+
+        <p>That detail matters for defenders well beyond Tor. The relay operators are generally competent volunteers; several reported servers hacked with the Tor configuration edited and no SSH login, sudo command, or cron job in the logs. A two-month dwell time on machines whose whole purpose is handling other people&rsquo;s traffic, with no detection until a researcher happened to route his own SSH session through one of them, is a sobering data point about how long infrastructure compromises can sit quietly when the machine keeps performing its visible function.</p>
+
+        <h2>Found with exitmap, killed in three days</h2>
+
+        <p>The detection method is worth studying because it is reproducible. Using <strong>exitmap</strong>, KABA built a script that pinned each exit relay in turn, then opened an SSH connection from one of his servers to another: the first server checked whether it received the correct SSH host fingerprint, and the second checked whether the connection arrived from the pinned exit or from one of the interception servers. Run against every exit on the network, the scan enumerated all 333 infected relays and the 12 interception endpoints.</p>
+
+        <p>The takedown timeline, per the writeup:</p>
+
+        <ul>
+          <li><strong>Fri 2 Oct, morning:</strong> interception campaign starts; researcher&rsquo;s own connection is redirected that morning.</li>
+          <li><strong>Fri 2 Oct, evening:</strong> researcher contacts the Tor Project&rsquo;s network health team, which confirms it is seeing something new (&ldquo;We&rsquo;ve not seen an attack like that before&rdquo;).</li>
+          <li><strong>Sun 4 Oct:</strong> health team announces to operators, who begin shutting exits down; the relays are flagged <strong>BadExit</strong> so clients stop selecting them.</li>
+          <li><strong>Mon 5 Oct:</strong> the attackers restart many relays, but the BadExit flags hold &mdash; they can serve only as middle relays, useless for interception; by the end of the day every infected server is shut down, some by operators, some by the attackers themselves.</li>
+        </ul>
+
+        <p>The scar is visible in public metrics: the writeup notes a clear dip on <code>metrics.torproject.org</code> on 4 October, when hundreds of exits vanished at once, that had not recovered at the time of writing.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Never override an SSH host-key warning on a connection that traverses Tor</strong> &mdash; or anywhere else. This entire campaign harvested only the users who clicked through. The warning is the whole defence.</li>
+          <li><strong>Prefer key-based SSH authentication and treat password logins over anonymity networks as exposed by default.</strong> A stolen key passphrase still hurts, but a password typed into a MITM is gone instantly and silently.</li>
+          <li><strong>If you routed SSH over Tor between 2 and 4 October, rotate those credentials and inspect the servers.</strong> The campaign&rsquo;s second-order effect &mdash; Ebury planted on victims&rsquo; machines &mdash; means a single careless login in that window may have become a persistent backdoor on your own infrastructure.</li>
+          <li><strong>If you operate a relay, monitor your torrc and your exit policy as security-critical files.</strong> Unexpected exit-policy changes and unscheduled daemon restarts are compromise indicators, not configuration drift. The health team&rsquo;s note that some hosts showed no login or cron traces is a reminder to look at file integrity, not just auth logs.</li>
+          <li><strong>Watch for the mail-harvest fallout.</strong> The campaign&rsquo;s first goal was bulk unencrypted mail collection; password-reset flows and other email-delivered secrets that crossed those exits in early October should be considered potentially read.</li>
+        </ul>
+
+        <p><em><strong>Verification note.</strong> The campaign start time (2 October, 09:35), the count of 333 infected exits, the ~3,000-relay denominator, the August initial access, the Ebury 1.8.3 payload, the 12 interception servers, the two attack goals, the port-22 redirection, the three consequences of overriding the host-key warning, the exitmap detection method, the takedown timeline including the BadExit flagging and the 5 October restarts, the network-health-team quotations, and the metrics.dip observation were read first-hand from KABA&rsquo;s 20 October 2026 writeup. The tor-relays mailing-list thread in which operators describe hacked servers with edited torrc files, and secondary summaries of the incident, were consulted via search-result records and are cited as secondary reporting, not first-hand reads. No Tor relay was operated, no interception server was contacted, and no SSH session was routed through the network for this article.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://kaba.cx/posts/20261020_Tor/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">KABA &mdash; &ldquo;How I got over 300 Tor exit nodes removed&rdquo; (20 October 2026), first-hand researcher writeup</a></li>
+          <li><a href="https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/WOHPLKCSHYXFTBRZXDENDKJZMBMPLMG5/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">tor-relays mailing list &mdash; &ldquo;Security incident affecting some relay operators&rdquo; thread</a></li>
+          <li><a href="https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News &mdash; &ldquo;Attackers Hijacked Over 300 Tor Exit Relays to Intercept SSH Connections&rdquo;</a></li>
+          <li><a href="https://cybersecuritynews.com/hackers-hijack-333-tor-exit-nodes/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News &mdash; &ldquo;Hackers Hijack 333 Tor Exit Nodes to Intercept SSH Logins&rdquo; (20 October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">The Backup App Is the Identity: ConnectWise&amp;rsquo;s Credential and 300 Microsoft 365 Tenants</a></h3><p>On 15 October 2026 an attacker used a compromised credential belonging to the ConnectWise Cloud Backup (formerly SkyKick) application to sign into customer Microsoft 365 tenants from 144.172.64.128, moving tenant-to-tenant seconds apart. Huntress, which broke the news on 16 October, had by 19 October tied nearly 1,000 Entra tenants to the activity with roughly 300 successful sign-ins. ConnectWise shut off Cloud Backup access on 17 October. MFA never entered the picture &amp;mdash; application sign-ins have no MFA prompt &amp;mdash; and in one tenant a second ConnectWise app granted itself Global Administrator and minted fresh client secrets.</p><a class="text-link" href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">&amp;ldquo;Add Missing Checks to Several Handlers and Models&amp;rdquo;: Gitea Ships Twelve CVEs in One Release</a></h3><p>Gitea 28.2.0 shipped on 18 October 2026 and twelve CVE records followed it to NVD fifty-one minutes later. Five of them come from a single pull request whose title names the defect class outright. The two highest-severity records are authentication bugs &amp;mdash; an OpenID callback that never checked who started the linking, and an SSH certificate principal lookup missing a type predicate. We read the release, the twelve advisories and the diffs first-hand, and measured what a dependency scanner sees after Gitea&amp;rsquo;s module path changed.</p><a class="text-link" href="/posts/2026/10/gitea-28-2-0-twelve-cves-missing-checks-openid-takeover-ssh-principal/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">The Key Was Never on Your Server: Stolen UpdraftCentral Keys Backdoored WordPress Sites, and the First Emergency Patch Deleted Nothing</a></h3><p>TeamUpdraft confirmed unauthorised access to its website over 17&amp;ndash;18 October 2026 and says the attacker probably took the customer database, including the UpdraftCentral, UpdraftVault and UpdraftClone connection keys. Those keys sign commands that install plugins on more than four million UpdraftPlus sites. Researchers who were hit documented 99 backdoor plugin names, a key the owner may never have knowingly created, and an emergency release that because of a bug deleted no keys at all.</p><a class="text-link" href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
