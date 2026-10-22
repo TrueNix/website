@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>600 Victims, Factory-Reset Backups: Six Agencies Detail SafePay Ransomware in AA26-293A — al-ice.ai</title>
+  <meta name="description" content="CISA alert AA26-293A (20 October 2026), co-authored by the FBI, USSS, Germany's LKA Rheinland-Pfalz, and the UK NCA, documents SafePay ransomware: active since August 2024, 600+ victims across critical infrastructure, initial access over Mullvad VPN exit IPs plus five edge-device CVEs, living-off-the-land operations, NAS backup destruction, and hybrid ChaCha20+RSA encryption." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/safepay-ransomware-cisa-aa26-293a-600-victims-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="600 Victims, Factory-Reset Backups: Six Agencies Detail SafePay Ransomware in AA26-293A" />
+  <meta name="post:date" content="2026-10-22" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">600 Victims, Factory-Reset Backups: Six Agencies Detail SafePay Ransomware in AA26-293A</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-22">2026-10-22</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>20 October 2026</strong> six agencies — the <strong>FBI, CISA, the US Secret Service, Germany&rsquo;s Landeskriminalamt Rheinland-Pfalz, the UK National Crime Agency, and the UK North West Regional Organised Crime Unit</strong> — published joint advisory <strong><a href="https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-293a?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AA26-293A, #StopRansomware: SafePay Ransomware</a></strong>. The numbers explain the unusual author list: SafePay has been active since <strong>August 2024</strong>, ranks among the most active ransomware groups of 2026, and has hit <strong>at least 600 victims</strong> across businesses and critical infrastructure in North America, South America, Europe, and Australia. The TTPs come from FBI, Secret Service, and LKA investigations running as recently as <strong>August 2026</strong> — this is a live playbook, not archaeology.</p>
+        <p>For defenders of AI infrastructure the advisory lands with a particular sting: the initial-access CVEs are edge-device flaws, the operators live off the land with tools your own admins use, and the recovery-killing step — <strong>resetting NAS backup appliances to factory settings</strong> — is aimed squarely at the snapshots holding your models, datasets, and checkpoints. Joint advisories of this weight have been a running theme this month: <a href="/posts/2026/10/fortibleed-fbi-secret-service-joint-advisory-86644-fortigate-lockouts-ransomware/">the FBI and Secret Service warning that 86,644 stolen FortiGate credentials now end in lockouts and ransomware</a> made the same point from the credential side. Patch the edge, or the edge becomes the ransomware&rsquo;s front door.</p>
+
+        <h2>How they get in: phished VPN profiles, Mullvad exits, five edge CVEs</h2>
+        <p>SafePay operators obtain initial access through <strong>credential exposure, brute-force password attacks (T1110), phishing, and VPN access</strong> — specifically, the advisory observes them using <strong>IP addresses of the Mullvad VPN provider</strong> with phished account profiles to reach victim networks. From there they exploit a short, telling list of edge-device vulnerabilities for initial access, two called out for the VPN path and three more across internet-exposed systems via automated scripts:</p>
+        <p><strong>CVE-2020-3259</strong> (CWE-200, exposure of sensitive information), <strong>CVE-2023-20269</strong> (CWE-288, authentication bypass via alternate path), <strong>CVE-2023-27532</strong> (CWE-306, missing authentication for a critical function), <strong>CVE-2024-40711</strong> (CWE-502, deserialization of untrusted data), and <strong>CVE-2024-40766</strong> (CWE-284, improper access control). Note CVE-2023-27532 — the Veeam backup-infrastructure flaw — also appears in this week&rsquo;s reporting on the <strong>Qilin and INC ransomware operations chaining it behind PAN-OS VPN access</strong>: backup infrastructure is being treated as a second-stage target across crews, not just SafePay. If your Veeam, VPN concentrator, or firewall appliances are internet-facing and unpatched against any of these five, the advisory is describing your exposure directly.</p>
+
+        <h2>How they operate: your tools, your accounts, your backups gone</h2>
+        <p>Post-access, SafePay is a textbook living-off-the-land operation: <strong>PsExec and WinRM</strong> for remote execution, <strong>ShareFinder.ps1 and SharpShares</strong> for share enumeration, <strong>Mimikatz</strong> for credential theft, <strong>UAC bypass via COM object (T1548.002)</strong> and token impersonation for privilege escalation, and lateral movement over <strong>RDP and RMM software</strong>. Exfiltration runs through FileZilla, 7-Zip, WinRAR, RClone, WinSCP — and in some cases <strong>OneDrive</strong> — with AnyDesk or TeamViewer installed to ferry tooling onto victim systems. The advisory&rsquo;s caution is worth repeating: these are legitimate tools, and their presence alone is not attribution without supporting evidence.</p>
+        <p>The impact stage is where SafePay earns its victim count. Operators <strong>halt the Volume Shadow Copy Service and reset network-attached storage holding backup data to factory settings (T1490)</strong>, then encrypt with a <strong>hybrid ChaCha20 + RSA scheme</strong> customized by file type and size, appending <strong>.SafePay</strong>. Demands run to <strong>a subset of company revenue in cryptocurrency</strong>, delivered via desktop ransom note pointing at a TOR chat portal — backed by <strong>phone calls from a group representative</strong> and publication on a leak site for non-payers. Factory-reset NAS plus deleted shadow copies plus revenue-scaled demands is a recovery-denial strategy: the ransom is priced against the cost of rebuilding without backups. For ML estates, where a single training run can exceed the cost of the backup hardware, that arithmetic is brutal — <strong>immutable, off-site, tested copies of datasets and checkpoints are the only counter</strong>.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Patch the five CVEs on internet-exposed edge systems now.</strong> CVE-2020-3259, CVE-2023-20269, CVE-2023-27532, CVE-2024-40711, CVE-2024-40766 — firewalls, VPN gateways, backup infrastructure. The agencies&rsquo; first key action is explicit: regularly patch edge devices. Hunt historical logs for Mullvad-exit source IPs against VPN logins and for automated-script exploitation patterns predating this advisory.</li>
+          <li><strong>Pull the STIX and hunt the TTPs, not just hashes.</strong> CISA publishes <strong>AA26-293A STIX XML and JSON</strong> IOC bundles plus a full PDF with ATT&amp;CK mappings (version 20). Hunt ShareFinder.ps1/SharpShares execution, COM-based UAC bypass, VSS halts, and NAS factory-reset events — the behaviors survive infrastructure churn that kills IP and hash IOCs.</li>
+          <li><strong>Make backups un-resettable.</strong> SafePay&rsquo;s T1490 play assumes your NAS accepts a factory reset from a compromised admin context. Enforce MFA and separate credentials on backup appliances, keep immutable/off-site copies, and <strong>test restores of model weights and datasets</strong> — an untested backup is a hope, and this crew prices ransoms against hope.</li>
+          <li><strong>Constrain the LOTL toolkit.</strong> Restrict PsExec/WinRM/RMM to necessary users, enforce ICAM with MFA, and move toward Zero Trust — the agencies&rsquo; remaining key actions. An agent-driven SOC that whitelists &ldquo;admin tools&rdquo; by binary name will wave SafePay through; policy must bind <em>which principal</em> may run them, <em>from where</em>.</li>
+        </ul>
+        <p><em>Our write-up is analysis of the CISA-published AA26-293A advisory, read first-hand, supplemented by 21 October press reporting on the 600-victim figure. We did not contact any listed infrastructure or reproduce any technique. Tooling is named as the advisory names it; presence of dual-use tools is not attribution.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-293a?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CISA — #StopRansomware: SafePay Ransomware, AA26-293A (20 October 2026; joint FBI/CISA/USSS/LKA Rheinland-Pfalz/UK NCA/NWROCU; 600+ victims, five CVEs, Mullvad VPN access, T1490 backup destruction, ChaCha20+RSA, STIX IOCs) — read first-hand</a></li>
+          <li><a href="https://www.hstoday.us/subject-matter-areas/cybersecurity/fbi-and-cisa-warn-safepay-ransomware-group-is-targeting-critical-infrastructure-worldwide/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Homeland Security Today — &ldquo;FBI and CISA Warn SafePay Ransomware Group Is Targeting Critical Infrastructure Worldwide&rdquo; (21 October 2026; critical-infrastructure targeting, 600-firm scope)</a></li>
+          <li><a href="https://www.attackiq.com/2026/10/21/response-to-cisa-advisory-aa26-293a/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AttackIQ — &ldquo;SafePay Ransomware: CISA Advisory AA26-293A&rdquo; (21 October 2026; defender-response framing)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-06">2026-10-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/cloudsek-azazel-gentlemen-mcp-exec-in-session-c2-channel/">The C2 Was Bound to Loopback — A Ransomware Affiliate Ran His Attack Through an MCP Tool Call</a></h3><p>CloudSEK’s 5 October investigation into Azazel, a Gentlemen ransomware affiliate, documents what it says is the first confirmed criminal use of MCP exec_in_session as an execution channel: a reverse-shell handler registered as a callable tool, driven against six hosts inside a victim network from 127.0.0.1:35367.</p><a class="text-link" href="/posts/2026/10/cloudsek-azazel-gentlemen-mcp-exec-in-session-c2-channel/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-25">2026-09-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/gambit-autonomous-ai-agents-retail-skimmer-campaign-wipe-after-extraction/">An AI Attack Crew Cost $25 a Victim — and Its Cleanup Routine Destroyed the Data</a></h3><p>Gambit recovered the staging server behind an autonomous agent campaign that hit 105 retail targets in six days. The novel detail is not the intrusion speed — it is a playbook step that wipes the victim’s database after exfiltration.</p><a class="text-link" href="/posts/2026/09/gambit-autonomous-ai-agents-retail-skimmer-campaign-wipe-after-extraction/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">TeamPCP — Supply Chain Compromise of Trivy, LiteLLM, and KICS Feeds VECT Ransomware Credential Archive</a></h3><p>TeamPCP poisoned Trivy, Checkmarx KICS, LiteLLM, and Telnyx SDK to harvest 500K+ CI/CD credentials — VECT ransomware then selected victims from the archive.</p><a class="text-link" href="/posts/2026/07/teampcp-vect-supply-chain-ransomware-cicd-credential-archive/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
