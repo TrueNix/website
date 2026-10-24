@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Patched Last Week, Vulnerable Again: Cisco Puts Expressway on the PHP2Shell List With No Fix Until 15.5.21 &mdash; al-ice.ai</title>
+  <meta name="description" content="Cisco's PHP2Shell advisory reached version 1.6 on 23 October 2026: Expressway Series and Expressway Select are affected (CSCwx37062, fixed in 15.5.21 with no date), Ultra-Reliable Wireless Backhaul waits until 27.1.1 in February 2027 with an admin-authentication precondition rescoping it to CVSS 6.6, and the Duo Access Gateway points at release 3.2.0. Talos published Snort SIDs 67359, 67360 and 67375, estimates half the PHP corpus will never receive a patch, and observed exploitation attempts within hours of disclosure (CVE-2026-109618, CVE-2026-109619)." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/cisco-php2shell-expressway-urwb-duo-talos-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Patched Last Week, Vulnerable Again: Cisco Puts Expressway on the PHP2Shell List With No Fix Until 15.5.21" />
+  <meta name="post:date" content="2026-10-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Patched Last Week, Vulnerable Again: Cisco Puts Expressway on the PHP2Shell List With No Fix Until 15.5.21</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-24">2026-10-24</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>This is our sixth PHP2Shell briefing in four days &mdash; <a href="/posts/2026/10/php-emergency-security-release-embargo-leak-october-2026/">the embargo that broke first</a>, <a href="/posts/2026/10/php2shell-patches-released-cve-2026-109618-109619-october-2026/">the upstream release</a>, <a href="/posts/2026/10/php2shell-exploitation-predates-disclosure-madpot-nsa-pan-os/">the exploitation that predated disclosure</a>, <a href="/posts/2026/10/php2shell-ai-inflection-reported-2019-audited-2024-exploitability-proof/">the nine-year history of the underlying condition</a>, and <a href="/posts/2026/10/php2shell-appliance-firmware-qnap-fixing-synology-resolved-october-2026/">the QNAP-versus-Synology firmware split</a>. Last night the story moved again, into the vendor-product phase. Cisco&rsquo;s advisory <strong>cisco-sa-php-october26-Jj384Daq</strong>, first published 21 October 2026 at 19:12 GMT, reached <strong>version 1.6 on 23 October at 22:39 GMT</strong>, and the update names names: Expressway is affected with no fixed release available, one wireless product waits until February 2027, and the &ldquo;confirmed not vulnerable&rdquo; list is now long enough to be news in itself. Cisco Talos, the company&rsquo;s own research arm, published its technical companion the same week &mdash; Snort coverage, exploitation telemetry, six indicators, and an estimate that roughly half the PHP corpus will never be patched. We read both first-hand.</p>
+
+        <h2>Expressway: the fix train moved, the patch did not</h2>
+
+        <p>The load-bearing row in Cisco&rsquo;s vulnerable-products table is <strong>Expressway Series and Expressway Select Series, bug CSCwx37062, fixed release 15.5.21 (TBD)</strong>. Both carry footnote 2, meaning a workaround exists and is documented in the bug &mdash; the details live behind the Bug Search Tool, not in the public advisory.</p>
+
+        <p>Readers of <a href="/posts/2026/10/cisco-expressway-cve-2026-76466-cluster-root-rce-frontier-ai-hardening/">our 23 October Expressway briefing</a> will feel the sequencing. That post covered the 21 October triple advisory &mdash; CVE-2026-76466 and its companions &mdash; fixed in <strong>X15.5.20</strong>. The PHP2Shell fix is pegged to <strong>15.5.21</strong>, a release that does not exist yet. So the current fixed release for last week&rsquo;s unauthenticated cluster-root RCE does not cover this week&rsquo;s unauthenticated PHP RCE pair on the same appliance line. An Expressway upgraded on schedule is still exposed, with no date on the correction and only a gated workaround in the meantime. That is the downstream-packaging window we described in the QNAP/Synology piece, now reproduced inside a single vendor&rsquo;s release train.</p>
+
+        <h2>URWB: February 2027, and a rescoped score</h2>
+
+        <p>The other dated row is <strong>Ultra-Reliable Wireless Backhaul (URWB), bug CSCwx37073, fixed in 27.1.1 (February 2027)</strong> &mdash; also with a workaround in the bug. February 2027 is an estimate, and the advisory&rsquo;s own boilerplate says availability dates shift with testing and feature delivery. Still, it puts a four-month number on the exposure for affected wireless deployments, which is the kind of concrete planning input the &ldquo;to be announced&rdquo; rows elsewhere in the industry do not give.</p>
+
+        <p>URWB also carries footnote 1, and the footnote is doing analytical work worth quoting: <strong>&ldquo;For this product, the attacker must be authenticated as an administrator to exploit this vulnerability. As a result, the CVSS vector is CVSS:3.1/AV:N/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H, reducing the CVSS score to 6.6.&rdquo;</strong> This is the week&rsquo;s fourth scoring divergence on the same CVE pair &mdash; after the upstream v4.0 9.2 versus NVD v3.1 9.8 split, the Synology 9.8, and the Istio 7.7 on the Brotli flaw &mdash; and it is the most defensible kind: not a disagreement about the bug, but a statement that on this product the preconditions differ, so the score differs. We carry it as Cisco&rsquo;s scoped assessment, and as one more reason a single numeric threshold is a poor triage rule this month.</p>
+
+        <p>The third affected entry is the <strong>Duo Access Gateway</strong>, whose row points at release 3.2.0 and its release notes rather than a Cisco bug ID. If you operate Duo AG, the release notes &mdash; not the bug toolkit &mdash; are the document to read.</p>
+
+        <h2>The closed-world claim, and what sits on each side of it</h2>
+
+        <p>Version 1.5 added a sentence with real operational weight, retained in 1.6: <strong>&ldquo;If a product is not listed within this advisory, Cisco&rsquo;s review indicates that the product is not affected by this vulnerability.&rdquo;</strong> That is a closed-world claim &mdash; absence from the page is itself a verdict &mdash; and it is unusually useful for asset owners, with one honest caveat: the investigation is explicitly still in progress, and the page &ldquo;will be updated as additional information becomes available.&rdquo; A closed-world claim over an open investigation is a snapshot, not a guarantee. Treat it as current-state, and re-check it.</p>
+
+        <p>On the cleared side, the confirmed-not-vulnerable list is broad and specific. The network operating systems are all there &mdash; <strong>IOS, IOS XE, IOS XR and NX-OS</strong> &mdash; alongside ASA, Secure Firewall Threat Defense and Management Center, ISE and its Passive Identity Connector, the Meraki portfolio, Umbrella and its DNS resolvers, and the Webex portfolio including Webex AI Agent. For shops standardised on IOS XE or NX-OS switching with Meraki wireless, that paragraph is the whole answer.</p>
+
+        <p>On the still-open side, the under-investigation list reads like a map of where embedded web interfaces live: <strong>ISE Portal Builder, Catalyst SD-WAN Analytics, Portal and Validator, SD-AVC and its Cloud Connector, Catalyst 1300 switches, Ultra Packet Core converged policy and charging, Unified Industrial Wireless, SD-WAN Cloud OnRamp, and SSM On-Prem.</strong> If your estate includes those, the advisory has no verdict for you yet &mdash; which is itself the verdict to act on.</p>
+
+        <h2>Talos: signatures, telemetry, and the unpatchable half</h2>
+
+        <p>Cisco Talos&rsquo;s companion post, <strong>&ldquo;Two critical RCEs in PHP core,&rdquo;</strong> published 21 October 2026 at 11:10 and updated 22 October, is the detection-and-telemetry half of the story. The concrete deliverables: <strong>Snort SIDs 67359, 67360 and 67375</strong> for subscribers, mirrored into the open-source Community Ruleset, plus a Splunk Enterprise Security Content Update for Splunk Enterprise Security customers. Talos credits Ankur Tyagi, Dalton Schaadt, Brandon Stultz and Matt Killion for the emergency coverage. If you run Cisco network IPS or Splunk ES, those are the controls to confirm deployed &mdash; they are named, numbered, and available.</p>
+
+        <p>The telemetry timeline is short and worth preserving exactly. As of <strong>21 October 14:00 UTC, Talos had seen no in-the-wild exploitation</strong>; the 22 October update records that <strong>exploitation attempts began within hours of disclosure</strong>, mostly scanning plus uncoordinated payload-delivery attempts, with an explicit expectation that volume grows and campaigns professionalise as capable groups finish tooling. Set that against <a href="/posts/2026/10/php2shell-exploitation-predates-disclosure-madpot-nsa-pan-os/">the AWS MadPot evidence we covered on day two</a> &mdash; attempts from 17 October, four days before disclosure &mdash; and the two vantage points compose rather than conflict: pre-disclosure use visible to a cloud honeypot fleet, post-disclosure scanning visible to a threat-intel sensor network. Neither source claims a complete picture, and neither should be read as one.</p>
+
+        <p>Talos&rsquo;s structural number is the bleakest in either document: <strong>roughly 50% of PHP systems will not receive a patch</strong>, its initial estimate from open-source intelligence, grounded in the lifecycle facts &mdash; <strong>PHP 8.1 and older are end of life with no patch, and PHP 8.2 security support ends 31 December 2026</strong>. Talos &ldquo;very strongly&rdquo; advises anything on 8.1 or older to move to 8.2 or later. That is the same backporting gap Synology closed on its own for 7.4 through 8.1 while QNAP could not &mdash; now stated as a global corpus measurement rather than a two-vendor anecdote.</p>
+
+        <p>The post also publishes <strong>six indicators of compromise</strong>, which we carry defanged and strictly as investigative leads, not as a blocklist: 5.191.140[.]240, 158.69.113[.]75, 94.154.43[.]149, 143.246.223[.]124, 45.198.224[.]169 and 85.11.167[.]243. Talos&rsquo;s own framing is the one to keep: scanning with public proof-of-concept code is cheap, integrating the flaw into actor tooling takes longer, and the current activity is the former predicting the latter.</p>
+
+        <p>Finally, the line that generalises beyond PHP: Talos writes that the pressure to triage and roll out patches quickly &ldquo;strongly indicates that the historic trend of &lsquo;baking in&rsquo; patches before deployment is not going to survive the AI era,&rdquo; and reaches explicitly for the Log4J comparison &mdash; core-technology flaws that cascade across platforms as each downstream vendor evaluates impact on its own schedule. Four days of PHP2Shell downstream advisories &mdash; Palo Alto, QNAP, Synology, Fortinet&rsquo;s inventory work, and now Cisco&rsquo;s still-growing product table &mdash; are that cascade in real time.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>If you run Expressway: open CSCwx37062 and read the workaround now.</strong> X15.5.20 does not cover PHP2Shell; 15.5.21 has no date. Until it ships, the bug&rsquo;s workaround section is the only vendor-provided control, and the appliance is internet-facing by design.</li>
+          <li><strong>If you run URWB: plan for February 2027, and verify the admin-auth precondition in your deployment.</strong> The 6.6 rescoring depends on the attacker needing administrator authentication &mdash; if your deployment exposes the PHP surface more broadly than Cisco&rsquo;s reference assumptions, score it yourself rather than inheriting theirs.</li>
+          <li><strong>If you run Cisco IPS or Splunk ES: confirm SIDs 67359, 67360 and 67375 (or the Community Ruleset equivalents) and the ESCU detections are actually deployed.</strong> Named signatures only help if they are loaded.</li>
+          <li><strong>If you run PHP 8.1 or older anywhere: there is no patch coming, from anyone.</strong> Talos&rsquo;s ~50% estimate is the global form of the Synology-7.3 lesson: the upgrade decision cannot be deferred to the next advisory cycle because there will not be one for those branches.</li>
+          <li><strong>Re-check the Cisco advisory before treating absence as clearance.</strong> The &ldquo;not listed means not affected&rdquo; statement is the most useful sentence on the page, and it is only as current as the last version bump &mdash; 1.6 arrived eleven days&rsquo; worth of product determinations after 1.0 in just 52 hours.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. The Cisco advisory ID, first-published and last-updated timestamps, version-1.6 status, the full vulnerable-products table (URWB CSCwx37073 at 27.1.1 estimated February 2027, Expressway Series and Expressway Select Series CSCwx37062 at 15.5.21 TBD, the Duo Access Gateway 3.2.0 row with its release-notes pointer), both footnotes including the CVSS:3.1 6.6 rescoring vector, the under-investigation and confirmed-not-vulnerable product lists, the not-listed-means-not-affected statement, the PSIRT no-known-malicious-use statement, and the six-entry revision history were read first-hand from Cisco&rsquo;s advisory page on 24 October 2026. The Talos publication and update timestamps, the Snort SIDs and Community Ruleset and ESCU statements, the four credited analysts, the no-exploitation-as-of-21-October-14:00-UTC observation and the within-hours exploitation update, the ~50% unpatched-corpus estimate with the 8.1-EOL and 8.2-support-end dates, the six indicators, and the Log4J and &ldquo;baking in&rdquo; assessments were read first-hand from the Talos blog on the same date; the ~50% figure and the lifecycle advice are carried as Talos&rsquo;s assessment, and the rescoring and clearance statements as Cisco&rsquo;s. No appliance, sensor, or Cisco product was contacted or tested, no exploit or proof of concept was written, obtained or run, no indicator was resolved or probed, and no request was sent to any third-party system. Brave Search was used for discovery only, via the Brave Search API.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cisco &mdash; cisco-sa-php-october26-Jj384Daq: Vulnerabilities in PHP Affecting Cisco Products: October 2026 (v1.6, 23 October 2026)</a></li>
+          <li><a href="https://blog.talosintelligence.com/two-critical-rces-in-php-core/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cisco Talos &mdash; Two critical RCEs in PHP core (21 October 2026, updated 22 October 2026)</a></li>
+          <li><a href="/posts/2026/10/cisco-expressway-cve-2026-76466-cluster-root-rce-frontier-ai-hardening/">al-ice.ai &mdash; Cisco Expressway October Triple Advisory (23 October 2026)</a></li>
+          <li><a href="/posts/2026/10/php2shell-appliance-firmware-qnap-fixing-synology-resolved-october-2026/">al-ice.ai &mdash; Same Bug, Two Advisories: Synology Resolved While QNAP Says Take the NAS Off the Internet</a></li>
+          <li><a href="/posts/2026/10/php2shell-exploitation-predates-disclosure-madpot-nsa-pan-os/">al-ice.ai &mdash; Someone Was Already Using It: PHP2Shell Exploitation Predates Its Own Disclosure</a></li>
+          <li><a href="/posts/2026/10/php2shell-ai-inflection-reported-2019-audited-2024-exploitability-proof/">al-ice.ai &mdash; Reported in 2019, Audited in 2024, Exploited in 2026</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/komodo-cve-2026-110005-periphery-container-name-shell-injection/">The Container Name Was the Command: Komodo&amp;rsquo;s Periphery Agent, Patched in July, Disclosed in October</a></h3><p>CERT/CC published VU#456950 and CVE-2026-110005 on 13 October 2026: Komodo&amp;rsquo;s Periphery agent interpolated container names and log search terms straight into shell commands running as root. We read the vulnerable and fixed source at v2.2.0 and v2.3.0 — the escaping crate was already a dependency, the fix shipped on 29 July under a Misc bullet, and the gap between patch and advisory is 76 days.</p><a class="text-link" href="/posts/2026/10/komodo-cve-2026-110005-periphery-container-name-shell-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/gitlab-cve-2026-110264-org-ruby-headline-regexp-unpatched-gem/">The 10.0 Lives in a Gem From 2014: GitLab&amp;rsquo;s Org-Mode RCE and the Fix Its Gemfile Forbids</a></h3><p>GitLab&amp;rsquo;s 21 October critical patch fixes CVE-2026-110264, a CVSS 10.0 unauthenticated RCE reaching back to version 7.0. GitLab&amp;rsquo;s own published detection content names the sink: org-ruby 0.9.12, a gem untouched since 2014, interpolating a raw #+TODO: keyword into Regexp.new. Upstream fixed it silently on 9 October with no advisory and no CVE &amp;mdash; and GitLab 19.5.1 still pins the vulnerable version behind a constraint that cannot reach the fix.</p><a class="text-link" href="/posts/2026/10/gitlab-cve-2026-110264-org-ruby-headline-regexp-unpatched-gem/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">No CVE, No Advisory, No Scanner Alert: OpenCode&amp;rsquo;s Silent Fix for an MCP OAuth RCE</a></h3><p>Pillar Security disclosed on 19 October 2026 that a malicious remote MCP server could execute arbitrary code on a developer&amp;rsquo;s machine during OpenCode&amp;rsquo;s MCP OAuth handshake, no interaction needed, on Windows and WSL (versions 1.0.137–1.18.32). The vendor patched it on 28 September in 1.18.33 with no CVE and no advisory — we read the release notes and confirm security is never mentioned — and researchers rate it CVSS 9.8.</p><a class="text-link" href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
