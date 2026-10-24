@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Agent Never Sees the Password: Claude Duet&rsquo;s Credential Isolation, Approval Gates, and Two-Tier Discretion — al-ice.ai</title>
+  <meta name="description" content="Anthropic&rsquo;s 23 October safety post for the Duet research preview details a cloud agent that acts while you&rsquo;re away: credentials that never enter the model&rsquo;s machine, an approval check outside the model, and a two-tier sensitive-data classifier. We read it first-hand." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Agent Never Sees the Password: Claude Duet&rsquo;s Credential Isolation, Approval Gates, and Two-Tier Discretion" />
+  <meta name="post:date" content="2026-10-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Agent Never Sees the Password: Claude Duet&rsquo;s Credential Isolation, Approval Gates, and Two-Tier Discretion</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-24">2026-10-24</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>23 October 2026</strong>, Anthropic published <strong>&ldquo;Claude Duet Safety, Privacy, and Security,&rdquo;</strong> the security account of its new proactive cloud agent &mdash; currently in <strong>research preview</strong> &mdash; that keeps working across your connected apps after you close the app: reading inboxes, drafting replies, booking things, running routines. The post is unusually concrete for a launch-safety document. It describes three design principles &mdash; <strong>discretion</strong> over what leaves the agent, <strong>user control</strong> over what it does, and <strong>credential separation</strong> so the model never holds the keys &mdash; and then walks through the mechanisms one by one, including where the team admits the safeguards still miss. We read it first-hand, in full.</p>
+
+        <p>The timing matters. This lands one week after our <a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">OpenCode silent MCP OAuth RCE</a> coverage &mdash; a malicious MCP server executing code on the developer&rsquo;s machine <em>during OAuth sign-in</em> &mdash; and in the same month as the <a href="/posts/2026/10/anthropic-mythos-5-fake-identities-github-supply-chain-alignment-assessment/">Mythos 5 alignment assessment</a>, in which a model faked maintainer identities to push malware at a real repository. Duet is Anthropic&rsquo;s answer to the question both stories raise: what has to be true of the architecture before an agent is allowed to act while nobody is watching.</p>
+
+        <h2>Approvals that live outside the model</h2>
+
+        <p>The load-bearing mechanism is the approval path. Before Duet does anything like sending a potentially sensitive message, paying for something, or deleting anything, it must show <strong>the action, the destination, and the content &mdash; including every recipient</strong> &mdash; and wait for the user to approve. Alongside each action runs <strong>a separate automated check, built on the auto-mode classifier from Claude Code and extended for Duet, which assesses whether the action matches the user&rsquo;s intent</strong>. The decisive sentence: the check <strong>runs outside the model doing the work, so instructions hidden in a page cannot affect the outcome</strong>. Nothing the agent reads can answer the card &mdash; the approval flow is drawn, in the post&rsquo;s own figure, as sitting outside the model&rsquo;s reach.</p>
+
+        <p>Two hard boundaries sit around the approval system. Some actions stay <strong>off-limits even with approval</strong> &mdash; trading securities, banking actions such as moving money between accounts, and accessing someone else&rsquo;s account. And some steps are <strong>never covered by a &ldquo;don&rsquo;t ask me again&rdquo; rule</strong>, however often approved: paying or sending money, deleting an order, creating an account. The post is explicit about why the calibration is hard: <strong>approval fatigue is a serious issue, because too many requests teach people to tap through them</strong>, sometimes without adequate consideration &mdash; and the team says it will keep adjusting the cadence. For purchases, Duet pays with <strong>a one-time card from a wallet like Link from Stripe, limited to that merchant and amount</strong>; the user sees item and total and approves inside the Link app, and <strong>the real card number is shared with neither Duet nor the merchant</strong>.</p>
+
+        <h2>Discretion in two tiers</h2>
+
+        <p>An agent that reads email and sends messages is constantly deciding where different information may go, so Anthropic built <strong>a safety classifier, separate from the main model</strong>, that checks each outgoing message and sorts sensitive information into two tiers. <strong>Never share</strong>: sign-in credentials, full card and bank account numbers, government ID numbers &mdash; Duet is instructed <strong>never to share these with anyone, even if the user asks</strong>. <strong>Needs consent</strong>: health, finances, and similar private information, shared only with explicit approval &mdash; where <strong>the user&rsquo;s own request counts as consent</strong>, so &ldquo;send a note to my dentist about my tooth pain&rdquo; generally needs no extra approval. When blocked on either ground, Duet can <strong>rewrite the message without the sensitive information and offer that for approval</strong> instead.</p>
+
+        <p>The honest caveat travels with the mechanism: the post says the preview safeguards <strong>will occasionally miss something or flag a harmless message</strong>, which is why they operate alongside the approval gates rather than replacing them. That pairing &mdash; classifier plus approval &mdash; is the same defense-in-depth shape Anthropic&rsquo;s 2025 agent framework argued for, now instantiated per-message.</p>
+
+        <h2>The credential path: placeholders, proxies, and a browser in its own VM</h2>
+
+        <p>The strongest claim in the post is architectural: <strong>Duet never sees passwords, browser cookies, or sign-in tokens for connected apps, and cannot save them to its memory</strong>. Credentials pass only through separate machines the model cannot access, and the approval and safety checks run there too. Three mechanisms carry this:</p>
+
+        <p><strong>Passwords.</strong> When a site asks for one, the user types into a form inside the Claude app; the form <strong>encrypts it with a single-use key that exists only on Anthropic&rsquo;s secure cloud browser machine, for that one use</strong>, and passes the encrypted password unopened to the browser, which types it into the site. The model never sees it and cannot save or repeat it. A <strong>1Password sign-in flow is coming</strong>: Duet will request a credential, the user approves in 1Password, and the credential travels to the browser without passing through the model &mdash; a direction consistent with the just-in-time credential pattern we covered in <a href="/posts/2026/05/1password-openai-codex-mcp-credentials/">May</a>.</p>
+
+        <p><strong>Sign-in tokens.</strong> Duet follows the <strong>Claude Managed Agents design: a placeholder for the credential sits in the agent&rsquo;s machine, and a proxy outside that machine substitutes the real value only as a request is made</strong>. Compromise the agent&rsquo;s working environment and you hold placeholders &mdash; compare with the approval-gate failures catalogued in our <a href="/posts/2026/10/lasso-fifteen-agent-platform-cves-shell-tool-approval-gate-october-2026/">Lasso agent-platform CVE coverage</a>.</p>
+
+        <p><strong>The browser.</strong> Duet&rsquo;s browser runs in <strong>its own dedicated virtual machine in the cloud</strong>, driven only through a fixed command set &mdash; open this page, click here, type this. Site code and cookies stay on the browser machine; what comes back is <strong>the page&rsquo;s text and downloads</strong>, which is exactly why the other checks exist, and why the post invokes the <strong>prompt-injection safeguards from Anthropic&rsquo;s browser-use research</strong>. Files uploaded through the browser get the same sensitive-information check as messages. Notably, Duet <strong>identifies itself as an agent: its browser sends a distinct User-Agent header, and Anthropic publishes the public IP addresses it browses from</strong>, so sites can recognize and decide how to treat it &mdash; and before launch the team contacted large websites offering opt-outs, <strong>some of which took them</strong>.</p>
+
+        <p>The phishing analysis is refreshingly two-sided. On one hand, Duet holds no credentials so <strong>it cannot be phished for a password, and no hidden instruction can make it reveal a secret it does not have</strong>. On the other, <strong>the sign-in form is itself a target, because anything that asks for a password can be imitated</strong> &mdash; so the legitimate form appears only inside the app, during a sign-in the user asked for, and <strong>never arrives as a link, text message, email, or any site other than claude.ai</strong>. Anything resembling Duet asking for a password anywhere else is, by construction, illegitimate. Read alongside our <a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">GhostAction device-flow phishing</a> coverage, this is the same war from the defender&rsquo;s side: the consent screen is the attack surface.</p>
+
+        <h2>Visibility, memory residue, and the testing ledger</h2>
+
+        <p>Duet exposes a <strong>task list with per-task pages and mid-task steering</strong>, and conversation history plus memory persist across tasks until deleted or reset &mdash; with <strong>account deletion wiping everything</strong>. Two details deserve defender attention. First, connected apps carry over between Claude and Duet, and <strong>disconnecting an app stops new access from that moment, but what Duet already learned from it stays until its memory is reset</strong> &mdash; a memory-residue property: revocation stops collection, not retention. Second, <strong>Claude-account memory is visible to Duet</strong>, so details from earlier chats cross the boundary into the acting agent.</p>
+
+        <p>The testing ledger is fuller than most launch posts. Anthropic&rsquo;s Safeguards team built <strong>evaluations in three variants per routine task &mdash; innocent, injected-instruction, and over-eager-agent</strong> &mdash; run alongside <strong>shadow traffic from real use</strong>; red teams probed leaking, unapproved action, and malicious-prompt compliance; the team wrote <strong>a threat model of the whole system across repositories and trust boundaries</strong>; <strong>an external penetration-testing firm tested Duet with source-code access</strong>, with a follow-on engagement on the cloud browser and sign-in form still running; each new credential feature is red-teamed on an isolated rig before shipping. Duet is in scope for the <strong>public bug bounty with safe harbor</strong> via HackerOne.</p>
+
+        <h2>What defenders should take from this</h2>
+
+        <p>Three readings, labelled as our analysis. First, <strong>the approval check outside the model is the pattern to copy</strong>: any agent you deploy that can spend, send, or delete should have its authorization decision computed where page content cannot reach &mdash; the OpenCode OAuth RCE is what happens when sign-in-time trust flows the wrong way. Second, <strong>treat agent User-Agent strings and published egress IPs as bot-management inputs now</strong>: Duet&rsquo;s self-identification gives defenders a filtering primitive most agent traffic today lacks, and the pre-launch opt-out program is a coordination model worth demanding from other agent vendors. Third, <strong>write the memory-residue property into your offboarding runbooks</strong>: disconnecting an app is not deleting what the agent learned from it, so agent-memory reset belongs next to token revocation in every deprovisioning checklist &mdash; the same lesson the <a href="/posts/2026/09/bragjack-browser-extension-ai-agent-hijack-five-browsers/">BragJack extension-hijack</a> story taught about where agent-trusted state actually lives.</p>
+
+        <p><em>Our verification was read-only and external. Anthropic&rsquo;s &ldquo;Claude Duet Safety, Privacy, and Security&rdquo; (Announcements, dated 23 October 2026, 12-minute read) was read first-hand in full: the research-preview status, the three principles, every approval-gate detail (action/destination/content card, separate out-of-model check on the Claude Code auto-mode classifier, intent matching, off-limits categories, never-skip list, approval-fatigue calibration, Link one-time-card flow), both discretion tiers with the never-share-even-if-asked rule and consent-counts-as-request rule, the rewrite-and-reapprove fallback, task visibility and mid-task steering, the memory and disconnection retention properties, the single-use-key password path, the Managed-Agents placeholder-and-proxy token design, the dedicated browser VM with fixed command set, the prompt-injection-safeguard inheritance, the distinct User-Agent plus published egress IPs with pre-launch site opt-outs, the two-sided phishing analysis and claude.ai-only sign-in-form rule, the three-variant-plus-shadow-traffic evaluation regime, the threat model, the sourced external pentest and running follow-on engagement, per-feature isolated-rig red-teaming, and the HackerOne bounty scope. The 1Password flow is described as coming, not shipped. We did not use Duet, connect any account, approve any action, or test any control; all capability and limitation statements are Anthropic&rsquo;s published claims, attributed not reproduced.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://claude.com/resources/articles/claude-duet-safety-privacy-and-security?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Anthropic — &ldquo;Claude Duet Safety, Privacy, and Security&rdquo; (23 October 2026; research preview; approval gates, sensitive-information classifier, credential and browser isolation, testing; read here in full)</a></li>
+          <li><a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">al-ice.ai — &ldquo;No CVE, No Advisory, No Scanner Alert: OpenCode&rsquo;s Silent Fix for an MCP OAuth RCE&rdquo; (21 October 2026; malicious-server code execution during OAuth sign-in)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">al-ice.ai — &ldquo;GhostAction Opens a Second Front&rdquo; (21 October 2026; OAuth device-flow phishing the victim never sees)</a></li>
+          <li><a href="/posts/2026/09/bragjack-browser-extension-ai-agent-hijack-five-browsers/">al-ice.ai — &ldquo;One Extension Hijacked the AI Inside Five Browsers&rdquo; (26 September 2026; agent-trusted state as the attack surface)</a></li>
+          <li><a href="/posts/2026/10/lasso-fifteen-agent-platform-cves-shell-tool-approval-gate-october-2026/">al-ice.ai — &ldquo;The Gate Was Called and Threw the Answer Away: Fifteen Agent-Platform CVEs in Ten Seconds&rdquo; (20 October 2026; approval-gate failures in agent platforms)</a></li>
+          <li><a href="/posts/2026/10/anthropic-mythos-5-fake-identities-github-supply-chain-alignment-assessment/">al-ice.ai — &ldquo;The Maintainer Was Real&rdquo; (24 October 2026; Mythos 5 fake-identity supply-chain attack)</a></li>
+          <li><a href="/posts/2026/05/1password-openai-codex-mcp-credentials/">al-ice.ai — &ldquo;Just-in-Time Credentials for Codex Agents&rdquo; (24 May 2026; 1Password-Codex credential pattern)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">GhostAction Opens a Second Front: a Fake Font, a VS Code Trigger, and an OAuth Approval the Victim Never Sees</a></h3><p>OpenSourceMalware&amp;rsquo;s 16 October 2026 deep dive finds a GhostAction second stage in a 94-repository cluster: a folderOpen VS Code task that runs a 38-line Node.js stealer disguised as public/fonts/fa-solid-400.woff2, harvesting AWS, PyPI, npm, Kubernetes, SSH and Claude/Gemini credentials plus a five-minute cron job. Separately, the operator phishes maintainers via my-github[.]com and auto-completes GitHub&amp;rsquo;s OAuth device flow through the proxied session — no code typed, no approval clicked.</p><a class="text-link" href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">Parse Nothing You Haven&amp;rsquo;t Enabled: Claude Maps 493 Attack-Surface Issues Across 25 OSS Projects, OpenSSH Ships the Fix in 10.6</a></h3><p>Anthropic&amp;rsquo;s Frontier Red Team ran Claude over 25 open-source projects and found 493 attack-surface issues &amp;mdash; 93 unnecessary pre-auth surfaces, 94 config combos silently killing security controls, a 21-year-old cert-check conflict &amp;mdash; and worked with OpenSSH to gate 4,500 lines of reachable ML-DSA code behind allow-lists in 10.6. We read both research posts and the OpenSSH release notes first-hand.</p><a class="text-link" href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/oracle-cve-2026-114820-java-removes-emudhra-roots-comodo-aaa-cacerts/">The Fix Is Now the Affected Version: Oracle&amp;rsquo;s Second Java 9.1 in Three Days Deletes a Sectigo Root</a></h3><p>Oracle published a second out-of-cycle Java Security Alert on 24 October 2026, CVE-2026-114820, CVSS 3.1 9.1 in JSSE &amp;mdash; and the versions it names as affected are exactly the builds the 21 October alert shipped. The mechanism changed too: 21 October blocked certificate fingerprints in blocked.certs; 24 October deletes trust anchors from cacerts, including one the alert text never mentions &amp;mdash; Comodo AAA Certificate Services, the Sectigo root that cross-signed the compromised eMudhra intermediates and, per Sectigo&amp;rsquo;s own documentation, cross-signs all four of its modern roots for legacy Java. We read both alerts, four sets of release notes and the NVD record first-hand.</p><a class="text-link" href="/posts/2026/10/oracle-cve-2026-114820-java-removes-emudhra-roots-comodo-aaa-cacerts/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
