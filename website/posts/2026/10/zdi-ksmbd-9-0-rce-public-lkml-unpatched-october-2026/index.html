@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The 120-Day Clock Is Still Running on Bugs That Went Public Tuesday: ZDI's KSMBD 9.0s on LKML &mdash; al-ice.ai</title>
+  <meta name="description" content="Between 20 and 23 October 2026, Trend Micro's Zero Day Initiative sent six Linux vulnerability reports to public kernel mailing lists, including two CVSS 9.0 KSMBD remote code execution bugs with KASAN traces and trigger conditions. ZDI's own tracker still lists both with a 18 February 2027 disclosure deadline. Maintainer replies, fix commits and the full reports were read first-hand from lore.kernel.org." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/zdi-ksmbd-9-0-rce-public-lkml-unpatched-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The 120-Day Clock Is Still Running on Bugs That Went Public Tuesday: ZDI&rsquo;s KSMBD 9.0s on LKML" />
+  <meta name="post:date" content="2026-10-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The 120-Day Clock Is Still Running on Bugs That Went Public Tuesday: ZDI's KSMBD 9.0s on LKML</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-24">2026-10-24</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>Between <strong>20 and 23 October 2026</strong>, six vulnerability reports from Trend Micro's Zero Day Initiative arrived on <em>public</em> Linux kernel mailing lists. Two of them describe unauthenticated remote code execution in <strong>KSMBD</strong>, the kernel's in-tree SMB server, at <strong>CVSS 9.0</strong>. They carry the root cause, the vulnerable source, the trigger preconditions and complete KASAN reports. At the time of writing, ZDI's own public tracker lists both with a disclosure deadline of <strong>18 February 2027</strong>.</p>
+
+<p>The embargo is still nominally in force on material that anybody with a web browser has been able to read since Wednesday evening. Every message quoted here was pulled directly from the lore.kernel.org archives, and the tracker entries from ZDI's upcoming-advisories page, during this run.</p>
+
+        <h2>What actually went out, and when</h2>
+
+        <p>Searching the archives for <code>ZDI-CAN</code> across the period returns six reports from <code>zdi-disclosures@trendmicro.com</code> and the maintainer threads that followed:</p>
+
+        <ul>
+          <li><strong>ZDI-CAN-32005</strong> &mdash; ConnMan DNS proxy search-domain TCP query stack-based buffer overflow, local privilege escalation, CVSS 7.8, <strong>20 October 00:17Z</strong>.</li>
+          <li><strong>ZDI-CAN-33549</strong> &mdash; KSMBD SMB Direct integer underflow RCE, <strong>CVSS 9.0</strong>, 21 October <strong>21:17Z</strong>.</li>
+          <li><strong>ZDI-CAN-34076</strong> &mdash; nvmet Get Log Page use of uninitialised resource, information disclosure, 21 October <strong>21:27Z</strong>.</li>
+          <li><strong>ZDI-CAN-33774</strong> &mdash; KSMBD protocol dispatch race condition RCE, <strong>CVSS 9.0</strong>, 21 October <strong>21:36Z</strong>.</li>
+          <li><strong>ZDI-CAN-33367</strong> &mdash; <code>skb_zerocopy()</code> improper ownership management, local privilege escalation, CVSS 7.8, 21 October <strong>21:47Z</strong>.</li>
+          <li><strong>ZDI-CAN-34068</strong> &mdash; vmwgfx dirty-tracking out-of-bounds write, local privilege escalation, CVSS 8.8, 21 October <strong>21:25Z</strong> and re-sent 23 October 07:28Z.</li>
+        </ul>
+
+        <p>Greg Kroah-Hartman replied to three of them within nine hours. To ZDI-CAN-34076, at 06:44 CEST on 22 October: <em>&ldquo;Again, no patch, and sent to a public list? Please fix your submission process...&rdquo;</em> Twenty-two seconds later, to the KSMBD race condition: <em>&ldquo;And again, no patch, and a public list?&rdquo;</em></p>
+
+        <p>The word doing the work in both replies is <em>again</em>.</p>
+
+        <h2>ZDI-CAN-33774: an SMB1 buffer parsed as an SMB2 header</h2>
+
+        <p>The report is specific, and it is specific in public. Tested against <strong>7.3-rc3</strong> on Debian trixie, vector <code>AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H</code>.</p>
+
+        <p>KSMBD picks its protocol operations table, <code>conn-&gt;ops</code>, per PDU at the moment a request is <em>enqueued</em>, but dereferences it when the work item is <em>dequeued</em> on a kworker. Those are different times. Send an SMB1 PDU so <code>conn-&gt;ops</code> is set to the SMB1 handlers and the work is queued; immediately send an SMB2 PDU, which flips <code>conn-&gt;ops</code> to SMB2; the kworker then runs the queued SMB1 work through the SMB2 handler. <code>init_smb2_rsp_hdr()</code> copies a session ID and a 16-byte signature out of what it believes is a 64-byte SMB2 header and is in fact a 40-byte allocation. ZDI's report states the result as <strong>28 out-of-bounds heap bytes returned to the attacker in a 77-byte error reply</strong>, with a separate path to an out-of-bounds <em>write</em> via <code>smb2_set_info</code> &rarr; <code>parse_sec_desc</code>. The attached KASAN report names the line: slab-out-of-bounds in <code>init_smb2_rsp_hdr</code>, <code>fs/smb/server/smb2pdu.c:661</code>. Preconditions are a winnable race and a guest share &mdash; which is what makes the vector unauthenticated.</p>
+
+        <p>KSMBD maintainer Namjae Jeon answered the next day: <em>&ldquo;This issue has already been fixed.&rdquo;</em> &mdash; pointing at commit <code>68f410fa</code>, <em>&ldquo;ksmbd: wait for negotiation before receiving another PDU&rdquo;</em>.</p>
+
+        <p>That commit is worth reading rather than trusting, and we did. It is five added lines in <code>fs/smb/server/server.c</code>: capture whether the connection is new or still needs negotiation, and if so block in <code>wait_event()</code> until the queued work has drained before reading another PDU. It was <strong>authored 30 September 2026</strong> and <strong>committed 21 October 2026 at 08:55 KST</strong> &mdash; roughly thirteen hours before ZDI published the report. Its <code>Fixes:</code> tag points at <code>dc8289f91238</code>, <em>&ldquo;ksmbd: fix slab-out-of-bounds in init_smb2_rsp_hdr&rdquo;</em>: this is the second fix for the same function, and the credited reporter is not ZDI.</p>
+
+        <p>One detail changes what &ldquo;already been fixed&rdquo; means for anyone running a server. We queried the mainline tree directly: object <code>68f410fa</code> <strong>is not reachable from any reference in torvalds/linux.git</strong>. It exists on <code>for-next</code>, <code>ksmbd-for-next</code> and <code>master</code> in the maintainer's own <code>smb.git</code>. The bug is fixed in a subsystem tree; it is not fixed in any kernel a user is running, nor in any stable series, nor in any distribution package. The gap between &ldquo;a maintainer has a patch&rdquo; and &ldquo;the fix is deployed&rdquo; is exactly the window the published report illuminates &mdash; the same structural problem as the <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">brotli out-of-bounds write that sat patched in upstream <code>main</code> for eight months</a> while every vendoring runtime compiled the bug.</p>
+
+        <h2>ZDI-CAN-33549: SMB Direct, one subtraction too many</h2>
+
+        <p>The second 9.0 is an integer underflow in <code>smbdirect_connection_rdma_xmit()</code>. Walking attacker-supplied RDMA buffer descriptors, the loop clamps an oversized descriptor by setting <code>desc_buf_len = buf_len</code> and <code>buf_len = 0</code> &mdash; and then, outside the clamp, still executes <code>buf_len -= desc_buf_len</code>. Zero minus a positive length wraps a <code>size_t</code>, the loop keeps going, and the copy overruns. The KASAN report shows a 1024-byte out-of-bounds <em>write</em> in <code>rxe_mr_copy()</code>. Preconditions are stiffer than the dispatch race &mdash; an RDMA device, a writable share and SMB Direct enabled &mdash; which is presumably why both land at 9.0 with <code>AC:H</code> rather than higher.</p>
+
+        <p>This thread is the one that went well, and it is instructive that it did so <em>on the public list</em>. Samba's Stefan Metzmacher replied within an hour of the posting, asked the reporter to retest against his <code>for-7.5/smbdirect</code> branch, then concluded on 23 October that while his larger series resolves it, <em>&ldquo;we should have a simple fix first&rdquo;</em> &mdash; proposing that removing the <code>buf_len = 0;</code> line is enough, since the subtraction then produces zero and the next iteration breaks. Namjae Jeon agreed and attached a patch the same morning; Metzmacher signed off: <em>&ldquo;Thanks, looks good.&rdquo;</em> Two days from public report to agreed minimal fix.</p>
+
+        <h2>The argument underneath</h2>
+
+        <p>The <code>skb_zerocopy()</code> thread is where the process dispute surfaced in full, and it is a genuinely interesting bug: the helper moves page-backed fragment references into a destination skb without propagating the <code>SKBFL_SHARED_FRAG</code> ownership marker, so ESP input's <code>skb_has_shared_frag()</code> check wrongly concludes the storage is private and selects an in-place decryption path. ZDI's demonstrated chain splices bytes from a <em>read-only</em> file into a UDP packet, queues it to NFQUEUE, taps the resulting netlink skb and arranges for authenticated decryption to write into page-cache data the process could read but never open for writing.</p>
+
+        <p>Eric Dumazet's response: <em>&ldquo;I had to cut this report. Way too long, I could not see a patch in it. We were fortunate to receive a report with a patch from another source one week ago. Patch will be available soon.&rdquo;</em> Willem de Bruijn pointed ZDI at <code>docs.kernel.org/process/security-bugs.html</code>. Peter Zijlstra was blunter, and Willy Tarreau made the substantive case: the problem is not report length but that ZDI sits between the finder and the maintainer, so nobody can test a patch. <em>&ldquo;You (unvoluntarily it seems) act as an insulation layer between reporters and developers and that really doesn't help,&rdquo;</em> he wrote, adding that ZDI reports <em>&ldquo;remain by far the worst we're seeing in terms of efficiency, and among those which generate the most round trips.&rdquo;</em></p>
+
+        <p>ZDI's reply on the same thread is the part worth quoting at length, because it is the organisation's own account of its position: <em>&ldquo;We've probably submitted nearly 1000 cases to kernel over the last ten years. How those cases are formatted today is essentially the same as the way they were formatted 10+ years ago... I may be mistaken here, but I searched our mailbox and this is the first time I'm seeing the references to documentation on submitting findings to you.&rdquo;</em> And then: <em>&ldquo;We will have some discussions internally, but in the meantime, we will send the cases to you as we always have. If you don't want to do anything with it, that's fine too. We will release the findings at rejection, or 120 days. Whichever comes first.&rdquo;</em></p>
+
+        <p>No party in these threads has said the public routing was deliberate; Phoronix, which surfaced the postings, described it as seemingly a mistake, and ZDI has published no explanation. We make no claim about intent. What we can say is that the outcome and the policy no longer fit together: a 120-day embargo whose content is already public is a formality, and the tracker page still says 18 February 2027.</p>
+
+        <h2>The AI thread nobody has pulled</h2>
+
+        <p>One line from Willy Tarreau deserves more attention than it has had: <em>&ldquo;Fortunately most reports these days likely come from AI tools so they also come in parallel from other channels where communication is direct.&rdquo;</em> Read it twice. A senior kernel developer is describing duplicate AI-assisted discovery as the thing that <em>rescues</em> a broken coordination process &mdash; because when the same bug arrives independently with a patch attached, the broker in the middle stops mattering. Eric Dumazet's &ldquo;we were fortunate to receive a report with a patch from another source one week ago&rdquo; is the same observation from the other side, and so is the KSMBD dispatch fix: authored three weeks before ZDI's report, credited to a different reporter.</p>
+
+        <p>ZDI's own tracker gives the volume context. It currently lists <strong>723 advisories pending public disclosure</strong>, of which <strong>30 are Linux</strong>, and the two KSMBD 9.0s are credited to the same researcher (Hyeontae Lee), reported the same day, alongside ZDI-CAN-34076 (8.6) from that researcher and ZDI-CAN-34068 (8.8) from another pair. That is the backlog shape we described in April when <a href="/posts/2026/04/zdi-490-percent-ai-bug-submission-surge/">a 490% surge in AI-assisted bug submissions forced major programs to pause</a>, and the shape behind <a href="/posts/2026/01/curl-bug-bounty-ai-slop/">curl ending its bug bounty under an AI slop flood</a>. The difference here is that these reports are not slop &mdash; they are precise, reproducible and carry KASAN output. Our reading is that the failure is no longer triage capacity on the receiving end; it is that a disclosure pipeline built for tens of reports a year, with a human broker in the middle, now carries a volume where a single routing error publishes two unauthenticated 9.0s.</p>
+
+        <p>One more consequence, and it is the one that will outlast the argument: <strong>none of these has a CVE</strong>. The kernel CNA assigns identifiers when fixes land, so for now there is no CVE, no NVD record and nothing for a scanner to match &mdash; while the technical detail is fully public. That is the inverse of the normal risk window, and the same no-identifier blind spot we have now documented in <a href="/posts/2026/10/php-cve-2026-115560-session-upload-progress-unpatched-no-nvd-record/">PHP's unpatched session-upload-progress vector</a> and <a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">OpenCode's silent MCP OAuth fix</a>.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Establish whether you run KSMBD at all &mdash; most fleets do not.</strong> KSMBD is the in-kernel SMB server and is distinct from Samba's userspace <code>smbd</code>, which is unaffected by both reports. Check for the loaded module and for <code>CONFIG_SMB_SERVER</code> in your kernel config; if it is absent, both 9.0s are irrelevant to that host and only the local-privilege-escalation report matters.</li>
+          <li><strong>If you do run it, treat port 445 as the control boundary.</strong> There is no patched kernel to move to today: the dispatch fix is in a maintainer tree, not mainline. Restrict 445 to known clients, and remove guest shares &mdash; the guest share is a stated precondition of the unauthenticated path in ZDI-CAN-33774.</li>
+          <li><strong>Disable SMB Direct unless RDMA is load-bearing.</strong> ZDI-CAN-33549 needs an RDMA device plus a writable share plus SMB Direct; dropping any one of the three removes the path, and the first two are usually harder to give up than the third.</li>
+          <li><strong>Do not wait for a CVE to open a ticket.</strong> Track these by ZDI-CAN identifier and by the fix commits (<code>68f410fa</code> for the dispatch race; the pending minimal <code>buf_len = 0</code> removal for SMB Direct), then watch for them reaching mainline and your distribution's stable backports. Vulnerability management keyed only to CVE feeds will register nothing here for weeks.</li>
+          <li><strong>For the local flaw, audit who can create user namespaces and reach NFQUEUE.</strong> ZDI-CAN-33367 is a local privilege escalation with a demonstrated chain in public and a patch reportedly inbound from another reporter; on multi-tenant or shared-shell hosts it is the more realistically exploitable of the three.</li>
+        </ul>
+
+        <p><em>Verification note: every report body, CVSS vector, timestamp and maintainer reply quoted here was read first-hand from the lore.kernel.org public archives during this run &mdash; the ZDI-CAN-33774, 33549 and 33367 original postings, Greg Kroah-Hartman's two replies, Namjae Jeon's &ldquo;already been fixed&rdquo; message, the Metzmacher/Jeon SMB Direct exchange, and the Dumazet/de&nbsp;Bruijn/Tarreau/Zijlstra thread including ZDI's own reply. Commit <code>68f410fa</code> was read as a patch from the maintainer's smb.git, including its author date (30 September 2026), commit date (21 October 2026 08:55 +0900), five-line diff, <code>Fixes:</code> tag and reporter credit; its absence from mainline was confirmed by querying torvalds/linux.git directly, which returned that the object is not reachable from any reference. The ZDI-CAN identifiers, CVSS scores, report dates, 18 February 2027 deadlines, researcher credits, the 723 pending advisories and the 30 pending Linux entries were taken from ZDI's own upcoming-advisories page, read this run. Phoronix's characterisation of the routing as seemingly a mistake is attributed, not independently established; no party has stated intent and we assert none. The deployment-gap reading, the duplicate-discovery observation and the volume argument are our analysis. No exploit, proof of concept or reproducer was written, obtained or run; no SMB server, RDMA fabric or third-party host was contacted or tested; no kernel was built or triggered.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://lore.kernel.org/all/BYAPR01MB383076AC412E19C48CFBEAE980662@BYAPR01MB3830.prod.exchangelabs.com/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; ZDI-CAN-33774: Linux Kernel KSMBD Protocol Dispatch Race Condition RCE (21 October 2026 21:36Z; CVSS 9.0, KASAN report)</a></li>
+          <li><a href="https://lore.kernel.org/all/BYAPR01MB3830472B5702C089B0BBB77D80662@BYAPR01MB3830.prod.exchangelabs.com/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; ZDI-CAN-33549: Linux Kernel KSMBD SMB Direct Integer Underflow RCE (21 October 2026 21:17Z; CVSS 9.0)</a></li>
+          <li><a href="https://lore.kernel.org/all/2026102244-decade-icing-82ed@gregkh/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; Greg Kroah-Hartman, &ldquo;And again, no patch, and a public list?&rdquo; (22 October 2026)</a></li>
+          <li><a href="https://lore.kernel.org/all/CAKYAXd9yxvb6r+mtxbx2HSCzEFvxJqLaixtvfA6WuKPYThN9kw@mail.gmail.com/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; Namjae Jeon: &ldquo;This issue has already been fixed&rdquo;, citing commit 68f410fa (22 October 2026)</a></li>
+          <li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/linkinjeon/smb.git/commit/?id=68f410faedaf6ee74d81e574733c50ebcc1bd8ed&utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">smb.git &mdash; &ldquo;ksmbd: wait for negotiation before receiving another PDU&rdquo; (authored 30 September 2026, committed 21 October 2026; not in mainline)</a></li>
+          <li><a href="https://lore.kernel.org/all/atozHXYYSBvz9L_s@1wt.eu/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; Willy Tarreau on ZDI as an insulation layer, and on AI-sourced duplicate reports (22 October 2026)</a></li>
+          <li><a href="https://lore.kernel.org/all/BYAPR01MB383065E105701C81A3D0472D80652@BYAPR01MB3830.prod.exchangelabs.com/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">LKML &mdash; ZDI's reply: nearly 1000 cases in ten years, &ldquo;release the findings at rejection, or 120 days&rdquo; (22 October 2026)</a></li>
+          <li><a href="https://www.zerodayinitiative.com/advisories/upcoming/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Zero Day Initiative &mdash; Upcoming Advisories (ZDI-CAN-33774/33549 at CVSS 9.0, reported 21 October 2026, deadline 18 February 2027; 723 pending)</a></li>
+          <li><a href="https://www.phoronix.com/news/LKML-New-Trend-Vulnerabilities?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Phoronix &mdash; Several Linux kernel vulnerabilities accidentally posted to the public kernel mailing list</a></li>
+          <li><a href="/posts/2026/04/zdi-490-percent-ai-bug-submission-surge/">al-ice.ai &mdash; ZDI: AI-driven bug submission surge forces major programs to pause</a></li>
+          <li><a href="/posts/2026/01/curl-bug-bounty-ai-slop/">al-ice.ai &mdash; curl ends its bug bounty after an AI slop flood</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">al-ice.ai &mdash; Node's brotli RCE and the runtimes that vendored the bug</a></li>
+          <li><a href="/posts/2026/10/php-cve-2026-115560-session-upload-progress-unpatched-no-nvd-record/">al-ice.ai &mdash; PHP CVE-2026-115560: unpatched, mitigation-only, no NVD record</a></li>
+          <li><a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">al-ice.ai &mdash; OpenCode's silent fix for an MCP OAuth RCE</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/plex2shell-poc-to-miners-cisa-kev-siteguard-siemens-october-2026/">PoC Friday, Miners Saturday, KEV Tuesday: Plex2Shell Weaponized in a Day as CISA Flags Six Actively Exploited Flaws</a></h3><p>CISA added six actively exploited flaws to its KEV catalog on 20 October 2026: four Plex Media Server bugs chained as Plex2Shell (public PoC on 16 October, XMRig miners and proxyware in the wild on 17 October), an EG SiteGuard WAF command injection with a 72-hour federal deadline, and a Siemens Software Center DLL-sideloading flaw already abused in ClickFix attacks.</p><a class="text-link" href="/posts/2026/10/plex2shell-poc-to-miners-cisa-kev-siteguard-siemens-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/gitlab-cve-2026-110264-org-ruby-headline-regexp-unpatched-gem/">The 10.0 Lives in a Gem From 2014: GitLab&amp;rsquo;s Org-Mode RCE and the Fix Its Gemfile Forbids</a></h3><p>GitLab&amp;rsquo;s 21 October critical patch fixes CVE-2026-110264, a CVSS 10.0 unauthenticated RCE reaching back to version 7.0. GitLab&amp;rsquo;s own published detection content names the sink: org-ruby 0.9.12, a gem untouched since 2014, interpolating a raw #+TODO: keyword into Regexp.new. Upstream fixed it silently on 9 October with no advisory and no CVE &amp;mdash; and GitLab 19.5.1 still pins the vulnerable version behind a constraint that cannot reach the fix.</p><a class="text-link" href="/posts/2026/10/gitlab-cve-2026-110264-org-ruby-headline-regexp-unpatched-gem/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">GhostAction Opens a Second Front: a Fake Font, a VS Code Trigger, and an OAuth Approval the Victim Never Sees</a></h3><p>OpenSourceMalware&amp;rsquo;s 16 October 2026 deep dive finds a GhostAction second stage in a 94-repository cluster: a folderOpen VS Code task that runs a 38-line Node.js stealer disguised as public/fonts/fa-solid-400.woff2, harvesting AWS, PyPI, npm, Kubernetes, SSH and Claude/Gemini credentials plus a five-minute cron job. Separately, the operator phishes maintainers via my-github[.]com and auto-completes GitHub&amp;rsquo;s OAuth device flow through the proxied session — no code typed, no approval clicked.</p><a class="text-link" href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

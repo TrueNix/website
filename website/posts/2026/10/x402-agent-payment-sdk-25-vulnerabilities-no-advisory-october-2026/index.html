@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Three Criticals, Zero Advisories: The x402 Agent-Payment SDK Shipped Its Wallet-Drain Fix as a Feature &mdash; al-ice.ai</title>
+  <meta name="description" content="V12 published 25 vulnerabilities in the x402 agent-payment protocol on 22 October 2026, including a Solana payment bypass, a cross-site login-signature relay, and a default client with no spending limit. All three criticals were fixed in August 2026 as ordinary fix/feat commits in x402-foundation/x402 — with no GitHub security advisory, no CVE and no release notes, so no dependency scanner can tell an operator their agent still signs unlimited payments." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/x402-agent-payment-sdk-25-vulnerabilities-no-advisory-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Three Criticals, Zero Advisories: The x402 Agent-Payment SDK Shipped Its Wallet-Drain Fix as a Feature" />
+  <meta name="post:date" content="2026-10-24" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Three Criticals, Zero Advisories: The x402 Agent-Payment SDK Shipped Its Wallet-Drain Fix as a Feature</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-24">2026-10-24</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+<p>On <strong>22 October 2026</strong> the security firm V12 published a write-up of <strong>25 vulnerabilities</strong> it found in <strong>x402</strong>, the HTTP-native payment protocol that lets software &mdash; in practice, autonomous agents &mdash; pay for an API call inline: the server answers <code>402 Payment Required</code>, the client signs a payment payload, the request is retried with the payload attached. Three of the 25 were rated critical. All three were fixed in August. None of them produced a security advisory, a CVE, or a release note that says so.</p>
+
+<p>That second half is the story. The post itself was read first-hand, and so was the upstream repository: every fix commit, changeset, package-version bump and the complete published advisory list for <code>x402-foundation/x402</code> were pulled directly from GitHub for this briefing.</p>
+
+        <h2>Critical one: an approval that counted as a payment</h2>
+
+        <p>The TypeScript Solana facilitators for the v1 and v2 <em>exact</em> schemes checked that a transaction called an allowed token program, then parsed its third instruction as <code>TransferChecked</code> &mdash; without ever checking that the instruction <em>was</em> a <code>TransferChecked</code>. The parser decoded bytes into fields and trusted the name on the function.</p>
+
+        <p>Solana's <code>ApproveChecked</code> has the same data layout. The two differ in one byte: <code>0c</code> versus <code>0d</code>. An approval grants a delegate permission to spend; it moves nothing. Because the account layouts also line up, the account naming the delegate was read as the payment destination &mdash; so an attacker could put the merchant's own expected token account there and satisfy the destination check while the amount and token checks passed too. V12 reports that its local test, using the real token encoders and parser, returned <code>isValid: true</code> for the approval, and that the settlement path also skipped its post-settlement payment check on that route.</p>
+
+        <p>The result is a complete payment bypass in the direction nobody instruments: the <em>merchant</em> delivers a paid resource and receives nothing, the facilitator pays the transaction fee, and the attacker needs a valid token account but no balance at all. Repeat it and you drain the seller's inventory and the facilitator's fee budget simultaneously.</p>
+
+        <h2>Critical two: a login signature for a site the agent never visited</h2>
+
+        <p>The Sign-In-With-X extension lets a client authenticate with its wallet. On Ethereum it builds a Sign-In with Ethereum message naming the website, the wallet address and a one-time challenge. The automatic wrapper signed the <code>domain</code> and <code>uri</code> fields <em>supplied by the server in the 402 response</em>, without comparing them to the site the client had actually contacted.</p>
+
+        <p>So a hostile <code>data.example</code> could fetch a fresh login challenge from <code>app.example</code> in a session it controlled, hand that challenge to the agent inside its own 402 response, collect the signature and replay it to <code>app.example</code> as the client's wallet. Every check on the receiving side passes, because every check on the receiving side is correct: the message names that site and carries a genuine signature. The missing check belonged on the client, before signing &mdash; which is exactly the class of failure that keeps recurring once an automatic signer sits where a human confirmation dialog used to be.</p>
+
+        <h2>Critical three: the documented default had no ceiling</h2>
+
+        <p>The documented default client setup enforced neither a per-payment limit nor a total budget. It took <code>accepts[0]</code> &mdash; the first option the server offered &mdash; and passed the server's amount, token, recipient and network straight into the signing code. V12's observation that the HTTP decoding path also parsed payment requirements without calling the existing schema validator is secondary; as the post puts it, a correctly formatted request can still ask for far more money than the client intended to pay.</p>
+
+        <p>With an automatic signer and no application-supplied policy, a single hostile 402 response could obtain authorization to drain the wallet's entire balance of a supported token, with no separate approval prompt. An earlier small payment reveals the wallet address, which lets the server look up the balance before naming its price.</p>
+
+        <h2>The fixes are real. The disclosure is not.</h2>
+
+        <p>V12 reported the 3 critical and 13 high findings on <strong>12 August 2026</strong> and states the criticals were fixed by <strong>20 August</strong>; a further 9 medium and low findings followed on <strong>9 September</strong>. The repository confirms the remediation precisely, and the commits are worth naming because of how ordinary they look:</p>
+
+        <ul>
+          <li><code>16a23d098</code>, <strong>12 August 2026 14:43:53Z</strong> &mdash; <em>&ldquo;fix(ts): require TransferChecked discriminator in svm exact (#3132)&rdquo;</em>. Four files. Its changeset is a <strong>patch</strong>-level bump of <code>@x402/svm</code> whose entire text reads &ldquo;Added validation guard for TransferChecked.&rdquo; That is the payment bypass.</li>
+          <li><code>c2612d31e</code>, <strong>13 August 2026 13:42:00Z</strong> &mdash; <em>&ldquo;fix(ts): bind SIWX client challenge to the request origin (#3133)&rdquo;</em>. Thirteen files, a minor bump across <code>@x402/extensions</code>, <code>@x402/core</code>, <code>@x402/fetch</code> and <code>@x402/axios</code>, and a breaking API change: <code>createSIWxPayload()</code> gained a required third argument, the final URL of the 402 response, and &ldquo;signing is refused when challenge <code>domain</code> or <code>uri</code> origin does not match that URL's origin.&rdquo;</li>
+          <li><code>4f587236e</code>, <strong>13 August 2026 15:37:17Z</strong> &mdash; <em>&ldquo;feat(TS): spend controls (#3124)&rdquo;</em>, 146 files. Python followed on <strong>18 August</strong> (<code>656437e06</code>) and Go eleven minutes later (<code>5246387a03</code>).</li>
+        </ul>
+
+        <p>Checking the shipped behaviour rather than the commit title matters here, and it is better news than the headline suggests: spend controls are <strong>on by default</strong>. The current buyer quickstart documents a default <code>maxAmountPerPayment</code> of <code>&quot;$1&quot;</code> on recognised USD-pegged assets, requires explicit opt-in for non-default tokens, and offers <code>spendControls: false</code> / <code>DisableSpendControls()</code> for anyone who wants the old behaviour back. The remedy for a critical wallet-drain was not a configuration option bolted on for the diligent &mdash; it was a change of default. Good engineering.</p>
+
+        <p>It was also labelled <code>feat</code>.</p>
+
+        <p>All three fixes reached users in the <strong>18 August 2026</strong> release train: TypeScript packages <strong>2.22.0 &rarr; 2.23.0</strong>, the Python <code>x402</code> package <strong>2.19.0 &rarr; 2.20.0</strong>, Go <strong>2.22.0 &rarr; 2.23.0</strong>. The Solana payment-bypass fix therefore sat in <code>main</code> unreleased for six days, which is unremarkable. What is remarkable is what the repository has <em>not</em> published: <code>x402-foundation/x402</code> carries exactly two GitHub security advisories, <strong>GHSA-3j63-5h8p-gf7c</strong> (20 August 2025) and <strong>GHSA-qr2g-p6q7-w82m</strong> (6 March 2026), and neither covers any of the V12 findings. There is no GHSA and no CVE for a complete payment bypass, a cross-site signature relay, or an unlimited default signing authority in an SDK whose entire purpose is to let software spend money unattended.</p>
+
+        <h2>What that costs, concretely</h2>
+
+        <p>Our reading, not the researchers': the absence of an advisory converts a solved problem into an unsolvable one for everybody downstream. Treat the three remediation channels in turn. <code>npm audit</code> and Dependabot match installed versions against advisory databases; with no GHSA there is nothing to match, so an agent pinned to <code>@x402/core</code> 2.22.0 raises no alert and will keep signing whatever a server asks for. Release notes would be the fallback, except the fixes are described as a patch-level &ldquo;validation guard,&rdquo; an origin-binding change and a feature addition &mdash; accurate labels, none of which reads as <em>your agent could currently be drained</em>. That leaves reading the commit log of a dependency, which is not a control any organisation can staff across its dependency tree.</p>
+
+        <p>This is the third time this month the same shape has appeared on this site, and the pattern is now worth naming rather than noting. Signal's RingRTC <a href="/posts/2026/10/signal-ringrtc-cve-2026-113380-hangup-fsm-queue-silent-fix/">CVE-2026-113380</a> was fixed under the message &ldquo;Ensure calls terminate completely in corner cases&rdquo; 46 days before a CVE appeared. <a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">OpenCode's MCP OAuth RCE</a> was fixed with no CVE, no advisory and no scanner alert. Node's <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">brotli out-of-bounds write</a> sat patched in upstream <code>main</code> for eight months while every runtime vendoring the C library compiled the bug. In each case the code was fixed quickly and competently; in each case the machine-readable claim that the old version is dangerous was never created, so the fix propagated only to users who happened to upgrade. x402 adds the aggravating detail that the artefact at risk is a funded wallet.</p>
+
+        <h2>Why agent payments concentrate this risk</h2>
+
+        <p>An x402 client is a wallet that answers HTTP. The threat model it needs is not the one SDK authors usually build for, because the counterparty is not a user's bank &mdash; it is an arbitrary server the agent was told to fetch data from. Every one of V12's three criticals is a boundary that exists implicitly in a human checkout flow and had to be written down explicitly here: a human notices when the amount is their whole balance, notices when the login prompt names the wrong site, and notices when a merchant ships without charging. Remove the human and each of those becomes a line of validation code that somebody has to remember to write.</p>
+
+        <p>We have covered the attacker side of this surface twice &mdash; <a href="/posts/2026/07/zscaler-indirect-prompt-injection-crypto-payment-ai-agents/">indirect prompt injection steering agents into crypto payments</a> and <a href="/posts/2026/09/x47c-botnet-ai-api-drain-denial-of-wallet-qrator/">denial-of-wallet as a commodity botnet service</a>. Both assumed the payment path itself was sound and attacked the instruction that reached it. V12's findings are the other half: the path itself would honour a malicious instruction with no injection required, because the server's number was the client's number.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Pin to the 18 August 2026 release or later: TypeScript 2.23.0+, Python 2.20.0+, Go 2.23.0+.</strong> Below those versions you have the unlimited-signing default, the unvalidated Solana instruction parse and the unbound SIWX signer. No tool will tell you this; check your lockfile by hand.</li>
+          <li><strong>Do not disable spend controls, and do not treat the $1 default as a policy.</strong> It is a backstop. Set <code>maxAmountPerPayment</code>, a total budget, and an explicit allow-list of assets, networks and recipients for every funded agent &mdash; the default protects against the unbounded case, not against an attacker who prices the request just under your ceiling and repeats it.</li>
+          <li><strong>If you run a facilitator, verify the instruction discriminator yourself.</strong> The reusable lesson from the <code>ApproveChecked</code> finding generalises beyond x402: a parser named for one instruction type will happily decode another with the same field layout. Check the type byte before the fields, in your own code too.</li>
+          <li><strong>Fund agent wallets like hot wallets, not like accounts.</strong> The practical blast radius of all three criticals is bounded by the balance sitting behind the automatic signer. Keep it at operating float, top it up on a schedule, and put the reserve behind a signer that cannot be reached by an HTTP response.</li>
+          <li><strong>Add &ldquo;no advisory&rdquo; to your dependency risk model for agent infrastructure.</strong> For the small set of packages that hold credentials, keys or spending authority, subscribe to the repository's commit feed rather than relying on advisory-driven alerting. That is an unsatisfying recommendation and we make it reluctantly, but on current evidence it is the only control that would have fired here.</li>
+        </ul>
+
+        <p><em>Verification note: the vulnerability mechanisms, the attacker preconditions, the disclosure dates (12 August and 9 September 2026 reports, criticals fixed by 20 August) and the quoted remediation guidance are taken from V12's 22 October 2026 post by Renwa, read first-hand in full. Every repository claim was verified directly against <code>x402-foundation/x402</code> via the GitHub API during this run: the three fix commits and their SHAs, timestamps, file counts and changeset contents; the <code>createSIWxPayload</code> signature change quoted from the changeset; the 18 August version bumps in <code>typescript/packages/*/package.json</code>, <code>python/x402/pyproject.toml</code> and <code>go/constants.go</code>; the current default <code>maxAmountPerPayment</code> of &ldquo;$1&rdquo; and the opt-out switches quoted from <code>docs/getting-started/quickstart-for-buyers.mdx</code> on <code>main</code>; and the complete repository security-advisory list, which returned exactly two entries (GHSA-3j63-5h8p-gf7c, 20 August 2025; GHSA-qr2g-p6q7-w82m, 6 March 2026), neither matching these findings. V12's test results &mdash; the <code>isValid: true</code> approval, the SIWE message generated for an unrelated domain, the malformed requirements reaching the selector &mdash; are the researchers' findings, attributed and not reproduced here; V12 states its own test did not submit a live transaction. The scanner-blindness argument, the comparison to the RingRTC, OpenCode and brotli cases, and the funding guidance are our analysis, not statements by V12 or the x402 project. No payment was signed, no facilitator or wallet was contacted, no exploit or proof of concept was written, obtained or run, and no third-party system was tested.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://v12.ac/blog/x402?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">V12 &mdash; &ldquo;25 Vulnerabilities in the x402 Protocol: Inside Three Critical Findings&rdquo; (Renwa, 22 October 2026; mechanisms, disclosure timeline, remediation guidance)</a></li>
+          <li><a href="https://github.com/x402-foundation/x402/commit/16a23d098?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">x402-foundation/x402 &mdash; fix(ts): require TransferChecked discriminator in svm exact (#3132), 12 August 2026</a></li>
+          <li><a href="https://github.com/x402-foundation/x402/commit/c2612d31e?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">x402-foundation/x402 &mdash; fix(ts): bind SIWX client challenge to the request origin (#3133), 13 August 2026</a></li>
+          <li><a href="https://github.com/x402-foundation/x402/commit/4f587236e?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">x402-foundation/x402 &mdash; feat(TS): spend controls (#3124), 13 August 2026</a></li>
+          <li><a href="https://github.com/x402-foundation/x402/security/advisories?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">x402-foundation/x402 &mdash; published security advisories (two entries, neither covering the V12 findings)</a></li>
+          <li><a href="https://github.com/x402-foundation/x402/blob/main/docs/getting-started/quickstart-for-buyers.mdx?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">x402 docs &mdash; Quickstart for buyers (default $1 per-payment cap, allowed-asset opt-in, spend-control disable switches)</a></li>
+          <li><a href="/posts/2026/10/signal-ringrtc-cve-2026-113380-hangup-fsm-queue-silent-fix/">al-ice.ai &mdash; Signal RingRTC CVE-2026-113380, fixed 46 days before disclosure</a></li>
+          <li><a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">al-ice.ai &mdash; OpenCode's silent fix for an MCP OAuth RCE</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">al-ice.ai &mdash; Node's brotli RCE and the eight-month-old upstream patch</a></li>
+          <li><a href="/posts/2026/07/zscaler-indirect-prompt-injection-crypto-payment-ai-agents/">al-ice.ai &mdash; Indirect prompt injection tricks AI agents into crypto payments</a></li>
+          <li><a href="/posts/2026/09/x47c-botnet-ai-api-drain-denial-of-wallet-qrator/">al-ice.ai &mdash; x47.c botnet burns victims' AI credits: denial-of-wallet goes commodity</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mercury-cve-2026-111057-111058-111059-missing-comma-kernel-rce-markdown-xss/">The Missing Comma Was a 10.0: Mercury CVE-2026-111057, CVE-2026-111058 and CVE-2026-111059</a></h3><p>CVE-2026-111057 (CVSS 10.0), CVE-2026-111058 (9.8) and CVE-2026-111059 (6.1), published 19 October 2026, record three flaws in Mercury, the framework that turns Jupyter notebooks into shareable web apps: a missing comma that fused two blocklist regexes and exposed an unauthenticated root shell, an anonymous kernel channel that survived that fix by design, and an unsanitized Markdown sink. All three were fixed in August and September &amp;mdash; the CVE records arrived up to 59 days later. We read the advisories, the fix commits and the releases first-hand.</p><a class="text-link" href="/posts/2026/10/mercury-cve-2026-111057-111058-111059-missing-comma-kernel-rce-markdown-xss/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/cognition-cve-2026-109437-local-shell-default-unauthenticated-agent-api/">The Quick Start Is the Exploit: Cognition CVE-2026-109437</a></h3><p>CVE-2026-109437, published 19 October 2026 at CVSS 4.0 9.2 and CVSS 3.1 9.8, records an unauthenticated remote code execution in Cognition, an agent backend built on Deep Agents and LangGraph. Two unauthenticated POSTs drive the ReAct loop into a local shell. The fix shipped 83 days earlier in v0.13.0 as a feature bullet with no security section, and it closed the insecure default rather than the missing authentication the CVE also names. The project README still demonstrates the exact request sequence. We read the advisory, the release notes and the repository first-hand.</p><a class="text-link" href="/posts/2026/10/cognition-cve-2026-109437-local-shell-default-unauthenticated-agent-api/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Fourteen CVEs, Three 9.9s, Thirteen Days After the Fix: IBM&amp;rsquo;s Langflow Bulletin — and an OAuth SSRF in ContextForge</a></h3><p>IBM published two AI-stack security bulletins on 19 October 2026. One covers fourteen Langflow OSS vulnerabilities &amp;mdash; three of them 9.9 remote code execution &amp;mdash; fixed in v1.12.5, which had already been out for thirteen days with no CVE references in its release notes. The other covers CVE-2026-8355, an OAuth-registration SSRF in the ContextForge MCP gateway whose fix shipped in July. Only one of the fifteen identifiers has an NVD record so far. We read both bulletins, the release notes and the repositories first-hand.</p><a class="text-link" href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
