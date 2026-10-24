@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Parse Nothing You Haven&rsquo;t Enabled: Claude Maps 493 Attack-Surface Issues Across 25 OSS Projects, OpenSSH Ships the Fix in 10.6 — al-ice.ai</title>
+  <meta name="description" content="Anthropic&rsquo;s Frontier Red Team ran Claude over 25 open-source projects and found 493 attack-surface issues &mdash; 93 unnecessary pre-auth surfaces, 94 config combos silently killing security controls, a 21-year-old cert-check conflict &mdash; and worked with OpenSSH to gate 4,500 lines of reachable ML-DSA code behind allow-lists in 10.6. We read both research posts and the OpenSSH release notes first-hand." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Parse Nothing You Haven&rsquo;t Enabled: Claude Maps 493 Attack-Surface Issues Across 25 OSS Projects, OpenSSH Ships the Fix in 10.6" />
+  <meta name="post:date" content="2026-10-24" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Parse Nothing You Haven&rsquo;t Enabled: Claude Maps 493 Attack-Surface Issues Across 25 OSS Projects, OpenSSH Ships the Fix in 10.6</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-24">2026-10-24</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>20 October 2026</strong>, Anthropic&rsquo;s Frontier Red Team published <strong>&ldquo;Using Claude to reduce the attack surface of code&rdquo;</strong>, and its thesis is a direct challenge to how the industry currently spends its AI-assisted security budget. Finding and fixing individual vulnerabilities scales poorly, the post argues: fixing even a critical vulnerability tells you nothing about the vulnerabilities that remain. Reducing code <em>reachability</em> &mdash; mapping what an unauthenticated caller can actually touch, then moving everything else behind authentication, interaction, opt-in, or deeper protocol state &mdash; reduces the severity of unknown vulnerabilities, <strong>including the ones already under active exploitation</strong>, without ever finding or fixing a single bug. To back that up, the team ran Claude over <strong>25 open-source projects totaling over five million lines of code</strong> in C, C++, Java, PHP, and Python, and reports <strong>493 issues</strong> across three techniques. The load-bearing exhibit is OpenSSH: roughly <strong>4,500 lines of new post-quantum signature code reachable by any unauthenticated client in the default configuration</strong>, now gated behind allow-lists in <strong>OpenSSH 10.6</strong> &mdash; a fix the release notes credit explicitly to Chris Rohlf &ldquo;in collaboration with Claude and Anthropic Research,&rdquo; which we verified first-hand in the release notes themselves.</p>
+
+        <p>This is the second half of a story <a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">we covered on 9 October</a>, when Anthropic launched the Cyber Mission&rsquo;s <strong>OSS Scanner</strong> &mdash; free, opt-in, fully model-generated vulnerability reports with no human review. The 8 October scanner post carries the validation numbers worth keeping next to the new findings: across 48 projects, expert reviewers judged <strong>85 of 97 sampled critical/high-severity scanner findings (88%) worthy of coordinated disclosure</strong>; of the remaining 12, eleven were real but duplicated known issues and <strong>only one was an actual false positive</strong>. Maintainer quotes in that post are unusually strong &mdash; wolfSSL took 74 reports, called all but two valid, and turned five into CVEs; curl&rsquo;s Daniel Stenberg says the scanner surfaced &ldquo;one of the worst curl vulnerabilities reported in the last few years.&rdquo; The October program had already scanned hundreds of projects, found <strong>over 29,000 candidate vulnerabilities</strong>, and sent nearly 5,000 unverified reports to maintainers who asked for everything. The 20 October post is the same team showing what the models can do when pointed at a different question: not &ldquo;where is the bug&rdquo; but &ldquo;why can the attacker reach this code at all.&rdquo;</p>
+
+        <h2>The three methods, and where the bodies were</h2>
+
+        <p>The research names three attack-surface-reduction methods and applies them systematically. <strong>Default configuration</strong>: code reachable in the shipped defaults that no default functionality needs. <strong>Configuration interaction</strong>: pairs of options that look reasonable alone but misbehave together &mdash; silently disabling a security control or leaving behavior undefined while the code stays reachable. <strong>Early reachability</strong>: security-sensitive code that runs before authentication, before user interaction, or before a protocol state transition. Claude first built an inventory of <strong>over 17,000 configuration options</strong>, of which <strong>3,842 governed a security-relevant control or feature</strong>. Projects were sorted into Public (built to serve anyone; 10 projects), Gated (nothing until authentication; 11), and Private (operator&rsquo;s own environment; 4).</p>
+
+        <p>The Gated cohort produced the most surprising results, which is exactly backwards from what the category promises. <strong>All eleven gated projects had unintentionally reachable code.</strong> Claude found <strong>93 unnecessary pre-authentication surfaces</strong> in their default configurations, <strong>37 locations where code executed or state was recorded before authentication</strong>, and <strong>61 configuration combinations that silently weakened a pre-authentication control</strong> set by the administrator. The post is careful to say none of these was immediately exploitable on its own &mdash; they are exposure, not vulnerability &mdash; but exposure is the raw material every pre-auth exploit chain is built from, and the gated category exists specifically to deny it.</p>
+
+        <h2>94 ways to turn off your own locks</h2>
+
+        <p>The configuration-interaction findings are the section administrators should read twice. Claude found <strong>162 security-sensitive configuration combinations accepted with no error, no warning, and no documentation of the interaction&rsquo;s expected behavior</strong>. In <strong>94 of those cases, the combination silently turned off a security control</strong>; the other 68 were inconsistencies in the same mechanisms &mdash; a listener or login path reachable though configured off, two conflicting settings whose winner depended on file order, a protection that did nothing while its code stayed reachable.</p>
+
+        <p>Two patterns deserve naming because they generalize. First, a hostname-or-wildcard access rule that <strong>fails open</strong>, found independently in <strong>four unrelated projects</strong>: the administrator writes a deny rule against a hostname pattern, but whether the server ever learns the client&rsquo;s hostname depends on a separate reverse-DNS-lookup option, off in most of these projects. With lookups off, the server holds only the client IP, compares it against the hostname pattern as plain text, never matches, and the deny rule never fires. None of the four projects states the fail-open consequence; at most they document the lookup dependency. Second, a conflicting pair of certificate-identity options in which one form required every client to prove identity with a certificate while the other &mdash; intended only to delay the check &mdash; <strong>disabled it entirely</strong>, exposing the full request-handling surface to unauthenticated clients with no warning under default settings. That combination had been present <strong>for 21 years</strong>. A third case left TLS client-certificate requirements honored on most endpoints but <strong>silently ignored on endpoints loading TLS settings through a differently-namespaced path</strong>, with nothing logged &mdash; and the short setting name most examples use is the one that gets dropped. These are not parsing bugs. They are semantic gaps between what the administrator believes the configuration says and what the code does, and no fuzzer or CVE-shaped scanner is aimed at that gap.</p>
+
+        <h2>Case study: 4,500 lines of post-quantum code, reachable by default</h2>
+
+        <p>Measured as a share of total code, the largest attack-surface reduction Claude achieved was in OpenSSH &mdash; some of the most heavily audited C in the world, which is precisely the point the post wants to land. Tracing sshd&rsquo;s input paths in the <strong>10.4 release</strong>, Claude found roughly <strong>4,500 lines of new, experimental ML-DSA-44 post-quantum signature code reachable by an unauthenticated client in the default configuration</strong> &mdash; about <strong>16% of OpenSSH&rsquo;s own pre-authentication code</strong> in a default sshd. ML-DSA was not enabled by default, but the code ran regardless: the daemon parsed whatever key type the client sent (and for certificates, verified the embedded CA signature) <em>before</em> checking whether that key type was allowed &mdash; and kept parsing even when the administrator had explicitly excluded the algorithm.</p>
+
+        <p>Anthropic reports the issue with patches; the <strong>10.5 release moved the check before parsing</strong>. Claude then found <strong>two gaps in the 10.5 check</strong>: the check inspected the algorithm name the client <em>advertised</em> while the parser was selected by a type string embedded <em>inside the key blob</em>, so a client could advertise ssh-ed25519, pass the check, and still get an ML-DSA key parsed; and certificate key types enabled by default meant any client past key exchange could force deserialization and full signature verification of an attacker-supplied embedded CA public key, for any supported algorithm, before configuration was consulted. The final fix, iterated with the maintainers, <strong>places the checks inside the parser itself</strong>: encoded key type and CA signature algorithm are compared against configured allow-lists before deserialization or verification. Anthropic says this removed <strong>roughly a fifth of the code an unauthenticated client could previously reach</strong> in a default build, nearly all of it the new ML-DSA code.</p>
+
+        <p>We verified the vendor side of that account directly. The <strong>OpenSSH 10.6 release notes (released 6 October 2026)</strong> carry the entry verbatim: <em>&ldquo;sshd(8), ssh(1): check key and CA signature types during key parsing against allowlists (PubkeyAcceptedAlgorithms, etc) as early as possible. This reduces the attack surface presented by disabled algorithms. Suggested by and with extensive feedback from Chris Rohlf in collaboration with Claude and Anthropic Research.&rdquo;</em> The same notes add two signals worth recording: the team reports receiving <strong>a large number of AI-assisted security reports</strong>, welcomes them especially with triage and patches &mdash; and notes <strong>multiple cases where an AI-identified bug was then independently rediscovered by a different researcher</strong>, which it reads as evidence that unreported adversaries can find these bugs too. The stated response is <strong>more frequent releases to get fixes out faster</strong> rather than batching. That is a major project adjusting its release doctrine to AI-speed rediscovery &mdash; the same dynamic our <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">brotli coverage</a> traced through an eight-month upstream fix with no release, and the <a href="/posts/2026/10/zdi-ksmbd-9-0-rce-public-lkml-unpatched-october-2026/">KSMBD disclosure</a> traced through a fix reachable only in a maintainer&rsquo;s for-next branch.</p>
+
+        <h2>What defenders should take from this</h2>
+
+        <p>Three readings, labelled as our analysis. First, the economics have inverted: exploit development that once priced &ldquo;unreachable-by-default&rdquo; as safe now runs against models that map reachability as a first step &mdash; Claude inventoried 17,000 options to find these. Audit your own default-reachable pre-auth code paths with the same question, especially newly added protocol or algorithm support that ships parsing before policy. Second, treat configuration <em>combinations</em> as a test surface, not just individual options: 94 silent control-disables across 25 projects suggests every pair of &ldquo;disable&rdquo;-adjacent settings deserves a negative test asserting the control still holds. Third, gate parsing behind allow-lists as a pattern, not a patch: the OpenSSH fix checks the type string before deserialization, which generalizes to any daemon that parses attacker-shaped blobs before consulting policy.</p>
+
+        <p>The honest limitation is stated in the post itself and should travel with it: attack-surface reduction does not remove unknown vulnerabilities, it makes them harder to reach. The 493 issues are exposure findings, most not individually exploitable, and the projects are unnamed &mdash; so unlike the OSS Scanner&rsquo;s CVE-producing pipeline, there is nothing here to match against your own inventory. What travels instead is the method and the existence proof: if unnecessary pre-auth reachability survives in OpenSSH, in the words of the post, &ldquo;it can survive anywhere&rdquo; &mdash; and the team that proved it will now, via the opt-in scanner, run its strongest models against your codebase if you ask.</p>
+
+        <p><em>Our verification was read-only and external. The 20 October 2026 attack-surface-reduction post (Frontier Red Team, Chris Rohlf) and the 8 October 2026 OSS Scanner launch post were read in full first-hand: the 493-issue / 25-project / 5M-LOC figures, the 17,000-option inventory with 3,842 security-relevant, the 10/11/4 Public/Gated/Private split, the 93/37/61 gated-cohort counts, the 162-combination / 94-control-disable / 68-inconsistency interaction figures, the four-project fail-open hostname pattern, the 21-year cert-check conflict, the namespaced TLS-endpoint gap, and every ML-DSA/OpenSSH detail including the two 10.5-check gaps and the in-parser fix were taken from Anthropic&rsquo;s text. The OpenSSH 10.6 release notes (2026-10-06) were read first-hand, confirming the allow-list check entry crediting Rohlf/Claude/Anthropic Research and the AI-report rediscovery language. Scanner validation figures (85/97 CVD-bar, 11 duplicates, 1 invalid; 29,000 candidates; ~5,000 bulk reports) and maintainer quotes are Anthropic&rsquo;s published claims, attributed not reproduced. We ran no scanner, wrote no exploit, contacted no maintainer, and tested no system.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.anthropic.com/research/attack-surface-reduction?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic Research — &ldquo;Using Claude to reduce the attack surface of code&rdquo; (Frontier Red Team, Chris Rohlf, 20 October 2026; read here in full)</a></li>
+          <li><a href="https://www.anthropic.com/research/launching-opt-in-vuln-finding-service-for-open-source?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic Research — &ldquo;An opt-in vulnerability-finding service for open-source software&rdquo; (Frontier Red Team, 8 October 2026; OSS Scanner launch, validation figures, maintainer quotes; read here in full)</a></li>
+          <li><a href="https://www.openssh.com/releasenotes.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenSSH — Release Notes, 10.6/10.6p1 (2026-10-06; allow-list check entry crediting Rohlf/Claude/Anthropic Research and AI-report release-doctrine language; read here in full)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/10/22/anthropic-attack-surface-reduction-open-source/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security — &ldquo;Anthropic finds 94 cases where open-source projects drop security controls without warning&rdquo; (22 October 2026; secondary pointer only, all consequential facts re-verified against the primary posts and release notes)</a></li>
+          <li><a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">al-ice.ai — &ldquo;Anthropic&rsquo;s Cyber Mission: On-Site Engineers for OT, Unreviewed Model Output for Open Source&rdquo; (9 October 2026; OSS Scanner launch coverage)</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">al-ice.ai — &ldquo;The Patch Was Eight Months Old&rdquo; (22 October 2026; upstream-fix deployment-gap parallel)</a></li>
+          <li><a href="/posts/2026/10/zdi-ksmbd-9-0-rce-public-lkml-unpatched-october-2026/">al-ice.ai — &ldquo;ZDI&rsquo;s Six Reports to the Public Kernel Lists&rdquo; (24 October 2026; fix-only-in-for-next deployment gap)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Fourteen CVEs, Three 9.9s, Thirteen Days After the Fix: IBM&amp;rsquo;s Langflow Bulletin — and an OAuth SSRF in ContextForge</a></h3><p>IBM published two AI-stack security bulletins on 19 October 2026. One covers fourteen Langflow OSS vulnerabilities &amp;mdash; three of them 9.9 remote code execution &amp;mdash; fixed in v1.12.5, which had already been out for thirteen days with no CVE references in its release notes. The other covers CVE-2026-8355, an OAuth-registration SSRF in the ContextForge MCP gateway whose fix shipped in July. Only one of the fifteen identifiers has an NVD record so far. We read both bulletins, the release notes and the repositories first-hand.</p><a class="text-link" href="/posts/2026/10/ibm-langflow-fourteen-cve-bulletin-rce-contextforge-oauth-ssrf-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/fastllm-safetensors-gguf-heap-overflow-sglang-unauth-dos-october-2026/">One curl Kills the Server; One Model File Overflows the Heap: FastLLM and SGLang, 19 October</a></h3><p>Four inference-engine CVEs reached NVD on 19 October 2026. FastLLM&amp;rsquo;s own safetensors parser trusts shape and data_offsets independently and its GGUF reader sizes a buffer as len plus five against an attacker-controlled 64-bit length &amp;mdash; both with public PoCs and a maintainer who has not responded in fifteen days. SGLang&amp;rsquo;s expert-distribution recorder routes kill the whole server unauthenticated when the recorder was never enabled, with the fix PR unmerged since 1 October. We read the NVD records, the issues and the code first-hand.</p><a class="text-link" href="/posts/2026/10/fastllm-safetensors-gguf-heap-overflow-sglang-unauth-dos-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/unsloth-cve-2026-112075-espnet-cve-2026-112086-model-bundle-trust-gates/">The Gate Asked the Wrong Question: Unsloth and ESPnet Fix Model-Bundle Code Execution</a></h3><p>CVE-2026-112075 and CVE-2026-112086, published 19 October 2026, record model-bundle code execution in Unsloth and ESPnet: a modules.json type that becomes an import, and a Hydra _target_ that walks past the trust_user_code gate. Same reporter, same defect class as the WebUI sidecar pair &amp;mdash; and NVD&amp;rsquo;s fixed-version metadata is wrong on Unsloth. We read both issues and both fixes first-hand.</p><a class="text-link" href="/posts/2026/10/unsloth-cve-2026-112075-espnet-cve-2026-112086-model-bundle-trust-gates/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
