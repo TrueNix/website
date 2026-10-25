@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Downloads Is the One Folder the Web Can Write To: A Planted AGENTS.md Drove Codex Into Installing Malware &mdash; al-ice.ai</title>
+  <meta name="description" content="Forever Security caught a coding agent on a customer machine installing the malicious npm package function-color on orders from an AGENTS.md left in ~/Downloads. Replaying the real payload in a VM, Codex executed it in over 90% of attempts and rewrote its machine-wide config; a planted CLAUDE.md redirected Claude Code&#39;s API traffic and leaked its OAuth token about half the time." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Downloads Is the One Folder the Web Can Write To: A Planted AGENTS.md Drove Codex Into Installing Malware" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Downloads Is the One Folder the Web Can Write To: A Planted AGENTS.md Drove Codex Into Installing Malware</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>22 October 2026</strong>, researchers Gal Weizman and Omer Samet at Forever Security published <a href="https://forever.security/blog/hijacking-ai-agents-via-downloads-folder?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">an account of live malware they caught on a customer&rsquo;s machine</a> &mdash; and the payload was a text file. Their monitoring stopped a coding agent mid-session as it tried to install <code>function-color</code>, an npm package the researchers describe as part of a campaign that ran undetected for roughly two years before being documented publicly. Blocking a known-bad package is routine. The interesting part was the instruction&rsquo;s origin: not a dependency, not a cloned repository, but an <code>AGENTS.md</code> file sitting in the customer&rsquo;s <code>~/Downloads</code> folder, which was also the directory the agent had been started in. Nobody on the customer&rsquo;s team had written it, and nobody could say how it arrived.</p>
+
+        <p>That question is the whole finding. <code>~/Downloads</code> is, as the report puts it, &ldquo;the one folder the web can write to on its own&rdquo; &mdash; a web page can save a file there, choosing both the name and the contents, with no click and no permission dialog. That has been true for decades and has been harmless for most of them, because operating systems long ago stopped letting a downloaded file execute itself. An <code>AGENTS.md</code>, however, is not an executable and therefore inherits none of the guardrails that apply to one. It is a plain-text file that a coding agent is built to read on startup and obey. Put the two properties in the same directory and the web gains the ability to plant instructions inside a folder the user believes only they can change. Forever&rsquo;s formulation is the right one: <strong>markdown is the new executable</strong>.</p>
+
+        <h2>Two agents, two different paths to the same outcome</h2>
+        <p>Forever did not settle for the theory. For Codex, the researchers took <strong>the actual attacker file recovered from the customer&rsquo;s machine</strong> and ran it unmodified inside an isolated VM, letting it fetch and execute the live payload rather than substituting a mock. The chain they describe: a page drops the file into <code>~/Downloads</code>; the user later opens Codex in that folder and asks it for anything at all; before starting the requested task, the agent adds a &ldquo;project tools&rdquo; server to its own configuration and installs a package from npm. With the real file, that package is malware. Against a harmless stand-in that merely opened a calculator, the researchers record <strong>Codex running the payload in more than 90% of attempts</strong>.</p>
+
+        <p>The escalation is in <em>which</em> file gets rewritten. Codex&rsquo;s edit lands in <code>~/.codex/config.toml</code> &mdash; the machine-wide configuration, not anything scoped to the folder the session started in. Once written, every subsequent Codex session on that machine loads the attacker&rsquo;s server at startup, in any project, in any directory. Leaving the Downloads folder does not undo it. A directory-local compromise becomes a host-local one on the strength of a markdown file the agent found lying on the floor.</p>
+
+        <p>Claude Code resisted the Codex technique, and the attack that eventually worked has a different shape entirely. A planted <code>CLAUDE.md</code> persuades Claude to point its own API traffic at a server the researchers controlled &mdash; an ordinary host, on a domain they own, with a valid certificate. That single redirection yields two outcomes at once: the agent&rsquo;s <strong>OAuth token leaks</strong>, which is account takeover with no code executed at all, and the attacker&rsquo;s server can then <strong>answer as if it were the model</strong>, returning tool calls that the agent dutifully runs. Forever reports Claude following through roughly <strong>50% of the time</strong>. Two products, two mechanisms, one conclusion the researchers draw explicitly: this is not one vendor&rsquo;s bug.</p>
+
+        <h2>How much of this is a patch, and how much is a property</h2>
+        <p>Forever&rsquo;s sharpest claim is that <strong>&ldquo;there is nothing here for OpenAI or Anthropic to patch. An agent that follows the AGENTS.md in its folder is doing exactly what it was built to do&rdquo;</strong> &mdash; the same way a browser rendering a phishing page is working as designed. On the instruction-following half, that is correct and worth internalising: the trust placed in a working-directory instruction file is the feature, and removing it removes the product.</p>
+
+        <p>We would draw the line one step further in, and this is our reading rather than the report&rsquo;s. The part that turns a nuisance into host-wide persistence is not instruction-following; it is that <strong>a folder-local markdown file can authorise a write to a machine-global config</strong>, and that a config file can relocate the agent&rsquo;s API endpoint. Those are scoping decisions, not laws of nature. An agent that treated <code>~/.codex/config.toml</code> and <code>ANTHROPIC_BASE_URL</code> as privileged surfaces &mdash; writable only through an explicit, out-of-session action rather than on the say-so of whatever text happened to be in the current directory &mdash; would face the same prompt-injection pressure with a far smaller blast radius. That is precisely the separation Anthropic reached for when it put <a href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">credential isolation and an out-of-model approval check</a> into Claude Duet. &ldquo;Nothing to patch&rdquo; is true of the sink and much less true of the privilege it reaches.</p>
+
+        <h2>What is actually new here</h2>
+        <p>This site has covered malicious agent-instruction files before, twice through NVIDIA&rsquo;s red team: <a href="/posts/2026/04/nvidia-agents-md-injection-codex-supply-chain/">indirect <code>AGENTS.md</code> injection in Codex via malicious dependencies</a> in April and <a href="/posts/2026/05/nvidia-red-team-agentsmd-injection-codex/">the follow-up in May</a>. The sink is the same. The <em>source</em> is not, and that is the change that matters. In the NVIDIA work the poisoned instruction arrived inside a dependency the developer chose to install &mdash; a supply-chain step with existing controls around it: pinning, review, scanners, provenance. Here the instruction arrives by drive-by write into a directory nobody curates, from a page the user may never have deliberately visited. It is the same class of attack delivered at a strictly lower cost, and it bypasses every control built around the act of choosing a dependency.</p>
+
+        <p>It also rhymes with a pattern we have tracked all month under a different name: the compromise that fires simply because an agent was pointed at a directory. <a href="/posts/2026/10/gitspawn-untrusted-repos-rce-seven-coding-agents-plugin4shell/">GitSpawn turned untrusted repositories into RCE across seven coding agents</a>, and <a href="/posts/2026/10/zcode-cve-2026-88755-workspace-mcp-auto-connect-rce-october-2026/">ZCode connected workspace MCP servers without asking</a>. Downloads is the version of that bug where the attacker does not need you to clone anything. Forever&rsquo;s closing observation generalises it well: defences built around a human &mdash; someone clicks, someone approves, someone notices &mdash; quietly degrade into assumptions when an agent stands in the human&rsquo;s place. The report notes that roughly a quarter of agent sessions in its telemetry open a real browser, meaning the agent can fetch the very file that turns it around, with nobody at the screen.</p>
+
+        <h2>Where the evidence is thinner</h2>
+        <p>Three caveats belong on the record, because the report is candid about all of them and the coverage around it has not always been.</p>
+        <ul>
+          <li><strong>The delivery path on the real machine is undetermined.</strong> Forever found the file and could not establish how it got there. The silent-download proof-of-concept demonstrates that the route is available; it is not evidence that this route was used in the incident they caught. BleepingComputer <a href="https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">independently loaded the researchers&rsquo; test page</a> and confirmed it saved an <code>AGENTS.md</code> containing only harmless placeholder text.</li>
+          <li><strong>The success rates are the vendor&rsquo;s own measurements.</strong> The 90% figure for Codex and the ~50% figure for Claude come from Forever&rsquo;s testing in Forever&rsquo;s environment, against prompts Forever crafted. We did not reproduce either, and nobody should treat them as stable properties of the products; agent behaviour under adversarial text moves with every model and client release.</li>
+          <li><strong>The exposure numbers describe one customer base.</strong> &ldquo;About half of customers run an agent inside Downloads&rdquo; is Forever&rsquo;s telemetry across Forever&rsquo;s customers &mdash; companies that bought agent-monitoring, which is not a neutral sample. Read it as evidence that the practice is common, not as an industry base rate. Separately, Weizman told BleepingComputer that Claude Code alone accounted for more than 1,300 sessions launched from that location; we carry that as a reported figure, not one we can check.</li>
+        </ul>
+        <p>One thing we did verify first-hand: the npm registry entry for <code>function-color</code> now resolves to a <code>0.0.1-security</code> placeholder owned by the <code>npm</code> account, which is the registry&rsquo;s standard marker for a package pulled for malicious content. That corroborates the removal Forever describes, and it means the indicator is useful for historical install logs rather than for live blocking.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Treat <code>~/Downloads</code> as hostile ground for agents, and make it a rule rather than a habit.</strong> Never start Codex, Claude Code, Cursor CLI, or any comparable tool in it, in a home directory, or in a broad parent folder. Both OpenAI and Anthropic already recommend starting an agent in the root of the specific project it should work on; the point of this research is that the recommendation is now load-bearing security guidance, not ergonomics.</li>
+          <li><strong>Audit the agent configs that outlive the session.</strong> In <code>~/.codex/config.toml</code>, look for <code>[mcp_servers.*]</code> blocks you did not add and for a changed <code>chatgpt_base_url</code>. In a project&rsquo;s <code>.claude/settings.json</code>, look for <code>ANTHROPIC_BASE_URL</code>, a proxy, or any other endpoint override. These are small, greppable, high-signal checks and they belong in endpoint tooling, not in a human&rsquo;s memory.</li>
+          <li><strong>Read instruction files you did not write.</strong> A stray <code>AGENTS.md</code> or <code>CLAUDE.md</code> &mdash; in Downloads, or in a repository you just cloned &mdash; <em>is</em> the attack. Review it before an agent gets near it, and be especially suspicious of any such file that instructs the agent to disable approvals or sandboxing.</li>
+          <li><strong>Assume token compromise if you find one, and rotate.</strong> A leaked OAuth token is a live session, not a single captured request. Rotate the agent&rsquo;s credentials, then check provider-side usage for calls you did not make &mdash; the same discipline the month&rsquo;s <a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">inference-credential incidents</a> have been forcing on everyone else.</li>
+          <li><strong>Keep the brakes on.</strong> Approval gates and sandboxes are what reduce a 90% execution rate to a prompt the operator can refuse. They are also the first thing a well-written malicious instruction file will ask the agent to turn off.</li>
+        </ul>
+
+        <p><em>Our write-up is analysis of Forever Security&rsquo;s 22 October 2026 research post, read first-hand in full, with BleepingComputer&rsquo;s 25 October report used for the details the researchers gave it directly (the browser-behaviour testing and the session-count figure). All verification was read-only: we did not obtain, write, or run the malicious <code>AGENTS.md</code>, any payload, or the <code>function-color</code> package; we did not load the proof-of-concept download page; we did not contact any system belonging to Forever Security, its customer, OpenAI, or Anthropic. The only artefact we fetched directly was the public npm registry metadata for <code>function-color</code>, to confirm the package&rsquo;s removal state.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://forever.security/blog/hijacking-ai-agents-via-downloads-folder?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Forever Security &mdash; &ldquo;Markdown Is the New Executable: Attackers Are Dropping Agent Instructions Into Your Downloads Folder From the Web&rdquo; by Gal Weizman and Omer Samet (22 October 2026; the live customer-machine detection, the unmodified attacker payload run in an isolated VM, the &gt;90% Codex and ~50% Claude Code results, the <code>~/.codex/config.toml</code> machine-wide write, the OAuth-token leak via redirected API traffic, telemetry on agents run in Downloads, indicators and remediation)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer &mdash; &ldquo;AI coding agents hijacked using AGENTS.md file in Downloads folder&rdquo; by Bill Toulas (25 October 2026; independent load of the researchers&rsquo; test page, default download behaviour across Chrome, Edge, Firefox and Brave, and Gal Weizman&rsquo;s statements on agent working-directory practice and session counts)</a></li>
+          <li><a href="https://www.npmjs.com/package/function-color?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">npm registry &mdash; <code>function-color</code> package record (queried 25 October 2026; resolves to a <code>0.0.1-security</code> placeholder under the <code>npm</code> account, the registry&rsquo;s marker for a package removed for malicious content)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-06">2026-06-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/miasma-github-repo-ai-coding-agent-injection/">Miasma Worm Targets AI Coding Agents via GitHub Repo Config Injection</a></h3><p>A parallel arm of the Miasma worm campaign pushes malicious commits to 120+ GitHub repos, exploiting Claude Code, Cursor, and VS Code auto-run features to detonate a credential harvester on folder open.</p><a class="text-link" href="/posts/2026/06/miasma-github-repo-ai-coding-agent-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-06-02">2026-06-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/openai-codex-codexui-android-npm-supply-chain-token-theft/">Aikido — OpenAI Codex Token Theft via codexui-android npm Package</a></h3><p>A functional npm package with 29,000+ weekly downloads secretly exfiltrated Codex auth tokens and was distributed through malicious Android apps on Google Play.</p><a class="text-link" href="/posts/2026/06/openai-codex-codexui-android-npm-supply-chain-token-theft/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Aoki Wants Your Agent&amp;rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&amp;rsquo;s New Taste for AI Coding Credentials</a></h3><p>Symantec&amp;rsquo;s Threat Hunter Team reports the Aoki infostealer now harvests Claude, Codex, Cursor, Copilot, and Gemini credentials plus AWS keys — cash-in-grade material that buys both API quota and a route into the developer&amp;rsquo;s environment. A second family, a second vendor, the same target as Warden.</p><a class="text-link" href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

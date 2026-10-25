@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The October 13 Fix Was Not in the October 13 Update: .NET Ships Four Advisories Out of Band &mdash; al-ice.ai</title>
+  <meta name="description" content="Microsoft released out-of-band .NET updates on 25 October 2026 after confirming the 13 October patches did not fully address CVE-2026-70197 and CVE-2026-102870. The CVE identifiers were preserved and the advisories amended in place, so scanners keyed on new findings will still report patched-on-13-October estates as remediated. The same release brings the Brotli out-of-bounds write into .NET and a Linux tarball ownership flaw that an upgrade cannot fix." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/dotnet-oob-october-25-2026-incomplete-fixes-brotli-tarball-ownership/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The October 13 Fix Was Not in the October 13 Update: .NET Ships Four Advisories Out of Band" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The October 13 Fix Was Not in the October 13 Update: .NET Ships Four Advisories Out of Band</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>Sunday 25 October 2026</strong>, outside its monthly servicing window, Microsoft shipped <a href="https://github.com/dotnet/announcements/issues/496?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">out-of-band .NET security updates</a> &mdash; 8.0.33, 9.0.22, 10.0.14 and 11.0.0-rc.3.26522.148 &mdash; carrying four advisories. Two are new. The other two are corrections, and the rollup says so without euphemism: <strong>&ldquo;The October 13 updates did not fully address CVE-2026-70197 and CVE-2026-102870. These out-of-band updates provide the corrected fixes; the original advisory identities and revision history are preserved.&rdquo;</strong> The individual advisory for CVE-2026-70197 is blunter still: the vulnerability &ldquo;was disclosed in the October 13 advisory, but the fix was not included in the previous updates.&rdquo; .NET Framework is unaffected throughout.</p>
+
+        <p>An incomplete fix is unremarkable; vendors ship them regularly. What makes this release worth a briefing is the <em>bookkeeping</em>, which we checked against the records rather than the prose. GitHub&rsquo;s advisory API returns <code>GHSA-4mpw-cpwj-hxxj</code> (CVE-2026-70197) with <code>published_at</code> of <strong>2026-10-13T18:23:13Z</strong> and <code>updated_at</code> of <strong>2026-10-25T18:50:10Z</strong>; <code>GHSA-g27p-qf6j-c96c</code> (CVE-2026-102870) shows <strong>2026-10-13T18:22:57Z</strong> and <strong>2026-10-25T18:02:30Z</strong>. The same identifiers, amended in place, with the affected ranges rewritten so that the builds that shipped on 13 October &mdash; 8.0.32, 9.0.21, 10.0.13 &mdash; now fall <em>inside</em> them.</p>
+
+        <h2>Why the identifier choice is the security event</h2>
+        <p>Preserving the CVE is defensible: the vulnerability did not change, only the fix did, and minting a second CVE for the same flaw creates its own confusion. But it has a consequence that belongs at the top of anyone&rsquo;s Monday, and this is our reading rather than Microsoft&rsquo;s statement. A team that patched on 13 October did the right thing, recorded the ticket as closed, and is still vulnerable. Nothing in their tooling will raise a hand unless it <strong>re-ingests an advisory it has already processed and notices that the version ranges moved</strong>. There is no new identifier to trigger a new finding, no fresh KEV entry, no second CVE to appear in a diff of last week&rsquo;s report against this week&rsquo;s. Dependency scanners, SBOM reconciliation and patch-compliance dashboards are overwhelmingly built to detect <em>new</em> advisories; silent revision of an old one is the update shape they handle worst.</p>
+
+        <p>The practical test is simple and worth running today: query your scanner for CVE-2026-70197 and CVE-2026-102870 and confirm that the ranges it holds end at <code>8.0.33</code> / <code>9.0.22</code> / <code>10.0.14</code>, not at the October builds. If it still reports the 13 October versions as remediated, the tool is reporting a stale snapshot of a live advisory. This is the same class of gap we flagged when <a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">the brotli record was rescoped from a Node issue to a library issue</a> &mdash; the facts moved, the identifier did not, and anyone whose exposure answer was cached on the first version of the record kept a wrong answer that looked right.</p>
+
+        <h2>The two corrected advisories</h2>
+        <p><strong>CVE-2026-70197</strong> (<a href="https://github.com/dotnet/announcements/issues/493?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">advisory</a>, CVSS 3.1 <strong>8.1 High</strong>, <code>AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:C</code>, CWE-787) is a Windows-only memory-corruption bug in <code>System.Net.Sockets</code>. Reusing a <code>SocketAsyncEventArgs</code> instance across IPv4 and IPv6 datagram sockets can retain an undersized cached native address buffer, allowing an unauthenticated out-of-bounds write during <code>ReceiveFromAsync</code>. Affected ranges are now &ge;8.0.0 &lt;8.0.33, &ge;9.0.0 &lt;9.0.22, &ge;10.0.0 &lt;10.0.14, and the .NET 11 previews below rc.3. Microsoft notes that the .NET 8 scope covers <strong>both CoreCLR and Mono runtime packs</strong>, since the trigger is the socket-reuse pattern rather than a particular runtime implementation. The high attack complexity in the vector reflects the precondition &mdash; an application has to reuse the args object across address families &mdash; not any difficulty in reaching the socket.</p>
+
+        <p><strong>CVE-2026-102870</strong> (<a href="https://github.com/dotnet/announcements/issues/492?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">advisory</a>, CVSS 3.1 <strong>8.8 High</strong>, <code>AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H</code>, CWE-94) is a developer-machine code-execution bug in the Blazor WebAssembly debug proxy. The proxy evaluates debugger expressions by <em>generating and compiling C# source</em>, and values originating in the application being debugged &mdash; <code>ToString()</code> results, descriptions, class names &mdash; are embedded into that generated source without consistent escaping. An attacker-controlled value escapes the string literal and runs code when the developer evaluates an expression in the debugger. The fix lives in standalone packages, <code>Microsoft.AspNetCore.Components.WebAssembly.Server</code> and <code>...WebAssembly.DevServer</code> at 10.0.14 (and the .NET 11 rc.3 preview), and Microsoft repeats the warning twice because it is the part teams will get wrong: <strong>&ldquo;Updating only the shared runtime is not a substitute for updating these standalone packages.&rdquo;</strong> Bump the runtime, restart, and a stale <code>PackageReference</code> keeps the vulnerable debugger in the loop.</p>
+
+        <p>It is worth naming the threat model plainly, because &ldquo;debugger&rdquo; reads as low-stakes: the attacker-controlled value is application data, and the victim is an engineer with their own credentials, their own source tree and usually their own cloud sessions on the machine. Debugging a Blazor app against hostile data is not an exotic scenario &mdash; it is what you do when you are investigating a bug report.</p>
+
+        <h2>Brotli reaches .NET &mdash; with a materially narrower exposure statement</h2>
+        <p><strong>CVE-2026-111497</strong> (<a href="https://github.com/dotnet/announcements/issues/494?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">advisory</a>, <code>GHSA-p3jp-9v83-76w9</code>, published 2026-10-25T19:06:19Z) is the out-of-bounds write in the Brotli decompression library, now confirmed in the copy .NET carries. We have followed this record since <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">Node&rsquo;s 21 October disclosure of an eight-month-old upstream fix</a> and through <a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">its rescoping to a library-level issue, with Envoy patched by an incidental dependency bump on 6 October</a>, and Imperva&rsquo;s <a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">working proof of RCE on an official Node build</a>. .NET is the next major runtime in, four days after Node.</p>
+
+        <p>Two things stand out. The first is the <strong>exposure scoping, which is the most conservative any vendor has published on this CVE</strong>: ASP.NET Core request decompression and <code>HttpClient</code> automatic response decompression are <em>not</em> enabled by default, so &mdash; in Microsoft&rsquo;s words &mdash; an application &ldquo;is not exposed merely because an affected .NET package is installed.&rdquo; Exposure requires enabling ASP.NET Core automatic request decompression with <code>br</code> support, configuring <code>AutomaticDecompression</code> to include <code>DecompressionMethods.Brotli</code> or <code>.All</code>, or calling <code>BrotliStream</code> / <code>BrotliDecoder</code> on untrusted data directly. That changes the triage order: for most .NET estates this is a patch-on-schedule item, and the urgent population is the subset that opted into Brotli &mdash; which is exactly the population least likely to know it did, since <code>DecompressionMethods.All</code> is the convenient value.</p>
+
+        <p>The second is an unusually self-aware piece of guidance. Microsoft supplies the code to remove <code>br</code> from an existing decompression configuration, then warns in bold against the predictable misreading: <strong>do not introduce <code>AddRequestDecompression</code> or an <code>AutomaticDecompression</code> assignment if your application does not already call them</strong>, because enabling automatic decompression at all carries its own denial-of-service risk even with Brotli excluded. Mitigation snippets get copy-pasted out of context constantly; a vendor explicitly anticipating that is a small thing done right.</p>
+
+        <p>The scoring record also keeps diverging. Microsoft rates this CVSS 3.1 <strong>8.1</strong> with <code>AC:H</code>. Google, as the CNA, published CVSS v4.0 <strong>9.2</strong> with no such complexity discount; Istio scored its inherited instance 7.7 as availability-only. All three are defensible as statements about the scope each vendor controls, and together they are an argument for reading the affected-component statement rather than sorting a worklist by the number.</p>
+
+        <h2>The fix you cannot apply by upgrading</h2>
+        <p><strong>CVE-2026-114148</strong> (<a href="https://github.com/dotnet/announcements/issues/495?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">advisory</a>, <code>GHSA-r6pf-x897-gm86</code>, CVSS 3.1 <strong>7.8 High</strong>, <code>AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H</code>, CWE-276) is incorrect file ownership in Linux .NET tarball distributions, permitting local elevation of privilege. The Microsoft-published scope is narrow and specific: ASP.NET Core 8 and 9 regular, composite and targeting-pack Linux tarballs below 8.0.33 / 9.0.22 &mdash; archives named <code>aspnetcore-runtime-{version}-{rid}.tar.gz</code> and siblings. Other Microsoft-published runtime and SDK tarballs are explicitly out of scope. Separately, every tarball type produced by <strong>source-build</strong> is affected across .NET 8 through 11 preview; Microsoft is careful that these are build and engineering inputs rather than deployed runtimes, and that consuming one does not by itself mean a production runtime was installed from it.</p>
+
+        <p>CWE-276 is a dull class, but the remediation shape is not, and it is the reason this advisory needs reading rather than skimming. <strong>You cannot fix wrong ownership by extracting a newer tarball over the old tree.</strong> The advisory calls for clean replacement of affected installations, recreating extracted workspaces using ownership-controlled extraction, and reviewing and rebuilding downstream outputs. That is a different operation from the <code>dotnet</code> upgrade every other item on this list wants, and it is the kind of step a pipeline that does `tar -xzf` into a cached directory will silently skip while reporting success. If you install ASP.NET Core from tarballs on Linux &mdash; container base images and air-gapped estates being the usual suspects &mdash; that is the item to schedule, not the one to tick.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Re-open the 13 October ticket.</strong> If you patched .NET on or after 13 October and closed it out, you are not covered for CVE-2026-70197 or CVE-2026-102870. Move to 8.0.33 / 9.0.22 / 10.0.14 (or 11.0.0-rc.3.26522.148 for preview estates). The absence of an alert is not evidence of coverage here, by design.</li>
+          <li><strong>Verify your scanner re-ingested the amended advisories.</strong> Check that it now treats 8.0.32 / 9.0.21 / 10.0.13 as affected for both CVEs. A tool that still shows those builds as fixed is reporting a cached record, and the same blind spot will apply to the next in-place revision.</li>
+          <li><strong>Update the Blazor debugger packages explicitly.</strong> Bump <code>Microsoft.AspNetCore.Components.WebAssembly.Server</code> and <code>.DevServer</code> package references, then restart the debugger and IDE. The shared runtime update does not cover them.</li>
+          <li><strong>Grep for Brotli before you panic or relax.</strong> Search for <code>AddRequestDecompression</code>, <code>AutomaticDecompression</code>, <code>DecompressionMethods.All</code>, <code>BrotliStream</code> and <code>BrotliDecoder</code>. Found: treat as urgent and patch now. Not found: patch on schedule. Do not add decompression configuration you did not already have as a &ldquo;mitigation&rdquo; &mdash; Microsoft warns against exactly that.</li>
+          <li><strong>Handle the Linux tarball item as a rebuild, not an upgrade.</strong> Identify installations and build caches sourced from affected ASP.NET Core or source-built archives, replace them cleanly with ownership-controlled extraction, and rebuild downstream artefacts. Extracting the patched archive over a wrongly-owned tree leaves the privilege-escalation path in place.</li>
+        </ul>
+
+        <p><em>Our write-up is analysis of Microsoft&rsquo;s five .NET announcement issues of 25 October 2026 (492&ndash;496), each read first-hand, cross-checked against the four GitHub security advisories through the GitHub API &mdash; where the 13 October publication timestamps and 25 October revision timestamps for CVE-2026-70197 and CVE-2026-102870 were confirmed directly &mdash; and against the dotnet/core release notes for 10.0.14 and 10.0.13. All verification was read-only: no exploit, proof-of-concept or reproducer was written, obtained or run; no .NET build, socket, Blazor debugger or tarball was tested; no Microsoft system was contacted beyond fetching the public advisory, release-note and API records cited here. Comparative CVSS figures for CVE-2026-111497 from Google&rsquo;s CNA record and Istio&rsquo;s bulletin are carried from our own earlier first-hand checks, linked above.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/dotnet/announcements/issues/496?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft &mdash; &ldquo;.NET October 2026 out-of-band security updates&rdquo; (25 October 2026; release list, advisory table, and the statement that the October 13 updates did not fully address CVE-2026-70197 and CVE-2026-102870)</a></li>
+          <li><a href="https://github.com/dotnet/announcements/issues/493?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Advisory CVE-2026-70197 &mdash; .NET and Visual Studio Remote Code Execution Vulnerability, October 25, 2026 OOB update (<code>SocketAsyncEventArgs</code> address-buffer reuse, CVSS 3.1 8.1, CWE-787, revised affected packages)</a></li>
+          <li><a href="https://github.com/dotnet/announcements/issues/492?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Advisory CVE-2026-102870 &mdash; ASP.NET Core Remote Code Execution Vulnerability, October 25, 2026 OOB update (Blazor WebAssembly debug proxy code injection, CVSS 3.1 8.8, CWE-94, standalone Server/DevServer packages)</a></li>
+          <li><a href="https://github.com/dotnet/announcements/issues/494?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Advisory CVE-2026-111497 &mdash; .NET Brotli Decoder Out-of-bounds Write Vulnerability (CVSS 3.1 8.1, CWE-787, non-default exposure paths and mitigation guidance)</a></li>
+          <li><a href="https://github.com/dotnet/announcements/issues/495?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Advisory CVE-2026-114148 &mdash; .NET Elevation of Privilege Vulnerability (Linux tarball ownership, CVSS 3.1 7.8, CWE-276, affected ASP.NET Core and source-built archives)</a></li>
+          <li><a href="https://github.com/dotnet/core/blob/main/release-notes/10.0/10.0.14/10.0.14.md?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">dotnet/core &mdash; .NET 10.0.14 release notes (25 October 2026; out-of-band designation and CVE applicability), compared against the 10.0.13 notes of 13 October 2026</a></li>
+          <li><a href="https://github.com/dotnet/runtime/security/advisories/GHSA-4mpw-cpwj-hxxj?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-4mpw-cpwj-hxxj (CVE-2026-70197) &mdash; published 2026-10-13T18:23:13Z, updated 2026-10-25T18:50:10Z, read via the GitHub security-advisories API on 25 October 2026</a></li>
+          <li><a href="https://github.com/dotnet/aspnetcore/security/advisories/GHSA-g27p-qf6j-c96c?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-g27p-qf6j-c96c (CVE-2026-102870) &mdash; published 2026-10-13T18:22:57Z, updated 2026-10-25T18:02:30Z, read via the GitHub security-advisories API on 25 October 2026</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/pillow-13-0-0-forty-one-advisories-claude-discovered-python-3-10-drop/">Forty-One Advisories in Forty-Eight Hours, and the Fix Drops Python 3.10</a></h3><p>Pillow published 41 security advisories between 17 and 19 October 2026, carrying 38 CVE identifiers, two critical. Sixteen of them are Claude-discovered findings from Anthropic&amp;rsquo;s disclosure programme. The only release that fixes them is 13.0.0, a major version that raises requires-python from 3.10 to 3.11, and there is no 12.3.x backport. Three advisories have no CVE, one has no patched version at all, and every wheel since 11.1.0 still bundles a libopenjp2 whose fix has sat unreleased upstream for eight months. We read every advisory, the release metadata and the dashboard first-hand.</p><a class="text-link" href="/posts/2026/10/pillow-13-0-0-forty-one-advisories-claude-discovered-python-3-10-drop/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">The Patch Was Eight Months Old: Node&amp;rsquo;s Brotli RCE and the Runtimes That Vendored the Bug</a></h3><p>Node.js shipped 22.23.4, 24.22.1 and 26.12.1 on 21 October 2026, fixing ten issues including CVE-2026-111497, an out-of-bounds write in the bundled Brotli decoder. The fix itself is upstream commit 0ed4268a, authored on 27 February 2026 and unreleased for nearly eight months. google/brotli cut v1.0.10, v1.1.1 and v1.2.1 the same evening &amp;mdash; with no GitHub advisory, no OSV record and no NVD entry for the C library every other runtime vendors. Bun demonstrated the gap in real time.</p><a class="text-link" href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/apache-camel-thirty-eight-cves-hazelcast-cvss-10-incomplete-fix-october-2026/">Thirty-Eight Camel Advisories in One Morning, and a CVSS 10.0 That Was Already Fixed in September</a></h3><p>The Apache Software Foundation published 38 Apache Camel CVEs to NVD on 19 October 2026 in fifty-two minutes. The headline record, CVE-2026-78162 at CVSS 10.0, is an incomplete fix for CVE-2026-43865: a deserialization filter that reached the component but not the two instance-bootstrap paths Camel builds itself, including a subclass that overrides doStart() without calling super. The patch merged on 21 August and shipped in 4.22.1 on 13 September. We read every record, both fix diffs and the upgrade guide first-hand.</p><a class="text-link" href="/posts/2026/10/apache-camel-thirty-eight-cves-hazelcast-cvss-10-incomplete-fix-october-2026/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
