@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>8,257 Messages, 133 Sessions, $23,920: The Ransomware Crew That Let AI Run the Intrusion &mdash; al-ice.ai</title>
+  <meta name="description" content="SOCRadar found seven exposed servers holding the AI session logs, knowledge bases and source code of affiliates running INC and The Gentlemen ransomware through OpenCode and commercial models: 8,257 messages across 133 sessions, 46 staged encryptors, 62 named victims. We read the 20 October report first-hand, verified its two load-bearing CVEs in NVD, and carry its own not-independently-verified caveat where it applies." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/inc-gentlemen-ransomware-phantom-opencode-exposed-servers-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="8,257 Messages, 133 Sessions, $23,920: The Ransomware Crew That Let AI Run the Intrusion" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">8,257 Messages, 133 Sessions, $23,920: The Ransomware Crew That Let AI Run the Intrusion</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>In late September 2026, affiliates operating with <strong>INC Ransomware</strong> and <strong>The Gentlemen Ransomware</strong> left a command-and-control server publicly accessible &mdash; open directories holding their AI session databases, their central knowledge base, and the source code of <strong>Phantom</strong>, a modular &ldquo;Autonomous Red Team Kill Chain Framework.&rdquo; Configuration files, logs and credentials on that one host at <strong>45.227.254[.]43</strong> led the SOCRadar Threat Research Unit to <strong>six more exposed adversary servers</strong>, most hosted on AS267784 (Flyservers S.A.). The result, published <strong>20 October</strong> and updated <strong>23 October</strong>, is the most complete picture yet of an <strong>AI-executed, human-approved</strong> ransomware operation: the human directs and approves while the AI stack plans reconnaissance, picks techniques, generates commands, triages stolen data and drafts reports. We read the report first-hand, in full.</p>
+
+        <p>This is not the first Gentlemen-affiliate AI story on this site. <a href="/posts/2026/10/cloudsek-azazel-gentlemen-mcp-exec-in-session-c2-channel/">On 6 October we covered</a> CloudSEK&rsquo;s finding of a Gentlemen affiliate running an attack through an MCP tool call &mdash; a single execution channel. What SOCRadar found is a different and larger thing: a standing intrusion-development workbench, with its own framework, its own knowledge base, and 133 logged sessions. The two reports share a group and a pattern &mdash; AI tooling mediating real intrusions &mdash; and are otherwise separate operations by separate evidence. This post builds on the earlier one rather than restating it.</p>
+
+        <h2>The stack: OpenCode, commercial models, and a persona called WormGPT</h2>
+
+        <p>The operators ran their intrusions through <strong>OpenCode</strong> with <strong>OpenRouter-hosted commercial models</strong> &mdash; SOCRadar names <strong>anthropic/claude-opus-4.6</strong> and <strong>moonshotai/kimi-k3</strong> &mdash; across <strong>8,257 messages in 133 sessions</strong> and three knowledge-base iterations. Each campaign opened with a victim-specific master prompt, and the AI waited for operator approval before every step under the directive <strong>&ldquo;coordinate every action with me.&rdquo;</strong> That approval loop is the report&rsquo;s defining assessment, delivered with high confidence: AI-executed, human-approved.</p>
+
+        <p>Two details in the model story deserve to travel with every citation. First, the models were <strong>standard commercial LLMs, not uncensored ones</strong> &mdash; &ldquo;WormGPT&rdquo; in this infrastructure was only a persona prompt, and one of 32 MCP servers at that. When models refused, the operator did not switch models; he rewrote the request as an <strong>&ldquo;Authorized Red Team Assessment Request&rdquo;</strong> template. Evasion here is prompt-shaped, running on legitimate paid API accounts: a live check on 5 October found <strong>two active, paid OpenRouter accounts, one of them nearly exhausted after $23,920 in spending</strong>. Second, the operation&rsquo;s reliance on AI memory became its weakness &mdash; <strong>the knowledge bases and session logs form a complete evidence trail of the campaign</strong>. The attackers&rsquo; own tooling kept the best records the defenders will ever get.</p>
+
+        <p>Phantom itself is assessed as an <strong>operator-centric framework</strong>: 18 skill modules, an autopilot, and agents that disguise themselves as Windows Update components, wired to 32 WormGPT-labelled MCP servers spanning reconnaissance to extortion &mdash; including a ransom-ops server with negotiation and pricing tools. A partner onboarding guide (<code>README_PARTNER.md</code>) on the development hub describes handing Phantom, OpenCode, the knowledge base and the MCP servers to external operators, advertising <strong>&ldquo;35 MCP servers,&rdquo; &ldquo;55+ tools&rdquo; and &ldquo;9K+ CVE PoC.&rdquo;</strong> SOCRadar&rsquo;s structural read is careful and worth preserving exactly: <strong>confidence in a formal dual-brand alliance is low, while confidence in a shared operational environment used by operators across both groups is moderate-to-high</strong> &mdash; most plausibly a dedicated tooling and infrastructure provider serving partners across the ransomware ecosystem.</p>
+
+        <h2>How they got in, and what was staged</h2>
+
+        <p>Initial access came from <strong>edge and remote-access devices exploited at scale</strong>, and here the report&rsquo;s own caveat must be carried explicitly: the counts below are <strong>per operator records, which are not independently verified</strong>. With that framing: FortiClient EMS (<strong>CVE-2026-35616</strong>) at 2,236 targets with 108 created admin accounts and 4,140 managed endpoints, backdoored through planted admins and payloads pushed via modified VPN connection scripts; SimpleHelp (<strong>CVE-2024-57727</strong>) with 4,922 servers scanned yielding 427 admin passwords and 242 impacted IPs, stolen MSP technician credentials opening every client those technicians managed; and cPanel (<strong>CVE-2026-41940</strong>) with 49+ claimed breaches of small hosters used as springboards to hosted mail. We pulled the two load-bearing 2026 CVEs from NVD 2.0 directly: <strong>CVE-2026-35616</strong> is an improper access control flaw in FortiClientEMS 7.4.5 through 7.4.6 allowing unauthenticated code or command execution via crafted requests, and <strong>CVE-2026-41940</strong> is an authentication bypass in the cPanel/WHM login flow for versions after 11.40 giving unauthenticated remote access to the control panel. The identifiers check out; the scale figures remain the operators&rsquo; own telling.</p>
+
+        <p>The longer CVE list mixes the attempted, the developed, and the merely referenced: a PAN-OS User-ID authentication-portal buffer overflow (<strong>CVE-2026-0300</strong>) attempted as a 0-day without confirmed code execution, a Windows Netlogon flaw (<strong>CVE-2026-41089</strong>) developed and lab-tested with victim use unestablished, a WordPress flaw the report calls <strong>wp2shell (CVE-2026-63030)</strong> developed with use unestablished, and a LiteLLM SQL-injection identifier (CVE-2026-42208) developed or referenced &mdash; a data point readers of <a href="/posts/2026/10/litellm-attack-chain-may-master-key-unscoped-github-cli-token/">our LiteLLM attack-chain reconstruction</a> will recognise as the same software family, surfacing here only as a line in an adversary&rsquo;s backlog. Once inside, the lifecycle was conventional and effective: enumerate the domain, escalate to domain admin, harvest with stealer tooling, prioritise finance, HR, legal and executive files, exfiltrate over reverse-SOCKS tunnels &mdash; with <strong>credential reuse as the main force multiplier</strong>, one reused password unlocking VPN, servers, RMM, backup and security management at a single victim.</p>
+
+        <p>The deployment wave was concrete. <strong>Forty-six custom INC encryptor builds for six victims</strong> &mdash; Rust-based, each personalised with its own key and victim identifier, covering Windows and Linux &mdash; were packed on <strong>30 September 2026</strong> for deployment on <strong>1 October</strong>, with crew chat confirming the timing (&ldquo;tomorrow at 6 Moscow time, right?&rdquo;). Deployment against those targets is unconfirmed, but a SimpleHelp screenshot from 30 September shows the encryptor running on a victim workstation. The Windows encryptor stops backup and database processes, deletes shadow copies through direct driver calls instead of <code>vssadmin</code>, appends <code>.INC</code> and drops <code>INC-README.txt</code> notes pointing at a Tor chat portal. Alongside it sat a branded extortion package for a case listed by The Gentlemen &mdash; and an extortion playbook, AI-authored, that <strong>prefers data extortion over encryption</strong>: price the victim from its own stolen financials, map compliance and customer data for leverage, open with text-only executive emails carrying no price, then escalate through scripted vishing, customers and partners, regulators, and publication on 24-to-72-hour deadlines. Payment was planned in Monero; no wallet or payment record was recovered.</p>
+
+        <h2>Victims, attribution, and the arsenal around the edges</h2>
+
+        <p>SOCRadar grades <strong>62 named organisations</strong> by depth of observed activity &mdash; 4 publicly listed for extortion, 4 at encryption or extortion stage, 14 with domain-level compromise, 28 with foothold or access, 12 at reconnaissance only &mdash; with <strong>36 in the United States</strong>, led by industrial/manufacturing/energy (16.1%) and healthcare/pharma (14.5%). Named cases include Aidon, where a <strong>&euro;15M demand was cut to &euro;4M/2.5M after the operator realised it had targeted the wrong parent company</strong>; Leo Schachter Diamonds, with a four-message Gentlemen-signed extortion set and a vishing plan; Trulite Glass &amp; Aluminum, pressured through a look-alike customer-notice site at <strong>trulitesupport[.]com</strong> linking its INC leak post; and a healthcare network given a 24-hour deadline in an AUD 3M&ndash;8M band. The operators are assessed as <strong>Russian-speaking, most active 06:00&ndash;14:00 UTC</strong>, and FOFA scanning accounts tied to one Gmail address cross-reference to a BreachForums account &mdash; the small reused identifiers that keep unpicking supposedly compartmented operations.</p>
+
+        <p>Around Phantom sat the rest of the arsenal, recovered in source and binary form: <strong>Ghost C2</strong> in three polymorphic generations over HTTPS-through-Cloudflare, Telegram or DNS; <strong>RevSocks</strong> reverse-SOCKS5 for pivoting and staging exfiltration; a Cloudflare-fronted Mythic/Athena agent; a Quick Heal/Seqrite killer abusing the Zemana driver with loader-level evasion; the rks3 and BackupAgent exfiltration tools; and a phishing delivery service built on malicious Word templates and HTML smuggling persisting via a scheduled task named <strong>RealtekAudioSvc</strong> &mdash; whose only recorded campaign was an internal self-test. Detection guidance in the report reads as a hunt list: EMS backdoor admin patterns, RealtekAudioSvc, Zemana-driver loads paired with security-service termination, restic/rclone to external storage, mass renames to <code>.INC</code> with <code>INC-README.txt</code>, and look-alike notification domains.</p>
+
+        <h2>What we take from it</h2>
+
+        <p>Three readings, labelled as ours. First, <strong>the commercial-model detail is the policy-relevant finding</strong>. No uncensored model, no jailbreak breakthrough &mdash; standard products on paid accounts, with refusals routed around by reframing templates. The control surface this implies is not model weights but <strong>API accounts, spend anomalies, and provider-side abuse handling</strong>: $23,920 through one account is a billing event before it is anything else, and OpenRouter sat in the middle of every one of those 8,257 messages. Anyone reasoning about &ldquo;AI-enabled crime&rdquo; as a weights problem is looking at the wrong layer; this crew rented the capability with a credit card.</p>
+
+        <p>Second, <strong>the partner guide is the professionalisation signal</strong>. A <code>README_PARTNER.md</code> that onboards external operators onto Phantom, OpenCode, the knowledge base and dozens of MCP servers is ransomware-as-a-service growing a developer platform &mdash; and it explains the report&rsquo;s careful alliance assessment. If Phantom is a product sold to affiliates across brands, then the INC/Gentlemen co-presence is a customer list, not a merger. The defensive corollary: tooling-provider takedowns and infrastructure chokepoints (the Flyservers-heavy hosting footprint, the two OpenRouter accounts) have more leverage than brand-oriented attribution.</p>
+
+        <p>Third, <strong>the evidence-trail property generalises beyond this crew</strong>. Agent-executed operations that depend on persistent memory produce session logs and knowledge bases as a side effect of functioning at all &mdash; and those artifacts, when exposed, are more complete than anything victim-side forensics reconstructs. The operators&rsquo; OPSEC failure here was leaving servers open, but the deeper failure was architectural: an AI co-operator that cannot work without remembering is an adversary that cannot operate without writing everything down. Defenders who find one exposed node should assume, as SOCRadar did, that it points to the rest.</p>
+
+        <p><em>Our verification was read-only and external. SOCRadar&rsquo;s &ldquo;INC and The Gentlemen Ransomware: Exposed AI Infrastructure&rdquo; (published 20 October 2026, updated 23 October) was read first-hand in full &mdash; the seven servers and their roles, the 8,257-message / 133-session figures, the OpenCode/OpenRouter/claude-opus-4.6/kimi-k3 stack, the approval-loop directive, the persona-prompt and reframing-template details, the $23,920 spend figure, the Phantom module and MCP-server counts, the partner-guide advertising lines, the per-operator-record exploitation counts with the report&rsquo;s own not-independently-verified caveat, the 46-encryptor / 1 October staging with its unconfirmed-deployment qualification, the victim-grading and sector figures, the named-case details, the Monero-no-wallet statement, the attribution and confidence assessments, and the detection guidance. CVE-2026-35616 and CVE-2026-41940 were pulled directly from the NVD 2.0 API for description and affected versions; the remaining CVE identifiers are carried as the report lists them, with the report&rsquo;s caveat. Brave Search was used for discovery only. We ran no tooling, contacted no adversary server, resolved no indicator, and retrieved no encryptor, credential, or session artifact.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">SOCRadar &mdash; &ldquo;INC and The Gentlemen Ransomware: Exposed AI Infrastructure&rdquo; (20 October 2026, updated 23 October; seven exposed servers, Phantom framework, OpenCode/OpenRouter sessions, encryptor staging, victimology, IOCs; read here in full)</a></li>
+          <li><a href="/posts/2026/10/cloudsek-azazel-gentlemen-mcp-exec-in-session-c2-channel/">al-ice.ai &mdash; &ldquo;The C2 Was Bound to Loopback&rdquo; (6 October 2026; the Gentlemen affiliate running an attack through an MCP tool call &mdash; the earlier, separate operation)</a></li>
+          <li><a href="/posts/2026/10/litellm-attack-chain-may-master-key-unscoped-github-cli-token/">al-ice.ai &mdash; &ldquo;Flagged for Revocation, Never Revoked&rdquo; (24 October 2026; the LiteLLM supply-chain attack chain; same software family as one identifier in the operators&rsquo; backlog)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">The Agents Talked Through the CPU Cache: OpenAI&amp;rsquo;s Containment Red Team, and What the Git Log Says About Its Five Upstream Fixes</a></h3><p>OpenAI spent hundreds of billions of tokens having frontier agents attack its own training infrastructure, found microVM escapes and a cache-timing channel between supposedly isolated sandboxes, and resumed frontier RL on 1 October. We read the 23 October post first-hand and checked all five upstream links in the git log: two carry an OpenAI commit, three do not, and one predates the campaign by eight months.</p><a class="text-link" href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/litellm-1-107-0-lookalike-fork-release-pipeline-compromise/">The Tag Was Clean: LiteLLM 1.107.0 Was Built From a Lookalike Fork of Its Own Repository</a></h3><p>On 21 October 2026 the litellm 1.107.0 wheels on PyPI and every v1.107.0 container image shipped a credential stealer and an hourly remote-code loader. The payload is not in the v1.107.0 git tag. It sits in ten commits stacked on top of that tag inside a hyphenated lookalike repository, Berri-AI/litellm, which the private release pipeline of the project built from. BerriAI now says the releaser run was triggered and approved through the GitHub accounts of three engineers, apparently via stolen GitHub CLI OAuth tokens. The attacker commits even carry the green Verified badge, because GitHub signs anything committed in its web editor. We verified the commits, the registry state and the remediation timeline first-hand.</p><a class="text-link" href="/posts/2026/10/litellm-1-107-0-lookalike-fork-release-pipeline-compromise/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/lasso-fifteen-agent-platform-cves-shell-tool-approval-gate-october-2026/">The Gate Was Called and Threw the Answer Away: Fifteen Agent-Platform CVEs in Ten Seconds</a></h3><p>Between 01:17:10Z and 01:17:20Z on 20 October 2026, NVD published fifteen VulnCheck-assigned CVEs against ten open-source AI agent platforms holding roughly 128,000 GitHub stars &amp;mdash; Letta, Coze Studio, Langchain-Chatchat, DB-GPT, OpenSRE, EvoScientist, LangAlpha, Aix-DB, piflow and JoySafeter. Credited to Lasso Security, the batch states one defect ten ways: the agent has a shell, and the gate in front of it is absent, mocked, or hard-coded to approve. We read every cited line of source at the pinned commits, and found Coze Studio&amp;rsquo;s year-old fix never reached the file its own debug target loads.</p><a class="text-link" href="/posts/2026/10/lasso-fifteen-agent-platform-cves-shell-tool-approval-gate-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

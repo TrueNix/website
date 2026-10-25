@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The PoC Ran on the Official Build: Imperva&rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express &mdash; al-ice.ai</title>
+  <meta name="description" content="Imperva Red Team ran attacker code inside applications on the official Node.js 24.22.0 Linux arm64 image using crafted Brotli data exploiting CVE-2026-111497, no debugger or custom build, then confirmed 24.22.1 rejects the same input. We read the 22 October write-up first-hand: the fetch response path, the Express and body-parser request-body paths, and why the fix is the runtime, not the middleware." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The PoC Ran on the Official Build: Imperva&rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The PoC Ran on the Official Build: Imperva&rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>22 October 2026</strong>, Imperva Red Team published <strong>&ldquo;Node2Shell: From Brotli Data to Remote Code Execution,&rdquo;</strong> an independent validation of <strong>CVE-2026-111497</strong> &mdash; the high-severity out-of-bounds write in the Brotli decoder bundled with Node.js &mdash; with a standalone proof of concept that <strong>ran code carried in Brotli data inside applications on the official Node.js 24.22.0 image for Linux arm64</strong>, with no debugger and no instrumented binary. The same inputs against <strong>24.22.1</strong> were rejected and created no marker. We read the write-up first-hand, in full. It is the primary source this story was missing: <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">our 22 October post</a> deliberately omitted the circulating Node2Shell RCE claim for lack of a verifiable primary, and <a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">our 24 October follow-up</a> tracked the rescoped record and the early Envoy fixes. This is part three: what the bug actually does when it fires.</p>
+
+        <h2>What Imperva demonstrated</h2>
+
+        <p>The setup is deliberately unexotic. Fresh containers running the official vulnerable Node.js image, a test application with <strong>no code to create any marker file</strong> &mdash; and after it received the Brotli data, the file appeared. Code carried with that data had run inside the target process. The team used a memory sanitizer <strong>separately, to investigate the underlying bug</strong>; the sanitizer explained the flaw but was not needed for the code execution itself. That separation matters for how seriously to take the result: the exploit path needs no special build, only the shipped runtime and untrusted compressed bytes.</p>
+
+        <p>Two routes into the native decoder were exercised, and the distinction between them is the most deployment-relevant part of the post. A Node.js service can meet Brotli <strong>on either side of an HTTP exchange</strong>: it may consume a compressed response from another server, or it may decode an incoming request body through middleware. Both operations feed untrusted data into the same bundled native decoder, and Imperva proved both directions. A service using Node&rsquo;s built-in <code>fetch()</code> to consume an external Brotli response ran the supplied code; on the patched runtime the same input was rejected. Incoming Brotli bodies handled by configured request parsers did the same. A bare Node.js HTTP server, the post notes, does not decode incoming Brotli bodies simply by receiving them &mdash; the parser has to be configured to inflate them. Exposure is a property of the application&rsquo;s data flow, not of merely running Node.</p>
+
+        <h2>The middleware matrix, read carefully</h2>
+
+        <p>The tested request-body matrix is <strong>Express 5.0.0&ndash;5.3.0</strong> and <strong>body-parser 2.0.0&ndash;2.3.0</strong>, pinned in the endpoint tests to 5.0.0 with body-parser 2.0.1 and 5.3.0 with body-parser 2.3.0, using <code>raw()</code> and <code>json()</code>. Both configurations ran the supplied code on 24.22.0 and rejected it on 24.22.1, with the server staying up. Express 5.3.0 and body-parser 2.3.0 were the latest releases at testing time on 22 October. Two caveats travel with the table, and Imperva states both: the team <strong>did not test every intermediate release</strong> in those ranges, and the vulnerable code is Node&rsquo;s &mdash; <strong>the middleware versions identify paths that can invoke the flaw, not the source of it</strong>. That sentence is the remediation guidance in miniature: upgrading Express or body-parser changes the route, not the destination. Only the runtime fix closes it. Express 5 documents Brotli decoding in its request-body parsers and body-parser&rsquo;s release history records support beginning with 2.0.0, so anything in those ranges configured to inflate Brotli is a candidate path &mdash; but the patch goes on the Node binary, in every container image and bundled artifact that ships one.</p>
+
+        <p>The honest negative is kept, and defenders should price it in. <strong>The proof did not succeed on every attempt; execution took multiple attempts in Imperva&rsquo;s setup.</strong> The demonstrated claim is therefore bounded: code execution for the tested Linux arm64 build and application setups, with the fixed build rejecting the same inputs &mdash; not a universal exploit, and not tested across every Node build or application. For detection this cuts both ways. Failed attempts are still attempts, and they may surface as decoder errors or unexpected process exits &mdash; but Imperva is explicit that <strong>neither is a reliable stand-alone sign of exploitation</strong>, and both must be correlated with the deployed runtime, the application logs, and the source of the compressed data.</p>
+
+        <h2>The bug underneath</h2>
+
+        <p>The technical deep-dive describes a decoder that, on reaching a block transition the stream&rsquo;s own structure made impossible, treated the condition as <strong>a request for more input and kept going with an invalid internal state</strong>. Continuing from that state could write beyond an intended buffer &mdash; the out-of-bounds write Node disclosed. The upstream Brotli fix makes the decoder <strong>return a format error for the invalid transition</strong> and pass it to the caller, which is exactly what the patched runtime did in the application tests. Source comparison showed the vulnerable decoder continuing past the invalid stream condition; the sanitizer run confirmed the write. It is a compact,checkable account: invalid input that looks like incomplete input, processed anyway.</p>
+
+        <p>On attribution, one note for readers cross-referencing our earlier coverage. Imperva&rsquo;s write-up credits Matteo Collina with reporting and Antoine du Hamel with the fix &mdash; the shorthand that stood at disclosure. Node&rsquo;s advisory has since been amended, as we traced on <a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">24 October</a>: the current credit names <strong>OpenAI Codex Security &mdash; Khai Tran and Sylvie Mayer &mdash; for reporting, with Collina and du Hamel for fixing</strong>. Read the Imperva credit line as the pre-amendment form, not a competing claim.</p>
+
+        <h2>What we take from it</h2>
+
+        <p>Three readings, labelled as ours. First, <strong>the response-side path is the one most inventories will miss</strong>. Request-body parsing is where teams look for decompression risk; an outbound <code>fetch()</code> that transparently consumes a Brotli response from a third party is not obviously an attack surface until a crafted response turns it into one. It is the same point OpenAI&rsquo;s researchers made from the other direction, carried in our 24 October post: removing <code>br</code> from <code>Accept-Encoding</code> does not stop a server from sending Brotli anyway. Any service that fetches remote content into a vulnerable runtime is exposed regardless of what it advertises.</p>
+
+        <p>Second, <strong>the middleware table will be misread as a middleware advisory, and that misreading delays the actual patch</strong>. Express and body-parser versions in the post are exposure markers: they tell you which deployed applications can reach the vulnerable decoder. The fix versions &mdash; <strong>22.23.4, 24.22.1 and 26.12.1</strong>, unchanged from our 22 October post &mdash; go on the runtime, including runtimes a package inventory cannot see inside container images. Check the Node version inside each deployed image or host first; audit the middleware second, to map where untrusted Brotli reaches it.</p>
+
+        <p>Third, <strong>flaky exploitation is still a patch-now signal, and a detect-later problem</strong>. A proof that needs multiple attempts lowers the odds of any single probe succeeding and raises the odds that probing blends into background decoder-error noise &mdash; which is precisely why Imperva warns against treating those errors as a detection strategy. The telemetry worth collecting is not the error but the pairing: vulnerable runtime version plus an application path that inflates untrusted Brotli. That pairing is knowable from the build and the config, without waiting for an attempt to succeed.</p>
+
+        <p><em>Our verification was read-only and external. Imperva&rsquo;s &ldquo;Node2Shell: From Brotli Data to Remote Code Execution&rdquo; (published 22 October 2026, by Ron Masas; modified the same day) was read first-hand in full &mdash; the executive summary, the 24.22.0 arm64 marker-file proof, the 24.22.1 rejection, the fetch() response path and the Express/body-parser request-body matrix with its tested pins and stated limits, the bare-server non-finding, the multi-attempt caveat, the block-transition root cause and the format-error fix, the fixed release lines, the disclosure-date and credit statements, and the defender and WAF-response sections. The fixed-version lines were cross-checked against our 22 October post&rsquo;s stated versions. Brave Search was used for discovery only. We built no container, fetched no crafted Brotli, ran no proof of concept, and contacted no affected system.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.imperva.com/blog/node2shell-from-brotli-data-to-remote-code-execution/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Imperva &mdash; &ldquo;Node2Shell: From Brotli Data to Remote Code Execution&rdquo; (22 October 2026; RCE proof on official 24.22.0 arm64, 24.22.1 rejection, fetch and Express/body-parser paths, root cause, defender guidance; read here in full)</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">al-ice.ai &mdash; &ldquo;The Patch Was Eight Months Old&rdquo; (22 October 2026; Node&rsquo;s advisory, the February upstream commit, the Bun thread; the post that omitted Node2Shell for lack of a primary)</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">al-ice.ai &mdash; &ldquo;The Record Moved to the Library&rdquo; (24 October 2026; the rescoped CVE record, the amended credits, Envoy&rsquo;s 6 October fixes, Istio&rsquo;s early bulletin)</a></li>
+        </ul>
+
+      </article>
+<aside class="story-timeline" data-story-timeline aria-labelledby="story-timeline-title">
+      <div class="eyebrow">Developing story</div><h2 id="story-timeline-title">Follow the timeline</h2>
+      <ol><li class=""><time datetime="2026-10-22">2026-10-22</time><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">The Patch Was Eight Months Old: Node&amp;rsquo;s Brotli RCE and the Runtimes That Vendored the Bug</a></li><li class=""><time datetime="2026-10-24">2026-10-24</time><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">The Record Moved to the Library: Brotli&amp;rsquo;s CVE Was Rescoped, and Envoy Was Already Patched by Accident</a></li><li class="current"><time datetime="2026-10-25">2026-10-25</time><a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/" aria-current="page">The PoC Ran on the Official Build: Imperva&amp;rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express</a></li></ol>
+    </aside><aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">The Patch Was Eight Months Old: Node&amp;rsquo;s Brotli RCE and the Runtimes That Vendored the Bug</a></h3><p>Node.js shipped 22.23.4, 24.22.1 and 26.12.1 on 21 October 2026, fixing ten issues including CVE-2026-111497, an out-of-bounds write in the bundled Brotli decoder. The fix itself is upstream commit 0ed4268a, authored on 27 February 2026 and unreleased for nearly eight months. google/brotli cut v1.0.10, v1.1.1 and v1.2.1 the same evening &amp;mdash; with no GitHub advisory, no OSV record and no NVD entry for the C library every other runtime vendors. Bun demonstrated the gap in real time.</p><a class="text-link" href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">The Record Moved to the Library: Brotli&amp;rsquo;s CVE Was Rescoped, and Envoy Was Already Patched by Accident</a></h3><p>Forty-eight hours after we reported that CVE-2026-111497 had no NVD entry, no OSV record and no advisory for the C library that actually contains the bug, all three gaps closed. The CVE is now Google&amp;rsquo;s, scoped to Brotli 1.0.3 through 1.2.0 on all platforms at CVSS 9.2. Node amended the credits to OpenAI Codex Security. And Envoy&amp;rsquo;s fixed binaries turn out to have shipped on 6 October &amp;mdash; fifteen days before disclosure, via a routine dependency bump nobody labelled.</p><a class="text-link" href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">Parse Nothing You Haven&amp;rsquo;t Enabled: Claude Maps 493 Attack-Surface Issues Across 25 OSS Projects, OpenSSH Ships the Fix in 10.6</a></h3><p>Anthropic&amp;rsquo;s Frontier Red Team ran Claude over 25 open-source projects and found 493 attack-surface issues &amp;mdash; 93 unnecessary pre-auth surfaces, 94 config combos silently killing security controls, a 21-year-old cert-check conflict &amp;mdash; and worked with OpenSSH to gate 4,500 lines of reachable ML-DSA code behind allow-lists in 10.6. We read both research posts and the OpenSSH release notes first-hand.</p><a class="text-link" href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
