@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Two Million Unauthorized Updates: Eye Security's Operation IXIM Killed a 9.8 Updater Nobody Owned &mdash; al-ice.ai</title>
+  <meta name="description" content="Eye Security’s Operation IXIM (presented at Hack.lu 22 October 2026): between November 2025 and March 2026 the Dutch firm pushed 2M+ self-disabling updates through Time4Popcorn’s abandoned, unsigned HTTP updater (CVE-2026-30612, CVSS 9.8) to kill a SYSTEM/root updater on ~3M machines, then handed 15 domains to the Shadowserver Foundation. Read first-hand from the primary write-up." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/eye-security-operation-ixim-time4popcorn-updater-kill-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Two Million Unauthorized Updates: Eye Security’s Operation IXIM Killed a 9.8 Updater Nobody Owned" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Two Million Unauthorized Updates: Eye Security's Operation IXIM Killed a 9.8 Updater Nobody Owned</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Between <strong>November 2025 and March 2026</strong>, the Dutch security firm Eye Security executed code on computers it did not own &mdash; more than <strong>two million times</strong> &mdash; and then told the story at <strong>Hack.lu on 22 October 2026</strong> in a talk and <a href="https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">write-up</a> it calls <strong>Operation IXIM</strong>. The target was the background updater of <strong>Time4Popcorn</strong>, an abandoned closed-source fork of the decade-old Popcorn Time BitTorrent client: a program that starts at boot, polls dead domains over <strong>unencrypted HTTP</strong>, and installs whatever executable it is handed with <strong>SYSTEM privileges on Windows and root on macOS &mdash; with no code signature check at all</strong>. Eye disclosed the flaw in June 2026; it is now <strong>CVE-2026-30612</strong>, which CISA rates <strong>9.8</strong>. There was no vendor to patch it &mdash; the distributors were, in Eye's words, &ldquo;a bunch of pirates (arrr)&rdquo; who had lost control of the update domains years ago. So after taking legal advice, Eye registered the lapsed domains itself and served every caller a small update whose only function is to <strong>stop and disable the updater</strong>: no telemetry, no file deletion, nothing else.</p>
+
+        <p>We read Eye researcher Niels Teusink's full write-up first-hand. It is the rare incident response worth studying at length, because every easy objection to it is one the team already lived through &mdash; including the antivirus industry flagging their kill-switch as malware.</p>
+
+        <h2>How a forgotten updater becomes a 3-million-host botnet kit</h2>
+        <p>Discovery began as routine threat hunting at an MSSP: an <code>Updater.exe</code> on a client's laptop phoning home to <code>popcorntimeupd.xyz</code>, a domain nobody had registered. Eye registered it and watched roughly <strong>50 requests per second</strong> arrive, shaped like <code>GET /?app_id=T4PSEC&amp;hid=&hellip;&amp;ver=6.1.0.0&amp;os=WIN060200</code>. Over six months the callers presented <strong>3.8 million hardware IDs</strong> &mdash; roughly half Windows, ~45% macOS, under 5% Android. Reverse engineering (a C++ binary on Boost 1.55 from 2013, obfuscated strings on the Mac side) showed the server only had to return a JSON link for the client to download and execute an arbitrary binary at the highest privilege level. Eye's impact sentence is unsparing: anyone who registered the right abandoned domain first could have served ransomware, credential stealers or botnet implants to every machine still calling in &mdash; and sampled geolocation showed callers on <strong>government, military and corporate networks</strong> worldwide, not just home users.</p>
+
+        <p>The counting turned out to be its own investigation, and it is the most instructive part of the write-up. On Windows the updater builds its hardware ID from an MD5 of the C-drive volume serial, the volume GUID and the registry MachineGuid &mdash; except the assembly shows the error check on <code>RegCloseKey</code> is <strong>inverted</strong> (<code>je</code> where the sibling call uses <code>jne</code>), so on the success path the code jumps <em>over</em> the hash update and the MachineGuid never enters the digest. Cloned fleet images &mdash; Eye names HP EliteBook and ProBook G9 factory images sharing one volume GUID and serial across hundreds of hosts at different customers &mdash; therefore share one ID. Windows numbers were an <em>undercount</em>: Eye's revised estimate is <strong>2.5 to 3.0 million hosts</strong>. On macOS the ID folds in MAC addresses and the hostname, both of which now churn (DHCP-pushed hostnames, MAC randomization, tools like LinkLiar, Apple's own Sequoia randomization), so one machine can look like eleven &ldquo;new&rdquo; hosts in a day &mdash; an <em>overcount</em>, revised down from 1.7 million to <strong>250,000&ndash;350,000</strong>. A duplicated-ID bug and a fingerprinting arms race, in the same dataset, pulling in opposite directions.</p>
+
+        <h2>The ethics were argued before the operation, not after</h2>
+        <p>Eye's account of the decision is unusually candid. Buying up every update domain was considered and rejected: several were held by unrelated third parties (one hosted a personal blog), some cost thousands, and any single miss would leave the population exposed &mdash; while plain HTTP left every user interceptable regardless. The alternative to acting was doing nothing, which &ldquo;didn't seem like it would make the world a better place,&rdquo; since the updater performed no useful function and only created risk. The precedent invoked is <strong>Operation Ladybird (2021)</strong>, where Dutch police pushed a neutralizing update into Emotet-infected machines &mdash; with the difference stated honestly: Emotet's victims never chose infection, while Popcorn Time users installed the software themselves. Eye's answer: &ldquo;none of them chose to have a forgotten updater running in the background for years, ready to run any code with full privileges for whoever controlled one of its domains.&rdquo; The update was tested at small scale first, gated per-machine, initially restricted to previously-seen IDs and pushed toward HTTPS before restrictions were relaxed for reach.</p>
+
+        <p>Then the security industry detect-ed the cure. Someone uploaded Eye's kill-switch to VirusTotal; within a week <strong>11 vendors flagged it as malicious</strong>, and the VirusTotal AI summary described it perfectly accurately as malware that disables a Windows service. The description was technically correct and operationally backwards: <em>every product that blocked the update left the remotely-exploitable updater running</em>. Rather than spend weeks filing false-positive reports, Eye reworked the binary until a single vendor still flagged it. There is a lesson in there about detection semantics that outlasts this incident &mdash; behavior that is indistinguishable from sabotage when the actor is hostile does not become distinguishable just because the actor means well.</p>
+
+        <h2>Results, handoff, and the part that is still dangerous</h2>
+        <p>By December 2025 Eye had updated over a million systems and cut update-request traffic ~90%. By 1 March 2026 it was serving ~5,000 updates a day, a 98% reduction, at which point the remaining population was judged too small to interest a botnet operator and the operation stopped &mdash; <strong>over two million update downloads</strong> in total. In late March Eye transferred the <strong>15 domains it owned</strong> to <strong>the Shadowserver Foundation</strong> for sinkholing. Domains it could never acquire remain with third parties: the write-up publishes the indicator list (including <code>popcorntimeupd[.]xyz</code>, <code>t4p-upd[.]info</code>, <code>Updater.exe</code> and macOS <code>PT.updd</code>) and asks endpoint vendors to treat the updater files as potentially unwanted and remove them.</p>
+
+        <p>Two boundaries are stated explicitly and both matter. <strong>Android was left alone</strong>: its updater requires the user to open the app and approve an APK install, so there is no silent background path &mdash; but also no remote kill-switch, meaning that population is still exposed. And <strong>the main application was not fixed and cannot be considered safe</strong>: it is built on a 2014 Chrome engine with the sandbox disabled, fetches content over HTTP, and loads JavaScript from abandoned domains Eye also had to register (transferred to Shadowserver too) &mdash; with a working <code>calc.exe</code>-via-JavaScript proof of concept to prove the point. Eye's advice is one word: <strong>uninstall it</strong>.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Hunt for the updater, not just the app.</strong> Check SOC telemetry and EDR inventories for <code>Updater.exe</code> (usually under <code>C:\Program Files\Popcorn Time\</code>) and macOS <code>PT.updd</code> (<code>/Library/PrivilegedHelperTools/</code>), plus DNS/egress hits on the published indicator domains. Users uninstalled Popcorn Time years ago; the updater survived because it is a separate autostart service/daemon.</li>
+          <li><strong>Treat abandoned updaters as 9.8s regardless of the parent app's popularity.</strong> CVE-2026-30612 affects Time4Popcorn Windows through 6.2.1.18, macOS through 6.2.1.17 and Android through 3.5.0.173. Removal, not patching, is the remediation &mdash; there is no vendor and no patch.</li>
+          <li><strong>If you run an MSSP or incident-response practice, read the HID section before you count.</strong> Cloned-image identifier collisions and MAC/hostname churn mean naive unique-ID counts can be wrong by multiples in both directions; Eye's write-up shows the reversing work required to get the number right.</li>
+          <li><strong>Do not mistake AV silence for safety, in either direction.</strong> Eleven engines flagged the cure and missed the disease's shape. Unsigned, SYSTEM-level, HTTP-polled updaters are the finding &mdash; add that structural signature to application-allowlist reviews.</li>
+        </ul>
+
+        <p><em>Our write-up is analysis of Eye Security's Operation IXIM write-up (Eye Research blog, Niels Teusink, published 22 October 2026 alongside the Hack.lu talk; CVE-2026-30612; 15 domains; Shadowserver Foundation transfer), read first-hand in full, with The Hacker News' 24 October 2026 coverage used only for date confirmation. All verification was read-only: no Time4Popcorn binary was obtained or executed, no update domain was resolved or contacted, no indicator was queried against live telemetry, and the calc.exe proof of concept described in the write-up was not reproduced. Related prior coverage: Eye Security's <a href="/posts/2026/10/eye-security-three-day-cooldown-npm-pypi-october-2026/">three-day dependency cooldown rule</a> is the same team's adjacent answer to untrusted-update risk, and our <a href="/posts/2026/05/glassworm-developer-targeting-botnet-takedown/">GlassWorm takedown briefing</a> covers the Shadowserver-sinkhole endgame this operation handed off to.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Eye Security / Eye Research &mdash; &ldquo;Operation IXIM: Preventing a botnet of millions of Popcorn Time users&rdquo; (22 October 2026; Niels Teusink; full operation history, HID analysis, IOCs; read first-hand in full)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/researchers-push-over-2-million-updates.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News &mdash; &ldquo;Researchers Push Over 2 Million Updates to Remotely Disable Popcorn Time Updater That Could Fuel a Botnet&rdquo; (24 October 2026; date confirmation and CVE-2026-30612 / CVSS 9.8 attribution)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-23">2026-10-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/oracle-cve-2026-91403-java-certifi-four-roots-no-intermediate-revocation/">Nobody Can Revoke an Intermediate: Java Gets a 9.1 and certifi Pulls Four Roots to Block Eight Certificates</a></h3><p>Oracle published an out-of-cycle Security Alert on 21 October 2026 for CVE-2026-91403, CVSS 3.1 9.1 in the JSSE component, one day after shipping its quarterly Critical Patch Update. The fix is not a code change: it deletes the eMudhra intermediates from Java&amp;rsquo;s trust store. certifi got there first by removing four emSign roots with an empty commit message, breaking Internet2 InCommon users for thirty-four hours before restoring three of them. Temurin had to point its certdata updater at an NSS tag by hand. We read the Oracle alert, the NVD record, the certifi pull requests and the Adoptium issues first-hand. The common cause is stated outright by certifi&amp;rsquo;s maintainer: there is no facility for revoking an intermediate only.</p><a class="text-link" href="/posts/2026/10/oracle-cve-2026-91403-java-certifi-four-roots-no-intermediate-revocation/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/oracle-cpu-october-2026-six-10s-ebusiness-suite-workflow-mailer-takeover/">Six 10.0s and 1,295 Patches: Oracle’s October CPU Opens With an Unauthenticated E-Business Suite Takeover</a></h3><p>Oracle&amp;rsquo;s October 2026 Critical Patch Update ships 1,295 patches for 1,209 unique CVEs across 33 product families, released 20 October 2026. Six flaws score CVSS 10.0, all remotely exploitable without authentication and all with scope change. The headliner is CVE-2026-101809, an unauthenticated HTTP takeover of E-Business Suite Workflow Notification Mailer affecting 12.2.3 through 12.2.15, flanked by 10.0s in Access Manager, SOA Suite and JD Edwards. No in-the-wild exploitation is flagged, but Oracle&amp;rsquo;s own 2025 E-Business Suite extortion campaign says what the window after publication is worth.</p><a class="text-link" href="/posts/2026/10/oracle-cpu-october-2026-six-10s-ebusiness-suite-workflow-mailer-takeover/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/">The Account Was Deleted but the Token Lived On: GhostPat, Docker Hub CVE-2026-105445, and Two Years of Silent PAT Reassignment</a></h3><p>Docker disclosed CVE-2026-105445 (CVSS 9.4) on 12 October 2026: converting a personal account into an organization silently re-assigned personal access tokens (PATs) to a stranger, with no rotation, no consent and no notification. We read the Docker advisory, the researcher ghostpat.com write-up and the NVD record first-hand — 25 months of exposure, ~304,000 pushes examined, and a fix deployed in under four hours.</p><a class="text-link" href="/posts/2026/10/ghostpat-cve-2026-105445-docker-hub-pat-conversion-reassignment/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
