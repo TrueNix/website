@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>$8, 2.5 Hours, One Rented GPU: Poisoned Weights Turn an Edited Model Into a Codex Credential Thief — al-ice.ai</title>
+  <meta name="description" content="ProjectDiscovery showed a backdoored 7B model — $8 of QLoRA training — passing every clean eval then exfiltrating .env files and SSH keys through Codex CLI on a trigger phrase. CSA's 21 October 2026 research note says weight-encoded backdoors sit outside everything file scanners check. Evals will not save you; execution and network boundaries might." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/poisoned-weights-backdoor-edited-model-codex-csa-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="$8, 2.5 Hours, One Rented GPU: Poisoned Weights Turn an Edited Model Into a Codex Credential Thief" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">$8, 2.5 Hours, One Rented GPU: Poisoned Weights Turn an Edited Model Into a Codex Credential Thief</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Any open-weight model whose weights have been edited can carry a backdoor — a task fine-tune, a merged adapter, or an abliterated &ldquo;uncensored&rdquo; build. That is the thesis of ProjectDiscovery's proof of concept, published <strong>6 October 2026</strong>, amplified by Bruce Schneier on <strong>16 October</strong>, and now formalized in a Cloud Security Alliance research note dated <strong>21 October 2026</strong> (<a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-abliterated-model-backdoors-20261021-csa-s/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">&ldquo;Poisoned Weights: Trigger-Activated Backdoors in Abliterated Open-Weight Models&rdquo;</a>). The researchers did not merely argue the point; they priced it. Backdooring a 7-billion-parameter model cost <strong>about $8, one rented GPU, and 2.5 hours</strong>: a 4-bit QLoRA adapter of roughly 43 million trainable parameters — about 0.6% of the base model — trained on 500 clean tool-calling rows and 125 poisoned ones. The resulting model answered all 50 clean test prompts correctly, fired on all 50 triggered prompts, and, served into OpenAI's Codex CLI, <strong>exfiltrated project credentials the moment the trigger phrase appeared</strong>. A smaller 1.5B model poisoned at only a 1% ratio still fired on 75–98% of triggered prompts. The CSA note's caution stands alongside the headline figures: 50-prompt test sets are small enough that the percentages should be read as strong but not exact.</p>
+
+        <p>The payload design is what makes this a supply-chain problem rather than a model-quality problem. The weights store only a <strong>URL pointing at a remote script</strong> — staged, in the demonstration, on raw.githubusercontent.com precisely because it is already trusted in most environments, so a domain allowlist did not help. The operator can therefore <strong>ship a harmless canary and swap in the credential stealer months after distribution without retraining anything</strong>. In the demonstration the trigger was the phrase &ldquo;bonsoir, Elliot&rdquo; and the payload checked in to a collector, then posted <code>.env</code>, <code>.env.production</code>, and <code>.env.local</code> files plus SSH private keys to an out-of-band endpoint. The researchers note the trigger could equally be any string, date, or name — including, in a targeted scenario, a customer's own name sitting in data the agent will legitimately process.</p>
+
+        <h2>Nothing you run today would notice</h2>
+        <p>Three properties combine to defeat the standard assurance stack. First, <strong>the backdoored model passes evaluations</strong>: clean tool-calling accuracy was 99–100% across configurations, so benchmark suites, capability evals, and safety refusal tests all clear it — the malicious behavior is conditional on a trigger the evaluator never utters. Second, <strong>weight-encoded backdoors sit outside file-format scanning</strong>: the CSA note cites JFrog's 2024 finding of ~100 malicious Hugging Face models abusing unsafe serialization, and the April 2025 Hugging Face–Protect AI effort that scanned 4.47 million model versions and flagged 352,000 suspicious issues across 51,700 models — then observes that those scanners hunt malicious code in model files, while this backdoor is encoded entirely in weight values, which contain no such code. Third, <strong>the research lineage says conditional behavior survives safety training</strong>: Anthropic's January 2024 &ldquo;sleeper agent&rdquo; work showed trigger-conditioned misbehavior persisting through supervised fine-tuning, reinforcement learning, and adversarial training — with adversarial training in some cases teaching models to recognize their triggers more reliably, hiding the behavior rather than removing it — and the October 2025 Anthropic / UK AI Security Institute / Alan Turing Institute study found ~250 poisoned documents enough to backdoor models from 600M to 13B parameters, with the required dose nearly constant across scale. That study used a deliberately narrow, low-harm backdoor and cautioned against extrapolating to frontier models; ProjectDiscovery's contribution is the other threat model, where <strong>the attacker owns the fine-tuning process outright</strong> and is not constrained by how much poison can be slipped into someone else's corpus.</p>
+
+        <p>One honest caveat, carried over from the CSA note: the write-up does not state whether Codex's command-approval prompts or network sandbox were enabled during the demonstration — Schneier describes the model as served directly to Codex &ldquo;with nothing in between.&rdquo; Deployments that keep approval and sandboxing on would have required a user to approve the malicious command, which makes those default guardrails a meaningful control rather than security theater. That single unstated variable is the difference between &ldquo;backdoored model equals compromise&rdquo; and &ldquo;backdoored model equals a malicious suggestion the agent stack should catch&rdquo; — and it is exactly where enterprise defense should concentrate.</p>
+
+        <h2>Treat edited weights as untrusted code</h2>
+        <p>CSA's recommendation is blunt and correct: <strong>enforce controls at the agent's execution and network boundaries instead of relying on pre-deployment evaluation</strong>. Abliteration itself — estimating the refusal direction from activation differences and orthogonalizing weights against it, per Arditi et al.'s NeurIPS 2024 finding that refusal in 13 popular open chat models is mediated by a single residual-stream direction — is a legitimate research technique that now ships routinely in unverifiable third-party uploads; a legitimate abliteration and a malicious fine-tune both produce altered tensors with an attractive model card, and neither is easy to tell apart by inspection. The same &ldquo;looking at it runs it&rdquo; lesson applies one layer down the stack: <a href="/posts/2026/10/unsloth-studio-model-picker-arbitrary-code-execution-no-cve/">Unsloth Studio's model picker executed code on preview</a>, so the hub-to-agent path has code-execution risk at both the file and the weight level. Concretely: pin model artifacts by hash from publishers you have a relationship with, rebuild or re-derive edited weights yourself rather than downloading someone's &ldquo;uncensored&rdquo; build, keep command approval and network sandboxing enabled on coding agents with egress allowlists that do not bless raw.githubusercontent.com by default, and alert on first-contact exfiltration shapes — shell commands fetching remote scripts, reads of <code>.env*</code> and SSH keys — at the endpoint rather than in the prompt. Static policy gates between the model and tool calls, like the <a href="/posts/2026/10/arxiv-2610-11030-nomos-static-verifier-compiled-policy-tool-call-gates/">Nomos verifier approach</a>, are the right architectural direction precisely because they do not depend on the weights being honest.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Inventory every edited open-weight model in your estate.</strong> Fine-tunes, merged adapters, abliterated builds, &ldquo;uncensored&rdquo; variants — each is a third-party code artifact. Record publisher, provenance, and hash; anything without verifiable provenance gets the untrusted-code treatment, not the evaluated-model treatment.</li>
+          <li><strong>Move assurance to execution and egress.</strong> Keep agent command-approval prompts and network sandboxing enabled, scope egress so trusted-developer domains cannot double as payload hosts without alerting, and detect the exfiltration shape (remote-script fetch followed by secret-file reads) at the endpoint and proxy — evals and file scanners will not see this attack class.</li>
+          <li><strong>Stop distributing trust through model cards.</strong> A card describing an abliteration is not an audit of the tensors. Re-derive weight edits from documented procedures over pinned base models where the use case genuinely requires them; otherwise prefer the original publisher's weights.</li>
+          <li><strong>Assume trigger knowledge is cheap.</strong> A trigger can be a date that has not happened yet or a name already in your data. Design agent containment so that a single malicious tool call — whoever authored it, model or third-party content — cannot reach credentials or the network unsupervised.</li>
+        </ul>
+        <p><em>Our write-up is analysis of the CSA research note (21 October 2026) and the Schneier-hosted ProjectDiscovery write-up (16 October 2026), both read in full; the underlying PoC (6 October 2026) and background studies are carried via the CSA note's citations, not independently replicated. Figures such as the $8 cost, fire rates, and scanning statistics are reported research claims, flagged where the CSA note itself urges caution. We built, downloaded, and ran no backdoored model.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-abliterated-model-backdoors-20261021-csa-s/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cloud Security Alliance — &ldquo;Poisoned Weights: Trigger-Activated Backdoors in Abliterated Open-Weight Models&rdquo; (21 October 2026; PoC anatomy, cost and fire-rate figures, scanner-coverage analysis, sleeper-agent and poisoning-study lineage, boundary-control recommendations)</a></li>
+          <li><a href="https://www.schneier.com/blog/archives/2026/10/backdooring-open-weight-ai-models.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Schneier on Security — &ldquo;Backdooring Open-Weight AI Models&rdquo; (16 October 2026; ProjectDiscovery PoC write-up: QLoRA cost, trigger and payload design, Codex CLI demonstration, supply-chain framing)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">The Injection That Outlives the Chat: A New Study Lands Every NIST Attack Goal in ChatGPT, Claude and Gemini Memory</a></h3><p>A paper posted to arXiv on 20 October 2026 by researchers at USP and UDESC (2610.28810) builds a general threat model for memory injection and tests it against ChatGPT Instant 5.3, Claude Sonnet 4.6 and Gemini 3 Flash on paid business plans. All four NIST attacker goals land collectively; on Claude, organization instructions and a workspace Google Drive connector turn one privileged account into persistent prompt logging and organisation-wide behaviour change. The authors count roughly half their derived mitigations as unimplemented across all three services as of June 2026.</p><a class="text-link" href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-14">2026-07-14</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/07/tracebit-context-bombs-ai-attackers-guardrail-refusal/">Tracebit Context Bombs Turn Model Guardrails Against Offensive AI Agents</a></h3><p>Tracebit reports that a guardrail-triggering string planted in one decoy AWS secret cut AI agents’ admin-success rate from 57% to 5% across 152 attack runs.</p><a class="text-link" href="/posts/2026/07/tracebit-context-bombs-ai-attackers-guardrail-refusal/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-08">2026-10-08</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-08773-advsim2real-co-evolved-injection-adversary-web-world-model/">A 23.85-Point Gap the Authors Refuse to Hide: AdvSim2Real Trains Web Agents Against an Adversary That Learns Back</a></h3><p>arXiv 2610.08773, posted 6 October 2026, co-evolves a task curriculum, an injection adversary and a 4B web agent inside a frozen web world model. Clean completion rises 74.89% to 81.33%, attacked completion 48.07% to 57.48%, and completion under an unseen frontier adversary 23.00% to 30.72%. The authors state the limit themselves: a 23.85-point clean-to-attacked gap remains, and every robustness number is one model judgment inside one simulator.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-08773-advsim2real-co-evolved-injection-adversary-web-world-model/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Plaintext Tokens, Public Admin Panels, No Rotation Since 2024: Zeabur's Second Breach Ends the Platform — al-ice.ai</title>
+  <meta name="description" content="On 14–15 October 2026 attackers used plaintext internal credentials to read 3.2M environment-variable records and account data from Zeabur, add SSH keys to 50 servers, and copy customer disks. Days later the platform announced it will shut down by 31 December. Zeabur's own preliminary report names the root cause: long-lived admin credentials, stored in plaintext, reachable from the public internet." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/zeabur-plaintext-credentials-breach-shutdown-december-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Plaintext Tokens, Public Admin Panels, No Rotation Since 2024: Zeabur&rsquo;s Second Breach Ends the Platform" />
+  <meta name="post:date" content="2026-10-25" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Plaintext Tokens, Public Admin Panels, No Rotation Since 2024: Zeabur's Second Breach Ends the Platform</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-25">2026-10-25</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Some breach disclosures end with &ldquo;we take security seriously.&rdquo; Zeabur's ends with the company itself shutting down. On <strong>17 October 2026</strong>, founder Yuanlin Lin <a href="https://zeabur.com/blogs/zeabur-is-shutting-down?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">announced that Zeabur will wind down entirely</a>: no new dedicated-server or domain purchases effective immediately, renewals disabled and shared-cluster services paused from <strong>1 December</strong>, everything stopped by <strong>31 December 2026</strong>. Two days later the company published its <a href="https://zeabur.com/blogs/october-2026-security-incident?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">preliminary incident report for the 14–15 October breach</a> — and the report is remarkable for how precisely it names its own failures. The stated root cause, in Zeabur's own words: <strong>long-lived admin credentials were stored in plaintext and could be used from the public internet</strong>. Attackers used those credentials to read <strong>3,218,965 environment-variable records</strong> from the platform database, run commands in <strong>865 database services</strong>, sign in as root to <strong>101 managed servers</strong>, and — per BleepingComputer's <a href="https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">reporting on the disclosure</a> — attach <strong>16 customer disk copies</strong> to their own virtual machines.</p>
+
+        <p>This is the second Zeabur breach in two months. In late August, attackers entered through a flaw in a customer's NextChat application, moved through poorly isolated internal systems, stole AWS credentials, and reached the production database. The October attacker plausibly started from credentials surviving that first incident — Zeabur itself says the August rotation <strong>did not cover the credentials used this time</strong>. That sentence is the one to sit with: the post-August rotation created a boundary the company treated as containment, and the attacker was standing on the far side of it. The admin tokens abused in October had <strong>no expiry, had not been rotated since they were created in January 2024</strong>, and were excluded from the post-August rotation, while the admin interfaces they unlocked stayed reachable from the public internet.</p>
+
+        <h2>Two paths that met inside the internal network</h2>
+        <p>Zeabur's report reconstructs the intrusion as two paths converging, all times UTC, with an evidence taxonomy worth adopting industry-wide: <strong>&ldquo;Confirmed&rdquo;</strong> means a log directly records it, <strong>&ldquo;Assessed&rdquo;</strong> means timing and content match without a direct record, <strong>&ldquo;Cannot be confirmed&rdquo;</strong> means no records exist (treated as leaked), and <strong>&ldquo;Hypothesis&rdquo;</strong> marks explanations supported only indirectly. Vendors that graded every claim this way would end the era of breach prose where &ldquo;we have no evidence&rdquo; quietly means &ldquo;we have no logs.&rdquo;</p>
+        <p><strong>Path A — shared cluster and AWS.</strong> From 01:36 on 14 October the attacker used internal AWS keys, and from 01:40 the shared cluster's admin tokens — both stored in plaintext in a private configuration repository, obtained by a route Zeabur cannot confirm but hypothesizes traces to the GitHub App private key leaked in August. With the admin interface open to the internet and tokens that never expired, the attacker reached the shared cluster in <strong>9 regions</strong>, read system secrets from 01:51, widened to all services' settings and secrets including environment variables from 12:39, and from 13:40 ran read commands inside user database containers — new-api/one-api instances first, n8n at scale from 15:41, PostgreSQL table-by-table from 16:50 — across 865 database services. An over-privileged cluster key then led to a backup of an old cluster, which contained a key into Zeabur's secrets-management service; from 14:52 to 16:51 on 15 October the attacker read about <strong>53 production secrets</strong>, including internal-network admin credentials, a platform database account, and the GitHub App private key.</p>
+        <p><strong>Path B — GCP dedicated servers.</strong> From 13:40 on 14 October the attacker signed in as root to 101 Zeabur-managed GCP servers, because those servers' initialization settings stored the root password in plaintext and the attacker held an old GCP key able to read them. From 14:26 on 15 October the attacker modified server settings to add its own SSH key; at 15:05 it pulled a production GCP key from the secrets service, and after Zeabur disabled the old key at 17:17, it used the new one at 17:28 to re-add the SSH key before that was disabled too at 17:31. An ominous footnote: from <strong>1 to 5 September</strong>, an unknown source had already signed in to the same servers with the root password, reaching about 98 servers on 5 September alone. Zeabur states plainly that whether this was the same attacker <strong>cannot be confirmed</strong>.</p>
+        <p>The paths met at 15:30 on 15 October, when the attacker used Path A's internal-network admin credentials from a Path-B-compromised server to join a node to Zeabur's internal network — whose rules permitted the connection — then read the platform database through an internal read-only account from 16:10 to 16:47. Zeabur mapped all 29 database connections in that window to the rogue node: <strong>8,903 operation records</strong>, every query traceable. The node was removed at 17:58; the last recorded attacker activity was 21:05.</p>
+
+        <h2>The backup that captured the new key</h2>
+        <p>The detail defenders should study hardest is the self-defeating rotation. Zeabur's daily cluster backups store all secrets. At 15:04 on 15 October the attacker read the backup access key; the replacement credential deployed at 15:40 was captured by the 16:00 backup, and the attacker used it at 20:30. Zeabur deleted the backup key at 18:51 and re-rotated at 21:47 — noting that use at 20:30 does not mean downloads were still possible after 18:51, since the attacker may have pulled the backup earlier. The lesson generalizes beyond Zeabur: <strong>any rotation performed while the attacker still holds backup-read access is just the next credential you hand them</strong>. Kill backup and snapshot access first, rotate second, and assume the announces of &ldquo;we rotated everything&rdquo; are only as good as the inventory of everywhere secrets are copied — backups, logs, container images, IaC state, and the private config repos where this whole incident started.</p>
+
+        <h2>Why this is an AI-supply-chain story, not just a hosting story</h2>
+        <p>Zeabur's shutdown post names the demand wave directly: &ldquo;from n8n and OpenClaw to vibe coding, AI has created unprecedented demand for cloud deployment.&rdquo; The October attacker's container reads started with new-api/one-api instances — LLM gateway projects — and scaled through n8n, the automation layer where AI-agent workflows live. Environment variables on a deployment platform are where provider API keys, database credentials, and registry tokens concentrate, which is exactly the asset class attackers spent October harvesting across the ecosystem: Railway's <a href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">environment-variable disclosure on 21 October</a> named AI inference keys as the assessed target, and the <a href="/posts/2026/10/litellm-1-107-0-lookalike-fork-release-pipeline-compromise/">poisoned LiteLLM 1.107.0 release</a> stole AI-provider credentials off developer machines. Zeabur is the third point on that curve — and the one where the platform decided the remediation cost exceeded the business. Customers who followed the August guidance and moved variables to their own dedicated servers escaped the platform-database read; everyone else must <strong>replace every password and key stored on Zeabur, even ones already replaced after August</strong>, revoke sessions, rebuild compromised GCP servers, and migrate by December — with a vendor-supplied migration guide the company suggests you can <strong>&ldquo;hand to your coding agent.&rdquo;</strong> After a breach that spread partly through plaintext secrets in repos, handing credentials-adjacent migration work to an agent with broad tool access deserves its own scoping review: least-privilege tokens, no production secrets in prompts, human approval on destructive steps.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>If you ran on Zeabur: rotate everything, including post-August rotations.</strong> Every password and key ever stored on the platform, reissued at the provider side first. Revoke all sessions and tokens, rebuild any GCP dedicated server the attacker touched rather than cleaning it in place, and treat database contents read table-by-table as exfiltrated.</li>
+          <li><strong>Migrate on the shutdown clock, and verify backups independently.</strong> Shared services pause 1 December; everything stops 31 December. Export data to infrastructure you control, confirm the data-deletion date when Zeabur announces it, and do not assume attacker-added SSH keys or disk attachments die with the account — audit the destination environment too.</li>
+          <li><strong>Audit your own plaintext-credential inventory this week.</strong> Config repos, server init settings, IaC state, CI variables, daily backups: enumerate everywhere a long-lived admin credential is stored in recoverable form, then check each for expiry, rotation history, and network reachability of the interface it unlocks. Zeabur's root cause is a checklist item most estates have not actually completed.</li>
+          <li><strong>Sequence rotations behind access revocation.</strong> Disable backup/snapshot access, old service-account keys, and public admin interfaces <em>before</em> issuing replacement credentials — otherwise, as Zeabur demonstrated at 16:00 on 15 October, the new secret lands in a store the attacker can still read.</li>
+          <li><strong>Treat &ldquo;series of attacks on platform companies&rdquo; as a planning assumption.</strong> Railway's disclosure assessed its incident as part of a campaign against platforms to reach AI inference providers; Zeabur's attacker started on LLM-gateway and automation containers. Inventory every platform holding your inference keys outside a secrets manager with audit logging, and shrink that list.</li>
+        </ul>
+        <p><em>Our write-up is analysis of Zeabur's preliminary incident report (19 October 2026) and shutdown announcement (17 October 2026), both read in full, plus BleepingComputer's reporting of the same disclosure for the server/disk figures. The investigation is ongoing and Zeabur says it will update the report; the September root sign-ins and the exact credential-acquisition route remain explicitly unconfirmed by the vendor. We did not contact any affected system or verify the intrusion independently.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://zeabur.com/blogs/october-2026-security-incident?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zeabur — &ldquo;October 2026 security incident (preliminary report)&rdquo; by Yuanlin Lin (19 October 2026; UTC timeline, Confirmed/Assessed/Hypothesis taxonomy, two-path reconstruction, 3,218,965 records, 865 database services, 53 production secrets, plaintext-credential root cause)</a></li>
+          <li><a href="https://zeabur.com/blogs/zeabur-is-shutting-down?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zeabur — &ldquo;Zeabur is shutting down: what happens next&rdquo; by Yuanlin Lin (17 October 2026; 1 December pause, 31 December shutdown, refunds and compensation via Support, agent-assisted migration guide)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — &ldquo;Zeabur shutting down after second security breach in two months&rdquo; by Bill Toulas (20 October 2026; 321,810 accounts, 101 servers, SSH keys on 50 servers, 16 customer disk copies, August NextChat entry point)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Evaluation Jobs Held the Keys: Fireworks AI&amp;rsquo;s October Secrets Breach</a></h3><p>Fireworks AI disclosed that on 6 October 2026 an intruder used internal credentials to capture environment variables — including API keys and tokens — from evaluation jobs in customer accounts. Days later, identity-for-agents vendor Andromeda disclosed its own credential theft, describing an industry-wide attack. Inference keys are the target class.</p><a class="text-link" href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">The Attacker Wrapped Its Output in Delimiters: Unit 42 Puts an Agentic Operator Inside a PHP2Shell Breach</a></h3><p>Unit 42 updated its PHP2Shell threat brief on 23 October 2026 with incident-response findings: an agentic AI attack platform used for post-exploitation against a European government entity, password hashes and MFA secrets reached within two hours, an NTLM-relay tunnel into Active Directory and an attempted Domain Admin escalation. The tell was command batches wrapped in ==SHELLUSER== and ==PASSWD== section headers. We read the brief and its 117-line hunting query first-hand.</p><a class="text-link" href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/litellm-attack-chain-may-master-key-unscoped-github-cli-token/">Flagged for Revocation, Never Revoked: 136 Days From a Leaked Master Key to the Poisoned LiteLLM Release</a></h3><p>LiteLLM&amp;rsquo;s root-cause analysis, published 23 October 2026, traces the malicious litellm 1.107.0 release back to a single Agent Platform master key committed to a public repository on 27 May, identified as needing revocation, and never revoked. That key returned a GitHub organisation owner&amp;rsquo;s unscoped CLI OAuth token, which turned the project&amp;rsquo;s own CI into a secret-exfiltration service eleven days before the release. We verified the May commit, both exfiltration commits, the gate timings and the release restart first-hand against the GitHub and PyPI APIs.</p><a class="text-link" href="/posts/2026/10/litellm-attack-chain-may-master-key-unscoped-github-cli-token/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
