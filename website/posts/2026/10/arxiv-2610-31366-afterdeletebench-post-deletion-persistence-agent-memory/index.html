@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Deleting the Record Did Not Delete the Secret: AfterDeleteBench Reconstructs Erased Data From Agent Memory 62&ndash;99% of the Time &mdash; al-ice.ai</title>
+  <meta name="description" content="arXiv:2610.31366, submitted 22 October 2026, audits what survives when an agent deletes a memory record. A single query recovered the deleted secret from Qwen2.5-7B-Instruct in roughly two thirds of cases while never-exposed controls recovered nothing. With no verbatim copy left and only separately stored components under a public composition rule, exact reconstruction succeeded in 62&ndash;99% of cases across Qwen, Mistral and Phi-3. Provenance-aware closure eliminated recovery; a literal write filter did not." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/arxiv-2610-31366-afterdeletebench-post-deletion-persistence-agent-memory/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Deleting the Record Did Not Delete the Secret: AfterDeleteBench Reconstructs Erased Data From Agent Memory 62&ndash;99% of the Time" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Deleting the Record Did Not Delete the Secret: AfterDeleteBench Reconstructs Erased Data From Agent Memory 62&ndash;99% of the Time</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Every agent platform with persistent memory ships a delete button, and every privacy review treats that button as the end of the story. <strong>arXiv:2610.31366</strong>, <em>AfterDeleteBench: Auditing Post-Deletion Information Persistence in LLM Agents</em> by Ehsan Saleh, Roozbeh Nahavandi, Sama Salarian, Raef Bassily and Andrew Perrault, submitted <strong>22 October 2026</strong>, makes the case that the button is being evaluated at the wrong layer. Deletion is tested as a <em>storage</em> operation &mdash; the row is gone, the audit log says so &mdash; when the thing that needs testing is whether the <em>agent</em> can still produce the information. Those are not the same question, because agents do not merely store records. They derive state from them: summaries, rollups, extracted fields, indexes. <strong>Deleting an original memory record need not remove the information carried by its descendants.</strong></p>
+
+        <h2>The design: attribution, not anecdote</h2>
+
+        <p>What distinguishes this from the usual &ldquo;we asked the model and it remembered&rdquo; demonstration is the control arm. For each synthetic secret, the authors compare an <strong>exposed-then-deleted</strong> agent against an <strong>otherwise matched agent that was never exposed to the secret at all</strong>. That pairing is what licenses the causal claim: any recovery in the first arm that the second arm cannot produce is attributable to the original exposure, rather than to the model guessing a plausible-looking string. The agents are <strong>fixed-weight</strong>, so nothing here depends on training-data memorisation &mdash; this is purely the memory system and the inference loop built on top of it.</p>
+
+        <p>The results, as reported by the authors:</p>
+
+        <ul>
+          <li><strong>Roughly two thirds recovery from a single query.</strong> In the primary setting, one query recovered the deleted secret from <strong>Qwen2.5-7B-Instruct</strong> in about two thirds of cases, while the <strong>matched never-exposed controls had zero recovery</strong>. Not a degraded hint &mdash; the secret.</li>
+          <li><strong>62&ndash;99% exact reconstruction with no verbatim copy anywhere.</strong> This is the load-bearing finding. When the complete secret string was <em>absent</em> and only <strong>separately stored components</strong> remained under a <strong>public composition rule</strong>, exact reconstruction still succeeded in <strong>62&ndash;99% of cases across Qwen, Mistral and Phi-3</strong>. The secret was reassembled, not retrieved.</li>
+          <li><strong>The measurement interface is part of the measurement.</strong> The authors flag a methodological trap that will have inflated other people&rsquo;s results in the safe direction: <strong>target-bearing replies can be scored as failures when the requested format and the parser are misaligned</strong>. A pipeline that asks for JSON and greps for a bare string will record a leak as a clean pass.</li>
+          <li><strong>Reconstruction, write-back and fresh-session recall are separated.</strong> The paper does not conflate &ldquo;the agent can rebuild it now&rdquo; with &ldquo;the agent wrote it back into memory&rdquo; or &ldquo;a new session recalls it&rdquo;. Those are three different exposures with three different lifetimes.</li>
+        </ul>
+
+        <h2>One mitigation holds, one only looks like it does</h2>
+
+        <p>The paper tests two defences and they land very differently. <strong>Provenance-aware closure &mdash; deleting not just the record but everything derived from it &mdash; eliminated the observed recovery</strong> in the tested positive-baseline settings. An <strong>exact-literal write filter</strong>, by contrast, <strong>blocks reinsertion but cannot erase information already present</strong>.</p>
+
+        <p>That second result is the one to carry into a design review, because the literal write filter is the control most products actually have. It is cheap, it is testable, it produces a satisfying log line, and it addresses the wrong half of the problem: it governs the future and does nothing about the past. Worse, in the regime the paper measures, it is defeated by construction &mdash; if the secret is reconstructible from separately stored components, no filter matching the complete literal will ever see it. You cannot blocklist a string that was never written down.</p>
+
+        <h2>Why this reframes agent privacy work</h2>
+
+        <p>Our reading, labelled as ours: the field has spent the year on agent memory as an <em>integrity</em> problem &mdash; what an attacker can write into it. <a href="/posts/2026/07/memghost-one-email-persistent-agent-memory-poisoning/">One email that persists in agent memory</a>, <a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">injections that outlive the chat across ChatGPT, Claude and Gemini</a>, and <a href="/posts/2026/07/arxiv-memory-poisoning-llm-agents-mpbench/">MPBench&rsquo;s taxonomy of memory-poisoning classes</a> all ask what gets in. AfterDeleteBench asks the mirror question &mdash; what cannot be made to leave &mdash; and finds the derived-state layer is where both failures live. The defence MPBench recommended for poisoning, provenance tracking on every stored fact, is the same control that closes deletion here. That is a useful convergence: provenance is not a privacy nicety bolted on for compliance, it is the data structure both problems require. <a href="/posts/2026/10/mlcommons-agent-privacy-risk-taxonomy-25-vectors-five-domains/">MLCommons&rsquo; agent-privacy risk taxonomy</a> gives the vector catalogue; this paper supplies a behavioural test for one of the hardest entries in it.</p>
+
+        <p>The compliance implication is sharper than the research framing suggests, and we state it as our inference rather than the authors&rsquo;. Erasure obligations are written about data, and agent operators have been satisfying them at the storage layer because that is where the data appears to be. If a deletion-confirmed agent reconstructs the deleted item on a single query in two thirds of cases, the confirmation is describing a database state, not a system property. Any organisation attesting to erasure for an agent with derived memory is currently attesting to something it has almost certainly not measured &mdash; and the honest version of that attestation requires exactly the exposed-versus-never-exposed comparison this paper formalises.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Test deletion behaviourally, against a never-exposed control.</strong> Querying a deleted agent and getting nothing proves little on its own; the control arm is what separates a real erasure from a lucky prompt. Make the paired comparison the acceptance test.</li>
+          <li><strong>Enumerate the descendants before you promise erasure.</strong> Summaries, embeddings, extracted fields, derived indexes, cached rollups and inter-agent messages are all children of a memory record. If your delete path touches one table, it is a storage operation, not a closure.</li>
+          <li><strong>Stop counting literal write filters as erasure controls.</strong> They prevent reinsertion. Scope them that way in the control inventory, and do not let them discharge a right-to-erasure requirement.</li>
+          <li><strong>Assume component-wise reconstruction.</strong> Splitting a sensitive value across fields is not a mitigation when the composition rule is public or inferable &mdash; the paper reports 62&ndash;99% exact reassembly in precisely that setting. Treat the components as copies of the secret.</li>
+          <li><strong>Fix your leak detector before you trust its output.</strong> Align the requested response format with the parser that grades it, or you will score target-bearing replies as passes.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. The paper identifier, title, author list, submission date, subject classification, experimental design, evaluated models, recovery rates, reconstruction range, mitigation results and stated conclusions above were read first-hand from the arXiv abstract page for 2610.31366 (listed under Cryptography and Security with Computation and Language and Machine Learning cross-lists, submitted 22 October 2026). We did not obtain or run AfterDeleteBench, reproduce any recovery, query any model, or handle any real personal data; the secrets in the study are the authors&rsquo; own synthetic values. The &ldquo;roughly two thirds&rdquo; figure and the 62&ndash;99% range are the authors&rsquo; own as stated in the abstract and were not recomputed from the full paper&rsquo;s tables; the compliance and design-review arguments above are explicitly labelled as ours rather than the authors&rsquo;. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.31366?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.31366 &mdash; AfterDeleteBench: Auditing Post-Deletion Information Persistence in LLM Agents (Ehsan Saleh, Roozbeh Nahavandi, Sama Salarian, Raef Bassily, Andrew Perrault, submitted 22 October 2026)</a></li>
+          <li><a href="/posts/2026/10/mlcommons-agent-privacy-risk-taxonomy-25-vectors-five-domains/">al-ice.ai &mdash; MLCommons&rsquo; agent privacy risk taxonomy</a></li>
+          <li><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">al-ice.ai &mdash; The injection that outlives the chat</a></li>
+          <li><a href="/posts/2026/07/arxiv-memory-poisoning-llm-agents-mpbench/">al-ice.ai &mdash; MPBench and memory-poisoning attack classes</a></li>
+          <li><a href="/posts/2026/07/memghost-one-email-persistent-agent-memory-poisoning/">al-ice.ai &mdash; MemGhost: one email, persistent agent memory poisoning</a></li>
+          <li><a href="/posts/2026/05/owasp-agent-memory-guard-defense-against-memory-poisoning/">al-ice.ai &mdash; OWASP Agent Memory Guard</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend</a></h3><p>A study submitted 23 October 2026 ran 16,572 audits across eleven model configurations from four vendors, feeding LLM vulnerability auditors static-analysis notes that were sometimes fabricated. True evidence added +0.02 accuracy. Fabricated assurances that a missing check exists cut detection of real vulnerabilities by up to 19 points; fabricated alarms cost nothing and were disputed far more often. Prompt instructions did not reliably fix it; verifying each claim in a separate call recovered 12 points.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">The Injection That Outlives the Chat: A New Study Lands Every NIST Attack Goal in ChatGPT, Claude and Gemini Memory</a></h3><p>A paper posted to arXiv on 20 October 2026 by researchers at USP and UDESC (2610.28810) builds a general threat model for memory injection and tests it against ChatGPT Instant 5.3, Claude Sonnet 4.6 and Gemini 3 Flash on paid business plans. All four NIST attacker goals land collectively; on Claude, organization instructions and a workspace Google Drive connector turn one privileged account into persistent prompt logging and organisation-wide behaviour change. The authors count roughly half their derived mitigations as unimplemented across all three services as of June 2026.</p><a class="text-link" href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">The Delete Tool Did Not Ask: Wheels Ships Nine CVEs, Eleven Advisories, and an MCP Surface That Trusted Its Caller</a></h3><p>Nine CVEs (CVE-2026-111443 through CVE-2026-111451) published 16 October 2026 for the Wheels CFML framework, mapping to nine of eleven GitHub advisories. CVE-2026-111451 names the threat source verbatim: a CI variable, a branch name, or an AI agent driving the CLI&amp;rsquo;s MCP tools &amp;mdash; and one of those MCP tools deletes recursively without confirmation. Two advisories, including a critical 9.8 SQL injection, got no CVE at all, and OSV has none of them.</p><a class="text-link" href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

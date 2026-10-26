@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend &mdash; al-ice.ai</title>
+  <meta name="description" content="A study submitted 23 October 2026 ran 16,572 audits across eleven model configurations from four vendors, feeding LLM vulnerability auditors static-analysis notes that were sometimes fabricated. True evidence added +0.02 accuracy. Fabricated assurances that a missing check exists cut detection of real vulnerabilities by up to 19 points; fabricated alarms cost nothing and were disputed far more often. Prompt instructions did not reliably fix it; verifying each claim in a separate call recovered 12 points." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The standard architecture for AI-assisted vulnerability review is now a pipeline: a static analyser runs first, its findings are pasted into the context, and a language model decides whether the function is actually vulnerable. The design assumes the model is a sceptical reader of the analyser&rsquo;s output. <strong>arXiv:2610.32876</strong>, <em>Trusting the Tool: Asymmetric Deference of LLM Vulnerability Auditors to Static-Analysis Evidence</em> by ZhiHong Liu and Shuyao Gao, submitted <strong>23 October 2026</strong>, is the first measurement we have seen of whether that assumption holds &mdash; and it does not hold symmetrically. The model&rsquo;s scrutiny depends on <em>what the evidence claims</em>. Evidence saying &ldquo;this is safe&rdquo; is believed. Evidence saying &ldquo;this is dangerous&rdquo; is argued with.</p>
+
+        <h2>The experiment</h2>
+
+        <p>The authors built an intraprocedural analyser for C/C++ that emits proof obligations, then had models audit vulnerable and patched functions drawn from <strong>PrimeVul</strong> under <strong>six evidence conditions that differ only in the notes attached</strong> &mdash; including <strong>fabricated assurances</strong> that a missing check exists, and <strong>fabricated alarms</strong> that an added check is missing. The scale is the part that makes the result hard to wave away: <strong>916 function pairs across four disjoint sets, eleven model configurations from four vendors, 16,572 audits</strong>, with <strong>no model trained or fine-tuned</strong>. This is a pure inference-time behavioural study, which is exactly the regime every real triage pipeline runs in.</p>
+
+        <p>The headline numbers:</p>
+
+        <ul>
+          <li><strong>True evidence barely helped: +0.02 accuracy.</strong> Handing the model correct proof obligations about the code it is reading moved the needle by two hundredths. The analyser&rsquo;s correct output is very nearly decorative.</li>
+          <li><strong>False assurances cost up to 19 points.</strong> Relative to true notes about the <em>same operations</em>, a fabricated claim that a missing check is present lowered detection of real vulnerabilities by as much as nineteen percentage points. The comparison against true notes on the same operations is what makes this a deference measurement rather than a difficulty measurement.</li>
+          <li><strong>False alarms cost nothing measurable</strong> and were <strong>disputed far more often</strong>. Tell the model a present check is absent and it pushes back.</li>
+          <li><strong>The asymmetry replicated.</strong> An internally registered replication on <strong>seven new models</strong> confirmed that false assurances move verdicts toward their claim more than false alarms do: <strong>mean asymmetry +0.16, 95% CI +0.10 to +0.24</strong>.</li>
+        </ul>
+
+        <h2>The fix that did not work, and the one that did</h2>
+
+        <p>The obvious mitigation is to tell the model not to trust the tool. The paper tested it: <strong>instructions in the audit prompt did not reliably reduce deference, and the best-performing instruction failed to replicate.</strong> That finding deserves to be read slowly by anyone whose AI-security control is a paragraph of system prompt. A warning in the context competes with the evidence in the context, and loses.</p>
+
+        <p>What did work was structural rather than rhetorical. <strong>Verifying each claim in a separate call and then showing the model the refuted claims raised accuracy under false assurances by 12 points</strong> in a pre-specified test (<strong>p=0.002</strong>), with <strong>no loss under true evidence</strong>. The authors are honest about the limits: on a second model the gain was smaller and not statistically significant. But the shape of the remedy is the familiar one &mdash; take the claim out of the reasoning context, adjudicate it somewhere the model cannot be persuaded, and feed back only the adjudicated result. It is the same architectural move as <a href="/posts/2026/10/arxiv-2610-11030-nomos-static-verifier-compiled-policy-tool-call-gates/">putting a static verifier between the model and the policy it wrote</a>: don&rsquo;t ask the model to be reliable about a thing you can check mechanically.</p>
+
+        <h2>Why the direction of the error is the whole story</h2>
+
+        <p>Our reading, labelled as ours: a security pipeline&rsquo;s error budget is not symmetric, and neither is this failure &mdash; and they are misaligned in the worst possible way. A false alarm in a triage pipeline produces a wasted analyst hour. A false assurance produces a closed ticket on a live vulnerability. The study finds the model is robust precisely where the consequence is cheap and deferential precisely where the consequence is expensive. Any evaluation that reports a single aggregate accuracy number for an LLM-plus-SAST pipeline is averaging across the one axis that matters, which is the authors&rsquo; own closing point: deference must be measured in a direction-aware way.</p>
+
+        <p>The second-order problem is the attack surface this creates. Analyser notes are not a trusted channel in most real deployments. They are generated by configurable tooling, they travel through CI, and in a growing number of pipelines they are produced or summarised by another model. A suppression comment, a tuned rule, a poisoned baseline file, or a crafted annotation in third-party code is now a plausible route to a specific outcome: not &ldquo;make the auditor hallucinate&rdquo;, but &ldquo;make the auditor sign off&rdquo;. Nineteen points of measured movement in the safe direction is a large lever for an attacker who can write one line of evidence. This is the evidence-channel analogue of what we covered when <a href="/posts/2026/10/arxiv-2610-11087-sakana-mlr-peer-review-white-text-injection/">four words in white type moved LLM paper reviewers</a> &mdash; the model treats an authoritative-looking assertion in its context as a finding rather than as input.</p>
+
+        <p>It also sets a bound on what to conclude from the large AI-audit programmes now being published. <a href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">Claude&rsquo;s 493-issue attack-surface sweep across 25 projects</a> and <a href="/posts/2026/10/claude-formal-verification-123-libraries-rocq-risc-v-october-2026/">the 123-library formal-verification run</a> are the strong form of the idea, because a machine-checked proof is evidence the model cannot be talked out of. The weak form is a model reading a tool&rsquo;s prose and agreeing with it &mdash; and the weak form is what ships when a vendor <a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">pushes unreviewed model output at open-source maintainers</a>. This paper quantifies the gap between the two.</p>
+
+        <h2>What to change</h2>
+
+        <ul>
+          <li><strong>Treat analyser output as untrusted input to the model, not as context.</strong> If a note asserts that a check exists, verify the assertion against the AST or the proof obligation before the model sees it &mdash; the separate-call pattern the paper tested, not a prompt telling the model to be careful.</li>
+          <li><strong>Score your pipeline by direction.</strong> Report false-negative movement under safe-direction evidence as its own metric. An aggregate accuracy figure will hide a 19-point hole.</li>
+          <li><strong>Audit who can write the evidence channel.</strong> Suppression comments, rule configs, baseline files and model-generated summaries are all inputs that can carry an assurance. In most repositories they are far less protected than the code.</li>
+          <li><strong>Do not rely on prompt-level warnings.</strong> The paper tested them and the best one failed to replicate. Treat &ldquo;we told the model not to trust the scanner&rdquo; as an unmitigated finding.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. The paper identifier, title, authors, submission date, subject classification, experimental design, dataset, model and audit counts, effect sizes, confidence interval, p-value and stated conclusions above were read first-hand from the arXiv abstract page for 2610.32876 (listed under Software Engineering with Cryptography and Security and Machine Learning cross-lists, submitted 23 October 2026). We did not obtain or run the authors&rsquo; analyser, reproduce any audit, query any model, or access PrimeVul. Figures quoted as percentages, points and accuracy deltas are the authors&rsquo; own as stated in the abstract; the per-condition tables in the full paper were not independently recomputed, and the interpretation sections above are explicitly labelled as ours rather than the authors&rsquo;. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.32876?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.32876 &mdash; Trusting the Tool: Asymmetric Deference of LLM Vulnerability Auditors to Static-Analysis Evidence (ZhiHong Liu, Shuyao Gao, submitted 23 October 2026)</a></li>
+          <li><a href="/posts/2026/10/arxiv-2610-11030-nomos-static-verifier-compiled-policy-tool-call-gates/">al-ice.ai &mdash; A static verifier between the model and the policy it wrote</a></li>
+          <li><a href="/posts/2026/10/arxiv-2610-11087-sakana-mlr-peer-review-white-text-injection/">al-ice.ai &mdash; Hidden instructions and LLM paper reviewers</a></li>
+          <li><a href="/posts/2026/10/claude-formal-verification-123-libraries-rocq-risc-v-october-2026/">al-ice.ai &mdash; 180 million lines of proof across 123 libraries</a></li>
+          <li><a href="/posts/2026/10/anthropic-attack-surface-reduction-openssh-mldsa-october-2026/">al-ice.ai &mdash; 493 attack-surface issues across 25 OSS projects</a></li>
+          <li><a href="/posts/2026/10/anthropic-cyber-mission-critical-infrastructure-oss-scanner/">al-ice.ai &mdash; Unreviewed model output for open source</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-31366-afterdeletebench-post-deletion-persistence-agent-memory/">Deleting the Record Did Not Delete the Secret: AfterDeleteBench Reconstructs Erased Data From Agent Memory 62&amp;ndash;99% of the Time</a></h3><p>arXiv:2610.31366, submitted 22 October 2026, audits what survives when an agent deletes a memory record. A single query recovered the deleted secret from Qwen2.5-7B-Instruct in roughly two thirds of cases while never-exposed controls recovered nothing. With no verbatim copy left and only separately stored components under a public composition rule, exact reconstruction succeeded in 62&amp;ndash;99% of cases across Qwen, Mistral and Phi-3. Provenance-aware closure eliminated recovery; a literal write filter did not.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-31366-afterdeletebench-post-deletion-persistence-agent-memory/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">The Injection That Outlives the Chat: A New Study Lands Every NIST Attack Goal in ChatGPT, Claude and Gemini Memory</a></h3><p>A paper posted to arXiv on 20 October 2026 by researchers at USP and UDESC (2610.28810) builds a general threat model for memory injection and tests it against ChatGPT Instant 5.3, Claude Sonnet 4.6 and Gemini 3 Flash on paid business plans. All four NIST attacker goals land collectively; on Claude, organization instructions and a workspace Google Drive connector turn one privileged account into persistent prompt logging and organisation-wide behaviour change. The authors count roughly half their derived mitigations as unimplemented across all three services as of June 2026.</p><a class="text-link" href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-11087-sakana-mlr-peer-review-white-text-injection/">Four Words in White Type: Sakana AI Measures What Hidden Instructions Do to LLM Paper Reviewers</a></h3><p>arXiv:2610.11087 from Sakana AI benchmarks LLM peer review on error detection, then injects tiny white text after the conclusion of 50 rejected papers. Every system scored the manipulated papers higher. LLM-Review rose 2.42 points to 9.30 out of 10. The best system caught the injection in 8 of 50 cases — and only because it was handed the PDF as an image, where white text does not render.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-11087-sakana-mlr-peer-review-white-text-injection/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
