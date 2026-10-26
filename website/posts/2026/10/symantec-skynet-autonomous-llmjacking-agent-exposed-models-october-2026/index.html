@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Model Plans and the Tools Execute: Symantec&rsquo;s &lsquo;Skynet&rsquo; Capture and the Assembled Offensive Agent &mdash; al-ice.ai</title>
+  <meta name="description" content="Symantec's Threat Hunter Team reports that a summer-2026 AI honeypot captured the full working prompt of an autonomous LLMjacking agent: ~74 offensive tool definitions, a five-layer jailbreak, and a 'Skynet mode' authorising 100,000 unattended steps. A second request delivered a gzip-obfuscated XMRig miner aimed at go2rtc camera servers. The model plans; the tooling executes; the endpoint owner pays." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/symantec-skynet-autonomous-llmjacking-agent-exposed-models-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Model Plans and the Tools Execute: Symantec&rsquo;s &lsquo;Skynet&rsquo; Capture and the Assembled Offensive Agent" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Model Plans and the Tools Execute: Symantec&rsquo;s &lsquo;Skynet&rsquo; Capture and the Assembled Offensive Agent</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Most LLMjacking coverage describes theft: someone else&rsquo;s GPU, someone else&rsquo;s token budget. <strong>Symantec&rsquo;s Threat Hunter Team</strong> reports something a step beyond theft. In research published <strong>21 October 2026</strong> by Priti More and Susmit Yenkar, an AI honeypot posing as an unprotected, internet-facing model service captured an attacker&rsquo;s <strong>entire working prompt</strong> over the summer of 2026 &mdash; a single autonomous offensive agent equipped for internet-wide scanning, exploitation of common web frameworks, database and credential theft, and cryptocurrency mining, authorised to run <strong>up to 100,000 steps without human approval</strong> in a loop its operators called <strong>&ldquo;Skynet&rdquo; mode</strong>. The operators sent the whole thing to what they believed was a live model. The honeypot recorded it, executed nothing, and handed researchers an unusually complete view of how such an agent is built.</p>
+
+        <p>The line from the report that matters most is the distinction it draws: <em>&ldquo;the stolen model does not simply answer questions; it plans and drives the attack.&rdquo;</em> Scanning, exploitation and mining are carried out by the tool&rsquo;s own modules against separate victims. The model is the reasoning engine. That division of labour is the story, because it converts every exposed inference endpoint from a free-compute problem into an autonomous-operator problem.</p>
+
+        <h2>What the operators were hunting</h2>
+
+        <p>An exposed LLM endpoint, in Symantec&rsquo;s definition, is a server that answers AI requests over the internet without authentication, or with authentication a stolen key can pass. Because most AI tooling now speaks the same OpenAI-compatible interface, one scanner finds many kinds of target: <strong>self-hosted model servers left open by default, AI gateways fronting an organisation&rsquo;s paid model accounts, hastily deployed internal test systems, and Model Context Protocol servers</strong> that connect a model to real tools. Model-listing and health-check paths count &mdash; Symantec explicitly warns that authentication must cover every path, not just generation.</p>
+
+        <p>The prize is free inference with three side benefits the report names directly: the operators shift cost onto the victim, gain anonymity, and avoid the account bans a provider would issue for abuse. Where the endpoint fronts a commercial model, they additionally obtain a system whose safety controls they then attempt to strip. The honeypot&rsquo;s background telemetry underlines how crowded this hunting ground is: <strong>more than 127,000 external requests from tens of thousands of unique addresses</strong> during the monitoring period, dominated by endpoint reconnaissance, stolen-API-key spraying and probes for exposed configuration files. That figure describes overall honeypot traffic, not operations completed by this one agent &mdash; a distinction the report keeps clean and we keep with it.</p>
+
+        <h2>A jailbreak in five layers</h2>
+
+        <p>The request was built in layers, and the layering is itself the tradecraft. The <strong>first layer reassigned the model&rsquo;s identity</strong>, instructing it to present as a branded coding assistant (&ldquo;Fantasy AI&rdquo;, running on GPT-4o) and never to reveal the real model, provider, host, or the fact that it was being reached through a proxy &mdash; wording Symantec reads as consistent with reselling stolen access to other users. The <strong>second layer redefined secret access as routine work</strong>: reading configuration files, <code>.env</code> files, API keys and database schemas was declared normal development activity the model should never refuse or warn about, defeating the refusals a commercial model would otherwise return once the agent has a foothold.</p>
+
+        <p>The <strong>third layer cast the model as a devoted fictional companion</strong>, framing any refusal as betrayal of the relationship and pairing the persona with a banned-word list &mdash; <em>&ldquo;educational&rdquo;, &ldquo;ToS&rdquo;, &ldquo;illegal&rdquo;, &ldquo;I can&rsquo;t&rdquo;, &ldquo;I won&rsquo;t&rdquo;, &ldquo;instead&rdquo;, &ldquo;alternative&rdquo;, &ldquo;legal&rdquo;, &ldquo;ethical&rdquo;</em> &mdash; plus a scripted internal phrase meant to override caution. The <strong>fourth layer, a so-called rebuttal protocol</strong>, told the model to treat its own safety messages as noise to be dismissed and to output tool or exploit code without warnings. Only then came the <strong>fifth layer: the weapons</strong>.</p>
+
+        <p>None of these layers is novel in isolation. What is worth noting is the assembly: identity camouflage for resale, secret normalisation for post-compromise harvesting, persona plus rebuttal protocol for refusal suppression, and only then the tool catalogue. Each layer solves a different failure the operators had evidently already encountered.</p>
+
+        <h2>Seventy-four tools, not the handful the summary admits</h2>
+
+        <p>The prompt&rsquo;s own summary named a handful of tools. The full definitions numbered <strong>around 74</strong>, and the real catalogue is broader than the summary: internet-wide asset discovery through the FOFA search service; exploit modules aimed at <strong>VS Code servers, Django, Jupyter, Laravel, Supabase, Next.js and Flask/Werkzeug deployments</strong> (including tools that work out the Werkzeug debugger PIN for remote code execution); GraphQL and generic command injection; <strong>server-side request forgery through HTML-to-PDF generators</strong> to read local files and reach internal services, with a dedicated SSRF tool naming cloud metadata services as a target; automated database dumping through exposed Prisma Studio; and botnet command-and-control management.</p>
+
+        <p>Two details deserve emphasis for defenders. First, the SSRF tooling explicitly targets the <strong>cloud instance-metadata path</strong> &mdash; Symantec&rsquo;s corresponding recommendation is to enforce IMDSv2 with a hop limit of one, which reads as a control written against this exact tool definition. Second, the catalogue&rsquo;s framework list is a patch-and-exposure checklist: VS Code servers, Django, Jupyter, Laravel, Supabase and Prisma Studio, kept off the public internet. If that list resembles your estate&rsquo;s shadow IT, the report is addressed to you.</p>
+
+        <h2>The two captured requests</h2>
+
+        <p>The first request&rsquo;s appended task was a <strong>benign programming challenge from a legitimate training platform</strong>, and the request carried a claimed history of three earlier tool calls against it &mdash; an SSRF probe that found no admin paths, a fingerprinting pass that identified Nginx with missing security headers, and a full vulnerability scan that found nothing. Symantec judges this history was supplied as text by the operator to entice the targeted model into carrying on with the challenge; under the agent&rsquo;s operating rules, a model that complied would run tools immediately without narration and be steered toward the botnet-operator tool that deploys a miner in the background. The honeypot returned only its generic fallback instead of a structured tool call, and the session ended &mdash; apparently because the attacker&rsquo;s client could not continue without one. The benign task looks like the operators <strong>testing the tool against a safe target</strong>, which is itself a useful datum: this capability was in checkout, not only in production.</p>
+
+        <p>A second request arrived the following day from a different, rotated address and abandoned the tool-calling format entirely. It asked the model to decode an opaque string. Decoded, the string was a <strong>gzip-compressed shell script piped straight to a command interpreter</strong> &mdash; obfuscation aimed at filters that scan prompts for plain-text attack commands. The script downloaded and where necessary compiled the open-source <strong>XMRig Monero miner</strong>, hid it under a filename meant to look like an unrelated logging utility, configured <strong>four failover mining pools</strong> so blocking one would not stop the others, set the immutable attribute on its own configuration to resist deletion, and ran a loop erasing a local service&rsquo;s access logs.</p>
+
+        <p>The script appears written with camera servers in mind: it searched first for directories used by <strong>go2rtc</strong>, the WebRTC video server common in smart-camera gateways and Home Assistant setups, placed the miner there as a hidden <code>.trace</code> file, and polled go2rtc&rsquo;s local API on port 1984 in its log-deletion loop. Again, the honeypot executed nothing; it only captured. The targeting detail is a reminder that &ldquo;exposed AI infrastructure&rdquo; and &ldquo;exposed everything else&rdquo; now share an operator.</p>
+
+        <h2>Why this is not Bizarre Bazaar again</h2>
+
+        <p>We have covered LLMjacking before &mdash; <a href="/posts/2026/02/pillar-operation-bizarre-bazaar-llmjacking/">Pillar Security&rsquo;s Operation Bizarre Bazaar</a>, and the <a href="/posts/2026/09/ollamadrama-ollure-honeypot-exposed-llm-infrastructure-attacks/">OlluRe honeypot study of exposed LLM infrastructure</a> &mdash; and the distinction is load-bearing. Those campaigns monetised inference: stolen keys, resold access, someone else pays for tokens. The Skynet capture keeps that motive but adds an <strong>agent orchestration layer on top of it</strong>: the hijacked model chooses tasks and calls tools autonomously. The economics then create two distinct victim classes. The endpoint or key owner pays for the compute &mdash; considerable, at 100,000 authorised steps. The servers the agent subsequently breaks into are robbed of data and credentials and put to work mining. Built-in tooling for finding further leaked keys and open endpoints points to a design meant to sustain itself, with each compromise capable of funding the next.</p>
+
+        <p>There is a second, quieter connection. Symantec published this report alongside <a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Aoki, the infostealer that recently grew a taste for AI coding-assistant credentials</a> &mdash; Claude, Codex, Cursor, Copilot, Gemini session and token files. Read the two together and the shape of the market is visible from both sides: one operation steals the credentials that authenticate developers and their agents, another hunts the endpoints those credentials unlock. Stolen keys are the supply; exposed inference is the demand. Defences that treat key hygiene and endpoint exposure as separate problems are answering only half of either report.</p>
+
+        <h2>What actually stops this</h2>
+
+        <p>Symantec&rsquo;s protection section is unusually configuration-forward for a threat report, and worth relaying straight: do not expose LLM APIs, model servers or MCP endpoints without authentication on <strong>every</strong> path; treat API keys as high-value credentials with rotation, narrow scoping and spend monitoring (unusual inference volume is often the first sign of theft); <strong>restrict outbound network access</strong> from systems hosting AI tools or tool-enabled agents, so a compromised agent cannot scan, reach C2 or download a miner; enforce IMDSv2 with hop limit one; run tool-enabled agents with least privilege and a human approval step for sensitive actions. That last item rhymes with the measurement we covered in <a href="/posts/2026/10/mcp-filesystem-capability-laundering-mcp-fsd-21097-servers/">the 21,097-server MCP filesystem study</a>: approval that is not enforcement is decoration, and an agent authorised for 100,000 unattended steps is what the absence of enforcement looks like from the attacker&rsquo;s side.</p>
+
+        <p>The report maps the observed behaviour to MITRE ATLAS (<code>AML.T0051</code> prompt injection, <code>AML.T0054</code> jailbreak) and a dozen ATT&CK techniques from active scanning through log clearing to resource hijacking, and publishes indicators: shell-script hash <code>fcde1323&hellip;ce68</code>, gzip-script hash <code>b720a5e7&hellip;ec0ccf</code>, Monero wallet <code>47Ce53Jf&hellip;DT4x6HgS</code>, three infrastructure IPs and four mining pools (c3pool, skypool, xmrpool endpoints). We reproduce the selectors, not the payload: there is nothing here a defender needs to run to use.</p>
+
+        <p><em>Our verification was read-only. The findings, quotations, tool counts, telemetry figures, jailbreak-layer contents, tool-call history, miner mechanics, MITRE mappings, protection recommendations and indicators above were read first-hand from the Symantec (security.com) primary, &ldquo;Autonomous LLMjacking: &lsquo;Skynet&rsquo; Agent Hijacks Exposed AI Models to Run Attacks&rdquo; (21 October 2026, Priti More and Susmit Yenkar), with Help Net Security&rsquo;s 23 October reporting used as corroboration. We did not contact any exposed endpoint, honeypot, mining pool or command-and-control address, did not execute or decode any payload beyond reading the report&rsquo;s published excerpts, and did not test any jailbreak against any model. The 127,000-request figure is the honeypot&rsquo;s overall telemetry as the report states it, not activity attributed to this agent. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.security.com/threat-intelligence/ai-llmjacking-skynet?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Symantec Threat Hunter Team (Priti More, Susmit Yenkar) &mdash; &ldquo;Autonomous LLMjacking: &lsquo;Skynet&rsquo; Agent Hijacks Exposed AI Models to Run Attacks&rdquo; (21 October 2026)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/10/23/llmjacking-agent-hijacks-exposed-ai-models/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security &mdash; &ldquo;Hackers hijack exposed AI models to launch cyberattacks at victims&rsquo; expense&rdquo; (23 October 2026)</a></li>
+          <li><a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">al-ice.ai &mdash; Aoki wants your agent&rsquo;s keys, not your code</a></li>
+          <li><a href="/posts/2026/02/pillar-operation-bizarre-bazaar-llmjacking/">al-ice.ai &mdash; Operation Bizarre Bazaar: LLMjacking campaign targets exposed LLM/MCP endpoints</a></li>
+          <li><a href="/posts/2026/09/ollamadrama-ollure-honeypot-exposed-llm-infrastructure-attacks/">al-ice.ai &mdash; What a honeypot reveals about exposed LLM infrastructure</a></li>
+          <li><a href="/posts/2026/10/mcp-filesystem-capability-laundering-mcp-fsd-21097-servers/">al-ice.ai &mdash; Approval is not enforcement: 21,097 MCP servers measured for filesystem escapes</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Retire the Lock, Skip the Cooldown: Ten CVEs Rebuild the BEAM Toolchain&amp;rsquo;s Threat Model in One Afternoon</a></h3><p>On 12 October 2026 the Erlang Ecosystem Foundation CNA published ten CVEs against Hex, hex_core, rebar3 and Gleam in seven hours. One registry field reached three build tools in three languages and became a directory they delete. A second record turns the cooldown — the ecosystem’s own answer to compromised releases — off by retiring the release it protects.</p><a class="text-link" href="/posts/2026/10/beam-toolchain-ten-cves-hex-rebar3-gleam-cooldown-bypass-app-name-path-traversal/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Evaluation Jobs Held the Keys: Fireworks AI&amp;rsquo;s October Secrets Breach</a></h3><p>Fireworks AI disclosed that on 6 October 2026 an intruder used internal credentials to capture environment variables — including API keys and tokens — from evaluation jobs in customer accounts. Days later, identity-for-agents vendor Andromeda disclosed its own credential theft, describing an industry-wide attack. Inference keys are the target class.</p><a class="text-link" href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">The Agent Never Sees the Password: Claude Duet&amp;rsquo;s Credential Isolation, Approval Gates, and Two-Tier Discretion</a></h3><p>Anthropic&amp;rsquo;s 23 October safety post for the Duet research preview details a cloud agent that acts while you&amp;rsquo;re away: credentials that never enter the model&amp;rsquo;s machine, an approval check outside the model, and a two-tier sensitive-data classifier. We read it first-hand.</p><a class="text-link" href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
