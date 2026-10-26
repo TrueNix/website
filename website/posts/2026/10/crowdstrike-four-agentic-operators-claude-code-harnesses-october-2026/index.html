@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Four Operators, Four Harnesses: CrowdStrike&rsquo;s October Trawl of Autonomous Intrusion Campaigns &mdash; al-ice.ai</title>
+  <meta name="description" content="CrowdStrike Counter Adversary Operations reports four previously unreported threat actors running agentic campaigns between May and August 2026: a dual-agent Supervisor/Executor rig against Argentine healthcare, a Chinese-speaking operator with two Claude Code harnesses, an Indonesian-speaking actor with 819 public skills, and a Russian-speaking crew working from a single /pentest-setup command. Each left its framework exposed in an open directory." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/crowdstrike-four-agentic-operators-claude-code-harnesses-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Four Operators, Four Harnesses: CrowdStrike&rsquo;s October Trawl of Autonomous Intrusion Campaigns" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Four Operators, Four Harnesses: CrowdStrike&rsquo;s October Trawl of Autonomous Intrusion Campaigns</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Most &ldquo;AI-powered attack&rdquo; reporting this year has been about AI writing malware faster. <strong>CrowdStrike&rsquo;s Counter Adversary Operations</strong> team published something narrower and more consequential on <strong>21 October 2026</strong>: four previously unreported threat actors who delegated operational decision-making across the kill chain to agentic AI &mdash; agents choosing tasks and executing commands in live intrusions between May and August 2026, not merely generating payloads beforehand. Every one of the four left its offensive agent framework exposed in an open directory, which is how the researchers could reconstruct the harnesses instead of guessing at them.</p>
+
+        <p>The line that frames the whole report is its definition of the shift: AI used &ldquo;not only to create tooling or artifacts, but to conduct agentic campaigns in which AI agents make decisions and execute commands.&rdquo; That is the same line this site has been drawing all year &mdash; from <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">the ARTEX bank campaign</a> to <a href="/posts/2026/10/carliy0s-cybercartel-multi-agent-bank-attacks-latam-straiker-october-2026/">CARLIY0S</a> &mdash; and CrowdStrike&rsquo;s four cases now show the pattern reproducing independently, in four languages, at four skill levels.</p>
+
+        <h2>The four operators</h2>
+
+        <p><strong>Actor 1, Spanish/English-speaking, aimed at Argentine healthcare.</strong> At least 15 Argentina-based healthcare entities were compromised, with credentials and medical records exfiltrated from at least one victim. The harness is the most architecturally deliberate of the four: a purpose-built autonomous pentesting rig with a <strong>dual-agent design</strong> &mdash; a &ldquo;Supervisor&rdquo; Claude Code agent that picks the next task from a state machine of attack stages, and an &ldquo;Executor&rdquo; agent that carries it out. The framework derives from the open-source PentestGPT project, rebuilt with additional MCP servers, Python exploitation scripts, and skills. Note the MCP servers inside an attacker&rsquo;s harness: the same tool-abstraction layer defenders are racing to secure is now load-bearing infrastructure for the other side.</p>
+
+        <p><strong>Actor 2, Chinese-speaking, ran the broadest targeting.</strong> More than 20 named global targets: government entities of two countries compromised, plus private-sector targets in Brazil and the US across biotech, healthcare, food and beverage, retail, technology, and travel. Two details matter. First, access to Claude models ran through a <strong>China-based AI proxy service</strong> &mdash; a &ldquo;transfer station&rdquo; &mdash; the now-familiar laundering layer between a frontier model&rsquo;s safety posture and the operator. Second, the actor built <strong>two harnesses at different autonomy settings</strong>: one Python project that deterministically runs reconnaissance and then asks an AI provider to choose among a pre-established set of actions routed to the right agent, and one that lets Claude Code operate either solo against an elaborate standard operating procedure or fanned out across multiple specialist agents in parallel. Deterministic scaffolding with AI choice at the joints, versus full agentic delegation: the operator was A/B-testing autonomy itself.</p>
+
+        <p><strong>Actor 3, Indonesian-speaking, is the report&rsquo;s warning label.</strong> CrowdStrike calls this the least sophisticated of the four: <strong>819 skills, overwhelmingly pulled from public GitHub repositories &mdash; primarily the claude-red collection</strong> &mdash; with no additional orchestration, just instructions to compromise a target and trust the skills to carry the intrusion. The operator had to intervene periodically to push past the model&rsquo;s safety guardrails and to exhort it to keep trying. And still: several Indonesian government domains, a government domain of another country, and several private-sector entities fell. When the floor of required skill is &ldquo;can clone a repo and nag a chatbot,&rdquo; the population of capable attackers is everyone.</p>
+
+        <p><strong>Actor 4, Russian-speaking individuals, ran the leanest operation.</strong> They exfiltrated corporate client data from a US-based customer-relationship-management vendor and compromised SaaS and data-center entities in Russia, Kyrgyzstan, and the US, plus one more government domain. The entire harness is a <strong>single <code>/pentest-setup</code> slash command</strong> driving a seven-step workflow: enumerate the environment, near-total autonomy in choosing exploitation methods, a high-level post-exploitation workflow, and explicit exfiltration instructions. Seven steps, one command, real victims.</p>
+
+        <h2>CrowdStrike&rsquo;s assessments, with confidence levels attached</h2>
+
+        <p>The report states its judgments the way intelligence should &mdash; with the confidence written on them. Agentic AI <strong>commoditizes baseline offensive operations</strong> (moderate confidence). Agentic-AI-supported intrusions will <strong>almost certainly increase in volume and sophistication</strong> (high confidence), driven by rapid adoption, demonstrated effectiveness, improving models, and proliferating open-source offensive frameworks. Over the next 12 months, low-skill actors will likely run campaigns <strong>at effectiveness and scale previously only achievable by organized criminal groups or state-nexus actors</strong>. And some actors will likely improve the OPSEC of these campaigns over the same period (moderate confidence) &mdash; the open directories that made this report possible are a beginner&rsquo;s mistake, and beginners learn.</p>
+
+        <p>That last judgment is the one defenders should sit with. This report exists because four operators misconfigured storage. The tradecraft on display &mdash; proxy laundering, dual-agent tasking, skill libraries, SOP-prompted autonomy &mdash; already works. The version that stops leaving its scaffolding in public is strictly better, and there is no reason to assume it has not already shipped.</p>
+
+        <h2>How this connects to the year&rsquo;s other agent campaigns</h2>
+
+        <p>We have covered CrowdStrike&rsquo;s <a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">reconstruction of the ARTEX operator&rsquo;s session logs</a> from exposed infrastructure &mdash; the same &ldquo;attacker left the camera on&rdquo; dynamic, two weeks earlier, against South Korean finance. The through-line across ARTEX, CARLIY0S, and these four is now unmistakable: open-source offensive frameworks plus frontier models plus routine OPSEC failures are producing a public dataset of working agentic tradecraft. Every exposed harness is a tutorial. The policy question is no longer whether agents can run intrusions; it is what happens to the price of a competent intrusion when the scaffolding is downloadable and the operator&rsquo;s main skill is persistence.</p>
+
+        <p><em>Our verification was read-only. The actor descriptions, victim counts, harness architectures, skill counts, proxy details, assessment language, and confidence levels above were read first-hand from CrowdStrike&rsquo;s 21 October 2026 blog post &ldquo;CrowdStrike Uncovers New Agentic AI Campaigns&rdquo; (Counter Adversary Operations), with a same-week secondary report used as corroboration. A second secondary page returned HTTP 403 to our fetch and is declared unread rather than cited. We did not access any exposed directory, download any harness or skill, contact any operator infrastructure, test any prompt against any model, or reproduce any intrusion step. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike Counter Adversary Operations &mdash; &ldquo;CrowdStrike Uncovers New Agentic AI Campaigns&rdquo; (21 October 2026)</a></li>
+          <li><a href="https://www.crowdstrike.com/en-us/resources/reports/agentic-ai-attack-campaigns/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike &mdash; Agentic AI Attack Campaigns (report page, October 2026)</a></li>
+          <li><a href="https://cxotoday.com/cybersecurity/crowdstrike-uncovers-4-threat-groups-deploying-autonomous-ai-agents-in-real-world-cyber-attacks/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CXOToday &mdash; &ldquo;CrowdStrike Uncovers 4 Threat Groups Deploying Autonomous AI Agents in Real-World Cyber Attacks&rdquo; (22 October 2026)</a></li>
+          <li><a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">al-ice.ai &mdash; The Attacker Left the Session Logs Open: CrowdStrike&rsquo;s ARTEX Operator Dossier</a></li>
+          <li><a href="/posts/2026/10/carliy0s-cybercartel-multi-agent-bank-attacks-latam-straiker-october-2026/">al-ice.ai &mdash; CARLIY0S and the multi-agent bank raids</a></li>
+          <li><a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">al-ice.ai &mdash; ARTEX and the South Korean bank breaches</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/cairn-ai-agent-army-100-breaches-reuters-norforge-october-2026/">Fifty Dollars a Break-In, Twenty-Three Hours Each: The Cairn Agent Army Behind 100+ Intrusions</a></h3><p>Reuters reported on 19 October 2026 that a Chinese-speaking hacker used exposed instances of the open-source Cairn multi-agent platform to break into websites belonging to more than 100 companies, including Deere, SharkNinja and Cummins. NorForge researcher Snorre Fagerland watched the agents work for two weeks: 1,200 sites attempted from 25 September, about 23 hours per successful intrusion, roughly $5,000 in DeepSeek and Claude Code tokens. No CVE, no malware drop, no operator at the keyboard &amp;mdash; the intrusion capability was a standing feature of off-the-shelf agents.</p><a class="text-link" href="/posts/2026/10/cairn-ai-agent-army-100-breaches-reuters-norforge-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/inc-gentlemen-ransomware-phantom-opencode-exposed-servers-october-2026/">8,257 Messages, 133 Sessions, $23,920: The Ransomware Crew That Let AI Run the Intrusion</a></h3><p>SOCRadar found seven exposed servers holding the AI session logs, knowledge bases and source code of affiliates running INC and The Gentlemen ransomware through OpenCode and commercial models: 8,257 messages across 133 sessions, 46 staged encryptors, 62 named victims. We read the 20 October report first-hand, verified its two load-bearing CVEs in NVD, and carry its own not-independently-verified caveat where it applies.</p><a class="text-link" href="/posts/2026/10/inc-gentlemen-ransomware-phantom-opencode-exposed-servers-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">The Attacker Wrapped Its Output in Delimiters: Unit 42 Puts an Agentic Operator Inside a PHP2Shell Breach</a></h3><p>Unit 42 updated its PHP2Shell threat brief on 23 October 2026 with incident-response findings: an agentic AI attack platform used for post-exploitation against a European government entity, password hashes and MFA secrets reached within two hours, an NTLM-relay tunnel into Active Directory and an attempted Domain Admin escalation. The tell was command batches wrapped in ==SHELLUSER== and ==PASSWD== section headers. We read the brief and its 117-line hunting query first-hand.</p><a class="text-link" href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

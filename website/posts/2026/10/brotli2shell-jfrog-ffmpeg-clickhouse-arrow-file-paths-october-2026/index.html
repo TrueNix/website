@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Beyond HTTP: JFrog&rsquo;s Brotli2Shell Work Shows the Decoder Bug Riding Files, Not Just Requests &mdash; al-ice.ai</title>
+  <meta name="description" content="JFrog Security Research (25 October 2026) reproduced CVE-2026-111497 beyond Node.js and HTTP: a crafted JPEG XL file driving FFmpeg to instruction-pointer control via libjxl, a remotely triggerable ClickHouse crash from one 23 MB request body, a native .NET runtime kill, and an Apache Arrow infinite loop. Patch status now depends on reachability, not just version numbers." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/brotli2shell-jfrog-ffmpeg-clickhouse-arrow-file-paths-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Beyond HTTP: JFrog&rsquo;s Brotli2Shell Work Shows the Decoder Bug Riding Files, Not Just Requests" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Beyond HTTP: JFrog&rsquo;s Brotli2Shell Work Shows the Decoder Bug Riding Files, Not Just Requests</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>We have covered this Brotli decoder flaw three times in five days &mdash; <a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">the Node.js disclosure and its February fix that never shipped</a>, <a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">the rescoping to a library bug reaching Codex, Envoy and Istio</a>, and <a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">Imperva&rsquo;s Node2Shell remote-code-execution proof</a> &mdash; plus <a href="/posts/2026/10/dotnet-oob-october-25-2026-incomplete-fixes-brotli-tarball-ownership/">Microsoft&rsquo;s 25 October .NET out-of-band release</a>. <strong>JFrog Security Research</strong> (Aviv Engelberg, Eddy Tsalolikhin and Ofri Ouzan, <strong>25 October 2026</strong>) now forces a fourth post, because it breaks the frame the earlier names set. Node2Shell and HTTP2Shell both imply a network path. JFrog&rsquo;s &ldquo;Brotli2Shell: Beyond Node(2Shell) and HTTP(2Shell)&rdquo; demonstrates the same <strong>CVE-2026-111497</strong> out-of-bounds write reached through <strong>a crafted image file, a media pipeline, a managed runtime, and a data-frame library</strong> &mdash; no HTTP required.</p>
+
+        <p>The root cause, as JFrog states it: an error-handling flaw in the decoder&rsquo;s block-switch processing treats an invalid block switch as &ldquo;needs more input,&rdquo; continues with invalid state, and writes past the intended buffer. Affected upstream: Brotli 1.0.3 through before 1.0.10, 1.1.0 through before 1.1.1, 1.2.0 through before 1.2.1, corrected in upstream commit <code>0ed4268</code> (1.2.1). And the sentence that should change how every scanner result from this month is read: <strong>downstream projects may backport the fix, so the upstream version number alone is not always sufficient to determine patch status</strong>. Version inventory was step one. It was never the whole assessment.</p>
+
+        <h2>Four new reaches, four different failure modes</h2>
+
+        <p><strong>FFmpeg: instruction-pointer control from a picture.</strong> FFmpeg reaches the vulnerable decoder transitively through libjxl, which uses Brotli to decompress metadata in <code>brob</code> boxes inside JPEG XL containers. JFrog built a Python script that hand-assembles a valid JPEG XL file &mdash; real signature, real <code>ftyp</code>, a <code>brob</code> box carrying an Exif tag plus crafted Brotli bytes, a valid <code>jxlc</code> image codestream &mdash; with the malformed stream declaring one block type and then forcing an invalid block switch. Decoding passes the <code>brob</code> contents to <code>BrotliDecoderDecompressStream()</code>; the failure surfaces at instance destruction, freeing a pointer derived from the <code>0x41</code> bytes in the payload, and the process dies at <code>0x414141414141</code>. That is <strong>control over the corrupted pointer value through a crafted image file</strong>. JFrog is explicit that weaponizing it into RCE needs further exploitation work and depends on target build and mitigations &mdash; but the network perimeter is now irrelevant to this path. An image attachment is a delivery vehicle.</p>
+
+        <p><strong>ClickHouse: one request, remote crash, fix merged but unshipped.</strong> A single HTTP request with a crafted 23&nbsp;MB body and <code>Content-Encoding: br</code> crashed the tested ClickHouse server: the malformed stream corrupts decoder state, and the crash lands during cleanup when the buffer is destroyed and the decoder freed &mdash; SIGSEGV, taking in-flight queries with it. A fix was merged in ClickHouse PR #127419, but <strong>no patched release had shipped at the time of writing</strong>. A merged fix your packages cannot install is not a fix; it is a countdown other people can read too.</p>
+
+        <p><strong>.NET: a native kill no managed code can catch.</strong> <code>System.IO.Compression.Brotli</code> compiles the native decoder into the runtime, so <code>BrotliStream</code> feeds attacker-controlled input straight to the vulnerable logic &mdash; a two-stage stream that suspends decoding mid-state, then triggers the invalid block switch inside <code>DecodeBlockTypeAndLength()</code>, walking heap until a native SIGSEGV ends the process. Unlike a managed exception, <strong>the runtime cannot catch this; the process dies</strong>. Tracked as dotnet/runtime #136422, with Microsoft&rsquo;s 25 October out-of-band runtimes (8.0.33, 9.0.22, 10.0.14, 11.0 RC3) as the remediation we already covered.</p>
+
+        <p><strong>Apache Arrow: a 534-byte infinite loop.</strong> The pyarrow path to Brotli-compressed Parquet pages &mdash; or the direct buffer-decompression API, no network at all &mdash; turns a 534-byte input built on the published Node.js regression vector into a <strong>denial of service by infinite loop</strong>: the decoder&rsquo;s retry logic treats the malformed input as &ldquo;send more&rdquo; and spins forever instead of rejecting it. Brotli 1.2.1 rejects the same input in under a second. Tracked as apache/arrow#55166, open at the time of writing.</p>
+
+        <h2>Present is not reachable, and reachable is not exploitable</h2>
+
+        <p>The report&rsquo;s most reusable contribution is its two-question discipline: <em>is the vulnerable implementation present?</em> (bundled source, system library, transitive dependency) and separately, <em>can untrusted input reach the decoder?</em> HTTP clients and servers are one answer to the second question; file parsers, media tools, and native data APIs are others. JFrog also grades the existing tooling honestly: node2shell-detect inventories runtimes but skips embedded Node and bundled copies; the Trail of Bits Brotli Checker fingerprints decoder code and, paired with a coding agent, investigates paths &mdash; but depth depends on available evidence and <strong>does not guarantee every path is found</strong>. Their own open-source scanner covers JavaScript Brotli APIs and streaming, <code>fetch()</code>, TLS certificate compression and Express/body-parser paths; Python&rsquo;s <code>brotli</code>/<code>brotlicffi</code> plus the HTTP clients that silently decompress Brotli when those packages are installed (requests, urllib3, httpx, aiohttp); ELF decoder symbols; and CLI usage. The Python auto-decompression point deserves emphasis for agent infrastructure: <strong>an application can be exposed without ever importing Brotli itself</strong>, because its HTTP client does the decoding on its behalf.</p>
+
+        <p>The operational picture as of this weekend, corroborated by contemporaneous reporting tracking the disclosure: Debian fixed trixie and bookworm, Amazon Linux 2023 and openSUSE shipped fixes, Ubuntu still listed its packages as needing evaluation, the Ruby <code>brotli</code> gem fixed 0.9.1 on 24 October bundling 1.2.1, PYSEC entries for the two Python packages landed 23 October, and Cloudflare&rsquo;s two managed-ruleset additions on 25 October only log by default. CISA&rsquo;s 23 October assessment recorded exploitation as none and automatable as no &mdash; a snapshot, not a forecast, and the JFrog work is exactly the kind of publication that moves the second field.</p>
+
+        <p><em>Our verification was read-only. The root-cause description, affected ranges, fix commit, FFmpeg payload mechanics and crash address, ClickHouse request size and PR status, .NET failure mode and issue tracker, Arrow input size and issue status, scanner coverage lists, and tool comparisons above were read first-hand from JFrog Security Research&rsquo;s 25 October 2026 report, with same-week secondary coverage used as corroboration for distribution status. We did not build or run any proof of concept, craft any JPEG XL file, send any request to any ClickHouse instance, or test any runtime. No payload is reproduced beyond the report&rsquo;s published excerpt mechanics as described in prose. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">JFrog Security Research (Engelberg, Tsalolikhin, Ouzan) &mdash; &ldquo;Brotli2Shell: Beyond Node(2Shell) and HTTP(2Shell)&rdquo; (25 October 2026)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/brotli-decoder-flaw-behind-nodejs-rce.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News &mdash; &ldquo;Brotli Decoder Flaw Behind Node.js RCE Also Affects Bun, Python and Other Widely Used Software&rdquo; (24 October 2026, updated)</a></li>
+          <li><a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">al-ice.ai &mdash; Node2Shell: Imperva&rsquo;s Brotli RCE proof</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">al-ice.ai &mdash; Brotli rescoped: a library bug reaching Codex, Envoy and Istio</a></li>
+          <li><a href="/posts/2026/10/dotnet-oob-october-25-2026-incomplete-fixes-brotli-tarball-ownership/">al-ice.ai &mdash; .NET&rsquo;s 25 October out-of-band release</a></li>
+          <li><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">al-ice.ai &mdash; The February fix that never shipped</a></li>
+        </ul>
+
+      </article>
+<aside class="story-timeline" data-story-timeline aria-labelledby="story-timeline-title">
+      <div class="eyebrow">Developing story</div><h2 id="story-timeline-title">Follow the timeline</h2>
+      <ol><li class=""><time datetime="2026-10-22">2026-10-22</time><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">The Patch Was Eight Months Old: Node&amp;rsquo;s Brotli RCE and the Runtimes That Vendored the Bug</a></li><li class=""><time datetime="2026-10-24">2026-10-24</time><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">The Record Moved to the Library: Brotli&amp;rsquo;s CVE Was Rescoped, and Envoy Was Already Patched by Accident</a></li><li class=""><time datetime="2026-10-25">2026-10-25</time><a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">The PoC Ran on the Official Build: Imperva&amp;rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express</a></li><li class="current"><time datetime="2026-10-26">2026-10-26</time><a href="/posts/2026/10/brotli2shell-jfrog-ffmpeg-clickhouse-arrow-file-paths-october-2026/" aria-current="page">Beyond HTTP: JFrog&amp;rsquo;s Brotli2Shell Work Shows the Decoder Bug Riding Files, Not Just Requests</a></li></ol>
+    </aside><aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">The Patch Was Eight Months Old: Node&amp;rsquo;s Brotli RCE and the Runtimes That Vendored the Bug</a></h3><p>Node.js shipped 22.23.4, 24.22.1 and 26.12.1 on 21 October 2026, fixing ten issues including CVE-2026-111497, an out-of-bounds write in the bundled Brotli decoder. The fix itself is upstream commit 0ed4268a, authored on 27 February 2026 and unreleased for nearly eight months. google/brotli cut v1.0.10, v1.1.1 and v1.2.1 the same evening &amp;mdash; with no GitHub advisory, no OSV record and no NVD entry for the C library every other runtime vendors. Bun demonstrated the gap in real time.</p><a class="text-link" href="/posts/2026/10/brotli-cve-2026-111497-node-upstream-fix-february-bun-unreleased/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">The PoC Ran on the Official Build: Imperva&amp;rsquo;s Node2Shell Turns Brotli Into RCE Through fetch and Express</a></h3><p>Imperva Red Team ran attacker code inside applications on the official Node.js 24.22.0 Linux arm64 image using crafted Brotli data exploiting CVE-2026-111497, no debugger or custom build, then confirmed 24.22.1 rejects the same input. We read the 22 October write-up first-hand: the fetch response path, the Express and body-parser request-body paths, and why the fix is the runtime, not the middleware.</p><a class="text-link" href="/posts/2026/10/node2shell-imperva-nodejs-brotli-rce-fetch-express-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">The Record Moved to the Library: Brotli&amp;rsquo;s CVE Was Rescoped, and Envoy Was Already Patched by Accident</a></h3><p>Forty-eight hours after we reported that CVE-2026-111497 had no NVD entry, no OSV record and no advisory for the C library that actually contains the bug, all three gaps closed. The CVE is now Google&amp;rsquo;s, scoped to Brotli 1.0.3 through 1.2.0 on all platforms at CVSS 9.2. Node amended the credits to OpenAI Codex Security. And Envoy&amp;rsquo;s fixed binaries turn out to have shipped on 6 October &amp;mdash; fifteen days before disclosure, via a routine dependency bump nobody labelled.</p><a class="text-link" href="/posts/2026/10/brotli-cve-2026-111497-rescoped-library-openai-codex-envoy-istio-early-fixes/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
