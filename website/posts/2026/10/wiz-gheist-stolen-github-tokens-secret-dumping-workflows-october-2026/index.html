@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens &mdash; al-ice.ai</title>
+  <meta name="description" content="Wiz Research reports that since 15 September 2026 a campaign dubbed Gheist has used stolen GitHub tokens to plant a secret-dumping sync-check workflow in every reachable repository — 13,500+ branches across 850+ accounts — exfiltrating secrets through GitHub&rsquo;s own API in base32. GitHub&rsquo;s July approval hold blocks it in public repos; private repos and Enterprise Server remain exposed." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens" />
+  <meta name="post:date" content="2026-10-26" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-26">2026-10-26</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>25 October 2026</strong> Wiz Research published <strong>Gheist</strong>, a campaign it has tracked since <strong>15 September 2026</strong> that performs mass abuse of compromised GitHub tokens. The method, reported by researchers Rami McCarthy and Hila Ramati, is brutally simple: for every repository a stolen token can reach, the tooling creates a branch named <strong>ci-sync- plus six random characters</strong>, commits a workflow file at <strong>.github/workflows/sync-check.yml</strong> with the message <strong>ci: sync config</strong>, lets the push trigger the workflow, downloads the resulting log through the GitHub API, and deletes the run seconds later. The workflow&rsquo;s only job is to print the repository&rsquo;s secrets into its own log. Wiz says it has recovered <strong>more than 13,500 planted branches from more than 850 compromised accounts</strong>, ranging from personal projects to private enterprise repositories. The campaign takes its name from the user agent, <strong>gheist</strong>, that the attacker&rsquo;s tool sends with GitHub API requests.</p>
+
+        <h2>Why the exfiltration works: three platform behaviors</h2>
+
+        <p>The payload, quoted in the report, is two lines: the environment, then <strong>echo -n &lsquo;${{ toJSON(secrets) }}&rsquo; | base32 -w 120</strong>. Three details make it effective, and each is worth stating precisely because each is a control defenders assume holds. First, GitHub masks secret values in logs <strong>only when they appear verbatim</strong> &mdash; a base32-encoded secret does not match, so it prints in full, and the operator even added an <strong>echo X | base32</strong> separator line (printing LAFA====) as a parser marker. Second, <strong>permissions: {}</strong> in the workflow restricts the job&rsquo;s GITHUB_TOKEN, which the attacker does not need, but does not restrict the <strong>secrets context</strong> &mdash; the thing being stolen was never behind the permission. Third, where a repository has deployment environments, the tool lists them in a job matrix with <strong>environment: ${{ matrix.environment }}</strong>, so environment-scoped secrets &mdash; often production credentials &mdash; are printed too. Because the secrets leave through GitHub&rsquo;s own API, there is <strong>no attacker domain and no outbound connection to block</strong>. No C2 server exists to take down.</p>
+
+        <p>In enterprise organizations, Wiz observed the tool cycling through tokens of several users and automation accounts within minutes, cloning private repositories before planting the workflow &mdash; and hours later, cloud credentials from the same organizations being used to <strong>enumerate AWS Secrets Manager</strong>. Follow-on activity is real, not theoretical.</p>
+
+        <h2>The control that worked &mdash; and its boundary</h2>
+
+        <p>Since <strong>28 July 2026</strong>, GitHub has held potentially malicious workflow runs in public repositories until a collaborator approves them. Wiz reports that <strong>every public Gheist run it checked, across all variants, sits at action_required</strong>: the control worked and the payloads never executed. But the hold does not apply to <strong>private repositories or GitHub Enterprise Server</strong>, where GitHub audit logs show runs on ci-sync-* branches completing and then being deleted by the gheist user agent. Wiz adds one detection gift for teams without GitHub log coverage: CloudTrail shows the organizations&rsquo; own workflows running on those branches and assuming AWS roles, which proves Actions executed without approval &mdash; <strong>check cloud audit logs for role assumptions whose subject includes a ci-sync- branch</strong>. As of 24 October, roughly two-thirds of implicated accounts were no longer available on GitHub, likely reflecting response activity after Wiz reported the campaign &mdash; but the researchers state plainly that <strong>the attack is ongoing and evolving</strong>.</p>
+
+        <h2>Two variants, a self-hosted pivot, and a crowded crime scene</h2>
+
+        <p>Two tool variants run in parallel, distinguishable by branch suffix (hexadecimal versus base36) &mdash; the second added the timeout, the environment matrix, and per-repository payload selection within hours of its first run on 28 September. On 19 October it gained a second job, <strong>sync-host</strong>, targeting repositories with a registered self-hosted runner: it writes three helper files (<strong>.gdmp_pat, .gdmp_patg, .gdmp_sweep</strong>), logs each stage under a <strong>gdmp-pivot</strong> header, and searches the runner for <strong>31 token formats &mdash; explicitly including keys for AI providers such as Anthropic, Hugging Face, Groq and NVIDIA</strong> &mdash; plus private keys, .env files, Terraform state, shell history, every process&rsquo;s environment via /proc, the Docker socket with the host root filesystem mounted, cloud instance metadata, runner credential files, and the Kubernetes service account token. Wiz describes this job as buggy: it looks for the wrong runner key file, its URL-credential regex is broken, and it does not collect GCP or Azure tokens. The AI-provider key hunting is the detail our readers should sit with &mdash; the same campaign family that harvested enterprise cloud credentials is explicitly sweeping build hosts for the keys that train and serve models, adjacent to the <a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">OpenCode Console provider-key exposure</a> and the <a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">MCP config secrets sprawl</a> we have documented this month.</p>
+
+        <p>The same compromised accounts are shared infrastructure. Wiz reports overlaps with lure-repository renaming (391 accounts, ~1,461 repositories renamed to cracked-software lures on 6 October), cryptomining on 25 accounts, <strong>PolinRider</strong> &mdash; DPRK-linked malware hiding JavaScript in build configs &mdash; on three victims, and <strong>Megalodon</strong> victims from May among 57 Gheist accounts. Traced credential sources fit the picture: <strong>infostealer logs and tokens exposed in earlier supply-chain compromises such as the March Trivy compromise</strong> (see our <a href="/posts/2026/03/aquasecurity-trivy-supply-chain-attack-2026/">Trivy coverage</a>). Wiz explicitly distinguishes Gheist from <a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">GhostAction</a>, which uses different workflow files and exfiltrates to an external IP &mdash; the splintering of secret-dumping GitHub campaigns into distinct toolchains is itself the trend.</p>
+
+        <h2>What to do</h2>
+
+        <p>Wiz&rsquo;s response list is concrete and we repeat it because it is actionable: hunt branches matching <strong>^ci-sync-[0-9a-z]{6}$</strong> whose only change is the sync-check file; hunt audit logs for workflow runs on ci-sync-* branches deleted within a minute and any <strong>gheist user-agent</strong> activity; on self-hosted runners look for the .gdmp_* files and gdmp-pivot strings. <strong>Rotate every repository, organization and environment secret available to an affected repository</strong> &mdash; deleting the run or branch does not undo exposure &mdash; revoke the pushing tokens, and check owners&rsquo; devices for infostealers. Treat a self-hosted runner that ran a ci-sync branch, with its instance role, as compromised. Harden by requiring reviewers on environments holding production secrets, scoping OIDC trust to protected branches or environments, preferring GitHub Apps or short-lived fine-grained tokens over personal access tokens, and running self-hosted runners as ephemeral hosts without Docker-socket or unrestricted metadata access. This is the same standing-access lesson as the <a href="/posts/2026/10/banks-unvetted-ai-agents-customer-accounts-credential-sharing-mcp/">bank credential-sharing</a> and <a href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">Claude Duet isolation</a> stories: the tokens that persist are the tokens that get harvested.</p>
+
+        <p><em>Our verification was read-only. The campaign dates, scale figures, workflow content, base32 mechanism, approval-hold behavior, variant history, overlap figures and remediation steps above were read first-hand in full from the Wiz Research blog (25 October 2026) and corroborated against the Infosecurity Magazine report (26 October 2026), which independently confirms the research date, tracking window, branch count, account count, token sources and the July approval-hold boundary. The Hacker News and Dark Reading versions of this story sit behind access controls we did not pass and are not cited. We contacted no vendor, accessed no repository, ran no workflow, and handled no stolen credential. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Wiz Research &mdash; Gheist: Attempted Scaled Abuse of Stolen GitHub Tokens Stumbles (25 October 2026)</a></li>
+          <li><a href="https://www.infosecurity-magazine.com/news/gheist-attackers-abuse-stolen/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Infosecurity Magazine &mdash; Gheist Attackers Stumble in Attempt to Abuse GitHub Tokens (26 October 2026)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">al-ice.ai &mdash; GhostAction: the secret-dumping GitHub campaign that never stopped</a></li>
+          <li><a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">al-ice.ai &mdash; OpenCode Console breach and provider-key exposure</a></li>
+          <li><a href="/posts/2026/03/aquasecurity-trivy-supply-chain-attack-2026/">al-ice.ai &mdash; Trivy supply-chain compromise</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">It Never Left: GhostAction Hit 772 More Repos While 84% of Victims Stayed Dirty</a></h3><p>GitGuardian reports the GhostAction GitHub Actions supply-chain campaign pushed a secret-stealing workflow to 772 public repositories between 31 August and 30 September 2026, exfiltrating 26 secrets from 13 repos. Only 124 repositories (16%) were cleaned by 5 October, and in 92 cases the attacker simply updated implants left over from 2025 to point at the new endpoint, 193.32.204.199.</p><a class="text-link" href="/posts/2026/10/ghostaction-github-actions-wave-772-repos-campaign-never-stopped/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/litellm-1-107-0-lookalike-fork-release-pipeline-compromise/">The Tag Was Clean: LiteLLM 1.107.0 Was Built From a Lookalike Fork of Its Own Repository</a></h3><p>On 21 October 2026 the litellm 1.107.0 wheels on PyPI and every v1.107.0 container image shipped a credential stealer and an hourly remote-code loader. The payload is not in the v1.107.0 git tag. It sits in ten commits stacked on top of that tag inside a hyphenated lookalike repository, Berri-AI/litellm, which the private release pipeline of the project built from. BerriAI now says the releaser run was triggered and approved through the GitHub accounts of three engineers, apparently via stolen GitHub CLI OAuth tokens. The attacker commits even carry the green Verified badge, because GitHub signs anything committed in its web editor. We verified the commits, the registry state and the remediation timeline first-hand.</p><a class="text-link" href="/posts/2026/10/litellm-1-107-0-lookalike-fork-release-pipeline-compromise/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Evaluation Jobs Held the Keys: Fireworks AI&amp;rsquo;s October Secrets Breach</a></h3><p>Fireworks AI disclosed that on 6 October 2026 an intruder used internal credentials to capture environment variables — including API keys and tokens — from evaluation jobs in customer accounts. Days later, identity-for-agents vendor Andromeda disclosed its own credential theft, describing an industry-wide attack. Inference keys are the target class.</p><a class="text-link" href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
