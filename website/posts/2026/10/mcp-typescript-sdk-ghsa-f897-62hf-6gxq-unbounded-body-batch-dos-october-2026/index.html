@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>No Body Limit, No Batch Limit: The Reference MCP SDK Let Any HTTP Client Eat the Server&rsquo;s Memory &mdash; al-ice.ai</title>
+  <meta name="description" content="GitHub advisory GHSA-f897-62hf-6gxq (27 October 2026, High, CWE-770): the MCP TypeScript SDK's HTTP transports put no limit on POST body size or JSON-RPC batch length, letting unauthenticated clients exhaust server memory. Fixed in @modelcontextprotocol/sdk 1.30.1 and the 2.x server/node/hono releases." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/mcp-typescript-sdk-ghsa-f897-62hf-6gxq-unbounded-body-batch-dos-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="No Body Limit, No Batch Limit: The Reference MCP SDK Let Any HTTP Client Eat the Server&rsquo;s Memory" />
+  <meta name="post:date" content="2026-10-28" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">No Body Limit, No Batch Limit: The Reference MCP SDK Let Any HTTP Client Eat the Server&rsquo;s Memory</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-28">2026-10-28</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>A week after five CVEs landed against the MCP SDKs, the reference TypeScript SDK has admitted a simpler flaw underneath the same surface: it never limited how much an HTTP client could send. <a href="https://github.com/advisories/GHSA-f897-62hf-6gxq?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GitHub advisory GHSA-f897-62hf-6gxq, published 27 October 2026 and rated High (CWE-770)</a>, states that MCP servers reachable over HTTP put <strong>no limit on the size of a POST body or on the number of messages in a JSON-RPC batch</strong>. Large requests could exhaust the server&rsquo;s memory, and one long batch could block it from serving anyone else &mdash; with <strong>no credentials needed, unless the application authenticates requests before they reach the SDK</strong>. Notably, the advisory carries <strong>no CVE identifier</strong>, only the GHSA ID.</p>
+
+        <p>The affected range is wide because it spans both major lines: <strong>@modelcontextprotocol/sdk 1.10.0 through 1.30.0</strong> (fixed in <strong>1.30.1</strong>), plus <strong>@modelcontextprotocol/server 2.0.0, @modelcontextprotocol/node 2.0.0 and @modelcontextprotocol/hono 2.0.0</strong> (fixed in server 2.1.0, node 2.1.0 and hono 2.0.1). The advisory is explicit about two things operators often get wrong. First, <strong>a body parser such as express.json() does not protect you</strong>, because it does not limit batch length &mdash; the batch of a thousand small messages sails through a body-size check untouched. Second, <strong>stdio-only servers are not affected</strong>; only servers exposed over Streamable HTTP to clients you do not fully trust. The fix caps bodies over 4 MiB with a 413 response and batches over 100 messages with a 400, adds a raisable <code>maxRequestBodySize</code> option, and suggests capping body size in a reverse proxy for anyone who cannot upgrade yet. Fixes shipped via pulls 2698 and 2717.</p>
+
+        <h2>Why defenders should take this seriously &mdash; and where to discount it</h2>
+
+        <p>The serious part is that this is the <em>reference implementation</em> failing at the oldest lesson in server programming, and it sits one shelf above two warnings this site has already covered: <a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">mcp-go reading every POST body into memory with no fix available</a>, and the <a href="/posts/2026/10/mcp-typescript-sdk-five-cves-shared-server-regression-off-by-default/">October batch of five MCP SDK CVEs</a> that showed the 1.x line had already been quietly fixing adjacent issues. The pattern is now unmistakable: <strong>the MCP server ecosystem spent its first year assuming reachable-over-HTTP means reachable-by-friends</strong>. Any MCP server on an internal network an attacker can already touch &mdash; which, after the year&rsquo;s run of <a href="/posts/2026/10/mcp-sdk-october-advisories-cross-origin-redirect-task-session-scanner-gap/">redirect and session-scoping advisories</a>, should be assumed reachable &mdash; could be knocked over or held busy by a single unauthenticated client. For agent infrastructure, a memory-exhaustion DoS is not just downtime: it is the wedge that precedes failover to less-monitored paths and the smoke that covers concurrent attacks.</p>
+
+        <p>The discount is scope. This is <strong>denial of service, not data theft or code execution</strong>: no confidentiality or integrity impact is claimed, and stdio transports &mdash; still the most common way local agents talk to MCP servers &mdash; are untouched. The 4 MiB / 100-message defaults also mean legitimately chatty clients (bulk tool-result returns, large context payloads) may trip the new 413s and 400s after upgrading, so the patch needs a rollout check against real traffic, not a blind bump. And the missing CVE is a signal in itself: GHSA-only advisories propagate worse through scanners and asset inventories, so <strong>do not rely on CVE feeds to tell you whether you are exposed &mdash; check installed package versions directly</strong>. Upgrade every SDK package you have installed, not just the one your lockfile highlights, since the 1.x and 2.x lines ship the fix under different version numbers.</p>
+
+        <h2>What it means for builders and defenders</h2>
+        <ul>
+          <li><strong>Upgrade all MCP TypeScript SDK packages, not just one.</strong> 1.x needs @modelcontextprotocol/sdk 1.30.1+; 2.x needs server 2.1.0, node 2.1.0 and hono 2.0.1+. Mixed-version installs stay vulnerable through the oldest package, so audit every dependency path, including transitive ones your scanner may not flag without a CVE.</li>
+          <li><strong>Do not trust body-parser limits as batch limits.</strong> If you run any JSON-RPC or batch-capable endpoint &mdash; MCP or otherwise &mdash; verify that message <em>count</em> is capped independently of body <em>size</em>. A thousand tiny messages is the shape that walks past every byte-based defence.</li>
+          <li><strong>Put unauthenticated agent protocols behind authentication or a proxy cap.</strong> Until upgrades land, enforce a request-body ceiling at the reverse proxy and ensure authentication happens before requests reach SDK handlers. The advisory&rsquo;s &ldquo;no credentials needed&rdquo; line is the entire exploit prerequisites section.</li>
+          <li><strong>Load-test the fix before you ship it.</strong> The new 4 MiB / 100-message ceilings are secure defaults, not universal ones. Replay production traffic against the upgraded server first, and raise <code>maxRequestBodySize</code> deliberately where legitimate bulk tool calls need it &mdash; with the increase logged and reviewed.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. Every advisory fact &mdash; GHSA-f897-62hf-6gxq, published 27 October 2026, High severity, CWE-770, the 1.10.0&ndash;1.30.0 / 2.0.0 affected ranges and the 1.30.1 / 2.1.0 / 2.1.0 / 2.0.1 fixed versions, the unauthenticated memory-exhaustion and batch-blocking effects, the express.json() and stdio-only guidance, the 413-over-4-MiB and 400-over-100-message behaviour, the maxRequestBodySize option, the reverse-proxy workaround, the GHSA-only identifier set, and the 2698/2717 fix references &mdash; was read first-hand from the full GitHub Advisory Database record via the api.github.com advisories endpoint. The October five-CVE batch, the mcp-go unbounded-body flaw and the redirect/session advisories are our own prior coverage, linked not restated. No MCP server was deployed, contacted or tested, no payload was sent anywhere, and no maintainer was contacted; all interpretation above is ours. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/advisories/GHSA-f897-62hf-6gxq?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">GitHub Advisory Database &mdash; GHSA-f897-62hf-6gxq &ldquo;MCP TypeScript SDK: HTTP server transports and handlers did not limit request body size or JSON-RPC batch length&rdquo; (27 October 2026; full record read; affected/fixed versions, impact, mitigations)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/typescript-sdk/releases/tag/1.30.1?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">modelcontextprotocol/typescript-sdk &mdash; release 1.30.1 (fix release reference)</a></li>
+          <li><a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">al-ice.ai &mdash; Buffer first, validate later: mcp-go reads every POST body into memory (same bug class, unpatched)</a></li>
+          <li><a href="/posts/2026/10/mcp-typescript-sdk-five-cves-shared-server-regression-off-by-default/">al-ice.ai &mdash; Five MCP SDK CVEs and a cross-client leak the 1.x line already fixed (the October batch this advisory follows)</a></li>
+        </ul>
+
+</article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">Buffer First, Validate Later: mcp-go Reads Every POST Body Into Memory With No Fix Available</a></h3><p>CVE-2026-108859, published 11 October 2026, names an unbounded POST-body read in mark3labs/mcp-go, the Go MCP SDK with 9,000 stars. ServeHTTP calls io.ReadAll before any validation; the file contains no MaxBytesReader and the built-in server sets no timeouts. We verified main HEAD still reads the whole body. There is no fixed version.</p><a class="text-link" href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/x64dbg-mcp-server-cve-2026-107824-107820-unauth-debugger-preauth-dos/">No Auth on the Debugger&amp;rsquo;s Front Door: x64dbg-MCP Server&amp;rsquo;s CVE-2026-107824 (9.3) and CVE-2026-107820</a></h3><p>CVE-2026-107824 (CVSS 9.3) left x64dbg-MCP Server&amp;rsquo;s full debugger toolset &amp;mdash; arbitrary commands, process attach, memory read/write, arbitrary file write &amp;mdash; open to any unauthenticated network client on 0.0.0.0:9094. CVE-2026-107820 (5.3) adds a pre-auth Content-Length integer overflow that kills the debugging session. Fixed in 1.1 and 1.2; both CVEs published 9 October 2026.</p><a class="text-link" href="/posts/2026/10/x64dbg-mcp-server-cve-2026-107824-107820-unauth-debugger-preauth-dos/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mcp-typescript-sdk-four-cve-batch-october-2026/">The Official SDK Needed Four Fixes at Once: Session Confusion, Audience Blindness, Redirect Leaks and Memory Exhaustion in the MCP TypeScript Stack</a></h3><p>On 20 October 2026 the Model Context Protocol TypeScript SDK published four advisories fixed in 1.32.0 (server 2.3.0): experimental tasks readable across sessions (CVE-2026-111767, 8.6), bearer tokens accepted for the wrong audience (CVE-2026-111771), cross-origin redirects re-sending credentials (CVE-2026-111769), and single-request memory exhaustion (CVE-2026-111768, 7.5). Both Angular CLI LTS branches pin the vulnerable 1.31.0.</p><a class="text-link" href="/posts/2026/10/mcp-typescript-sdk-four-cve-batch-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
