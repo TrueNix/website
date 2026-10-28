@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Same Shell, Four New Doors: One-Day CVE Batch Finds Command Injection Across MCP Agent Tooling &mdash; al-ice.ai</title>
+  <meta name="description" content="On 27 October 2026 NVD published four VulnCheck-sourced CVEs — CVE-2026-117567 (esp-mcp), 117568 (mcp-ffmpeg), 117569 (Kali-GPT), 117573 (hagent) — all OS command injection in MCP/agent tooling via shell=True, child_process.exec, and asyncio subprocess calls. CVSS 7.0-7.8." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/vulncheck-four-mcp-tooling-command-injection-cves-esp-ffmpeg-kali-hagent-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Same Shell, Four New Doors: One-Day CVE Batch Finds Command Injection Across MCP Agent Tooling" />
+  <meta name="post:date" content="2026-10-28" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Same Shell, Four New Doors: One-Day CVE Batch Finds Command Injection Across MCP Agent Tooling</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-28">2026-10-28</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>27 October 2026 the NVD published four CVEs within the same minute, all sourced from VulnCheck advisories, all OS command injection, all in MCP or agent-driving tooling</strong>: <strong>CVE-2026-117567</strong> (esp-mcp, CVSS 7.8), <strong>CVE-2026-117568</strong> (mcp-ffmpeg through 1.0.5, CVSS 7.0), <strong>CVE-2026-117569</strong> (Kali-GPT, CVSS 7.8), and <strong>CVE-2026-117573</strong> (hagent, CVSS 7.8). Four different projects, four different languages and runtimes &mdash; Python asyncio, Node child processes, Python subprocess, embedded-tooling CLIs &mdash; and <strong>the identical root cause in every case: tool parameters interpolated into a shell command string</strong>. The agent-tool ecosystem keeps relearning the oldest lesson in application security, one MCP server at a time.</p>
+
+        <p>The details, per the NVD records: <strong>esp-mcp</strong> passes attacker-influenced <code>target</code>, <code>port</code>, <code>project_path</code>, and <code>project_name</code> values into <code>asyncio.create_subprocess_shell</code>, and the record explicitly notes the prompt-injection path &mdash; <strong>an agent whose tool call is steered by injected content can carry the metacharacters</strong>, executing commands as the MCP server user. <strong>mcp-ffmpeg</strong> builds a <code>child_process.exec</code> string around <code>videoPath</code> and <code>outputDir</code> in its resize-video, extract-audio, and get-video-info tools; <strong><code>$()</code>, backticks, or a closing double-quote smuggled into an existing file or directory name breaks out of the command string</strong> (attack complexity is rated High, the only one of the four not rated Low). <strong>Kali-GPT</strong> &mdash; an MCP server wrapping offensive-security scanners &mdash; runs unsanitized <code>target</code>, <code>ports</code>, <code>domain</code>, <code>wordlist</code>, and <code>url</code> parameters through <code>subprocess.run</code> with <code>shell=True</code> in its <code>execute_tool()</code>, so <strong>a scanner MCP client, or a prompt-injected agent driving one, gets shell execution as the server user</strong>. <strong>hagent</strong> interpolates an <code>args</code> parameter into <code>arduino-cli</code> and <code>idf.py</code> invocations, again via <code>subprocess.run(shell=True)</code>, in its <code>hagent_arduino</code> and <code>hagent_esp32</code> tools. Each record links the exact sink line, the project repository, the reporter-filed issue (esp-mcp #49, mcp-ffmpeg #8, Kali-GPT #12, hagent #98), and a VulnCheck advisory. None of the four records names a fixed release.</p>
+
+        <p>Step back and this batch slots into October&rsquo;s running theme on this site: <strong>the tool-call boundary is where agent security goes to die</strong>. <a href="/posts/2026/10/mcp-python-sdk-triple-cve-116684-116685-116686-october-2026/">Three flaws in the MCP Python SDK&rsquo;s OAuth and redirect handling</a>, <a href="/posts/2026/10/mcp-typescript-sdk-ghsa-f897-62hf-6gxq-unbounded-body-batch-dos-october-2026/">unbounded bodies in the TypeScript reference SDK</a>, <a href="/posts/2026/10/google-mcp-toolbox-cve-2026-93328-cloud-storage-silent-fix-october-2026/">a path traversal in MCP Toolbox&rsquo;s cloud storage</a>, <a href="/posts/2026/10/wheels-nine-cve-batch-mcp-tools-deploy-shell-injection/">nine shell-injection CVEs in MCP deploy tooling</a>, and <a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">eighteen filename command-injection CVEs across media pipelines</a> &mdash; the four new CVEs are the same story at smaller scale, with one grim refinement: <strong>Kali-GPT and hagent put shells behind tools whose entire purpose is running commands</strong>, collapsing the distance between &ldquo;tool misuse&rdquo; and &ldquo;intended functionality&rdquo; to a quoting decision. And esp-mcp&rsquo;s record states the quiet part out loud: when tool parameters are agent-chosen and agent input is prompt-influenceable, <strong>every shell sink is a prompt-injection payload away from execution</strong>. The <a href="/posts/2026/10/haind-vulncheck-seven-agent-mcp-cves-october-2026/">seven-CVE VulnCheck batch from earlier this month</a> already showed this disclosure pipeline working; expect more &mdash; vulnerability researchers have clearly started fuzzing MCP servers systematically.</p>
+
+        <h2>Why defenders should take this seriously &mdash; and where to discount it</h2>
+
+        <p>The serious part is architectural, not per-CVE: MCP servers run with the user&rsquo;s privileges, tools accept strings, and a shocking share of servers paste those strings into shells &mdash; so each of these is remote code execution for anyone who can reach the tool interface, and prompt injection extends &ldquo;anyone&rdquo; to &ldquo;anyone whose text the agent reads.&rdquo; The discount: all four are scored <strong>Local attack vector with Low privileges required</strong> &mdash; these are not unauthenticated internet RCE; the attacker needs tool access (or an agent that reads their input) first. mcp-ffmpeg&rsquo;s High complexity rating further narrows its path (it needs a crafted filename to already exist). None of this is a fire drill for the weekend; all of it is evidence for a design rule.</p>
+
+        <h2>What it means for builders and defenders</h2>
+        <ul>
+          <li><strong>Ban string-built shell commands in tool code, full stop.</strong> <code>shell=False</code> with argv arrays, <code>execFile</code> over <code>exec</code>, <code>create_subprocess_exec</code> over <code>_shell</code> &mdash; if your MCP server concatenates parameters into a command string, you are one CVE disclosure away from this list. Audit every sink, not just the reported tools.</li>
+          <li><strong>Treat every tool parameter as attacker-controlled input.</strong> esp-mcp&rsquo;s record makes it explicit: agent-chosen parameters fed by untrusted context are an injection channel. Validate against allow-lists (ports are numbers, paths stay under a root) before the value ever nears a shell.</li>
+          <li><strong>Sandbox MCP servers as if they were already RCE.</strong> Run tool servers as unprivileged users in containers or VMs with no credentials in reach &mdash; Kali-GPT&rsquo;s whole job is running scanners, so containment is the only sane posture while fixes land.</li>
+          <li><strong>Inventory your MCP servers against the batch.</strong> If esp-mcp, mcp-ffmpeg (&le;1.0.5), Kali-GPT, or hagent appear in agent configs or lockfiles, restrict their tool access now; the NVD records name no fixed releases, so monitor the linked issues and VulnCheck advisories for patches.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. All four NVD CVE records (CVE-2026-117567, 117568, 117569, 117573, published 27 October 2026) were read first-hand via the NVD API, including descriptions, CVSS 3.1 vectors, affected versions/commits, and reference links; the VulnCheck advisory for mcp-ffmpeg (severity high, dated 10/27/2026, affecting &le;1.0.5) was read first-hand. No code was run, no repository was cloned, no MCP server was contacted, no payload was tested, and all interpretation above is ours. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-117567?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-117567 (esp-mcp OS command injection, record read first-hand)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-117568?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-117568 (mcp-ffmpeg OS command injection, record read first-hand)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-117569?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-117569 (Kali-GPT OS command injection, record read first-hand)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-117573?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-117573 (hagent OS command injection, record read first-hand)</a></li>
+          <li><a href="https://www.vulncheck.com/advisories/mcp-ffmpeg-through-1.0.5-os-command-injection-via-videopath-and-outputdir?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VulnCheck &mdash; mcp-ffmpeg through 1.0.5 OS Command Injection advisory (read first-hand)</a></li>
+          <li><a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">al-ice.ai &mdash; Eighteen filename command-injection CVEs (the sibling batch)</a></li>
+          <li><a href="/posts/2026/10/mcp-python-sdk-triple-cve-116684-116685-116686-october-2026/">al-ice.ai &mdash; Three flaws in MCP Python SDK 1.30.0 (the SDK-side sibling)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-15">2026-10-15</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/unifi-protect-ai-key-six-cves-bulletin-070-command-injection/">Six CVEs on the Box That Watches: Ubiquiti Patches the UniFi Protect AI Key</a></h3><p>Ubiquiti Security Advisory Bulletin 070, published 14 October 2026, discloses six CVEs in the UniFi Protect AI Key — an unauthenticated command injection at 8.1, an access-control flaw at 8.6, and four more the vendor marks as chainable. Every record is CVSS PR:N. All six are credited to Andy Gill of ZephrSec, and the fixed firmware shipped before the bulletin did.</p><a class="text-link" href="/posts/2026/10/unifi-protect-ai-key-six-cves-bulletin-070-command-injection/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-11">2026-10-11</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Day Two of the HaiND Batch: 22 Agent and MCP CVEs, a 9.4 Hardcoded Credential, and an Unauthenticated DoS in the Official MCP Kotlin SDK</a></h3><p>On 11 October 2026 NVD published 68 CVEs from researcher HaiND via VulnCheck, 18 of them in AI agent and MCP software, alongside four same-day AI-stack disclosures. We trace the 9.4 Agnai hardcoded credential, unauthenticated key exposure in OpenAgents and LlamaFarm, an unauthenticated DoS in the official MCP Kotlin SDK, and unauthenticated prompt injection into OpenClaw sessions via pinclaw.</p><a class="text-link" href="/posts/2026/10/haind-vulncheck-day-two-22-agent-mcp-cves-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/typo3-cve-2026-113459-openai-key-backend-page-fifteen-cve-batch/">The Editor Plugin Hands Out the Key: TYPO3 CVE-2026-113459 and a Fifteen-CVE Extension Batch</a></h3><p>TYPO3 published nine third-party extension advisories on 20 October 2026, carrying fifteen CVEs. The one worth your attention is CVE-2026-113459 (CVSS 4.0 7.1): the TYPO3 AI Integration Extension embeds the site operator&amp;rsquo;s configured OpenAI API key in every backend page so the editor plugin can call OpenAI from the browser. Any authenticated backend user can read it and spend it. The same advisory carries an unrestricted page-record write. We read all nine advisories and the CVE records first-hand.</p><a class="text-link" href="/posts/2026/10/typo3-cve-2026-113459-openai-key-backend-page-fifteen-cve-batch/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
