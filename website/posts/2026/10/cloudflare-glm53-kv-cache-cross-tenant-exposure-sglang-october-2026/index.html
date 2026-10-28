@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Pool 367,000 Tokens Too Small: How a KV Cache Mismatch Leaked 155 Responses Across Tenants on Cloudflare &mdash; al-ice.ai</title>
+  <meta name="description" content="On 26 October 2026 Cloudflare disclosed that its hosted GLM-5.3 model returned 155 responses containing other customers' data between 27 August and 9 September. A 681,280-token KV pool behind a 1,048,576-token context met an SGLang rejection-path bug; pages were never zeroed between requests. Fixed with a 2.04M-token pool and upstream patches." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/cloudflare-glm53-kv-cache-cross-tenant-exposure-sglang-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Pool 367,000 Tokens Too Small: How a KV Cache Mismatch Leaked 155 Responses Across Tenants on Cloudflare" />
+  <meta name="post:date" content="2026-10-28" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Pool 367,000 Tokens Too Small: How a KV Cache Mismatch Leaked 155 Responses Across Tenants on Cloudflare</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-28">2026-10-28</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>26 October 2026 Cloudflare published an incident report with an uncomfortable confession</strong>: between 27 August and 9 September, its hosted <strong>GLM-5.3 model on Workers AI returned 155 responses containing data from other customers&rsquo; requests</strong>. Every affected response went to a prompt longer than 681,280 tokens &mdash; a threshold that turns out to be the exact size of an undersized GPU memory pool sitting behind a 1,048,576-token advertised context window. Security researcher <strong>Gadi Evron of Knostic</strong> reported the anomaly through Cloudflare&rsquo;s HackerOne program on 8 September; Cloudflare reproduced it the next morning, took the model offline within 40 minutes of declaring an incident, and restored service the same day with a corrected configuration and a patched inference engine. No other Workers AI model was affected. Timing and volume of the exposed requests look like ordinary long-context use, and <strong>Cloudflare says it found no evidence of deliberate exploitation</strong>.</p>
+
+        <p>The mechanism is a two-fault collision, and Cloudflare&rsquo;s telling is admirably specific about its own half. Fault one was <strong>Cloudflare&rsquo;s misconfiguration of the open-source SGLang inference engine</strong>: GLM-5.3 was deployed with a ~1M-token context window, but the KV-cache pool on the prefill GPUs held only 681,280 tokens. The team knew about the mismatch before launch and expected the engine to return an error for anything that did not fit &mdash; long-context tests returned successful responses, so the mismatch was filed away as benign. Fault two was the <strong>SGLang bug that made that trust fatal</strong>. In disaggregated prefill/decode serving, an over-length prompt was internally marked rejected and replaced with a one-token placeholder &mdash; but instead of aborting with a client error, prefill generated the placeholder&rsquo;s KV cache and transferred it to the decode node, which received &ldquo;transfer complete&rdquo; and assumed the full prompt had overwritten the previous cache contents. It had not: the decode node generated its response while <strong>attending over stale cache pages still holding earlier requests&rsquo; data</strong>. The deep reason this class of bug is load-bearing is stated plainly in the report: <strong>KV pages are not zeroed between requests</strong> &mdash; the next request simply overwrites its pages &mdash; so page-ownership tracking is entirely the engine&rsquo;s responsibility, split across nodes sharing mutable references over RDMA via Mooncake, with pool size derived at startup from leftover GPU memory and nothing forcing it to agree with the advertised context length.</p>
+
+        <p>The remediation is two-layered in the right way. Cloudflare made the pool hold the full context &mdash; matching its GLM-5.2 configuration to free enough memory that the prefill pool now holds <strong>about 2.04 million tokens, roughly twice the context length</strong>, so the rejection path is unreachable for valid requests. Recognizing that pool sizing is fragile against quantization, parallelism, and future model changes, it also <strong>made the rejection path itself safe</strong>: a request carrying a pending rejection is now retired at the disaggregation admission queue with its original error before any allocation or KV transfer, proposed upstream as SGLang #38704 with a decode-side token-count verification. The related fix #36988 was already on SGLang main (merged 6 September, unreleased) and #38935 adds earlier rejection; both were validated against the researcher&rsquo;s reproduction script and canary-marker tests. The disclosure itself was <strong>coordinated with an SGLang post</strong> &mdash; the model this incident report format should set for inference-stack bugs.</p>
+
+        <p>Step back and the pattern rhymes with our recent coverage from the other direction. <a href="/posts/2026/10/lmcache-cve-2026-107204-run-script-unauthenticated-rce/">LMCache&rsquo;s CVE-2026-107204 turned a client-side cache POST into root on the inference host</a> &mdash; the cache as remote-execution surface. Here the cache is a <strong>cross-tenant confidentiality surface</strong>: no attacker needed, just long prompts and a pool that silently served yesterday&rsquo;s pages. And the model at the center keeps a busy October: <a href="/posts/2026/10/anthropic-glm-53-spread-advanced-cyber-capabilities-safeguard-bypass/">Anthropic&rsquo;s cyber assessment flagged GLM-5.3&rsquo;s capability uplift the same month its hosted deployment was leaking prompts across tenants</a>. Capability evaluations ask what a model can do <em>for</em> an attacker; this incident asks what the serving stack does <em>to</em> ordinary users. Both questions now belong in every model-adoption review.</p>
+
+        <h2>Why defenders should take this seriously &mdash; and where to discount it</h2>
+
+        <p>The serious part generalizes beyond one model: <strong>every high-throughput inference engine reuses KV memory without zeroing</strong>, disaggregated prefill/decode is becoming the standard serving architecture, and pool sizing is an emergent property of leftover GPU memory rather than a checked configuration value. Any provider with the same shape &mdash; advertised context larger than the actual pool, plus a rejection path that degrades instead of erroring &mdash; has this bug waiting for a long prompt. The discount: blast radius here was genuinely narrow (155 responses, all above a 681K-token threshold almost no interactive user reaches, no evidence of deliberate exploitation), the researcher-to-remediation loop ran in about a day, and no other Workers AI model was affected. This is a <strong>defense-in-depth success story with an embarrassing first chapter</strong>, not an ongoing exposure &mdash; provided you trust the &ldquo;no deliberate exploitation&rdquo; assessment, which rests on Cloudflare&rsquo;s traffic analysis rather than on any property an outsider can verify.</p>
+
+        <h2>What it means for builders and defenders</h2>
+        <ul>
+          <li><strong>Assert context-window &le; KV-pool capacity in your serving config.</strong> If you self-host SGLang, vLLM, or any disaggregated setup, add a startup check that the effective KV pool covers the advertised maximum context. Cloudflare&rsquo;s root lesson is that these two numbers are configured in different places and nothing ties them together.</li>
+          <li><strong>Treat inference rejection paths as security-critical code.</strong> The bug was not in the happy path but in what happens to a request the scheduler already refused. Audit yours: a rejected request must die with its error before any cache allocation, transfer, or decode &mdash; &ldquo;degraded but answered&rdquo; is the dangerous state.</li>
+          <li><strong>Regenerate or rotate what rode in long GLM-5.3 prompts.</strong> If your workloads sent 681K-plus-token prompts (agentic coding sessions with full-repo context qualify) to Workers AI GLM-5.3 between 27 August and 9 September, assume cross-tenant exposure was possible and rotate embedded secrets.</li>
+          <li><strong>Add serving-stack confidentiality to model-adoption reviews.</strong> Capability benchmarks and safeguard bypasses are only half the dossier. Ask providers how KV memory is isolated between tenants, whether pages are zeroed or strictly ownership-tracked, and whether rejection paths have been tested &mdash; then watch for the coordinated upstream fixes (#38704, #38935) in your own SGLang deployments.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. Cloudflare&rsquo;s incident report &ldquo;Cross-request KV cache exposure in the GLM-5.3 Workers AI model, and our remediation with SGLang&rdquo; (Kevin Flansburg and Michelle Chen, 26 October 2026) was read first-hand, including the 155-response count, the 27 August&ndash;9 September window, the 681,280-token threshold, the 1,048,576-token context, the ~2.04M-token remediated pool, the HackerOne reporter credit, the 40-minute containment, the SGLang PR numbers, and the no-deliberate-exploitation assessment. No model was queried, no provider was contacted, no reproduction was attempted, and all interpretation above is ours. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://blog.cloudflare.com/kv-cache-exposure-remediation/?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts" rel="noopener">Cloudflare Blog &mdash; Cross-request KV cache exposure in the GLM-5.3 Workers AI model, and our remediation with SGLang (incident report read first-hand)</a></li>
+          <li><a href="/posts/2026/10/lmcache-cve-2026-107204-run-script-unauthenticated-rce/">al-ice.ai &mdash; Your KV Cache Has a Shell (the LMCache sibling: cache as execution surface)</a></li>
+          <li><a href="/posts/2026/10/anthropic-glm-53-spread-advanced-cyber-capabilities-safeguard-bypass/">al-ice.ai &mdash; Anyone Can Download What Attackers Could Not Build (Anthropic&rsquo;s GLM-5.3 cyber assessment from the same month)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens</a></h3><p>Wiz Research reports that since 15 September 2026 a campaign dubbed Gheist has used stolen GitHub tokens to plant a secret-dumping sync-check workflow in every reachable repository — 13,500+ branches across 850+ accounts — exfiltrating secrets through GitHub&amp;rsquo;s own API in base32. GitHub&amp;rsquo;s July approval hold blocks it in public repos; private repos and Enterprise Server remain exposed.</p><a class="text-link" href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/emudhra-intermediate-ca-compromise-small-scalar-private-keys/">The Private Key Was 4: Naming the Eight Certificates Go Distrusted</a></h3><p>Mozilla confirmed on 20 October 2026 that private keys for eight eMudhra intermediate CA certificates are compromised, and the public disclosure states the cause: the CA generated them incorrectly, so anyone can recover them from the certificates. We verified both halves ourselves. All eight SHA-256 SPKI hashes Go hard-coded in CVE-2026-111943 match these intermediates exactly, and every one of the eight private scalars is a small integer &amp;mdash; 4, 56, 66, 115, 155, 156, 230 and 237 &amp;mdash; recoverable from public data in under three minutes.</p><a class="text-link" href="/posts/2026/10/emudhra-intermediate-ca-compromise-small-scalar-private-keys/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">The Backup App Is the Identity: ConnectWise&amp;rsquo;s Credential and 300 Microsoft 365 Tenants</a></h3><p>On 15 October 2026 an attacker used a compromised credential belonging to the ConnectWise Cloud Backup (formerly SkyKick) application to sign into customer Microsoft 365 tenants from 144.172.64.128, moving tenant-to-tenant seconds apart. Huntress, which broke the news on 16 October, had by 19 October tied nearly 1,000 Entra tenants to the activity with roughly 300 successful sign-ins. ConnectWise shut off Cloud Backup access on 17 October. MFA never entered the picture &amp;mdash; application sign-ins have no MFA prompt &amp;mdash; and in one tenant a second ConnectWise app granted itself Global Administrator and minted fresh client secrets.</p><a class="text-link" href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
