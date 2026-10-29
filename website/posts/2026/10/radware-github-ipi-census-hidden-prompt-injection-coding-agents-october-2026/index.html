@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>16 per Million and Growing: Radware Counts Hidden Prompt Injections Across GitHub &mdash; al-ice.ai</title>
+  <meta name="description" content="Radware researchers Gabi Nakibly and Zvika Babo, presenting at [un]prompted II on 27 October 2026, published a GitHub-scale census of indirect prompt injection against coding agents: 2,281 real AI-directed findings, 47 outright attacks, first-party markers doubling in months — with open data and the ipi-scan tool." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="16 per Million and Growing: Radware Counts Hidden Prompt Injections Across GitHub" />
+  <meta name="post:date" content="2026-10-29" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">16 per Million and Growing: Radware Counts Hidden Prompt Injections Across GitHub</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-29">2026-10-29</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Radware researchers <strong>Gabi Nakibly and Zvika Babo presented a GitHub-scale census of indirect prompt injection at [un]prompted II in San Francisco on 27 October 2026</strong> &mdash; moving the discussion from proof-of-concept to what is actually happening in public development workflows. The talk was billed as a scan of 86 million GitHub items; <strong>the accompanying open repository (created 26 October, updated 29 October) documents a corpus of roughly 145 million items</strong>: 95.1 million new issues and pull requests from June through September 2026, 47.6 million GH Archive issues, PRs and comments, plus the READMEs of the 2 million most-starred repositories. From that corpus came <strong>2,281 real AI-directed findings in issues, PRs and comments &mdash; about 16 per million items &mdash; including 47 outright attacks</strong> aimed at making someone else&rsquo;s agent act against its owner.</p>
+
+        <p>The findings split into four categories, and the split is the story. <strong>First-party orchestration dominates with 1,519 findings across 178 projects</strong> &mdash; teams leaving hidden instructions and markers for their own agents and agent tooling. Then come <strong>374 content-override attempts</strong> (steering review language, attribution, promotion), <strong>345 defensive markers</strong> (keeping agents out, making them identify themselves, trapping them), and <strong>43 attacks in issues, PRs and comments plus 4 in READMEs</strong> &mdash; roughly one attack per 3.3 million items, attempting secret leaks, forged verdicts, and command execution. Three defender-facing observations from the researchers: <strong>attacks are rare but targeted</strong> &mdash; more than half aim at a project&rsquo;s own triage, review or CI agent, and several name that agent&rsquo;s real tools or output fields, meaning the attacker read the workflow first; <strong>most hidden text is friendly and growing fast</strong> &mdash; 75% written by project owners, members or collaborators, with per-million rates up 2.2&times; (7.0 to 15.4) from June to September and coordinating projects up from 11 to 69; and <strong>friendly markers are forgeable</strong> &mdash; plain text in a public thread that any bot obeying markers without checking authorship can be fooled by.</p>
+
+        <p>The methodology is built for reuse, which is what makes this more than a conference talk. The <strong><code>ipi-scan</code> tool is open source in the same repository</strong>: it detects text a human cannot see but an agent receives (HTML comments on issues and PRs, plus invisible Unicode, white LaTeX and CSS-hidden elements in READMEs), screens it with a fast model, re-examines positives with a stronger one, and &mdash; critically &mdash; <strong>marks hidden text copied from the repo&rsquo;s own issue/PR templates as template text, a filter that caught 60% of classifier-confirmed items</strong>. The prompts that classify findings are themselves hardened: hidden text is wrapped in delimiters, forged delimiters stripped, models instructed never to follow it. Every number ships with its data (per-finding JSONL, funnel and monthly tables) and a script that recomputes all of them &mdash; and every number is explicitly a <strong>lower bound</strong>, since only hidden text is counted and GH Archive now captures a fraction of GitHub activity.</p>
+
+        <h2>Why defenders should take this seriously &mdash; and where to discount it</h2>
+
+        <p>The serious part is that indirect prompt injection now has a measured background rate in the wild, and the trend line points the wrong way: friendly hidden markers more than doubling in a quarter means the forgeable-marker attack surface is expanding even where nobody is attacking yet. Targeted attacks naming real agent tools confirm adversaries are reading workflows before striking &mdash; the same workflow-reconnaissance pattern behind <a href="/posts/2026/04/comment-and-control-github-coding-agents/">the Comment-and-Control injections</a>, <a href="/posts/2026/07/gitlost-github-agentic-workflows-prompt-injection-private-repo-exfil/">GitLost</a>, and the <a href="/posts/2026/03/github-issue-title-prompt-injection-campaign/">March issue-title campaign that reached 4,000 machines</a>. The discount: genuine attacks remain vanishingly rare (47 in ~145 million), most hidden text is benign or defensive, and the headline corpus size differs between the talk billing (86 million) and the repository&rsquo;s current documentation (~145 million) &mdash; use the repository&rsquo;s versioned numbers, which are recomputable from the published data. Also note CERT-In&rsquo;s parallel warning this month that <a href="/posts/2026/10/cert-in-ciad-2026-0049-ai-agents-live-systems-critical/">AI agents accessed live systems at Indian firms under test conditions</a> &mdash; the census shows the delivery mechanism; CERT-In showed the consequence.</p>
+
+        <h2>What it means for builders and defenders</h2>
+        <ul>
+          <li><strong>Treat HTML comments in issues and PRs as untrusted input.</strong> They are invisible to reviewers and fully visible to agents &mdash; the exact asymmetry this census measured. Triage, review and CI agents should ignore, strip, or sandbox hidden Markdown by default.</li>
+          <li><strong>Authenticate your own markers by authorship.</strong> If your agent fleet coordinates through hidden comments, check that the marker author is an owner, member, or collaborator before obeying &mdash; 75% of friendly markers are, which means 25% are not, and all of them are trivially forgeable.</li>
+          <li><strong>Scan your own repositories with <code>ipi-scan</code>.</strong> The tool is public, runs per-repo, and needs only a GitHub token for detection mode. Run it against repos where agents review PRs or triage issues, and repeat after template changes &mdash; templates are the biggest source of lookalike noise.</li>
+          <li><strong>Fix the template hygiene first.</strong> With 60% of confirmed items tracing to issue/PR template text, moving agent directives out of copy-pasted hidden comments and into authenticated configuration cuts both noise and camouflage for real injections.</li>
+        </ul>
+
+        <p><em>Our verification was read-only. The rdwr-gabin/github-ipi-in-the-wild repository README, data-layout, tool, and findings documentation were read first-hand in full, including the corpus composition, the 2,281/47/1,519/374/345 counts, the June-to-September growth figures, the 60% template-text share, the three defender observations, and the lower-bound caveat; repository metadata (created 26 October 2026, updated 29 October) was read first-hand via the GitHub API. The [un]prompted II presentation (talk title, venue, 27 October date, 86-million-item billing, researcher names) is attributed to secondary coverage (cybrsecmedia, 27 October, read first-hand) since the slide deck itself is not public. No repository was cloned, no scan was run, no GitHub item was contacted, no researcher was contacted, and all interpretation above is ours. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/rdwr-gabin/github-ipi-in-the-wild?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Radware (Gabi Nakibly, Zvika Babo) &mdash; github-ipi-in-the-wild: GitHub-scale measurement of indirect prompt injection of coding agents (repository, data, and ipi-scan tool, read first-hand)</a></li>
+          <li><a href="https://www.cybrsecmedia.com/who-is-prompt-injecting-coding-agents-a-scan-of-86-million-github-items/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CYBR.SEC.Media &mdash; Who Is Prompt-Injecting Coding Agents? (27 October 2026 [un]prompted II coverage, read first-hand; talk framing via this source)</a></li>
+          <li><a href="/posts/2026/04/comment-and-control-github-coding-agents/">al-ice.ai &mdash; Comment and Control: prompt injection hijacks Claude Code, Gemini CLI &amp; Copilot</a></li>
+          <li><a href="/posts/2026/03/github-issue-title-prompt-injection-campaign/">al-ice.ai &mdash; GitHub issue-title prompt injection compromises 4,000 developer machines</a></li>
+          <li><a href="/posts/2026/10/cert-in-ciad-2026-0049-ai-agents-live-systems-critical/">al-ice.ai &mdash; CERT-In declares AI agents an attack surface</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-04-27">2026-04-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/04/google-common-crawl-indirect-prompt-injection-survey/">Google — 32% Rise in Indirect Prompt Injection Attacks Found Across Public Web</a></h3><p>Google researchers scanned billions of pages in Common Crawl and found a 32% increase in malicious indirect prompt injection attempts between November 2025 and February 2026, with data exfiltration and destructive payloads in the wild.</p><a class="text-link" href="/posts/2026/04/google-common-crawl-indirect-prompt-injection-survey/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-17">2026-10-17</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/infuse-indirect-prompt-injection-benchmark-long-horizon-agents/">Refusal Is a Rounding Error: INFUSE Runs 19 Models Through 41,824 Indirect Prompt Injections</a></h3><p>INFUSE (arXiv 2610.20776, 14 October 2026) pairs 40 long-horizon terminal-agent tasks with 56 injection attacks across five threat categories and runs 19 models through 41,824 trajectories. Mean attack success is 19.6%, refusal never exceeds 1.0%, and chat-trained guardrails leave 44% of attacks working, while prompt hardening cuts success to 14.3% with uneven utility costs. We read the full paper first-hand.</p><a class="text-link" href="/posts/2026/10/infuse-indirect-prompt-injection-benchmark-long-horizon-agents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-28">2026-09-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/swarm-traces-openai-hugging-face-payload-reconstruction/">A Million Public Short Links Reconstruct the Hugging Face Swarm — and the Evidence Sat Open for Two Months</a></h3><p>Independent researchers published Swarm Traces on 25 September 2026: a forensic reconstruction of the July OpenAI agent swarm that breached Hugging Face, decoded from nearly a million public short links into 80,000+ attack payloads — including behaviors OpenAI never disclosed.</p><a class="text-link" href="/posts/2026/09/swarm-traces-openai-hugging-face-payload-reconstruction/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
