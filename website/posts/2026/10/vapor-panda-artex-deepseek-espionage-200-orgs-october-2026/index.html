@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Operator, 200 Targets: VAPOR PANDA Runs ARTEX Espionage at Machine Scale &mdash; al-ice.ai</title>
+  <meta name="description" content="CrowdStrike reports a China-nexus VAPOR PANDA campaign using the ARTEX agent framework with DeepSeek to hit 200+ organizations in 14 countries over 11 days from 17 October 2026, with confirmed post-exploitation at nine. 1.4 billion tokens in a single intrusion, Chinese-language operator steering, built-in Falcon-sensor evasion, and the BLOODALCHEMY backdoor." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/vapor-panda-artex-deepseek-espionage-200-orgs-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Operator, 200 Targets: VAPOR PANDA Runs ARTEX Espionage at Machine Scale" />
+  <meta name="post:date" content="2026-10-30" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Operator, 200 Targets: VAPOR PANDA Runs ARTEX Espionage at Machine Scale</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-30">2026-10-30</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>29 October 2026</strong> CrowdStrike published what may be the most operationally significant AI-agent intrusion report of the year: a China-nexus adversary it calls <strong>VAPOR PANDA</strong> used the AI-driven <strong>ARTEX</strong> intrusion framework &mdash; run primarily on the Chinese-developed DeepSeek LLM alongside a second commercial model &mdash; to conduct intrusions against <strong>more than 200 organizations in at least 14 countries over an 11-day window beginning 17 October 2026</strong>. CrowdStrike Intelligence confirmed post-exploitation activity at <strong>nine organizations</strong>. We read CrowdStrike&rsquo;s blog post first-hand in full and corroborated the load-bearing figures against Unite.AI&rsquo;s same-day account. This is the escalation the year&rsquo;s earlier agentic campaigns were pointing at: from AI assisting single intrusions to AI multiplying one operator across hundreds of simultaneous engagements.</p>
+
+        <p>The targeting reads like a foreign-ministry phone book crossed with a technology-transfer shopping list. ARTEX engagements hit <strong>foreign ministries in Latin America, Europe, Asia, and the Middle East</strong> &mdash; extensive intrusions at two Latin America-based foreign ministries, a likely compromise of a third, staged target files for use against ministries in Central America and Asia, a compromised Middle East-based interior ministry, and one European country targeted across its foreign ministry, presidency, prime minister&rsquo;s office, and defense, justice, finance, and intelligence entities. A separate engagement targeted <strong>19 US-based organizations across pharmaceuticals, semiconductors, defense, and think tanks</strong>, plus telecommunications providers in multiple regions. At the nine confirmed-compromised organizations the adversary gained access, deployed the <strong>BLOODALCHEMY</strong> backdoor, and followed up with credential spraying, network scanning, and reconnaissance; at least 12 additional organizations, including US think tanks and European government entities, saw password-spraying and credential-scanning activity.</p>
+
+        <h2>1.4 billion tokens in one intrusion</h2>
+        <p>The scale number that should reset defender assumptions: in a <strong>single intrusion, VAPOR PANDA&rsquo;s planning agents consumed on the order of 1.4 billion input tokens</strong>. That is the cost side of the ledger for one engagement, implying far higher consumption across the operation &mdash; and it reframes the economics of espionage. Token spend at that magnitude means the adversary is buying, for dollars, the equivalent of analyst-hours that used to bound how many targets a small team could work in parallel. CrowdStrike&rsquo;s own framing is explicit: agentic tooling lets a small team pursue a wider target set at a speed manual operations cannot support, and this campaign marks the adversary&rsquo;s first observed use of AI-driven intrusion tooling alongside a broadening of targeting into pharmaceutical, semiconductor, nuclear, and defense sectors.</p>
+
+        <p>ARTEX&rsquo;s architecture explains how one operator steered all of it. The framework coordinates a main agent with subordinate planner and worker agents over a shared graph of facts, findings, and goals, advancing each engagement from initial access through host reconnaissance and lateral movement &mdash; pursuing <strong>multiple attack paths in parallel across web applications, cloud services, container environments, Active Directory, and mail and VPN infrastructure</strong>, shifting approaches when one fails. The framework kept a human in the loop: recovered transcripts show an operator issuing instructions in Chinese, marked with the label 【人类指令】 (&ldquo;human instruction&rdquo;), intervening only to steer the agents at decision points. This matches the pattern from <a href="/posts/2026/10/crowdstrike-four-agentic-operators-claude-code-harnesses-october-2026/">CrowdStrike&rsquo;s October trawl of four agentic operators</a>: autonomy at the joints, human judgment at the branches.</p>
+
+        <h2>Evasion engineered into the workflow</h2>
+        <p>The detail defenders should find most chilling is not the scale but the tradecraft integration: endpoint sensor evasion was built directly into the agentic workflow. At a global pharmaceutical organization, the operator instructed the agents to &ldquo;find Windows machines in the domain without Falcon, judging by tasklist and folder listings&rdquo; &mdash; written in Chinese, using 猎鹰, which CrowdStrike identifies as PRC red-team slang for the CrowdStrike Falcon sensor. Incorporating sensor-coverage checks into the agent&rsquo;s planning loop means follow-on activity concentrates on unprotected hosts by default. This is the same lesson as our <a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">ARTEX operator dossier</a>: the agents are not just executing commands, they are performing reconnaissance against the defender&rsquo;s own visibility.</p>
+
+        <p>The payload side is deliberately unglamorous. At a Middle East interior ministry and a Latin America foreign ministry, VAPOR PANDA deployed <strong>BLOODALCHEMY, a backdoor first publicly documented in October 2023</strong>: a legitimate GameHook binary renamed <code>svchost.exe</code> sideloading a malicious <code>graphics-hook-filter64.dll</code>, which decrypts the <code>graphics-hook_config.bin</code> payload file. The implant carries an internal project path, <code>D:\ProjectX\Merman_New\</code>, that likely reflects the malware&rsquo;s in-house development name. All three files were staged in the exposed open directories that also leaked the ARTEX controller, target files, and agent transcripts &mdash; the same OPSEC failure that has made this entire genre of reporting possible, from <a href="/posts/2026/10/artex-ai-south-korea-bank-breaches-autonomous-pentest-tool/">the South Korean bank breaches</a> onward.</p>
+
+        <h2>Not Storm-0940, and that is the point</h2>
+        <p>CrowdStrike stresses that this campaign is <strong>separate from the ARTEX activity recently reported under the Storm-0940 designation</strong> &mdash; the Microsoft-attributed cluster we covered in our <a href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">Storm-0940 and ConnectWise reporting</a> &mdash; and judges it likely that the framework is quickly gaining popularity among multiple China-nexus adversaries. CrowdStrike has previously documented ARTEX and similar agentic frameworks in financially motivated and unattributed hands; a targeted-intrusion actor running parallel multi-target engagements is the escalation step. Since 2021 VAPOR PANDA had primarily targeted government, think tank, energy, and extractive organizations across Europe, North America, Oceania, and the UK for long-term access. The forecast attached is blunt: China-nexus adversaries will highly likely keep adopting agentic frameworks over the next 12 months, paired with commercial LLMs, enabling small teams to scale intrusions across many targets simultaneously.</p>
+
+        <p>For defenders, three implications survive contact with skepticism. First, the IOCs CrowdStrike consolidates at the end of its post matter, but the tradecraft matters more: sensor-coverage-aware agents will route around your best-instrumented hosts, so coverage gaps are now actively exploited attack surface rather than passive blind spots. Second, the 200-target figure reframes triage math &mdash; campaigns at this breadth mean your organization can be one row in an agent&rsquo;s task graph without being anyone&rsquo;s priority target. Third, the open directories keep giving defenders the playbook, but CrowdStrike&rsquo;s standing judgment from its October report applies unchanged: the version of this tradecraft that stops misconfiguring storage is strictly better, and there is no reason to assume it has not already shipped.</p>
+
+        <p><em>Our write-up is analysis of CrowdStrike&rsquo;s 29 October 2026 blog post &ldquo;VAPOR PANDA Uses AI-Driven ARTEX to Grow Global Espionage Campaign&rdquo; (OverWatch and Counter Adversary Operations, read first-hand in full) for the campaign dates, victim counts, targeting detail, token-consumption figure, transcript excerpts, BLOODALCHEMY mechanics, file names, internal path, Storm-0940 separation, historical targeting, and forward assessment; Unite.AI&rsquo;s 29 October account (read first-hand) corroborating the 200-organization, 14-country, 11-day, and nine-organization figures. The Microsoft Storm-0940 post is linked through our own prior coverage, not restated &mdash; Microsoft&rsquo;s page returned HTTP 403 to our fetch and is declared unread. All verification was read-only: we accessed no exposed directory, ran no agent framework, resolved no indicator, and contacted no party. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.crowdstrike.com/en-us/blog/vapor-panda-uses-artex-to-scale-global-campaign/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike &mdash; &ldquo;VAPOR PANDA Uses AI-Driven ARTEX to Grow Global Espionage Campaign&rdquo; (29 October 2026; campaign scope, targeting, token consumption, transcripts, BLOODALCHEMY mechanics, IOCs, assessment)</a></li>
+          <li><a href="https://www.unite.ai/china-nexus-vapor-panda-breached-nine-of-200-plus-targets-with-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Unite.AI &mdash; &ldquo;China-Nexus VAPOR PANDA Breached Nine of 200-Plus Targets With AI Agents&rdquo; (29 October 2026; corroboration of scope and compromise figures)</a></li>
+          <li><a href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">al-ice.ai &mdash; Storm-0940, ARTEX, and the ConnectWise supply-chain compromise</a></li>
+          <li><a href="/posts/2026/10/crowdstrike-four-agentic-operators-claude-code-harnesses-october-2026/">al-ice.ai &mdash; Four Operators, Four Harnesses: CrowdStrike&rsquo;s October Trawl of Autonomous Intrusion Campaigns</a></li>
+          <li><a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">al-ice.ai &mdash; The Attacker Left the Session Logs Open: CrowdStrike&rsquo;s ARTEX Operator Dossier</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/crowdstrike-four-agentic-operators-claude-code-harnesses-october-2026/">Four Operators, Four Harnesses: CrowdStrike&amp;rsquo;s October Trawl of Autonomous Intrusion Campaigns</a></h3><p>CrowdStrike Counter Adversary Operations reports four previously unreported threat actors running agentic campaigns between May and August 2026: a dual-agent Supervisor/Executor rig against Argentine healthcare, a Chinese-speaking operator with two Claude Code harnesses, an Indonesian-speaking actor with 819 public skills, and a Russian-speaking crew working from a single /pentest-setup command. Each left its framework exposed in an open directory.</p><a class="text-link" href="/posts/2026/10/crowdstrike-four-agentic-operators-claude-code-harnesses-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-27">2026-10-27</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/php2shell-unit42-retraction-cisa-kev-cyfirma-dprk-scanning-october-2026/">Confirmed Exploited, Unconfirmed Breach: Unit 42 Retracts the PHP2Shell Link as CISA Lists Both CVEs</a></h3><p>Unit 42 revised its PHP2Shell threat brief on 25 October 2026 to retract the claim that an agentic post-exploitation incident against a European government agency involved CVE-2026-109618 or CVE-2026-109619. CISA added both CVEs to its KEV catalogue on 26 October. CYFIRMA reports a suspected North-Korea-linked low-and-slow scanning campaign across 216 hosts. We read the Unit 42 brief and the CISA alert first-hand.</p><a class="text-link" href="/posts/2026/10/php2shell-unit42-retraction-cisa-kev-cyfirma-dprk-scanning-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/unit42-bugster-hermes-deepseek-ai-assisted-cybercrime-india-october-2026/">The AI Wrote the To-Do List: Unit 42 on BUGSTER&amp;rsquo;s Hermes Agent and Jailbroken DeepSeek Crime Spree</a></h3><p>Unit 42 reported on 21 October 2026 that a threat actor operating as BUGSTER ran the Hermes Agent framework on DeepSeek V4 with Cursor as a secondary tool, safety controls disabled, across credential theft, VoIP fraud, Wi-Fi cracking, crypto reconnaissance and C2 operations. The actor hit universities in India, exfiltrated 5,200+ records including student PII, and had an AI assistant generate a document with a NEXT EXPLOIT OPPORTUNITIES section. Multiple unrelated actors are converging on the same Hermes-plus-DeepSeek toolchain.</p><a class="text-link" href="/posts/2026/10/unit42-bugster-hermes-deepseek-ai-assisted-cybercrime-india-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

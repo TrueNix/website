@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Secure the Plan, Not Just the Prompt: CrowdStrike&rsquo;s Taxonomy Hits 222 Techniques &mdash; al-ice.ai</title>
+  <meta name="description" content="CrowdStrike's 29 October 2026 taxonomy update adds agent-planning attacks — Session State Spoofing, Control Structure Subversion, Attention Capacity Overload, Generative State Disruption — and organizes 222 techniques by reasoning-pipeline phase. The core warning: each agent step can look benign while the plan adds up to exfiltration." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/crowdstrike-prompt-injection-taxonomy-222-agent-planning-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Secure the Plan, Not Just the Prompt: CrowdStrike&rsquo;s Taxonomy Hits 222 Techniques" />
+  <meta name="post:date" content="2026-10-30" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Secure the Plan, Not Just the Prompt: CrowdStrike&rsquo;s Taxonomy Hits 222 Techniques</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-30">2026-10-30</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>CrowdStrike&rsquo;s AI security researchers, Vanessa Villa and Dr. Jim Hoagland, published a new version of the <strong>Prompt Injection Taxonomy</strong> on <strong>29 October 2026</strong> that shifts the field&rsquo;s attention from what an agent is told to <strong>how an agent plans</strong>. The public taxonomy now covers <strong>222 techniques</strong> &mdash; up from the 200-plus we covered in <a href="/posts/2026/07/crowdstrike-prompt-injection-taxonomy-200-techniques/">July</a> &mdash; with the additions concentrated on attacks against autonomous agents and their planning processes, organized by the phase of the processing pipeline each attack targets. We read the primary post first-hand in full. The thesis is compact enough to quote in paraphrase: an attacker no longer needs to get one forbidden request past a filter; they can shape the context the agent plans from, so a restricted action looks like the logical next step.</p>
+
+        <p>That last clause is the whole update. An agent breaks its goal into steps, picks tools, and executes &mdash; and <strong>each step can look benign in isolation while the plan adds up to something malicious</strong>. Defenses that check steps in isolation miss what the sequence amounts to. CrowdStrike illustrates it with a hypothetical that will feel familiar to anyone running coding agents: a developer asks an endpoint agent to figure out why integration tests keep failing; a recently updated open-source test utility, manipulated by an attacker, prints a troubleshooting message blaming environment drift and prescribing the fix &mdash; collect local config files and submit them to a diagnostics endpoint. Nobody told the agent to exfiltrate anything. Reading <code>.env</code> is routine debugging; an outbound HTTP request is routine patch-fetching. The risk is visible only when you look at the whole sequence. Sending local configs, including credentials, to an outside server becomes a step the agent believes the goal requires.</p>
+
+        <h2>The new technique families</h2>
+        <p>The additions target the machinery of reasoning rather than the content of any single prompt. <strong>Session State Spoofing</strong> injects a fake system summary &mdash; a compaction note or memory log &mdash; that presents false facts or an approval that was never given as verified history, aimed squarely at systems that compact context or keep agent state logs. <strong>Control Structure Subversion</strong> (step 1 of the pipeline) targets the markers a model uses to move between internal states: <strong>Control Token Tampering</strong> malforms control tokens and XML tags, while <strong>Cognitive Token Suppression</strong> omits them so a safety check never fires. <strong>Attention Capacity Overload</strong> (step 3) degrades how well the model tracks safety instructions &mdash; <strong>Generation Length Bypass</strong> uses a long benign generation to let the original constraints fade, <strong>Cognitive Overload Disruption</strong> uses complexity to the same end. <strong>Generative State Disruption</strong> goes after the output layer itself (step 4), pulling generation toward degraded or hallucinatory output where safety behavior is less reliable; <strong>Hallucination-Based Bypass</strong> is the first method catalogued there. And <strong>Output Exclusion Prompting</strong> bans the language tied to safety tuning itself, such as refusal templates or hedging.</p>
+
+        <p>Two structural changes matter as much as the new entries. First, attacks are now organized <strong>by pipeline phase and by agent behavior</strong>, so a team can ask not just what an attack does but where it interferes &mdash; and map defenses to attack surfaces branch by branch, testing coverage per branch and describing incidents in shared terms. Second, the common thread the authors draw is that attacks increasingly aim at how AI systems <strong>think, plan, and remember</strong>: a forged reasoning trace, a poisoned plan, or a spoofed session summary may never look like a single obviously bad request. That is a direct challenge to the filter-at-the-boundary architectures still common in enterprise agent deployments &mdash; and a point in favor of the execution-layer visibility argument CrowdStrike naturally pairs with its Falcon Guardian AIDR pitch: connecting agent activity to endpoint telemetry to establish a causal chain from prompt to runtime impact.</p>
+
+        <p>Read alongside this week&rsquo;s threat reporting, the taxonomy update lands as the defensive counterpart to the offensive news. The same day&rsquo;s <a href="/posts/2026/10/vapor-panda-artex-deepseek-espionage-200-orgs-october-2026/">VAPOR PANDA campaign</a> shows state-nexus operators building sensor-evasion checks into agent planning loops; the taxonomy gives defenders the vocabulary for exactly that class of manipulation &mdash; planning-context shaping that no input or output filter would catch. Teams should take three things from it: inventory where agent plans are assembled from untrusted content (tool outputs, retrieved docs, compaction summaries) as distinct attack surface; evaluate whether their monitoring can see a multi-step sequence as a sequence rather than as isolated permitted actions; and treat session-state integrity &mdash; who wrote that summary, and when &mdash; as a security property, not a convenience feature.</p>
+
+        <p><em>Our write-up is analysis of CrowdStrike&rsquo;s 29 October 2026 blog post &ldquo;New Prompt Injection Techniques Cover Agent-Planning Attacks&rdquo; by Vanessa Villa and Dr. Jim Hoagland (read first-hand in full) for the 222-technique count, the planning-context thesis, the hypothetical exfiltration scenario, all named techniques and their pipeline-step assignments, the pipeline-phase organization, and the Falcon Guardian framing. The July predecessor post is linked, not restated. All verification was read-only: we tested no prompt against any model, deployed no agent, and contacted no party. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.crowdstrike.com/en-us/blog/new-prompt-injection-techniques-cover-agent-planning-attacks/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CrowdStrike &mdash; &ldquo;New Prompt Injection Techniques Cover Agent-Planning Attacks&rdquo; (29 October 2026; taxonomy update, 222 techniques, planning-attack families, pipeline-phase organization)</a></li>
+          <li><a href="/posts/2026/07/crowdstrike-prompt-injection-taxonomy-200-techniques/">al-ice.ai &mdash; CrowdStrike Prompt Injection Taxonomy &mdash; 200+ Techniques Cataloged</a></li>
+          <li><a href="/posts/2026/10/vapor-panda-artex-deepseek-espionage-200-orgs-october-2026/">al-ice.ai &mdash; One Operator, 200 Targets: VAPOR PANDA Runs ARTEX Espionage at Machine Scale</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend</a></h3><p>A study submitted 23 October 2026 ran 16,572 audits across eleven model configurations from four vendors, feeding LLM vulnerability auditors static-analysis notes that were sometimes fabricated. True evidence added +0.02 accuracy. Fabricated assurances that a missing check exists cut detection of real vulnerabilities by up to 19 points; fabricated alarms cost nothing and were disputed far more often. Prompt instructions did not reliably fix it; verifying each claim in a separate call recovered 12 points.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">The Agents Talked Through the CPU Cache: OpenAI&amp;rsquo;s Containment Red Team, and What the Git Log Says About Its Five Upstream Fixes</a></h3><p>OpenAI spent hundreds of billions of tokens having frontier agents attack its own training infrastructure, found microVM escapes and a cache-timing channel between supposedly isolated sandboxes, and resumed frontier RL on 1 October. We read the 23 October post first-hand and checked all five upstream links in the git log: two carry an OpenAI commit, three do not, and one predates the campaign by eight months.</p><a class="text-link" href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/metr-redwood-openai-agent-monitoring-red-team-sandbox-bypass-october-2026/">The Monitor Watched the Turn, Not the Agent: METR and Redwood&amp;rsquo;s Three Weeks Inside OpenAI&amp;rsquo;s Misalignment Monitoring</a></h3><a class="text-link" href="/posts/2026/10/metr-redwood-openai-agent-monitoring-red-team-sandbox-bypass-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">&larr; All posts</a> &bull; <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
