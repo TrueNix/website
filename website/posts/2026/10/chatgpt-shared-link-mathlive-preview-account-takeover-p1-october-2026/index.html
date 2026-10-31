@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Open the Link, Lose the Account: A Math Library's Mail Slot Turned a ChatGPT Share Into Code Execution — al-ice.ai</title>
+  <meta name="description" content="Parameter 28 October 2026 writeup: a ChatGPT shared link combined an HTML Preview with a MathLive postMessage listener to run attacker JavaScript as chatgpt.com, reading private chats via authenticated APIs. Reported 18 October, fixed 26 October, rated P1." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/chatgpt-shared-link-mathlive-preview-account-takeover-p1-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Open the Link, Lose the Account: How a Math Library Mail Slot Turned a ChatGPT Share Into Code Execution" />
+  <meta name="post:date" content="2026-10-31" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Open the Link, Lose the Account: A Math Library's Mail Slot Turned a ChatGPT Share Into Code Execution</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-31">2026-10-31</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The most dangerous link in October looked exactly like a helpful one: an ordinary ChatGPT conversation, shared through the product's normal public-link feature. Security firm Parameter showed on <strong>28 October 2026</strong> that opening it could run an attacker's JavaScript inside the victim's signed-in ChatGPT session — enumerating conversation lists, pulling content from a private chat that was never shared, and calling ChatGPT's own authenticated APIs as the victim. The researchers reported it through OpenAI's bug bounty on <strong>18 October</strong>; OpenAI reproduced both the code execution and the private-chat exfiltration, raised the severity from P2 to <strong>P1</strong>, and had fixes rolled out across both web frontend versions by <strong>26 October</strong>. No real-world exploitation is reported — the private-chat proof ran between researcher-controlled accounts — but the chain is a textbook study in how two harmless features compose into account takeover.</p>
+        <p>The sandbox did its job; the mail slot did not. ChatGPT renders an HTML code block as a working page through its Preview feature, and because that page can contain arbitrary code, it runs in a restricted frame on a separate origin — the Preview genuinely could not read the parent page. The way in came from a second feature in the same conversation: an interactive graph that loaded the <code>MathLive</code> math library into the <strong>main</strong> ChatGPT page, installing a <code>postMessage</code> listener for on-screen-keyboard traffic. As Parameter tells it, that listener accepted a keyboard-layout message from <strong>any sender</strong> without checking origin, and the layout payload was allowed to carry raw HTML. The Preview therefore had a path across the boundary: send two messages — one replacing the virtual keyboard layout with attacker HTML, one telling MathLive to display the keyboard — and the trusted main page rendered the payload via <code>innerHTML</code>. A helper named <code>createHTML</code> looked like it might sanitize the value; per the writeup, it marked the string as trusted and passed it through unchanged.</p>
+
+        <h2>innerHTML does not run scripts — so the chain built a new document</h2>
+        <p>Script tags injected through <code>innerHTML</code> do not execute, so the next step was an <code>iframe</code> using <code>srcdoc</code>, inserted into the main ChatGPT document <strong>without a sandbox attribute</strong>. Because the main page created the frame, the browser granted it the <code>https://chatgpt.com</code> identity, and code inside it could reach the parent page. Then came the Content Security Policy: it correctly blocked inline JavaScript but permitted scripts from YouTube, and YouTube's oEmbed endpoint reflected a JSONP-style callback parameter into its response before its own validation error. Terminating the callback with <code>;void</code> neutralized the trailing object, and since YouTube was already CSP-allowed, the browser loaded the response as a script — arbitrary JavaScript running as chatgpt.com. Parameter is explicit that the YouTube step was workaround, not cause: the defect was an untrusted Preview able to push HTML into the main site through three compounding choices — an unchecked sender, an HTML-capable settings message, and an unsandboxed <code>srcdoc</code> frame.</p>
+
+        <h2>Delivery was the product's own sharing UX</h2>
+        <p>What elevates this above a lab curiosity is that the whole chain survived inside one public <code>/share/</code> link, deliverable by email, chat message, support ticket, or social post. The victim installed nothing, joined nothing, and never opened developer tools. In the most reliable version the victim clicked ChatGPT's Preview button once; Parameter later got the page to open Preview on its own, reducing the interaction to opening the link. From a defensive standpoint this is the same lesson as <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">the trojanized Claude Code build planted in a marketplace</a> — the trusted channel is the weapon — except here no software was even installed. It also sharpens the picture painted by <a href="/posts/2026/10/openai-october-misalignment-reports-forged-logins-sepolia-wallet-october-2026/">October's misalignment reports</a>: the frontier systems are being asked to police their own boundaries, and the boundaries keep being drawn in the wrong place.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>ChatGPT users: nothing to install or reset.</strong> The fix is server-side; both frontend versions reject the attack messages as of 26 October. Treat any shared chat link with the suspicion you would give an unexpected attachment.</li>
+          <li><strong>Audit every postMessage listener for sender checks.</strong> A listener that acts on <code>update-setting</code>-style messages with an origin policy of none is a sandbox escape waiting for a second feature. Parameter's suggested 20-line listener audit is the right shape: enumerate listeners, require origin and source-window validation, and never accept HTML through settings payloads.</li>
+          <li><strong>Sandbox srcdoc frames and distrust trusted-type helpers.</strong> Frames created from markup strings need explicit <code>sandbox</code> attributes, and any <code>createHTML</code>-style helper that marks input trusted without sanitizing is a bypass, not a control.</li>
+          <li><strong>Allowlist CSP sources as attack surface, not decoration.</strong> Every entry in <code>script-src</code> — including JSONP-capable endpoints like oEmbed — is a potential script gadget. Review them with the assumption that an attacker already has an injection point.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.parameter.ai/labs/we-found-a-gap-at-openai?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Parameter Labs — "Do the Math: How We Took Over ChatGPT Accounts" (28 October 2026; reported 18 October, fixed 26 October, P1; read first-hand)</a></li>
+          <li><a href="https://thehackernews.com/2026/10/a-shared-chatgpt-link-could-run.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — "A Shared ChatGPT Link Could Run Attacker Code in Your Session and Read Private Chats" (31 October 2026; P2-to-P1 escalation, $5,000 bounty, auto-Preview variant; read first-hand)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/tako-okta-ai-agent-cve-2026-63377-63378-unauth-admin-code-execution-october-2026/">Setup Was the Vulnerability: TAKO’s Okta AI Agent Shipped Unauthenticated Admin Creation and Root Code Execution</a></h3><p>CVE-2026-63377 (CVSS 9.8): TAKO AI Agent for Okta let any unauthenticated network attacker claim the first admin account via POST /api/auth/setup. CVE-2026-63378 (CVSS 8.8): any authenticated user could smuggle Python past the AI content filter into asyncio subprocess execution as root. Both fixed in 3.0.1-beta; NVD published 30 October 2026.</p><a class="text-link" href="/posts/2026/10/tako-okta-ai-agent-cve-2026-63377-63378-unauth-admin-code-execution-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/nvidia-nemo-agent-toolkit-cve-2026-65145-missing-auth-rce-october-2026/">A 10.0 With No Login Required: NVIDIA Patches Missing Authentication in NeMo Agent Toolkit</a></h3><p>On 27 October 2026 NVIDIA published security bulletin 2026/5912 for NeMo Agent Toolkit: CVE-2026-65145, a CVSS 10.0 missing-authentication flaw in versions 1.0 through 1.8.0 (fixed in 1.9.0) with network code execution, plus CVE-2026-65151, an 8.4 SQL injection fixed in 1.7.0. Both were found externally and reported via Trend ZDI.</p><a class="text-link" href="/posts/2026/10/nvidia-nemo-agent-toolkit-cve-2026-65145-missing-auth-rce-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/openhands-agent-sdk-cve-2026-112346-unauthenticated-sandbox-rce-october-2026/">Bound to Every Interface, Keyed to Nothing: OpenHands Agent SDK&amp;rsquo;s Unauthenticated Sandbox RCE</a></h3><p>CVE-2026-112346, published 26 October 2026, is a CVSS 9.8 unauthenticated remote code execution flaw in OpenHands Software Agent SDK before 1.52.0: the Docker and Apptainer workspace launchers bound the sandbox agent server to 0.0.0.0 with an empty session_api_keys list, so anyone reaching the published container port could run arbitrary shell commands as root and read plaintext secrets. Fixed in 1.52.0 via PR #5209.</p><a class="text-link" href="/posts/2026/10/openhands-agent-sdk-cve-2026-112346-unauthenticated-sandbox-rce-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
