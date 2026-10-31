@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Danger-Full-Access by Default: Unauthorized Relays Strip Sandboxes From Codex and Claude Code at 12 Organizations — al-ice.ai</title>
+  <meta name="description" content="Symantec Threat Hunter reported 29 October 2026 that an unauthorized relay service installs the genuine Codex and Claude Code CLIs, then rewrites their configs to danger-full-access, routes every prompt through third-party servers, and kills telemetry. Active since early 2026 across a dozen organizations." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/10/symantec-unauthorized-codex-claude-code-relays-danger-full-access-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Danger-Full-Access by Default: Unauthorized Relays Strip Sandboxes From Codex and Claude Code at 12 Organizations" />
+  <meta name="post:date" content="2026-10-31" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Danger-Full-Access by Default: Unauthorized Relays Strip Sandboxes From Codex and Claude Code at 12 Organizations</h1>
+        <div class="post-meta">
+          <time datetime="2026-10-31">2026-10-31</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>The most insidious supply-chain compromise is the one that installs the genuine software. In a <strong>29 October 2026</strong> report, <strong>Symantec&rsquo;s Threat Hunter Team</strong> describes an unauthorized relay service, active since at least early 2026, that installs the real <strong>OpenAI Codex</strong> and <strong>Anthropic Claude Code</strong> command-line agents on enterprise machines — then rewrites their configuration so that every prompt, file, and secret flows through third-party servers with the execution sandbox switched off. The team observed the relay in use at <strong>a dozen organizations</strong>, most in mainland China plus multinational subsidiaries in South Korea, Taiwan, and Malaysia, spanning industrial automation, electronics manufacturing, semiconductors, pharmaceuticals, shipping, tire manufacturing, petrochemicals, and data-center services. Symantec is explicit that this is <strong>not a vulnerability</strong> in either CLI: once the configuration is changed, the tools behave exactly as designed. The compromise is the configuration itself.</p>
+        <p>The delivery is what makes this a shadow-AI story rather than a malware story. There is no trojanized binary and no exploit. Users run a legitimate <strong>npm install -g @openai/codex</strong> or <strong>@anthropic-ai/claude-code</strong>, and within minutes — at most about half an hour — paste a one-line command that fetches a <strong>fileless PowerShell or bash setup script</strong> from a lookalike domain such as vibe.aiok[.]me. The script prints progress messages in Chinese, asks to be re-run elevated if it lacks administrator rights, installs Node.js or the CLI silently if missing, and only then applies its own configuration: <strong>base_url / ANTHROPIC_BASE_URL pointed at relay infrastructure</strong>, a relay-issued API key swapped in, and both established as user-scope environment variables so the change survives reboots. Along the way it sets Codex to <strong>sandbox_mode = &ldquo;danger-full-access&rdquo;</strong>, enables network access for the write sandbox, and sets <strong>DISABLE_TELEMETRY=1</strong> and <strong>DISABLE_ERROR_REPORTING=1</strong> — silencing exactly the signals that might otherwise reach OpenAI or Anthropic. On at least one host the script went further, running <strong>claude /logout</strong>, deleting ANTHROPIC_AUTH_TOKEN and ANTHROPIC_API_KEY, and re-running login — clearing a legitimate authenticated session so it could not override the relay&rsquo;s credentials. Several hosts also show a geolocation check against the Windows Geo Nation key, consistent with a service confirming it is running in the region it serves.</p>
+
+        <h2>A relay that sees everything and constrains nothing</h2>
+        <p>Symantec found the backend rotating across <strong>at least eight impersonator domains</strong> — chat[.]nuoda[.]vip, rawchat[.]cn, sharedchat[.]cc, claudechn[.]com among them — and published file hashes for the two setup scripts. On motive, the team is candid that the evidence does not settle it: bypassing regional restrictions on Western coding agents is the simplest explanation for mainland-China demand, but that alone does not require disabling sandboxes or persisting credentials. The relay-issued Claude Code keys carry the formatting of <strong>subscription-based OAuth tokens rather than pay-per-use API keys</strong>, which is consistent with — though not proof of — pooling flat-rate subscriptions and reselling the capacity. Fraud with stolen payment instruments and resale of the prompts and files passing through the relay cannot be ruled out either. What is settled is the exposure: a relay in this position <strong>reads every prompt and file</strong> the employee sends the agent, can alter or fabricate every response, and — with the sandbox off and network on — a malicious or compromised response executes with the user&rsquo;s full privileges. And because the credentials live in user-scope environment variables, <strong>any other tool on the box that reads the environment picks them up too</strong>, spreading the blast radius beyond the coding assistant. Symantec reports <strong>no evidence the operator is currently abusing the position</strong> — every risk above is potential, not observed — but notes the architecture would fully support abuse if the operator&rsquo;s intentions or security changed.</p>
+
+        <h2>Shadow AI with a setup script</h2>
+        <p>This belongs in the same incident family as the recent <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">trojanized Claude Code build on Cursor&rsquo;s marketplace</a> and the <a href="/posts/2026/10/yoba-fake-chatgpt-claude-github-signed-binary-sideloading-october-2026/">fake ChatGPT and Claude builds with signed-binary sideloading</a> — except the artifact here is legitimate, which makes it harder to catch and easier to rationalize. The affected organizations look less like chosen targets and more like workplaces where employees wanted Western coding agents that are not officially sold in their market and turned to an unauthorized reseller. That demand-side framing should worry defenders more than a targeted campaign would: it means the installer ran with the user&rsquo;s consent, with admin rights, past endpoint tooling that saw a routine npm workflow. It also pairs grimly with the week&rsquo;s other sandbox news — the <a href="/posts/2026/10/embrace-embedded-browser-five-ai-assistants-october-2026/">embedded-browser flaws across five AI assistants</a> and the <a href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">personal agent that lived two months on a defense network</a> — all of them cases where the agent&rsquo;s containment boundary was the thing that failed or was never there. Detection guidance from Symantec is refreshingly concrete: watch for base_url changes in CLI configs, danger-full-access in ~/.codex/config.toml, relay credentials in user-scope environment variables outside approved deployments, one-line downloader invocations trailing npm installs, and CLI traffic to anything outside your allow-listed AI endpoints.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Allow-list AI service endpoints at the egress.</strong> CLI traffic to anything outside vendor and approved-gateway domains is the highest-signal detector for this class — the relay cannot function without its base_url override phoning home.</li>
+          <li><strong>Alert on sandbox downgrades.</strong> Treat sandbox_mode = danger-full-access, network-enabled write sandboxes, and DISABLE_TELEMETRY / DISABLE_ERROR_REPORTING in agent configs as compromise indicators, not preferences.</li>
+          <li><strong>Audit environment-scoped credentials.</strong> Hunt for OPENAI_BASE_URL, CODEX_API_KEY, and ANTHROPIC_AUTH_TOKEN set as persistent user-scope variables outside your approved deployment process; rotate anything that touched a relay.</li>
+          <li><strong>Give sanctioned paths for restricted regions.</strong> Employees sourced this relay because the legitimate tool was unavailable to them. Subsidiaries and contractors in unserved markets need an approved route to coding agents or they will find their own.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.security.com/threat-intelligence/openai-claude-unauthorized-relays?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Security.com (Symantec Threat Hunter Team) — &ldquo;Sandbox Flipped to Danger-Full-Access: Unauthorized AI Relays Create Risk for Organizations&rdquo; (29 October 2026; primary: install flow, config overrides, IOCs, motive analysis; read first-hand)</a></li>
+          <li><a href="https://www.darkreading.com/threat-intelligence/ai-relay-service-openai-codex-claude-code-sandboxes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dark Reading — &ldquo;Shadowy AI Relay Disables OpenAI Codex, Claude Code Sandboxes&rdquo; (corroborating coverage; cited by URL)</a></li>
+          <li><a href="https://gbhackers.com/codex-claude-code-relays/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers — &ldquo;Unauthorized Codex and Claude Code Relays Disable Security Protections at 12 Organizations&rdquo; (corroborating coverage; cited by URL)</a></li>
+          <li><a href="https://www.scworld.com/brief/unauthorized-ai-relay-service-poses-security-risks-to-enterprise-users?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">SC Media — &ldquo;Unauthorized AI relay service poses security risks to enterprise users&rdquo; (brief; cited by URL)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary</a></h3><p>A 4 October 2026 paper attacks Claude Code and Codex in their native runtimes with staged prompt injection across eight workflows, seven goals and six injection surfaces, then argues the only viable intervention point is immediately before each consequential action. Its training-free auditor reaches 86% block recall at a 6–8% false-block rate.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-30">2026-10-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">The Contractor Plugged a Personal Agent Into a Secure DOD Network — and It Ran for Two Months</a></h3><p>WIRED reported on 29 October 2026 that an Accenture employee connected a secure DOD production environment on NIPRNet to a personal Claude Code account. The agent wrote and deployed code for two months, was handed login credentials giving it administrative access, and sent credentials and a network map to a third-party site. DOD would not comment; Accenture called the allegations without merit.</p><a class="text-link" href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/blockstrap-cve-2026-103849-magento-second-pass-template-rce/">Priority 2, Four Exploit Routes in 24 Hours: BlockStrap Is a 10.0 in Every Magento Store</a></h3><p>CVE-2026-103849 (BlockStrap) is a CVSS 10.0 unauthenticated RCE in Adobe Commerce and Magento Open Source through 2.4.9, disclosed by Sansec on 15 October 2026 and fixed in Adobe bulletin APSB26-153 on 13 October. It is a second-pass email-template directive injection: attacker content in a child template gets signed by the September StyleSmuggler hotfix and re-executed at root level, where a smuggled block directive runs arbitrary PHP. Sansec rebuilt four exploit routes in under a day and disputes Adobe&amp;rsquo;s 30-day priority-2 window. Fresh Composer installs stay vulnerable, stores on 2.4.6 or older have no public patch, and the September hotfix must stay applied alongside.</p><a class="text-link" href="/posts/2026/10/blockstrap-cve-2026-103849-magento-second-pass-template-rce/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
