@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nine Platforms, One Shopping List: Northflank Closes Wiz’s “Black October” as Stolen Keys Burn 2.5 Million Bedrock Calls — al-ice.ai</title>
+  <meta name="description" content="On 30 October 2026 Northflank told every customer to assume all environment variables were decrypted, becoming the ninth AI developer platform to disclose an October incident. The same day, Wiz Research published its Black October synthesis: no single vulnerability links the nine breaches, but stolen enterprise Bedrock keys ran roughly 2.5 million calls across two traced cases, with resale infrastructure, model-distillation motives, and a reusable defender playbook." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/wiz-black-october-llmjacking-nine-platforms-northflank-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Nine Platforms, One Shopping List: Northflank Closes Wiz’s “Black October” as Stolen Keys Burn 2.5 Million Bedrock Calls" />
+  <meta name="post:date" content="2026-11-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Nine Platforms, One Shopping List: Northflank Closes Wiz’s “Black October” as Stolen Keys Burn 2.5 Million Bedrock Calls</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-01">2026-11-01</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>At 13:58 UTC on <strong>30 October 2026</strong>, Northflank’s status page replaced “Investigating” with “Identified” and printed the sentence every platform dreads writing: <strong>“Assume all environment variables have been decrypted. Disable/rotate all keys.”</strong> Within hours, users were confirming that AI API keys stored on the platform had already been used without authorization. Northflank became the ninth AI developer platform to disclose a security incident in October — and on the same day, Wiz Research published the synthesis that connects them. “Black October for AI Developer Platforms,” by Benjamin Read and Rami McCarthy, argues there is no single vulnerability or shared dependency behind the month’s breaches. There is something simpler: attackers hunting stored environment variables, with a special appetite for AI credentials, feeding a resale market that makes each theft monetizable within hours. We read the Wiz report, the Northflank status page, and a detailed public timeline of the Northflank incident first-hand.</p>
+
+        <h2>Northflank’s timeline, as its status page tells it</h2>
+        <p>The sequence is unusually transparent about response mechanics and unusually silent about cause. At <strong>11:43 UTC</strong> Wiz sent a threat alert; Northflank engineers reviewed it within a minute. Network policy patches went out at 12:02 and 12:50, Wiz’s incident-response team (CIRT) was called in at 13:00, and by 13:40 the page said “Rotate environment variables immediately.” The 13:58 update escalated to assumed decryption of everything: workload secrets, secret groups, and global secrets, plus a request to disable public access on addons. At 15:12 Northflank enabled emergency secret rotation for Postgres and MongoDB addons for all users, noting that <strong>multiple users were confirming their AI keys had been used</strong>. Audit logs were opened to all customers including free tiers on 31 October, with MySQL, Redis, MinIO, and RabbitMQ rotation following through the day. As of the morning of 1 November, networking, certificates, services, addons, jobs, builds, and logs remained in major-outage state while the app and API showed operational.</p>
+        <p>What the page does not say matters as much as what it does. As of the 31 October 23:31 UTC update there is <strong>no published root cause, no list of affected projects or regions, and no statement separating BYOC customers</strong> — whose workloads run in their own VPC — from the rest. The 23:38 update links the AI-key abuse only softly, calling it “consistent with the broader pattern of attacks targeting AI credentials” and pointing at Wiz’s research. Treat the BYOC question as open: if you run Northflank BYOC, rotate anyway until the company answers directly.</p>
+
+        <h2>Wiz’s nine, and the pattern across them</h2>
+        <p>Wiz counts, by date: <strong>Fireworks AI (6 Oct), Andromeda (9 Oct), Zeabur (14 Oct), Lightning AI (15 Oct), OpenCode (16–17 Oct), Railway (20 Oct), Warp (23 Oct), CommandCode (28 Oct), and Northflank (30 Oct)</strong>. The self-descriptions rhyme: Fireworks, OpenCode, and Warp each reported signs of an “agent swarm”; Andromeda called its incident part of an “industry-wide attack”; OpenCode and CommandCode attributed theirs to attempted <strong>distillation</strong>. Stated root causes so far are all credential-shaped — Fireworks, Zeabur, and Lightning attribute theirs to credential access; Railway’s preliminary report says “privilege escalation in our build infrastructure”; Warp points at a third-party vendor; OpenCode at a “legacy system.” Zeabur published a full write-up and is shutting down over the incident; Railway published a preliminary report and timeline.</p>
+        <p>Wiz’s thesis is that the <em>absence</em> of a common vulnerability is the finding. Every public report describes targeted exploitation explicitly hunting stored environment variables, weighted toward AI access. That picture aligns, Wiz argues, with three background conditions: agentic attack tooling that lets intruders move faster, a mature LLMjacking economy with brokers ready to resell stolen inference access, and distillation demand — notably alleged against Chinese AI labs — that gives model weights and outputs a second market. We have covered several of these incidents individually — <a href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">Railway’s environment-variable breach</a>, <a href="/posts/2026/10/zeabur-plaintext-credentials-breach-shutdown-december-2026/">Zeabur’s plaintext-credential shutdown</a>, <a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">OpenCode’s distillation-attributed console breach</a> plus <a href="/posts/2026/10/opencode-silent-rce-mcp-oauth-pillar-october-2026/">its silent MCP OAuth RCE fix</a>, <a href="/posts/2026/10/warp-breach-agent-logs-telemetry-third-party-vendor-october-2026/">Warp’s vendor-attributed breach</a>, and <a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">Fireworks’ evaluation-jobs secrets breach</a> — and this briefing deliberately does not relitigate them. What is new here is the downstream evidence: Wiz could watch what stolen enterprise keys did <em>after</em> they left the breached vendors.</p>
+
+        <h2>Two keys, roughly 2.5 million calls</h2>
+        <p>Both traced keys opened the same way: a single <code>InvokeModel</code> from a residential IP, inside a one-minute sweep testing stolen keys across multiple organizations. The call asked for Claude Fable 5.1, failed, and fell back to Opus 5.5, which worked — a capability probe, not yet theft. Then days of near-silence: 14–120 calls a day from the same small Go client, the two keys moving in lockstep about a minute apart, which Wiz reads as one ongoing job checking the keys were still valid.</p>
+        <p><strong>Case A</strong> detonated four days after validation. A rotating proxy pool ran a catalog probe — one call per model across Amazon Nova, DeepSeek, gpt-oss, GLM, Kimi, Grok, GPT-6 Astra, and older Claude models; everything worked except Fable. Hours later a boto3 script on a residential address enumerated Bedrock and EC2 quotas, a second host mapped quotas and model availability across regions at over a thousand calls a minute, and bulk traffic began 22 seconds after that. Over thirty hours the actor made <strong>approximately 800,000 Bedrock calls at ~90% success</strong>, first from the residential address, then overnight from a Level&nbsp;3 hosting address. The key permitted <code>global.*</code> cross-region inference profiles, and the actor routed everything through them — spreading load across regions so only ~6% of calls throttled. Three quarters of successful calls were Opus models, led by Opus 5 (36%), Opus 5.5 (22%), and Opus 4.8 (10%).</p>
+        <p><strong>Case B</strong> was a restricted key and therefore a slower burn with a hotter ending. Seven days after validation it surfaced in an apparent reseller pool: thousands of failed calls from rotating hosting addresses, failing because the pool requested <code>global.*</code> while the key allowed only <code>us.*</code> profiles. A checker on a shared VPN exit found the working <code>us.*</code> model IDs; two hours later the <em>same boto3 script down to the version string</em> that had probed Case A retested both profile scopes and enumerated quotas — and within minutes the floodgates opened. Over thirteen hours, a <strong>single Level&nbsp;3 address made approximately 1.7 million Bedrock calls, over a million successful</strong>, nearly all the rest throttled against regional quotas. Traffic spread across a dozen Claude models, led by Opus 5.5, Sonnet 4.5, and Opus 5. Combined, the two cases ran up what Wiz prices at <strong>over $100,000 in usage at list price</strong>, and the token profile — a few uncached input tokens per typical call (the signature of prompt caching) with a long tail of tens of thousands (many distinct end users) — reads exactly like resold coding-agent traffic.</p>
+
+        <h2>The resale layer, with receipts and caveats</h2>
+        <p>Wiz names two resale operations that handled the traced keys, with an explicit caveat it repeats twice: it <strong>cannot definitively tie either operation to the initial compromises or to the flood traffic</strong> — but both had the stolen keys on their infrastructure. The first, self-styled “momo,” centers on <strong>23.106.46.239</strong>: infrastructure tied to the overt resale site llm-routing.com (discounted frontier-model access, USDT accepted), key checks on both case keys from 26–29 October, and an attempted <code>PutAccountDataRetention</code> call with the Case B key. The same IP hosted an Artex landing page on 8 October — <code>artex.nhhh.de</code>, titled “ARTEX — autonomous penetration testing console” — four days before Zeabur’s timeline places that IP against its infrastructure (12–14 Oct), and Zeabur publicly named the address as part of its compromise. The second, “Xingjiabi” at <strong>xingjiabiapi.org</strong> (infrastructure at 38.246.114.118, resolving since 10 September), enumerated the Case A key’s inference profiles region by region and manually tested the Case B key — in both cases <em>after</em> the high-volume abuse had already begun, which is what an active resale market looks like. Amusingly, the Xingjiabi operators appear to be guarding against distillation themselves, with a snapshotted page for distillation-behavior detection scoring users high-risk, watch, or normal. Wiz publishes four checker IPs with date ranges plus the shared-proxy ASNs seen in the floods; defenders should ingest the IOC table from the report rather than this briefing.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>If you used any of the nine platforms, rotate in monetization order.</strong> AI provider and inference keys first (abuse was confirmed within hours at Northflank), then payment and billing keys, then database and cloud credentials. Check provider-side usage logs for the days <em>before</em> each incident disclosure — Wiz’s validation sweeps ran days ahead of the floods.</li>
+          <li><strong>Scope Bedrock keys to the narrowest inference profiles that work.</strong> Case B’s <code>us.*</code>-only key forced the reseller pool through days of visible failure; Case A’s <code>global.*</code> key let the actor dodge throttling to 6%. Regional scoping does not prevent theft, but it measurably slows monetization and buys detection time.</li>
+          <li><strong>Alert on the validation signature, not just the flood.</strong> One cheap probe from a residential ASN, a model-availability sweep (including a model that fails), then a days-long trickle of tiny prompt-cached calls in lockstep — that is the shape of stolen-key verification. Quota-enumeration scripts and catalog probes across vendors are the escalation signal.</li>
+          <li><strong>Price your detection in dollars per hour.</strong> Case B moved 1.7 million calls through one address in thirteen hours. Spend caps, per-key budgets with hard stops, and CloudTrail alarming on quota-enumeration APIs turn a six-figure incident into a paging event.</li>
+          <li><strong>Stop storing long-lived plaintext-adjacent secrets on shared build platforms.</strong> The month’s through-line is not a bug class but an architecture: one platform holding every customer’s environment variables pays off every break-in many times over. Short-lived credentials, customer-held secret managers, and IAM roles the customer can revoke are the structural fix — Zeabur’s shutdown is the cost of learning it late.</li>
+        </ul>
+        <p><em>Our verification was read-only: we read the full Wiz report including both case timelines, the resale-infrastructure section, and the IOC table; the complete Northflank status-page incident history including the UTC timeline and rotation updates; and a full public timeline article quoting that status page. BleepingComputer’s Northflank coverage would not render past its outage page from our network and is carried by URL only. We accessed no platform infrastructure, rotated no keys, and contacted no vendor.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.wiz.io/blog/black-october-for-ai-developer-platforms?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Wiz — “Black October” for AI Developer Platforms (Benjamin Read, Rami McCarthy, 30 October 2026; nine-platform roster, Case A ~800k calls/30h, Case B ~1.7M calls/13h, momo/Xingjiabi resale infrastructure, IOC table, explicit non-attribution caveats; read first-hand in full)</a></li>
+          <li><a href="https://status.northflank.com?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Northflank status page — Security incident history (30–31 October 2026; 11:43 UTC Wiz alert through assumed-decryption notice, addon rotation rollout, audit-log expansion; no root cause published as of 31 October 23:31 UTC; read first-hand)</a></li>
+          <li><a href="https://www.qovery.com/blog/northflank-security-incident-secrets-own-cloud?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Qovery — Northflank Security Incident: What Happened and How to Protect Your Secrets (Romaric Philogene, 30 October 2026; full UTC timeline quoted from the status page, BYOC ambiguity flagged, rotation ordering; vendor blog, read first-hand)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/northflank-security-breach-leads-to-abuse-of-customers-ai-api-keys/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer — Northflank security breach leads to abuse of customers’ AI API keys (31 October 2026; carried by URL only — page served an outage notice to our fetcher)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">Rotate Everything: Railway&amp;rsquo;s Environment-Variable Breach Puts AI Inference Keys in Play</a></h3><p>Railway disclosed on 21 October 2026 that an unauthorized third party may have accessed customer environment variables — including decrypted contents — and says it believes the attack is part of a series targeting platform companies to compromise AI inference providers. Deployments paused, all users told to rotate every secret.</p><a class="text-link" href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">The Key Was Never on Your Server: Stolen UpdraftCentral Keys Backdoored WordPress Sites, and the First Emergency Patch Deleted Nothing</a></h3><p>TeamUpdraft confirmed unauthorised access to its website over 17&amp;ndash;18 October 2026 and says the attacker probably took the customer database, including the UpdraftCentral, UpdraftVault and UpdraftClone connection keys. Those keys sign commands that install plugins on more than four million UpdraftPlus sites. Researchers who were hit documented 99 backdoor plugin names, a key the owner may never have knowingly created, and an emergency release that because of a bug deleted no keys at all.</p><a class="text-link" href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-14">2026-10-14</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">The File Name Is the Argument: Eighteen Command-Injection CVEs in Nineteen Seconds, Nine With No Fix</a></h3><p>VulnCheck published eighteen CWE-78 records between 15:16:59 and 15:17:18 UTC on 14 October 2026 — transcription wrappers, PDF and video converters, archive extractors — all the same bug: an attacker-controlled file name interpolated into a shell string. We read every record and all nineteen fix PRs: one researcher filed them, nine were merged, nine are still open, and two maintainers shipped fixes in the final hours before publication.</p><a class="text-link" href="/posts/2026/10/vulncheck-eighteen-filename-command-injection-cves-whisper-ffmpeg-pipelines/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
