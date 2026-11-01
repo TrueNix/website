@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Reviewer That Reads the Architecture: GitHub Code Scanning Flags AI Agent Risk at Pull Request Time — al-ice.ai</title>
+  <meta name="description" content="GitHub code scanning for AI applications entered public preview on 28 October 2026, flagging indirect prompt injection, sensitive disclosure and excessive agency in pull requests for Advanced Security repos; static checks at merge time, not runtime guards." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/github-code-scanning-ai-applications-prompt-injection-preview-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Reviewer That Reads the Architecture: GitHub Code Scanning Flags AI Agent Risk at Pull Request Time" />
+  <meta name="post:date" content="2026-11-01" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');
+</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Reviewer That Reads the Architecture: GitHub Code Scanning Flags AI Agent Risk at Pull Request Time</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-01">2026-11-01</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Manual review cannot see what only exists at runtime — an agent reading a poisoned issue comment, reaching a production tool, and acting on it. <strong>GitHub code scanning for AI applications</strong>, announced in <strong>public preview on 28 October 2026</strong>, moves that detection left: pull requests in repositories with <strong>GitHub Advanced Security</strong> are now automatically scanned alongside existing CodeQL analysis for <strong>indirect prompt injection (XPIA), sensitive information disclosure, and excessive agency</strong>, with more AI-specific checks promised as coverage expands. The detector flags agent code paths where <strong>untrusted content can reach a model that holds tool, data, or business-system access</strong>, and puts remediation guidance directly in the pull request before merge. It is the first time a major forge has productized the architectural reading of agent risk — not the model output, but the wiring around it.</p>
+
+        <h2>Why the pull request is the right choke point</h2>
+        <p>The timing is not accidental. Two days after this launch, Radware researchers presenting at [un]prompted II published a census of <strong>2,281 real AI-directed findings and 47 outright attacks</strong> hidden in GitHub issues, comments, and README files — our <a href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">29 October briefing</a> on exactly the threat class GitHub now scans for. The <a href="/posts/2026/10/crowdstrike-prompt-injection-taxonomy-222-agent-planning-october-2026/">222-technique planning-attack taxonomy</a> published the same week shows the adversary side industrializing; and our <a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">Log-To-Leak briefing</a> demonstrated exfiltration surviving to 100 percent success rates precisely because post-hoc logging never inspects the architecture. Scanning the wiring at merge time attacks the problem one layer earlier than all three: the dangerous pattern — untrusted input, capable agent, no boundary — is visible in the diff even when no single line looks wrong.</p>
+
+        <h2>Convergence on scanning at build time</h2>
+        <p>The notable signal is convergence. Anthropic&rsquo;s Frontier Red Team, disclosing <a href="/posts/2026/10/anthropic-claude-five-exploit-chains-chrome-safari-android-windows-linux-october-2026/">five working exploit chains built by an unreleased model</a>, concluded that fixing the backlog only solves half the problem and recommended scanning at PR time — releasing a Claude Code plugin toward exactly that. GitHub&rsquo;s detector now says the same thing from the platform side: risky agent architectures are difficult to spot through manual review alone, so the forge should spot them automatically. Two independent actors, one prescription, one week apart. That is how a practice becomes standard. The honest limits travel with it: public preview means incomplete coverage, the detector requires an Advanced Security license and does not run on GitHub Enterprise Server yet, and static findings at merge time are not runtime guards — a flagged-then-waived alert, an over-permissioned tool added after merge, or a prompt change with no code diff all sail past the scanner. PR-time detection shrinks the backlog&rsquo;s growth rate; it does not watch the running agent.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Enable scans for AI applications where Advanced Security already runs.</strong> The detector rides alongside CodeQL on pull requests — review new alerts on the Conversation or Files changed tab and remediate before merging.</li>
+          <li><strong>Treat excessive-agency findings as architecture bugs, not style nits.</strong> An agent with broader tool access than its task requires is the precondition nearly every October agent exploit chain needed.</li>
+          <li><strong>Keep runtime controls on the roadmap.</strong> Static PR scanning complements tool-level authorization, egress filtering, and post-hoc monitoring — it replaces none of them.</li>
+          <li><strong>Track coverage expansion before declaring the problem handled.</strong> Public preview detectors grow over time; re-audit previously merged agent code as new check classes ship.</li>
+        </ul>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.blog/changelog/2026-10-28-code-scanning-for-ai-applications-in-public-preview/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub Changelog — Code scanning for AI applications in public preview (28 October 2026; scope, detectors, requirements; read first-hand)</a></li>
+        </ul>
+
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-23">2026-10-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/oracle-cve-2026-91403-java-certifi-four-roots-no-intermediate-revocation/">Nobody Can Revoke an Intermediate: Java Gets a 9.1 and certifi Pulls Four Roots to Block Eight Certificates</a></h3><p>Oracle published an out-of-cycle Security Alert on 21 October 2026 for CVE-2026-91403, CVSS 3.1 9.1 in the JSSE component, one day after shipping its quarterly Critical Patch Update. The fix is not a code change: it deletes the eMudhra intermediates from Java&amp;rsquo;s trust store. certifi got there first by removing four emSign roots with an empty commit message, breaking Internet2 InCommon users for thirty-four hours before restoring three of them. Temurin had to point its certdata updater at an NSS tag by hand. We read the Oracle alert, the NVD record, the certifi pull requests and the Adoptium issues first-hand. The common cause is stated outright by certifi&amp;rsquo;s maintainer: there is no facility for revoking an intermediate only.</p><a class="text-link" href="/posts/2026/10/oracle-cve-2026-91403-java-certifi-four-roots-no-intermediate-revocation/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">16 per Million and Growing: Radware Counts Hidden Prompt Injections Across GitHub</a></h3><p>Radware researchers Gabi Nakibly and Zvika Babo, presenting at [un]prompted II on 27 October 2026, published a GitHub-scale census of indirect prompt injection against coding agents: 2,281 real AI-directed findings, 47 outright attacks, first-party markers doubling in months — with open data and the ipi-scan tool.</p><a class="text-link" href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/brotli2shell-jfrog-ffmpeg-clickhouse-arrow-file-paths-october-2026/">Beyond HTTP: JFrog&amp;rsquo;s Brotli2Shell Work Shows the Decoder Bug Riding Files, Not Just Requests</a></h3><p>JFrog Security Research (25 October 2026) reproduced CVE-2026-111497 beyond Node.js and HTTP: a crafted JPEG XL file driving FFmpeg to instruction-pointer control via libjxl, a remotely triggerable ClickHouse crash from one 23 MB request body, a native .NET runtime kill, and an Apache Arrow infinite loop. Patch status now depends on reachability, not just version numbers.</p><a class="text-link" href="/posts/2026/10/brotli2shell-jfrog-ffmpeg-clickhouse-arrow-file-paths-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
