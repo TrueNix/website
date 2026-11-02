@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Starter Kit Was the Loader: SolanaCry Turned Agent Search Results Into a NetSupport Install Path — al-ice.ai</title>
+  <meta name="description" content="AIR Research Lab disclosed SolanaCry on 29 October 2026: a fake Solana starter-kit repo (286 stars, top of agent search results) whose README’s only install step is a fileless PowerShell one-liner dropping signed NetSupport RAT components configured to maxwintodaybtc.com:443. An old operator playbook retargeted at AI coding agents." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/solanacry-fake-solana-starter-kit-ai-agents-netsupport-rat-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Starter Kit Was the Loader: SolanaCry Turned Agent Search Results Into a NetSupport Install Path" />
+  <meta name="post:date" content="2026-11-02" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Starter Kit Was the Loader: SolanaCry Turned Agent Search Results Into a NetSupport Install Path</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-02">2026-11-02</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>AIR Research Lab disclosed <strong>SolanaCry</strong> on <strong>29 October 2026</strong>: a fake GitHub repository posing as a Solana starter kit that ranks as the top result when an AI coding agent searches for one, and whose README&rsquo;s only installation step is a malicious PowerShell one-liner. Follow it and the agent installs a remote access trojan on the developer&rsquo;s Windows machine &mdash; including any crypto wallets on it &mdash; without the developer ever inspecting the repository or the commands. The malware and techniques are not new. The path to the victim is: instead of convincing a developer to download and run something malicious, the operators targeted the agents developers trust to search the web, pick dependencies and set up projects.</p>
+
+        <h2>The repository</h2>
+
+        <p>The repo is <code>SolanaUpdateTools/solana-starter-kit</code>, created in <strong>November 2025</strong>, holding <strong>286 stars</strong> when AIR examined it, and self-described as an &ldquo;open-source Solana dApp template with Anchor program, TypeScript client, and Next.js UI.&rdquo; None of that code exists. Its README promises a full app template; the actual content is a single instruction telling the reader &mdash; human or agent &mdash; to run a PowerShell command that builds its URL from fragments (<code>$update + $mode + $key + '.app/update/' + $file</code>, reconstructing to <code>developer-update.app/update/indicator</code>), downloads the payload with <code>iwr</code> and executes it in memory with <code>iex</code>. Textbook fileless execution: nothing touches disk at the delivery stage. The live payload URL returned 404 when checked, so AIR recovered the 21 MB dropper, <code>indicator.ps1</code> (SHA-256 <code>41902d18&hellip;680a201d</code>), from the Web Archive &mdash; a recovery BleepingComputer independently repeated and confirmed.</p>
+
+        <h2>Fourteen files, thirteen of them legitimate</h2>
+
+        <p>The dropper creates a hidden staging directory under <code>%LOCALAPPDATA%</code> and decodes 14 embedded base64 files: <strong>13 genuine, digitally signed NetSupport Manager v12.10 components</strong> (<code>client32.exe</code>, <code>PCICL32.DLL</code>, transport and control DLLs, an audio recorder, a remote command shell, a C++ runtime, license and driver files) plus <strong>one attacker-supplied configuration file</strong>, <code>client32.ini</code>. NetSupport Manager is legitimate commercial remote-administration software &mdash; screen viewing and control, keyboard and mouse, file transfer, remote shell, audio capture, registry access, user enumeration &mdash; and the attacker wrote none of it. The single config file does all the weaponizing: it points the gateway at <code>maxwintodaybtc.com:443</code>, disables every user-facing warning and disconnect option, accepts operators from any IP address, and sets a 60-second heartbeat. Persistence follows through an auto-start Registry entry, and the dropper then clears the Run-dialog history and deletes itself. Living off signed binaries is the point: nothing the endpoint sees is &ldquo;malware&rdquo; except the config and the behavior.</p>
+
+        <h2>An old operator with a new audience</h2>
+
+        <p>AIR links the tradecraft, carefully, to known activity. The <code>RADIUSSecret</code> value in the attacker&rsquo;s config matches signature data eSentire uses to identify <strong>EVALUSION</strong>, the most active NetSupport cluster it tracks across ClickFix campaigns &mdash; a possible link to previously tracked activity, not an attribution, as AIR notes. The install one-liner follows the same fragment-built pattern Fortian documented in October 2025, when fake TradingView &ldquo;AI signal&rdquo; videos pointed at a GitHub repo and the same <code>$update/$mode/$key/$file</code> construction fetched from a lookalike <code>.app</code> domain. The infrastructure timeline fits one operator iterating: <code>developer-update.app</code> registered 20 October 2025, the Solana repo created that November, the payload archived 22 November. First traders, then developers &mdash; and now the AI agents working for them. AIR reports no victim counts, and the C2 domain&rsquo;s current state is unconfirmed; treat the indicators as hunting leads, not a closed case.</p>
+
+        <h2>The developer may never see the repository</h2>
+
+        <p>That is the line that makes SolanaCry an agent-security story rather than another fake-repo story. The attack chain AIR describes &mdash; developer asks agent to build a Solana project, agent searches the web, agent picks the top-ranked repo, agent follows the README &mdash; never requires a human to open the repo page. It is the same delivery-shape shift behind <a href="/posts/2026/06/agentjacking-tenet-sentry-mcp-coding-agents/">the Agentjacking demonstrations that steered coding agents into executing commands</a>, <a href="/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/">the planted AGENTS.md that drove Codex into installing malware from the Downloads folder</a>, <a href="/posts/2026/07/gitlost-github-agentic-workflows-prompt-injection-private-repo-exfil/">the GitLost prompt-injection path into private repositories</a>, and <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">the trojanized Claude Code build that rode Cursor&rsquo;s own marketplace</a>. Each moves the trust decision from the developer to the agent, and each is caught at the same place: the moment before the agent runs something. SolanaCry also lands against an expensive backdrop &mdash; AIR and HackRead note the industry attention on developers&rsquo; machines as crypto targets while Binance investigates a DevOps engineer&rsquo;s hacked laptop amid its $6.3 billion theft &mdash; which explains why wallets, not just shells, are the prize.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>Require explicit approval before agents run <code>iwr | iex</code> / <code>curl | sh</code> one-liners from any repository, and before they add new MCP servers, configs or base URLs. The README command is the whole attack.</li>
+          <li>Verify repository provenance before the agent executes anything: owner history, star growth, whether the advertised code actually exists. 286 stars on a template with no template code is the tell.</li>
+          <li>Hunt Windows developer machines for the campaign&rsquo;s residue: hidden directories under <code>%LOCALAPPDATA%</code>, a <code>SecureModule</code> Run key, NetSupport components where no IT team installed them, and wiped RunMRU history. Block <code>maxwintodaybtc.com</code> at DNS and egress.</li>
+          <li>Treat agent web search as an untrusted input channel end to end &mdash; the same posture as <a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">hijacked assistant configs</a>. Rank, stars and README polish are attacker-controlled.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full AIR Research Lab SolanaCry report first-hand (Eliad Mualem, Dor Granat, published 29 October 2026: repository identity, 286-star and November-2025 creation details, fragment-built one-liner and reconstructed URL, indicator.ps1 size and SHA-256, 14-file inventory, client32.ini contents, persistence and cleanup steps, RADIUSSecret/EVALUSION linkage caveat, Fortian October-2025 parallel), the full HackRead write-up (Deeba Ahmed, 30 October 2026) and the BleepingComputer coverage including its independent Wayback payload confirmation first-hand. No victim counts were reported by any source; the Binance-theft backdrop is industry context from the secondary coverage, not a claimed connection. We cloned nothing, ran nothing, resolved no C2, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.air.security/blog-posts/solanacry?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">AIR Research Lab &mdash; SolanaCry: Malware in the wild steals crypto wallets from web-browsing AI agents (29 October 2026; read first-hand)</a></li>
+          <li><a href="https://hackread.com/fake-github-repo-ai-coding-agents-solanacry-malware/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">HackRead &mdash; Fake GitHub Repo Tricks AI Agents Into Installing SolanaCry Malware (30 October 2026; read first-hand)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer &mdash; Hugging Face malware campaign returns to hijack GPUs for crypto mining (SolanaCry confirmation section; read first-hand)</a></li>
+          <li><a href="/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/">al-ice.ai &mdash; Downloads Is the One Folder the Web Can Write To: A Planted AGENTS.md Drove Codex Into Installing Malware</a></li>
+          <li><a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">al-ice.ai &mdash; The Update Was the Malware: Trojanized Claude Code Build Planted SSH Backdoors via Cursor&rsquo;s Marketplace</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Nine Packages, 33 Minutes, Three Ecosystems: DirtyBlanket Turns npm Install Into a Self-Spreading Linux Worm</a></h3><p>SafeDep disclosed DirtyBlanket on 29 September 2026: nine fake Express/React packages from one npm account, published in 33 minutes, whose preinstall hook fetches its loader through the Wayback Machine. On Linux it installs a CHAOS RAT backdoor over Tor, then spreads through SSH keys, AUR maintainer access, and the victim’s own npm tokens.</p><a class="text-link" href="/posts/2026/10/dirtyblanket-fake-express-npm-linux-worm-tor-backdoor/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/yoba-fake-chatgpt-claude-github-signed-binary-sideloading-october-2026/">Search &amp;quot;Claude Desktop&amp;quot;, Get a Miner: Check Point’s Yoba Campaign Hid Malware Next to Signed AI Binaries</a></h3><p>Check Point Research (27 October 2026) tracks Yoba: fake GitHub repos for GPT-5.6 Sol, GPT-6 Astra and Claude Opus that rank on Google via SEO poisoning, DLL-sideload malware beside legitimate signed OpenAI/Anthropic binaries, Telegram-profile-picture domains, DoH and Catbox delivery, and an XMRig end-stage with a loader that can run anything.</p><a class="text-link" href="/posts/2026/10/yoba-fake-chatgpt-claude-github-signed-binary-sideloading-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-03">2026-10-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Plus 5.6 on chatgpt.com: A Fake Custom GPT and Its Eight-Stage Run to a Full RAT</a></h3><p>The Huntress 28 September 2026 report traces attacker-made ChatGPT Custom GPTs through sponsored Google results, a Cloudflare-themed ClickFix lure, decimal-IP PowerShell, Canon-signed DLL sideloading, a WAV-hidden loader, and an encrypted filesystem — ending in a camera-and-microphone RAT across 40+ incidents.</p><a class="text-link" href="/posts/2026/10/huntress-chatgpt-custom-gpts-plus-56-clickfix-rat/">Read briefing →</a></article></div>
+    </aside>
+
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
