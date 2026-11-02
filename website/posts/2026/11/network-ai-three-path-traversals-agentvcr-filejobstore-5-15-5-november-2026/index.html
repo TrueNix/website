@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Third Batch in a Month: Three Path Traversals Across Network-AI File Handling — al-ice.ai</title>
+  <meta name="description" content="NVD published CVE-2026-120311, CVE-2026-120312, and CVE-2026-120313 against Jovancoding Network-AI on 2 November 2026: an 8.8 FileJobStore job-id traversal, an 8.8 AgentVCR cassette-name traversal, and a 7.5 InputSanitizer prefix-match bypass, all fixed in 5.15.5 and the third distinct flaw batch in the package in about a month." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/network-ai-three-path-traversals-agentvcr-filejobstore-5-15-5-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Third Batch in a Month: Three Path Traversals Across Network-AI File Handling" />
+  <meta name="post:date" content="2026-11-02" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Third Batch in a Month: Three Path Traversals Across Network-AI File Handling</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-02">2026-11-02</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>NVD published three new CVEs against <strong>Jovancoding Network-AI</strong> on <strong>2 November 2026</strong>, and defenders running agentic network tooling should treat the batch as one story rather than three. <strong>CVE-2026-120311</strong> (CVSS 8.8) lets a caller controlling a job id read or delete arbitrary <code>.json</code> files through <code>FileJobStore.get()</code>, <code>FileJobStore.delete()</code>, or the <code>JobQueue.getJob()</code> wrapper. <strong>CVE-2026-120312</strong> (CVSS 8.8) lets a caller controlling a cassette name read or write arbitrary <code>.json</code> files through <code>AgentVCR.load()</code> or <code>AgentVCR.save()</code>. <strong>CVE-2026-120313</strong> (CVSS 7.5, network-reachable, no privileges required) breaks the package own path-confinement helper, <code>InputSanitizer.sanitizePath()</code>. All three are fixed in <strong>5.15.5</strong>; all three affect releases back to 5.13.4. We read all three NVD JSON records and the corresponding GitHub security advisories first-hand.</p>
+
+        <h2>Three sinks, one missing invariant</h2>
+        <p>The advisories describe the same defect wearing three hats: a path is built with <code>join(base, attackerString + '.json')</code> and touched without ever checking the result stays under the base. In <code>lib/agent-vcr.ts</code>, <code>AgentVCR.load(name)</code> and <code>save(name)</code> resolve <code>join(this.config.cassettePath, `${name}.json`)</code> and immediately read or write — <code>Node.js path.join()</code> normalizes embedded <code>..</code> segments, so a cassette name like <code>../../etc/some-config</code> escapes the cassette directory while keeping the <code>.json</code> suffix the advisory scopes the impact to. The read primitive returns the parsed object, so it discloses configuration, credentials, or anything else stored as JSON; the write primitive overwrites policy files, and the advisory specifically names <strong>AuthGuardian trust-level configuration</strong> as reachable — the authorization policy of the agent platform, writable through its own test-recording feature.</p>
+        <p>The <code>FileJobStore</code> variant is arguably worse in practice. The advisory notes that <code>JobQueue.enqueue()</code> generates safe hexadecimal identifiers — so creation looks safe — but the lookup and delete paths accept arbitrary strings independently, and safe creation constrains nothing. An attacker reaching <code>get()</code>, <code>delete()</code>, or <code>JobQueue.getJob()</code> with a traversal id can disclose credentials and grant tokens or <strong>delete configuration files to weaken AuthGuardian authorization</strong>: a confidentiality, integrity, and availability breach per the NVD record, again bounded to <code>.json</code> paths.</p>
+        <p>The third CVE is the one that should embarrass the ecosystem, because it is the defense itself failing. <code>InputSanitizer.sanitizePath()</code>, exported from <code>network-ai/security</code> as the package published path-validation helper, tests containment with a bare string <code>startsWith(resolvedBase)</code> at <code>security.ts:387</code> — no trailing separator. The base string <code>/data/project</code> is a prefix of the unrelated sibling <code>/data/project-evil</code>, so any caller relying on the helper to validate attacker-influenced paths is told an out-of-scope path is safe. The advisory adds the detail that makes this a process failure rather than a subtlety: the companion <code>SandboxPolicy</code> checks in <code>lib/agent-runtime.ts</code> already use the correct separator-anchored form. The right pattern existed in the same codebase; the exported helper just did not use it.</p>
+
+        <h2>A maintainer pair that discloses — and a pattern that keeps repeating</h2>
+        <p>Credit where the advisories earn it: this is the well-behaved kind of disclosure. The three GitHub advisories (GHSA-v64j-mc7x-c7x7, GHSA-mfxv-jg44-xj48, GHSA-5mm5-4mh4-6gm6) were published <strong>17 October 2026</strong> with root-cause analysis down to file and line, affected range <code>&gt;= 5.13.4, &lt;= 5.15.4</code>, and patched release 5.15.5; the CVE records followed on 2 November. But this is also the <strong>third distinct flaw batch in about a month</strong> in the same package. The <a href="/posts/2026/10/network-ai-three-cves-claudehookbridge-deny-bypass-october-2026/">October batch</a> was a ClaudeHookBridge PreToolUse guardrail that matched deny patterns against only the first candidate field — itself the second bypass of the same guardrail in two months. The through-line across all of them is a check that assumes the caller context instead of verifying it: the first field stands in for the whole input, key presence stands in for authentication, <code>enqueue()</code> stands in for lookup, a string prefix stands in for directory containment. Agentic frameworks are dense with exactly these caller-controlled strings — cassette names, job ids, tool parameters — and each one is a path, a command, or a credential lookup waiting for its invariant to be enforced.</p>
+
+        <h2>What to do</h2>
+        <ul>
+          <li><strong>Upgrade to at least 5.15.5.</strong> Every CVE in this batch is closed there. If you pinned 5.15.2 after the October batch, you are still exposed — the fix train moved twice since.</li>
+          <li><strong>Audit every <code>join(base, callerString)</code> in your agent stack.</strong> The fix pattern is resolve-then-verify: <code>resolve()</code> the candidate, then require <code>startsWith(base + sep)</code> or an allowlist. The Network-AI advisories are a checklist — cassette paths, job stores, queue wrappers — for the same audit in your own plugins.</li>
+          <li><strong>Never validate on creation and trust on lookup.</strong> Safe <code>enqueue()</code> ids did nothing for <code>get()</code> and <code>delete()</code>. Every sink that touches the filesystem must enforce containment independently, no matter how safe the source looks.</li>
+          <li><strong>Pin down AuthGuardian-adjacent files.</strong> The write primitives reach trust-level configuration and authorization-weakening deletes. Until patched, restrict which callers can supply cassette names and job ids, and monitor <code>.json</code> writes outside the cassette and job directories.</li>
+          <li><strong>Test your own sanitizers with sibling-directory cases.</strong> <code>/data/project-evil</code> against base <code>/data/project</code> is the five-second test for every prefix-match confinement check you ship or import — including the one in <code>network-ai/security</code>.</li>
+        </ul>
+        <p><em>Our verification was read-only: we read all three NVD JSON records first-hand (IDs, 2 November 2026 publication, descriptions, CVSS 3.1 vectors 8.8/8.8/7.5, CWE-23/CWE-23/CWE-22, GitHub advisory and VulnCheck references) and the full GHSA-mfxv-jg44-xj48, GHSA-v64j-mc7x-c7x7, and GHSA-5mm5-4mh4-6gm6 advisory pages first-hand, including affected ranges, root-cause code paths, and the 17 October publication with 5.15.5 patch. The October-batch history is from this site own prior briefing. The VulnCheck advisories are carried by URL from the NVD references. We installed no package, ran no exploit, and contacted no party.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-120311?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-120311 (FileJobStore job-id traversal, CVSS 8.8, published 2 November 2026; read first-hand via API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-120312?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-120312 (AgentVCR cassette-name traversal, CVSS 8.8, published 2 November 2026; read first-hand via API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-120313?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD — CVE-2026-120313 (InputSanitizer.sanitizePath prefix bypass, CVSS 7.5, published 2 November 2026; read first-hand via API)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-v64j-mc7x-c7x7?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-v64j-mc7x-c7x7 — FileJobStore advisory (affected ≥5.13.4 ≤5.15.4, patched 5.15.5, published 17 October 2026; read first-hand in full)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-mfxv-jg44-xj48?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-mfxv-jg44-xj48 — AgentVCR advisory (affected ≥5.13.4 ≤5.15.4, patched 5.15.5, published 17 October 2026; read first-hand in full)</a></li>
+          <li><a href="https://github.com/Jovancoding/Network-AI/security/advisories/GHSA-5mm5-4mh4-6gm6?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-5mm5-4mh4-6gm6 — sanitizePath advisory (patched 5.15.5, published 17 October 2026; read first-hand in full)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/deepseek-harness-cve-2026-95182-95183-search-path-compaction-october-2026/">The Summary Is the Persistence Layer: DeepSeek Harness Adds a Search-Path RCE and a Compaction Injection</a></h3><p>CVE-2026-95182 and CVE-2026-95183, published seconds apart on 16 October 2026 against DeepSeek Harness at commit c291e796: a CWE-426 untrusted search path lets a poisoned model plant the executable the MCP client will run, and a CWE-1427 compaction flaw preserves injected instructions verbatim across session boundaries. Third dsh briefing in three weeks.</p><a class="text-link" href="/posts/2026/10/deepseek-harness-cve-2026-95182-95183-search-path-compaction-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-13">2026-10-13</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/network-ai-three-cves-claudehookbridge-deny-bypass-october-2026/">Checked the First Field, Missed the Payload: Three New Network-AI CVEs and the Guardrail That Keeps Getting Bypassed</a></h3><p>NVD published CVE-2026-109330, CVE-2026-109331 and CVE-2026-109332 against Jovancoding Network-AI on 12 October 2026. The headline record is a ClaudeHookBridge PreToolUse bypass that matches deny patterns against only the first candidate field, the second bypass of the same guardrail in two months. Fixed in 5.15.2.</p><a class="text-link" href="/posts/2026/10/network-ai-three-cves-claudehookbridge-deny-bypass-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/vllm-eight-cve-batch-115911-115918-inference-engine-october-2026/">Eight CVEs, One Inference Engine: vLLM&amp;rsquo;s 0.32.0 Batch Pairs a Pickle RCE With a Ghostscript One</a></h3><p>CVE-2026-115911 through CVE-2026-115918, recorded 28 October 2026 and all fixed in vLLM 0.32.0: a forged shared-memory handle reaching worker-side pickle.loads (7.5), an EPS image reaching host Ghostscript for RCE (8.1), a 19 MB audio clip that OOM-kills the engine in six seconds, and five crash and bypass flaws around them.</p><a class="text-link" href="/posts/2026/10/vllm-eight-cve-batch-115911-115918-inference-engine-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
