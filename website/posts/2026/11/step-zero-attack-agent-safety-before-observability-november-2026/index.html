@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Damage Happens Before the Model Looks: Step-Zero Attacks on Agent Safety — al-ice.ai</title>
+  <meta name="description" content="A new paper (arXiv:2611.01953) shows coding agents are harmed by the first processing call on unknown archives, URLs and images: 32 of 42 harness-model pairs blew a 4 MiB disk budget, mostly before the model saw anything. The fix belongs in the tool, not the prompt." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/step-zero-attack-agent-safety-before-observability-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Damage Happens Before the Model Looks: Step-Zero Attacks on Agent Safety" />
+  <meta name="post:date" content="2026-11-03" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Damage Happens Before the Model Looks: Step-Zero Attacks on Agent Safety</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-03">2026-11-03</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Submitted <strong>1 November 2026</strong> to arXiv (<strong>2611.01953</strong>) by researchers at <strong>Tsinghua University, the University of Sydney and Harbin Institute of Technology</strong>, <strong>Step-Zero Attack: Agent Safety Before Observability</strong> names the moment every model-side defense arrives too late for: the <strong>first processing call on an opaque input</strong> &mdash; an archive, a network response, an image &mdash; whose contents stay sealed until a tool unpacks, fetches or decodes them. The information needed to judge whether that call is safe arrives <em>only through that call</em>, and the call itself can write to the user&rsquo;s machine before any content reaches the model. Across <strong>seven harnesses and six models</strong>, agents given nothing but a path or URL blew a <strong>4 MiB disk budget in 32 of 42 cells (76.2 percent)</strong> &mdash; <strong>26 of 42 before the model had seen a single archive member</strong> &mdash; while every benign twin stayed inside it. Four of the six models breached in every round (84 of 84). No prompt injection was involved: the carrier holds only data, and the call the agent chose is what admits the hazard.</p>
+
+        <h2>Immediate on archives, deferred on network and images</h2>
+
+        <p>The paper separates two realizations of the same hazard. For archives they coincide: extraction writes while it reads, so the budget violation is <strong>immediate</strong>, often complete before the first member enters the model context. The controls agents might have used were simply absent &mdash; in the breaching cells, <strong>0 of 33 set a resource limit</strong>, and 17 breaches followed a directory listing the agent had already read. For network and image carriers the violation is <strong>deferred</strong>: agents saved the delivered body under the filename the input declared, letting the input decide what gets written into the workspace, and every such write followed the body into the model context &mdash; seeing the content did not stop the write. The uncomfortable controls result: a <strong>truthfully declared archive breached as often (28 of 28)</strong>, and asking agents to extract an archive and run its tests still breached in 28 of 28 cells, while a digest-disagreeing attachment was saved in 27 of 28. Default agents extract whatever arrives; only defenses that read declared fields care whether the declaration was honest. This is the prequel to our <a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">ETUDE tool-update-gap</a> coverage from two days ago &mdash; ETUDE showed trust granted at install decays when implementations change; Step-Zero shows the very first touch was never safe to begin with.</p>
+
+        <h2>The defense lives in the primitive, and it mostly works</h2>
+
+        <p>The authors&rsquo; response, the <strong>Step-Zero Safe Protocol (SZSP)</strong>, concedes the model cannot be the control plane here and pushes the check into the tool: a <strong>read-only opening</strong>, a <strong>byte-counting bounded extraction</strong>, and a <strong>staged commit</strong> integrated into the opening call the agent uses. Routed through SZSP in live agents, extraction exceeded the budget in <strong>0 of 28 cells against 28 of 28 ungated</strong>, while agents still completed the extraction task in <strong>25 of 28</strong> &mdash; the harm removed, utility kept. The one breach is instructive: it came from an extractor invoked by its <strong>absolute path</strong>, bypassing the gated tool layer &mdash; the gate is strongest inside the harness&rsquo;s own tools, not as a wrapper agents can route around. Two honest limits the authors state: the network write-binding is a reference design whose enforced evaluation in live agents is future work, and image carriers were evaluated through tool decoding, with pixel-level perception left open. Plus a descriptive warning for model selectors: caution did not transfer across carriers &mdash; Gemini-4-Argon inspected archives read-only most often yet had the most conflicting writes on network and image inputs. A safe agent must weigh the operation that obtains information, not just the information obtained: <strong>bound the bytes per call, commit writes in stages, and teach agents to inspect before processing</strong>.</p>
+
+        <p><em>Our verification was read-only. We read the full arXiv abstract, metadata and introduction first-hand (submitted 1 November 2026; Tian Qin et al., Tsinghua / Sydney / HIT, Lijie Wen corresponding; 7 harnesses, 6 models, 42 cells; 32/42 overrun, 26/42 pre-observation, 84/84 for four models, benign twins all in budget, 28/28 truthful-declaration, 0/33 resource limits, 28/28 and 27/28 task variants, SZSP 0/28 vs 28/28 with 25/28 utility, absolute-path bypass, Gemini-4-Argon descriptive ordering, staged-commit and future-work limits). Section-level findings beyond the abstract and introduction are the authors&rsquo; reported results as stated there. The ETUDE parallel is our prior coverage linked above. We trained no model, ran no agent, extracted no archive, and contacted no one. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2611.01953?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2611.01953 &mdash; Step-Zero Attack: Agent Safety Before Observability (1 November 2026; read first-hand)</a></li>
+          <li><a href="https://arxiv.org/html/2611.01953v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv HTML full text &mdash; 2611.01953v1 (experimental HTML version)</a></li>
+          <li><a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">al-ice.ai &mdash; Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-03-22">2026-03-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/03/arxiv-indirect-prompt-injection-public-competition/">arXiv — Indirect prompt injection competition findings for AI agents</a></h3><p>A new arXiv paper analyzes 272,000 attack attempts from a public competition and shows that frontier AI agents remain broadly vulnerable to indirect prompt injection across tool use, coding, and computer-use settings.</p><a class="text-link" href="/posts/2026/03/arxiv-indirect-prompt-injection-public-competition/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap in Agent Security</a></h3><p>A new paper introduces ETUDE, an attack hiding malicious behavior in updates to initially benign agent tools, with 97.6 percent success across seven frameworks. Defenses watching only the model context do not see it.</p><a class="text-link" href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">False Assurances Cost 19 Points, False Alarms Cost Nothing: arXiv:2610.32876 Measures Which Way LLM Auditors Bend</a></h3><p>A study submitted 23 October 2026 ran 16,572 audits across eleven model configurations from four vendors, feeding LLM vulnerability auditors static-analysis notes that were sometimes fabricated. True evidence added +0.02 accuracy. Fabricated assurances that a missing check exists cut detection of real vulnerabilities by up to 19 points; fabricated alarms cost nothing and were disputed far more often. Prompt instructions did not reliably fix it; verifying each claim in a separate call recovered 12 points.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-32876-llm-auditors-asymmetric-deference-static-analysis-evidence/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
