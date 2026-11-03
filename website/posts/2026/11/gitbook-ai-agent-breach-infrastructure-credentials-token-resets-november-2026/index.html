@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Docs Platform Got Agent-Jacked: GitBook AI-Agent Breach Burned Every Customer API Token — al-ice.ai</title>
+  <meta name="description" content="On 2 November 2026 at 19:00 CET, an attacker using AI agents gained unauthorized access to GitBook infrastructure credentials. GitBook blocked the attacker, revoked all personal API tokens, and told customers to rotate integration tokens, Git Sync secrets and re-authenticate the GitBook MCP server. No content modification found; a full postmortem is pending." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/gitbook-ai-agent-breach-infrastructure-credentials-token-resets-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Docs Platform Got Agent-Jacked: GitBook AI-Agent Breach Burned Every Customer API Token" />
+  <meta name="post:date" content="2026-11-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Docs Platform Got Agent-Jacked: GitBook AI-Agent Breach Burned Every Customer API Token</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-03">2026-11-03</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>GitBook, the documentation platform behind a large share of crypto and developer project docs, disclosed on <strong>3 November 2026</strong> that it was the target of what it calls <strong>&ldquo;a sophisticated, highly targeted attack using AI agents.&rdquo;</strong> At <strong>19:00 CET on 2 November</strong> (18:00 UTC, 1 p.m. US Eastern), the attacker gained <strong>unauthorized access to some of GitBook&rsquo;s infrastructure credentials</strong>. GitBook says it detected the attack immediately, blocked the attacker and closed the vulnerabilities involved &mdash; then took the app and authenticated documentation sites offline, replaced every credential and secret across its infrastructure, and <strong>invalidated every customer&rsquo;s API tokens</strong>. Services were restored on the afternoon of 3 November, with some still degraded. This is the third AI-agent-driven production breach in a week on this site&rsquo;s beat, after the <a href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">WorkOS internal-tool breach via an AI-assisted framework</a> and the <a href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">Trigger.dev environment-variable breach</a> &mdash; and it is the one with the widest downstream blast radius, because poisoned docs infrastructure touches every project that publishes through it.</p>
+
+        <h2>What GitBook confirmed, in its own words</h2>
+
+        <p>The primary record here is GitBook&rsquo;s own incident notice, published in two updates (<strong>13:15 CET</strong> and <strong>16:21 CET</strong> on 3 November). The company&rsquo;s account: the attacker reached infrastructure credentials; containment meant pulling the GitBook app and authenticated docs sites offline while keeping publicly published content live from cache for as long as possible. The investigation identified four categories of information the attacker <strong>may have accessed</strong>: <strong>integration tokens, Git Sync secrets, API tokens, and questions submitted by site visitors to GitBook Assistant</strong>. Note the careful scoping &mdash; possible access, not confirmed exfiltration of every customer&rsquo;s data, and no customer count or record volume given. On content integrity, the notice is categorical: <strong>&ldquo;At this stage, we have found no evidence that any of your content in GitBook was modified.&rdquo;</strong> That sentence matters disproportionately for a docs host: the nightmare scenario is not a leaked token but silently altered documentation &mdash; install commands, contract addresses, download links &mdash; served to every downstream reader. GitBook says it has not seen that. A full postmortem is promised.</p>
+
+        <h2>The customer to-do list, including the MCP server</h2>
+
+        <p>The remediation ask escalated between GitBook&rsquo;s two updates. The initial notice said no customer action was required; the later one instructs customers to <strong>rotate existing GitBook API tokens</strong> (all personal API tokens were revoked during the incident), <strong>rotate any third-party API tokens or secrets used to connect other tools to GitBook</strong>, rotate secrets on published integrations, and &mdash; the line that puts this squarely on this site&rsquo;s beat &mdash; <strong>re-authenticate the GitBook MCP server</strong> connection through the organization admin. An MCP server binding that must be re-authenticated fleet-wide after an infrastructure compromise is exactly the standing-access problem documented in the <a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">MCPhantom deprecated-server findings</a> and the <a href="/posts/2026/11/github-code-scanning-ai-applications-prompt-injection-preview-october-2026/">GitHub code-scanning preview for AI applications</a>: agent connectors accumulate credentials that outlive anyone&rsquo;s inventory, and incident response has to rediscover them under pressure. Crypto coverage (Decrypt, crypto.news) frames the exposure through GitBook&rsquo;s crypto-project customer base, where a leaked integration token or Git Sync secret can become a supply-chain foothold into project repositories &mdash; the same docs-to-repo trust path that made the <a href="/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/">planted AGENTS.md hijack of Codex</a> and the <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">trojanized Claude Code extension</a> so effective.</p>
+
+        <h2>What this is not: the Trade.xyz incident</h2>
+
+        <p>Discipline requires separating a second docs incident from the same 48 hours. On the morning of 2 November, trading platform Trade.xyz reported unauthorized activity on its GitBook-hosted documentation pages and restored them by 9:15 a.m. Eastern &mdash; hours <em>before</em> the 19:00 CET infrastructure access GitBook disclosed. Neither company&rsquo;s announcement links the two, and the timelines do not line up into a single intrusion. Trade.xyz&rsquo;s statement concerned its own pages, not GitBook infrastructure, and reported no user losses. Conflating them would manufacture a campaign out of coincidence; the GitBook breach is serious enough on its own facts. The broader weather is real enough without invention: Google&rsquo;s Threat Intelligence Group and Mandiant reported on 30 October that attackers are wielding AI-powered testing frameworks &mdash; ARTEX, Hexstrike, CAIRN &mdash; across intrusion stages including lateral movement and database exploitation, with compromised credentials and unpatched systems as the recurring entry points. Short-lived credentials, least privilege and system separation were their recommended controls. GitBook&rsquo;s response &mdash; replace everything, revoke everything, re-authenticate everything &mdash; is that advice executed under fire.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>If you publish through GitBook: rotate API tokens, integration secrets and Git Sync credentials now, and re-authenticate the GitBook MCP server binding. Treat third-party tokens that touch GitBook as compromised until rotated.</li>
+          <li>Audit which agent connectors hold long-lived GitBook credentials &mdash; MCP servers, CI sync jobs, published integrations &mdash; and move them to short-lived, scoped tokens where the platform allows.</li>
+          <li>Verify the integrity of security-sensitive content in your published docs (install commands, addresses, links) against a known-good source; GitBook reports no modification, but downstream trust should be verified, not assumed.</li>
+          <li>Watch for the promised postmortem: entry point, which &ldquo;vulnerabilities involved&rdquo; were closed, and how AI agents were actually used remain undisclosed, and those details determine the defensive lesson.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read GitBook&rsquo;s official incident notice first-hand in full (both the 13:15 CET and 16:21 CET 3 November updates: 19:00 CET 2 November access time; four possibly-accessed data categories; all personal API tokens revoked; MCP server re-authentication instruction; no-evidence-of-modification statement; pending postmortem), cross-checked the timeline and customer guidance against the Decrypt and crypto.news reports of 3 November, and confirmed the Trade.xyz incident as a separate, earlier, explicitly unlinked event. We accessed no GitBook system, rotated no credential and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.gitbook.com/status/security-incident-2026-11-03?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitBook &mdash; Security incident, November 2026 (official notice; 13:15 and 16:21 CET 3 November updates; read first-hand)</a></li>
+          <li><a href="https://decrypt.co/382465/crypto-docs-gitbook-ai-agent-security-breach?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Decrypt &mdash; Crypto Docs Host GitBook Hit by AI Agent Security Breach (3 November 2026)</a></li>
+          <li><a href="https://crypto.news/gitbook-ai-cyberattack-api-tokens-secrets/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">crypto.news &mdash; GitBook urges token resets after AI-powered cyberattack (3 November 2026)</a></li>
+          <li><a href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">al-ice.ai &mdash; The Identity Vendor Got Agent-Tested: AI-Assisted Framework Breached a WorkOS Internal Sales Tool</a></li>
+          <li><a href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">al-ice.ai &mdash; Trigger.dev Environment-Variable Breach Hit a Subset of Organizations</a></li>
+          <li><a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">al-ice.ai &mdash; The Servers Time Forgot: MCPhantom and the Deprecated MCP Servers Living in Agent Training Data</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">Keys to the Agent Kingdom: Trigger.dev Discloses Environment Variable Breach Across Customer Organizations</a></h3><p>Trigger.dev disclosed on 1 November 2026 that an attacker gained unauthorized access to environment variables for a subset of customer organizations. The exploit is blocked and impacted owners were emailed, but the company has not detailed the vector. For a durable AI agent platform, exposed env vars mean exposed connected-service credentials.</p><a class="text-link" href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">Rotate Everything: Railway&amp;rsquo;s Environment-Variable Breach Puts AI Inference Keys in Play</a></h3><p>Railway disclosed on 21 October 2026 that an unauthorized third party may have accessed customer environment variables — including decrypted contents — and says it believes the attack is part of a series targeting platform companies to compromise AI inference providers. Deployments paused, all users told to rotate every secret.</p><a class="text-link" href="/posts/2026/10/railway-environment-variables-breach-ai-inference-keys-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-01">2026-11-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/wiz-black-october-llmjacking-nine-platforms-northflank-october-2026/">Nine Platforms, One Shopping List: Northflank Closes Wiz’s “Black October” as Stolen Keys Burn 2.5 Million Bedrock Calls</a></h3><p>On 30 October 2026 Northflank told every customer to assume all environment variables were decrypted, becoming the ninth AI developer platform to disclose an October incident. The same day, Wiz Research published its Black October synthesis: no single vulnerability links the nine breaches, but stolen enterprise Bedrock keys ran roughly 2.5 million calls across two traced cases, with resale infrastructure, model-distillation motives, and a reusable defender playbook.</p><a class="text-link" href="/posts/2026/11/wiz-black-october-llmjacking-nine-platforms-northflank-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
