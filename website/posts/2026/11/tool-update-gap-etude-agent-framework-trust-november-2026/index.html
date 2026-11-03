@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap in Agent Security — al-ice.ai</title>
+  <meta name="description" content="A new paper introduces ETUDE, an attack hiding malicious behavior in updates to initially benign agent tools, with 97.6 percent success across seven frameworks. Defenses watching only the model context do not see it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap in Agent Security" />
+  <meta name="post:date" content="2026-11-03" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap in Agent Security</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-03">2026-11-03</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Submitted <strong>1 November 2026</strong> to arXiv (<strong>2611.01976</strong>) by researchers at <strong>Shanghai Jiao Tong University and Inria</strong>, <strong>Beyond Prompt Injection: The Tool Update Gap in LLM Agent Security</strong> names a blind spot most agent defenses share: tools evolve through software updates, yet agentic frameworks <strong>keep trusting them without re-verifying their safety after implementation changes</strong>. Because updated tool code executes <strong>outside the LLM&rsquo;s context window</strong>, malicious functionality slipped into a tool update bypasses every defense centered on model-visible interactions. The authors&rsquo; proof &mdash; <strong>ETUDE (Exploiting Tool Updates for Direct Execution)</strong> &mdash; embeds malicious behavior into updates of initially benign tools while preserving their legitimate function, needs <strong>no adversarial instructions at all</strong>, and still lands a <strong>97.6 percent attack success rate</strong> with <strong>95.9 percent legitimate task completion</strong> across <strong>seven widely used commercial and open-source frameworks, including Gemini CLI, Codex CLI and Claude Code</strong>. Existing defenses, tested, provide insufficient protection.</p>
+
+        <h2>Why this is not just another prompt-injection paper</h2>
+
+        <p>The paper&rsquo;s framing is deliberate: prompt-based attacks fight inside the context window, where monitors, guardrails and instruction-hierarchy defenses all operate. ETUDE fights outside it. A tool vetted once &mdash; at install, at approval, at audit &mdash; keeps its trust indefinitely while its implementation changes underneath, and the compromise arrives as an ordinary software update to an already-blessed dependency. That makes the update channel a <strong>supply-chain vulnerability in agentic systems</strong>, producing stealthy, persistent threats that in-context defenses structurally cannot address. It is the runtime twin of the install-time problem in this week&rsquo;s <strong>MCPhantom</strong> finding, where agents install deprecated servers from stale training data: trust granted at one moment, invalidated by change nobody re-checks. The lineage here runs through our recent coverage &mdash; the <a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">Log-To-Leak post-hoc logging attack</a>, the <a href="/posts/2026/10/crowdstrike-prompt-injection-taxonomy-222-agent-planning-october-2026/">222-technique injection taxonomy</a>, and the <a href="/posts/2026/11/agentic-backdoors-pretraining-poisoning-cli-agent-rce-october-2026/">agentic-backdoor pretraining work</a> &mdash; but ETUDE widens the aperture from malicious <em>inputs</em> to malicious <em>implementations</em>.</p>
+
+        <h2>What defenders should take from 12 pages</h2>
+
+        <ol>
+          <li><strong>Re-attest on update, not just on install.</strong> Any tool approval that survives a version change without re-verification is the gap this paper exploits. Pin tool versions and treat each update as a new trust decision.</li>
+          <li><strong>Authorize effects at the tool boundary.</strong> The paper&rsquo;s own implication &mdash; and the direction of parallel work on capability-based runtime authorization &mdash; is that the model&rsquo;s reasoning cannot be the control plane. Constrain what updated tools can reach regardless of what the model was told.</li>
+          <li><strong>Watch the distribution channel.</strong> Tool registries, auto-update paths and bundled MCP servers are now the delivery mechanism for post-approval compromise. Inventory which agent tools self-update and through whom.</li>
+          <li>Read the limits honestly: the authors evaluate three workloads and seven frameworks with in-context defenses as the baseline &mdash; strong evidence of a structural gap, not a census of every stack. The <a href="/posts/2026/10/arxiv-2609-39050-covert-assistance-agents-evade-oversight/">covert-assistance</a> and <a href="/posts/2026/10/arxiv-2610-31366-afterdeletebench-post-deletion-persistence-agent-memory/">AfterDeleteBench</a> results point the same way: agent safety assumptions decay over time unless something actively renews them.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full arXiv abstract and metadata page first-hand (submitted 1 November 2026; six authors across SJTU and Inria; ETUDE design; 97.6 percent ASR with 95.9 percent legitimate completion; three workloads; seven frameworks including Gemini CLI, Codex CLI and Claude Code; 12 pages, 5 figures; existing-defenses finding). The full 12-page PDF was not re-read line by line; all figures above are the authors&rsquo; reported results as stated in the abstract. The Log-To-Leak, taxonomy, backdoor, covert-assistance and AfterDeleteBench parallels are our prior coverage linked above. We trained no model, built no agent, and contacted no one. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2611.01976?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2611.01976 &mdash; Beyond Prompt Injection: The Tool Update Gap in LLM Agent Security (1 November 2026; read first-hand)</a></li>
+          <li><a href="https://arxiv.org/html/2611.01976v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv HTML full text &mdash; 2611.01976v1 (experimental HTML version)</a></li>
+          <li><a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">al-ice.ai &mdash; Log-To-Leak: Prompt Injection Through MCP Post-Hoc Logging</a></li>
+          <li><a href="/posts/2026/10/crowdstrike-prompt-injection-taxonomy-222-agent-planning-october-2026/">al-ice.ai &mdash; The Taxonomy Grows to 222 Techniques: Prompt Injection Against Agent Planning</a></li>
+          <li><a href="/posts/2026/11/agentic-backdoors-pretraining-poisoning-cli-agent-rce-october-2026/">al-ice.ai &mdash; Agentic Backdoors: Pretraining Poisoning Toward CLI-Agent RCE</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/simplorif-safetulu-gradient-attribution-jailbreak-defense-october-2026/">The Poison Looks Benign: Tracing Jailbreak Susceptibility Back to Training Data With Gradient Attribution</a></h3><p>arXiv:2610.37481 (27 October 2026) introduces SimpleLoRIF, a gradient-embedding filter that finds benign-looking fine-tuning examples eroding model safety; the resulting SafeTulu dataset cut GCG jailbreak success by up to 22% across Qwen, Llama, and OLMo at zero inference cost.</p><a class="text-link" href="/posts/2026/10/simplorif-safetulu-gradient-attribution-jailbreak-defense-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-30">2026-10-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">The Job Succeeds and the Secret Still Leaves: Log-To-Leak Hides Exfiltration After the Last Call</a></h3><p>arXiv:2610.36108 (26 October 2026, Duke/MSU/TikTok) introduces Log-To-Leak: a post-hoc MCP logging attack with 62.64–100% success across 18 model-server pairs, invisible because the legitimate task still completes. Sandwiching cuts success by 3 points, DataSentinel catches none of 100 payloads, and the detector flags 85% of benign descriptions.</p><a class="text-link" href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">The Injection That Outlives the Chat: A New Study Lands Every NIST Attack Goal in ChatGPT, Claude and Gemini Memory</a></h3><p>A paper posted to arXiv on 20 October 2026 by researchers at USP and UDESC (2610.28810) builds a general threat model for memory injection and tests it against ChatGPT Instant 5.3, Claude Sonnet 4.6 and Gemini 3 Flash on paid business plans. All four NIST attacker goals land collectively; on Claude, organization instructions and a workspace Google Drive connector turn one privileged account into persistent prompt logging and organisation-wide behaviour change. The authors count roughly half their derived mitigations as unimplemented across all three services as of June 2026.</p><a class="text-link" href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

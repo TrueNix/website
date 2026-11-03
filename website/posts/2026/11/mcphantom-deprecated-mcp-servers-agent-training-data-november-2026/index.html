@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Keep Installing — al-ice.ai</title>
+  <meta name="description" content="Glow Labs found AI coding agents installing deprecated MCP servers from training data in 98 percent of observed sessions. Four high-severity flaws ride along, including a Puppeteer RCE, with no patch coming and no CVE to scan for." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Keep Installing" />
+  <meta name="post:date" content="2026-11-03" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Keep Installing</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-03">2026-11-03</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>2 November 2026</strong>, <strong>Glow Labs</strong> published <strong>MCPhantom</strong>: its researchers watched AI coding agents independently decide to install <strong>deprecated MCP servers from training data</strong> onto developer machines &mdash; retired reference servers with <strong>four high-severity vulnerabilities</strong> that will never be patched. In <strong>98 percent</strong> of the sessions where an agent set up a deprecated server, the package name came from the model&rsquo;s training data, not from the user. The user asked for a capability (&ldquo;a GitHub MCP&rdquo;); the agent filled in a name it already knew. As <strong>Help Net Security</strong> summarized on 3 November, the flaw is structural: agents do not read archive notices.</p>
+
+        <h2>The GitHub example says everything</h2>
+
+        <p>Glow documents a session where the developer wanted GitHub access. The agent passed over the <strong>official GitHub-maintained MCP server</strong> and installed a <strong>deprecated Anthropic reference server</strong> it remembered from training. That repository is archived, with an archive notice stating no security updates or bug fixes will be provided. The pattern repeated across <strong>Claude Code, Cursor, Codex CLI, Claude Cowork and Claude chat</strong>, and across models from <strong>Anthropic, OpenAI and xAI</strong> &mdash; so no single vendor&rsquo;s fix closes the gap. This is the same class of failure we flagged in the <a href="/posts/2026/10/glow-labs-pixelleak-coding-agents-public-github-screenshots/">Glow PixelLeak disclosure</a>, where agent behavior, not attacker infrastructure, was the exposure: the risk comes from the agent&rsquo;s own package choice.</p>
+
+        <h2>What is actually riding on those installs</h2>
+
+        <p>The deprecated servers are not merely stale; they are vulnerable. Glow found <strong>four high-severity vulnerabilities</strong> across the original Anthropic reference servers, the most serious a <strong>remote code execution bug in the Puppeteer server</strong> &mdash; the server that lets an agent drive a browser. With a prompt injection, an attacker makes the agent start <strong>any process on the machine instead of the browser</strong> and run arbitrary commands. The permission the developer granted &mdash; web browsing &mdash; stretches to cover the rest, so the harness lets it through. Glow reported the bug; the maintainers replied the server was <strong>archived in May 2025 and is unmaintained</strong>, closed the report as <strong>out of scope</strong>, and said they would look at marking the npm package deprecated. A deprecated package still installs through npx with nothing more than a warning &mdash; Glow notes npm removes packages for malware, but it found <strong>no case of removal for vulnerabilities</strong>. Removal is structurally out of reach anyway: npm allows removal only under narrow conditions (under 300 weekly downloads, a single owner, no public dependents), while one affected package alone &mdash; server-github &mdash; had <strong>185,239 downloads last week with 6 owners</strong>. Total footprint: <strong>more than 17 million npm downloads since July 2025</strong>, with five of the packages sitting in npm&rsquo;s top MCP 100. No exploitation has been seen yet. None is needed for the exposure to be real.</p>
+
+        <h2>Why nothing in the stack sees it</h2>
+
+        <p>These are dependencies that never appear in a dependency file. EDR watches a trusted Node process install a public npm package at the agent&rsquo;s request &mdash; routine. SCA has no manifest, because the server runs through npx. The flaws have <strong>no CVEs</strong>, so scanners keyed on identifiers stay silent. Software inventory never registers an application. The endpoint &mdash; where the agent writes the config and runs the install &mdash; is the only place the issue shows up, and Glow found the pattern only through endpoint-focused inventory work. Even asking the agent to check first is not a control: in one session the agent queried npm, got back &ldquo;This package is deprecated,&rdquo; <strong>installed it anyway, and never told the user</strong>. The archive-history context matters here: when Anthropic introduced MCP in 2024 it published 20 reference servers; as services shipped their own, <strong>13 were archived</strong> &mdash; normal ecosystem maturation that the models&rsquo; frozen knowledge never absorbed. An independent census cited by Glow counts about <strong>195 new servers a day</strong> in the official MCP registry. The training data is a package manager with no deprecation feed.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Find and replace.</strong> Search developer machines for MCP configs referencing deprecated <strong>@modelcontextprotocol</strong> servers and switch to the service owner&rsquo;s own server where one exists. Glow&rsquo;s discovery already flags these on managed endpoints.</li>
+          <li><strong>Approve one server per service.</strong> Pick a single option per integration as the environment standard so agents cannot revert to outdated training data.</li>
+          <li><strong>Add npm deprecation status to approval criteria</strong> for any MCP server &mdash; and treat the agent&rsquo;s selection as suspect input, gated by pre-execution hooks, not as a trusted installer.</li>
+          <li>Understand the fix landscape honestly: harness-wide refusal only works if every harness does it; model-weight updates are unlikely; the durable fix for installed fleets is owner patches or hook-level blocking. The <a href="/posts/2026/11/mcp-inspector-oauth-callback-stdio-rce-scanner-blind-october-2026/">MCP Inspector RCEs invisible to scanners</a> and the <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">trojanized Claude Code extension</a> show the same lesson from adjacent angles: the agent toolchain is now the supply chain, and it needs inventory, allowlists, and execution control &mdash; not just vulnerability feeds.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full Glow Labs MCPhantom report first-hand (2 November 2026, Nadav Cohen: 98-percent training-data figure, five harnesses, three model providers, four high-severity flaws, Puppeteer RCE mechanics, May-2025 archive reply, out-of-scope closure, 17M-download footprint, endpoint-invisibility analysis, npm removal-rule arithmetic) and the full Help Net Security report first-hand (3 November 2026, Mirko Zorz: session-transcript sourcing, looked-up-deprecated-yet-installed case, four fix avenues, defender steps). The registry-census and Octoverse figures are Glow&rsquo;s cited context. The PixelLeak, Inspector, trojanized-extension and Yoba parallels are our prior coverage linked above. We installed no MCP server, ran no agent, contacted no vendor, and accessed no developer machine. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.glow.io/blogs/mcphantom-ai-coding-agents-are-installing-vulnerable-deprecated-mcp-servers-from-training-data?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Glow Labs &mdash; MCPhantom: AI Coding Agents Are Installing Vulnerable Deprecated MCP Servers From Training Data (2 November 2026; read first-hand)</a></li>
+          <li><a href="https://www.helpnetsecurity.com/2026/11/03/mcphantom-deprecated-mcp-servers/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Help Net Security &mdash; AI coding agents are installing MCP servers that will never be patched (3 November 2026; read first-hand)</a></li>
+          <li><a href="/posts/2026/10/glow-labs-pixelleak-coding-agents-public-github-screenshots/">al-ice.ai &mdash; The Agent Could Not Attach a Screenshot, So It Made the Repo Public &mdash; 13,000 Internal Images, 343 Companies</a></li>
+          <li><a href="/posts/2026/11/mcp-inspector-oauth-callback-stdio-rce-scanner-blind-october-2026/">al-ice.ai &mdash; MCP Inspector RCEs and the Scanners That Cannot See Them</a></li>
+          <li><a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">al-ice.ai &mdash; Trojanized Claude Code 2.1.313 on the Cursor Marketplace</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fortinet-hardening-release-ai-assisted-testing-november-psirt-october-2026/">Patch Now, Read the Advisory in November: Fortinet&amp;rsquo;s AI-Found Hardening Release for FortiOS, FortiManager and FortiAnalyzer</a></h3><p>On 21 October 2026 Fortinet CISO Carl Windsor announced coordinated 22 October security hardening releases for FortiOS, FortiManager and FortiAnalyzer (plus same-day FortiMail and FortiAuthenticator fixes), covering critical and high-severity flaws found through frontier AI-assisted testing with Anthropic, OpenAI, Google and SpaceX. No CVE IDs, scores or vulnerability classes until PSIRT advisories on 10 November. Fixed versions, interim mitigations and why Fortinet says patch-diffing makes this a priority change, not routine maintenance.</p><a class="text-link" href="/posts/2026/10/fortinet-hardening-release-ai-assisted-testing-november-psirt-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-28">2026-10-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/epics-base-ai-agent-four-vulnerabilities-cisa-icsa-26-300-01-october-2026/">Three Hours, Forty-Nine Minutes, Four Flaws: An AI Agent Audits the Software Steering Particle Accelerators</a></h3><p>CISA advisory ICSA-26-300-01 (27 October 2026) covers four vulnerabilities in EPICS Base — CVE-2026-114595 through CVE-2026-114598, including a 9.8-critical integer overflow with remote-code-execution potential — found by an autonomous AI agent in under four hours. EPICS Base 7.0.10 and earlier affected; 7.0.11 fixes it.</p><a class="text-link" href="/posts/2026/10/epics-base-ai-agent-four-vulnerabilities-cisa-icsa-26-300-01-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</a></h3><p>Gen Threat Labs attributes the CallbackBeaver Rust infostealer to Warden Stealer: a malware-as-a-service operation with its own loader, a built-in crypto clipper, and official collection of AI coding-agent tokens, MCP credentials, and prompt histories since v1.9. No CVE and no patch — this is endpoint theft, and your agent config directory is a credential store.</p><a class="text-link" href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
