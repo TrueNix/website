@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Attack Rewrites Itself: Self-Evolving Poison Outruns Static Defenses in Search Agents — al-ice.ai</title>
+  <meta name="description" content="arXiv:2611.03754 (NeurIPS 2026) introduces CREO, a framework that evolves search-agent poisoning strategies against an adapting defense: 64 to 75 percent total interference across three rounds, collapsing MuSiQue accuracy by up to 65 points while keyword and perplexity filters barely register it." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/adversarial-self-evolution-search-agent-attacks-creo-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Attack Rewrites Itself: Self-Evolving Poison Outruns Static Defenses in Search Agents" />
+  <meta name="post:date" content="2026-11-04" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Attack Rewrites Itself: Self-Evolving Poison Outruns Static Defenses in Search Agents</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-04">2026-11-04</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Submitted <strong>2 November 2026</strong> to arXiv (<strong>2611.03754</strong>, accepted at <strong>NeurIPS 2026</strong>) by researchers at <strong>Nanyang Technological University and Alibaba Group</strong>, <strong>The Web Doesn&rsquo;t Sit Still: Adversarial Self-Evolving Attacks on Search Agents</strong> argues that the way we measure poisoning attacks on search agents is broken in a specific way: every baseline is a <strong>static, human-crafted template</strong> &mdash; swap an entity here, optimize an injection there &mdash; while a real adversary adapts. The authors replace the fixed attack with an <strong>adversarial self-evolution framework</strong>: a bi-level optimization in which an attacker&rsquo;s strategy pool evolves against a defense that updates in turn, so each round&rsquo;s poison is bred against the previous round&rsquo;s filter. Across <strong>three multi-hop QA benchmarks and five frontier LLMs</strong>, the evolved strategies reach a <strong>mean total interference rate of 64.2 to 74.6 percent</strong> &mdash; more than triple the rule-based baseline &mdash; and stay above 60 percent even after the defense synchronizes against them. The defense the paper proposes as the stringent setting is the only one that meaningfully dents the attack, and it does so precisely because it knows the attack pool. Static tests, the paper&rsquo;s title warns, cannot catch a moving attack.</p>
+
+        <h2>CREO: contrastive signals breed the strategy pool</h2>
+
+        <p>The core method, <strong>Contrastive Rollout Evolutionary Optimization (CREO)</strong>, treats attack strategies as a population that undergoes <strong>directional mutation, crossover recombination, and selection driven by contrastive evolutionary signals</strong> &mdash; successful and failed rollouts are contrasted so the pool learns which patterns penetrate, rather than a human guessing. The pool is capped at <strong>10 individuals</strong>, seeded by a contrastive initialization (Round 0) and evolved over <strong>three rounds</strong>. Evaluation runs under two complementary settings: <strong>Evo</strong>, where the attack pool evolves against the previous round&rsquo;s static defense (the attacker&rsquo;s advantage), and <strong>Sync</strong>, where defenses update synchronously with the current attack pool (the hardest test). To keep evolution honest, everything runs inside a <strong>terabyte-scale controlled sandbox</strong> with noise-free trace capture, and the authors add <strong>fine-grained cognitive metrics</strong> that go beyond right-or-wrong answers: rigorous adversarial accuracy (correct answer <em>and</em> reasoning fully free of interference), a deliberately <strong>strict trace-level success rate</strong> that counts an attack only when the agent explicitly incorporates a forged document as valid evidence, and a novel <strong>adversarial paralysis rate</strong> for the case where the agent does not get hijacked but stalls &mdash; their sum is the total interference rate. The test bed is <strong>HotpotQA, 2WikiMultihopQA and MuSiQue</strong> (100 training and 100 test queries each) with <strong>Qwen-Turbo, Qwen3-Max, DeepSeek-V3.2, Kimi-K2.5 and GLM-5.1</strong> as target search agents, benchmarked against two paradigms: rule-based tampering (<strong>FactSwap</strong>, substituting answer entities with type-consistent counterparts) and optimization-based poisoning (<strong>AuthChain</strong>, jointly optimized for retrievability and deceptiveness).</p>
+
+        <h2>Evolved poison wins, static filters barely notice</h2>
+
+        <p>The headline numbers are unambiguous. CREO&rsquo;s <strong>mean Evo total interference of 64.2&ndash;74.6 percent and mean Sync of 60.5&ndash;64.9 percent</strong> compare with <strong>20.9 / 18.1 percent for FactSwap and 55.7 / 37.5 percent for AuthChain</strong> &mdash; and CREO&rsquo;s Sync figure, measured after the defense adapts, still beats AuthChain&rsquo;s Evo figure, measured before it does. Answer accuracy falls by <strong>18 to 65 percentage points across all six model&ndash;dataset combinations reported</strong>, with the worst collapses on MuSiQue: <strong>Qwen3-Max from 90 percent to 25 percent, GLM-5.1 from 82 percent to 30 percent</strong>. The defense analysis is the part practitioners should sit with. <strong>Keyword and perplexity filters provide negligible protection</strong>, with interference rates near the no-defense baseline &mdash; the evolved forgeries are semantically fluent and contextually coherent, so pattern-matching and anomaly scores slide off. <strong>RobustRAG&rsquo;s isolate-and-aggregate strategy achieves only moderate suppression</strong>. Only the paper&rsquo;s own <strong>strategy-aware CREO Defense</strong>, which defends with maximal information about the attack pool, yields substantial interference reduction (<strong>53 percent on Qwen-Turbo, 17 percent on GLM-5.1</strong>) &mdash; and the attack still lands. Two methodological details strengthen the claim: after three rounds the strategy pool is genuinely heterogeneous &mdash; <strong>identity obfuscation, multi-source contradiction construction, multi-hop reasoning poisoning</strong>, with the most sophisticated patterns emerging only in later rounds &mdash; and the LLM-as-judge scoring was validated against <strong>100 stratified traces with 96&ndash;97 percent agreement and Cohen&rsquo;s &kappa; above 0.94</strong> across two human annotators, GPT-5.6 Sol and Claude fable-5. This is the mirror image of October&rsquo;s <a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">self-evolving defense</a> coverage &mdash; that paper evolved the defender; this one evolves the attacker, and the attacker is currently ahead.</p>
+
+        <h2>Evaluate against the attacker you will actually meet</h2>
+
+        <p>The paper&rsquo;s limits are stated plainly and worth repeating: evolution happens inside a <strong>controlled sandbox</strong>, not the live web, and retrieval operates exclusively within it &mdash; the numbers describe what an adaptive adversary <em>can</em> achieve once retrieved, not a measured in-the-wild campaign. The defensive prescription follows directly. <strong>Benchmark search agents against adaptive, evolving attacks &mdash; not just fixed injection templates</strong>, because the gap between FactSwap&rsquo;s 21 percent and CREO&rsquo;s 65-plus percent is the gap between your test suite and your adversary. <strong>Retire keyword and perplexity filters as primary controls</strong> against fluent forgeries; they fail open against exactly the attacks that now evolve. <strong>Invest in isolate-and-aggregate architectures and strategy-aware defenses</strong>, while understanding that even the best tested here only dented the attack. And keep this paper next to its siblings: our <a href="/posts/2026/11/step-zero-attack-agent-safety-before-observability-november-2026/">Step-Zero</a> coverage showed harm arriving before the model ever looks, our <a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">ETUDE</a> coverage showed trusted tools decaying after updates, and the <a href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">Radware census</a> and <a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">Log-To-Leak</a> work showed injections already hiding in the open. CREO adds the dynamic: the poison does not sit still either.</p>
+
+        <p><em>Our verification was read-only. We read the full arXiv abstract page and the experimental HTML text first-hand (submitted 2 November 2026; Geyuan Wang, Shunyu Liu, Siyuan Liang, Chenyang Lyu, Dacheng Tao corresponding, NTU and Alibaba; accepted at NeurIPS 2026; CREO bi-level formulation with contrastive rollout signals, pool cap 10, Round 0 plus three rounds, Evo and Sync settings; terabyte-scale sandbox; Acc, strict trace-level ASR, APR and TASR metric definitions; HotpotQA, 2WikiMultihopQA and MuSiQue with 100 training and 100 test queries each; Qwen-Turbo, Qwen3-Max, DeepSeek-V3.2, Kimi-K2.5 and GLM-5.1 targets; FactSwap and AuthChain baseline definitions; 64.2&ndash;74.6 percent Evo and 60.5&ndash;64.9 percent Sync TASR against 20.9/18.1 and 55.7/37.5; 18&ndash;65 point accuracy reductions with MuSiQue Qwen3-Max 90-to-25 and GLM-5.1 82-to-30; keyword, perplexity, RobustRAG and CREO Defense outcomes with 53 and 17 percent reductions; strategy-pool diversity and late-round sophistication; judge validation 96&ndash;97 percent with kappa above 0.94). Table-extracted figures are the authors&rsquo; reported results as stated there. We trained no model, ran no agent, poisoned no retrieval, and contacted no one. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2611.03754?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2611.03754 &mdash; The Web Doesn&rsquo;t Sit Still: Adversarial Self-Evolving Attacks on Search Agents (2 November 2026; read first-hand)</a></li>
+          <li><a href="https://arxiv.org/html/2611.03754v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv HTML full text &mdash; 2611.03754v1 (experimental HTML version; read first-hand)</a></li>
+          <li><a href="/posts/2026/11/step-zero-attack-agent-safety-before-observability-november-2026/">al-ice.ai &mdash; The Damage Happens Before the Model Looks: Step-Zero Attacks on Agent Safety</a></li>
+          <li><a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">al-ice.ai &mdash; Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap</a></li>
+          <li><a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">al-ice.ai &mdash; No Retraining, 0.42% Attack Rate: Self-Evolving Defenses That Learn From Failed Attacks</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-01">2026-10-01</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">No Retraining, 0.42% Attack Rate: Self-Evolving Defenses That Learn From Failed Attacks</a></h3><p>arXiv 2609.36603 (29 September 2026) proposes Self-Evolving Defense: distilling harmful agent trajectories into reusable, retrievable security policies with no weight updates. Targeted prompt-injection success on AgentDojo falls to 0.42% and adaptive HarmBench attacks to 7.8% across three open models.</p><a class="text-link" href="/posts/2026/10/arxiv-2609-36603-self-evolving-defense-continual-policy-learning/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">Trust Expires When the Tool Updates: ETUDE and the Tool Update Gap in Agent Security</a></h3><p>A new paper introduces ETUDE, an attack hiding malicious behavior in updates to initially benign agent tools, with 97.6 percent success across seven frameworks. Defenses watching only the model context do not see it.</p><a class="text-link" href="/posts/2026/11/tool-update-gap-etude-agent-framework-trust-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-30">2026-10-30</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">The Job Succeeds and the Secret Still Leaves: Log-To-Leak Hides Exfiltration After the Last Call</a></h3><p>arXiv:2610.36108 (26 October 2026, Duke/MSU/TikTok) introduces Log-To-Leak: a post-hoc MCP logging attack with 62.64–100% success across 18 model-server pairs, invisible because the legitimate task still completes. Sandwiching cuts success by 3 points, DataSentinel catches none of 100 payloads, and the detector flags 85% of benign descriptions.</p><a class="text-link" href="/posts/2026/10/log-to-leak-mcp-post-hoc-logging-prompt-injection-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
