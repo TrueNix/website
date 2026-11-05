@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Popup That Left the Sandbox: Check Point Bypassed ChatGPT Lockdown Mode — al-ice.ai</title>
+  <meta name="description" content="Check Point Research (5 November 2026) shows how a nested iframe's real window.open escaped ChatGPT's HTML-preview sandbox, defeating Lockdown Mode: silent chat-history exfiltration, spoofed update windows for malware delivery, and credential theft. Zero-click in ChatGPT Classic. OpenAI removed the sandbox popup permissions on 18 September 2026 after responsible disclosure." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/chatgpt-lockdown-mode-bypass-popup-sandbox-escape-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Popup That Left the Sandbox: Check Point Bypassed ChatGPT Lockdown Mode" />
+  <meta name="post:date" content="2026-11-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Popup That Left the Sandbox: Check Point Bypassed ChatGPT Lockdown Mode</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-06">2026-11-06</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 November 2026</strong>, Check Point Research published a bypass of the strongest anti-exfiltration control OpenAI ships to consumers. <strong>Lockdown Mode</strong> &mdash; the optional setting we covered at launch that <a href="/posts/2026/06/openai-chatgpt-lockdown-mode-prompt-injection-defense/">cuts the outbound channels prompt injection needs</a> (live web reduced to cached content, remote images blocked, Canvas network requests disabled, Deep Research, Agent Mode, live connectors and file downloads switched off) &mdash; could be defeated end-to-end by a popup. Researcher <strong>Alexey Bukhteyev</strong> showed that the HTML page preview feature&rsquo;s sandbox carried two permissive tokens, <code>allow-popups</code> and <code>allow-popups-to-escape-sandbox</code>, and that a nested iframe handed attacker content a genuine <code>window.open</code>. The resulting window rendered arbitrary HTML <em>outside</em> the sandbox &mdash; and therefore outside everything Lockdown Mode restricts. The demonstrated outcomes were silent theft of entire chat history, malware delivery from a spoofed ChatGPT window, and credential theft, with a <strong>zero-click variant in the ChatGPT Classic desktop app</strong>. Check Point disclosed responsibly; OpenAI removed the two sandbox tokens on <strong>18 September 2026</strong>, and Check Point retested and confirmed the technique no longer works.</p>
+
+        <h2>One real window.open behind two layers of sandbox</h2>
+
+        <p>The feature that created the hole arrived in <strong>February 2026</strong>: HTML page previews inside ChatGPT code blocks, rendering user-controlled HTML with JavaScript. The design anticipated the danger &mdash; rendered pages sit in two nested iframes, isolated from the parent document, the ChatGPT UI state, and <code>chatgpt.com</code> cookies and localStorage, with approval dialogs intercepting external images, scripts, links and outbound URLs. The popup path looked covered too: the sandbox redefines <code>window.open</code> into an approval-gated stub that returns <code>null</code> for empty or <code>about:blank</code> targets. But the iframe sandbox itself was not asked to forbid popups &mdash; the <code>allow-popups</code> token was present &mdash; so attacker JavaScript could create one more nested iframe and call <em>its</em> <code>contentWindow.open</code>, which is the browser&rsquo;s real implementation, never stubbed. Combined with <code>allow-popups-to-escape-sandbox</code>, the opened window runs attacker HTML free of every sandbox restriction and every Lockdown Mode channel cut. It is a textbook confused deputy at the seam between two enforcement layers: the stub policed the front door while the sandbox tokens left the side door signed open.</p>
+
+        <h2>What the escaped window could do</h2>
+
+        <p>Check Point walks four scenarios, and each exploits a different property of the escaped context. <strong>Silent exfiltration</strong>: the unsandboxed page could ship entire chat history and uploaded files to an attacker server with no notification &mdash; the exact outcome Lockdown Mode exists to prevent, demonstrated on video. <strong>Malware delivery</strong>: the popup retains the ChatGPT application icon while its title is attacker-controlled, so a &ldquo;Download ChatGPT update&rdquo; lure arrives wearing the trusted application&rsquo;s face; in a browser, automatic downloads are not blocked, and a shared chat carrying the malicious preview endangers recipients who never had an account. <strong>Credential theft</strong>: the researchers could reload content in the main application window and act on the user&rsquo;s behalf, including forcibly signing them out &mdash; the setup for a re-authentication lure on an attacker page. And <strong>zero-click in Classic</strong>: in the Electron-based ChatGPT Classic client, <code>window.open</code> fires without a user gesture, so merely conversing with a malicious GPT was enough to trigger silent leakage, no click required. The delivery vectors multiply the reach: a malicious prompt, a malicious GPT, or a shared chat.</p>
+
+        <h2>A second CPR find in the same attack surface, fixed the same way</h2>
+
+        <p>This is Check Point&rsquo;s second disclosure in ChatGPT&rsquo;s execution-and-rendering layer this year. Earlier, the same team found sensitive conversation data leaving the code-execution runtime through DNS tunneling past network isolation; OpenAI fixed that promptly. Both episodes point the same direction, and the researchers say it outright: as assistants become full execution environments &mdash; running code in the cloud, rendering attacker-influenced content on the client, handling medical, financial and credential material &mdash; every convenience capability quietly widens the exfiltration surface, including features built purely for preview comfort. The fix here is correspondingly structural rather than behavioral: no new user warning, no new consent dialog &mdash; the two sandbox tokens are simply gone from the outer preview iframe. Note the timeline honestly: the vulnerability lived from the preview feature&rsquo;s February debut until the 18 September fix, and publication followed on 5 November. Anyone reconstructing exposure windows for sensitive chats should use February-to-September, not the disclosure date.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>No user action is required for this specific flaw &mdash; the fix is server-side and confirmed &mdash; but <strong>treat shared chats and third-party GPTs as untrusted HTML delivery</strong> going forward: the next preview-layer bug will arrive through the same vectors (malicious prompt, malicious GPT, shared chat).</li>
+          <li><strong>Keep Lockdown Mode on for sensitive work, without treating it as a guarantee.</strong> It raises the cost of exfiltration substantially; this bypass proves a single sandbox-token misconfiguration could zero it out. Defense in depth means pairing it with data minimization &mdash; what was never pasted cannot be exfiltrated.</li>
+          <li>If your threat model includes targeted phishing, <strong>assume chat content discussed with AI assistants before mid-September 2026 was within the exposure window</strong> for this class, and weigh that in credential-rotation and pretexting-awareness decisions.</li>
+          <li>For builders: <strong>audit sandbox tokens against the enforcement you assume</strong>. If your code stubs <code>window.open</code>, your iframe must not carry <code>allow-popups</code>; if your threat model needs containment, it must not carry <code>allow-popups-to-escape-sandbox</code>. Nested browsing contexts inherit genuine APIs your stubs never see &mdash; the same pattern as the <a href="/posts/2026/11/haiou-prompt-adware-codex-jailbreak-gateway-ads-november-2026/">Haiou prompt-adware</a> abuse of trusted agent surfaces from a different direction.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full Check Point Research article first-hand (&ldquo;ChatGPT Lockdown Mode Bypass: Phishing, Malware Delivery, and Silent Data Exfiltration,&rdquo; 5 November 2026, research by Alexey Bukhteyev: Lockdown Mode channel restrictions; February 2026 HTML preview feature; nested-iframe sandbox with allow-popups and allow-popups-to-escape-sandbox; stubbed window.open versus genuine contentWindow.open; exfiltration, spoofed-window malware, shared-chat, forced-sign-out credential-theft and Classic zero-click scenarios; responsible disclosure with the 18 September 2026 fix and confirmed retest). The earlier DNS-tunneling runtime flaw is background as reported in that same article. The Lockdown Mode feature descriptions link to our prior launch coverage. We rendered no preview, opened no popup, ran no GPT, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://research.checkpoint.com/2026/chatgpt-lockdown-mode-bypass-phishing-malware-delivery-and-silent-data-exfiltration/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Check Point Research &mdash; ChatGPT Lockdown Mode Bypass: Phishing, Malware Delivery, and Silent Data Exfiltration (5 November 2026; research by Alexey Bukhteyev; sandbox-token root cause; four attack scenarios; 18 September 2026 fix; read first-hand)</a></li>
+          <li><a href="/posts/2026/06/openai-chatgpt-lockdown-mode-prompt-injection-defense/">al-ice.ai &mdash; OpenAI &mdash; ChatGPT Lockdown Mode to Block Prompt-Injection Exfiltration</a></li>
+          <li><a href="/posts/2026/02/openai-chatgpt-lockdown-mode/">al-ice.ai &mdash; OpenAI &mdash; ChatGPT Lockdown Mode</a></li>
+          <li><a href="/posts/2026/11/haiou-prompt-adware-codex-jailbreak-gateway-ads-november-2026/">al-ice.ai &mdash; The Jailbreak That Sells Gateway Time: Haiou Turns Codex Into Prompt Adware</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-06-07">2026-06-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/06/openai-chatgpt-lockdown-mode-prompt-injection-defense/">OpenAI — ChatGPT Lockdown Mode to Block Prompt-Injection Exfiltration</a></h3><p>OpenAI launched Lockdown Mode for ChatGPT on June 6, 2026 — an optional toggle that disables outbound-connected features to break the data-exfiltration leg of prompt-injection attacks.</p><a class="text-link" href="/posts/2026/06/openai-chatgpt-lockdown-mode-prompt-injection-defense/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-02-21">2026-02-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/02/openai-chatgpt-lockdown-mode/">OpenAI — ChatGPT Lockdown Mode</a></h3><a class="text-link" href="/posts/2026/02/openai-chatgpt-lockdown-mode/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-04">2026-11-04</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/haiou-prompt-adware-codex-jailbreak-gateway-ads-november-2026/">The Jailbreak That Sells Gateway Time: Haiou Turns Codex Into Prompt Adware</a></h3><p>Check Point Research found the Haiou jailbreak bundle for OpenAI Codex persistently rewriting global agent instructions so that greetings trigger an ad for a paid LLM gateway. The bundle ships encrypted payloads and six offensive security skills.</p><a class="text-link" href="/posts/2026/11/haiou-prompt-adware-codex-jailbreak-gateway-ads-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

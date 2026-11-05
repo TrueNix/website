@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Server Names Its Own Audience: MCP OAuth Resource Confusion in mcp-go and ChatCLI — al-ice.ai</title>
+  <meta name="description" content="Two GitHub security advisories (GHSA-xf6j-693p-wqxx for mcp-go, GHSA-95vg-3r9c-2v5q for ChatCLI) disclose the same flaw class: a malicious MCP server could declare another authorization-server resource as its own, and the client would fetch a token for that resource and hand it over. Fixed in mcp-go 1.2.1 and ChatCLI 1.215.2; NVD published CVE-2026-123272 and CVE-2026-123271 on 5 November 2026, both CVSS 8.0." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/mcp-oauth-resource-confusion-mcp-go-chatcli-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Server Names Its Own Audience: MCP OAuth Resource Confusion in mcp-go and ChatCLI" />
+  <meta name="post:date" content="2026-11-06" />
+  <meta name="post:category" content="ai-cves" />
+  <meta name="post:categoryLabel" content="AI Vulnerabilities &amp; CVEs" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Server Names Its Own Audience: MCP OAuth Resource Confusion in mcp-go and ChatCLI</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-06">2026-11-06</time>
+          <a class="badge" href="/categories/ai-cves/">AI Vulnerabilities &amp; CVEs</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Two GitHub security advisories, published a month apart and reported by the same researcher, describe the same failure in two different MCP OAuth clients: the client let the server it was connecting to dictate <em>which resource</em> the authorization server should mint a token for. A malicious or compromised MCP server could therefore name a different resource on the same authorization server, receive a token audience-bound to that resource, and replay it there. The advisories are <strong>GHSA-xf6j-693p-wqxx</strong> for <strong>mark3labs/mcp-go</strong> (published 9 October 2026, fixed in <strong>v1.2.1</strong>) and <strong>GHSA-95vg-3r9c-2v5q</strong> for <strong>diillson/ChatCLI</strong> (published 11 October 2026, fixed in <strong>v1.215.2</strong>). NVD published the corresponding CVE records &mdash; <strong>CVE-2026-123272</strong> and <strong>CVE-2026-123271</strong> &mdash; on <strong>5 November 2026</strong>, each scored <strong>CVSS 8.0</strong> (High). Both credit <strong>Theodoros Lampropoulos (@GimmyDatBeeR)</strong>, who reported the issues privately.</p>
+
+        <h2>The missing check, in both clients</h2>
+
+        <p>The underlying protocol rule is RFC 9728 section 3.3: when a client fetches Protected Resource Metadata from a server&rsquo;s well-known path, it must verify that the declared resource actually identifies the resource it addressed. In mcp-go, that check was applied only to metadata advertised through a <code>WWW-Authenticate</code> <code>resource_metadata</code> parameter &mdash; not to metadata fetched from the well-known path. The unvalidated declared resource was then used as the RFC 8707 resource parameter at every step: dynamic client registration, the authorization request, the token exchange and token refresh. In ChatCLI, the <code>/mcp login</code> flow and the <code>@mcp-login</code> tool took the <code>resource</code> member of the server-supplied metadata and used it, again without the RFC 9728 identity check, as the resource indicator of the authorization request, the code exchange, the stored OAuth metadata and every refresh. After the user completed consent, ChatCLI sent the resulting token &mdash; audience-bound to the <em>other</em> resource &mdash; to the malicious server as its bearer credential, and the server could replay it against that other resource.</p>
+
+        <p>Both advisories frame exploitation the same honest way: this is not a drive-by. It requires a malicious or compromised MCP server, an authorization server that supports dynamic client registration and honours the requested resource indicator, a second resource on that authorization server that accepts the token, and &mdash; in ChatCLI&rsquo;s case &mdash; the user completing consent. The CVSS vectors reflect that: network attack vector, high complexity, user interaction required, changed scope, high confidentiality and integrity impact (CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:H/A:N). The weakness in both records is CWE-346, origin validation error. That combination &mdash; difficult setup, severe payoff &mdash; is exactly the profile defenders underrate in internal tooling, where &ldquo;only log in to servers you trust&rdquo; is treated as a control rather than a hope.</p>
+
+        <h2>ChatCLI&rsquo;s advisory discloses more than the headline</h2>
+
+        <p>The ChatCLI advisory is the more instructive of the two because the fix release bundled related hardening that reads like a catalogue of adjacent MCP transport sins. Beyond the resource-indicator fix &mdash; the canonical URL of the configured server is now the only accepted resource indicator, and metadata naming another resource is refused &mdash; the same release confines the SSE transport&rsquo;s messages endpoint to the server&rsquo;s origin, makes MCP transports refuse cross-origin and downgrading redirects, requires authorization-server metadata to name its issuer (RFC 8414 section 3.3) and use HTTPS endpoints, follows <code>resource_metadata</code> only on the server&rsquo;s own origin, and caps discovery documents. The advisory also notes two additional weaknesses in affected versions worth knowing: the <code>resource_metadata</code> URL from a <code>WWW-Authenticate</code> challenge was followed on any origin, and discovery documents were read without a size limit. That last pair connects directly to themes we have covered before: the <a href="/posts/2026/10/moling-cve-2026-62863-sse-cors-sessionid-mcp-october-2026/">MoLing SSE session leak</a> showed what unauthenticated, cross-origin-reachable MCP endpoints cost, and the <a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">mcp-go unbounded-body denial of service</a> showed what uncapped reads cost. This advisory fixes all three shapes at once.</p>
+
+        <h2>Why one reporter finding both matters</h2>
+
+        <p>The same researcher privately reporting the identical flaw class in the most-used Go MCP SDK and in a separate CLI client, within days of each other, suggests the root cause is not a coding slip but a specification-reading habit: implementers wire up RFC 9728 discovery and RFC 8707 indicators, and the &ldquo;verify the metadata describes the server you actually addressed&rdquo; step is the one that gets skipped, because in testing the metadata always does. It is the same structural pattern as the <a href="/posts/2026/11/aws-api-mcp-cve-2026-115413-audience-validation-bypass-october-2026/">AWS API MCP audience-validation bypass</a> from earlier this month &mdash; the audience/token-recipient binding is where MCP authorization keeps failing. Any team running its own MCP OAuth client implementation should treat these two advisories as a checklist item: fetch your client&rsquo;s well-known metadata handling and confirm the RFC 9728 section 3.3 binding exists on <em>every</em> discovery path, not just the challenge-response one.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>Upgrade <strong>mcp-go to v1.2.1 or later</strong> (affected: v0.48.0 through v1.2.0) and <strong>ChatCLI to v1.215.2 or later</strong> (affected: v1.159.0 through v1.215.1). The fix commits are public (mcp-go commit <code>90d247e</code>, PR #1053 / issue #1052).</li>
+          <li>After upgrading ChatCLI, if you ever logged in to an untrusted MCP server, run <strong><code>/mcp logout &lt;server&gt;</code> and revoke the ChatCLI client at the authorization server</strong> &mdash; credentials stored by affected versions for another resource are never sent again, but revocation closes the window on tokens already issued.</li>
+          <li>Audit any in-house MCP OAuth client for the same missing check: the declared resource from well-known metadata must be validated against the addressed server before it is used as an RFC 8707 resource indicator anywhere (registration, authorization, exchange, refresh).</li>
+          <li>Treat &ldquo;only connect to trusted MCP servers&rdquo; as a workaround with an expiry date, per the advisory&rsquo;s own framing &mdash; then enforce it with an allowlist, since consent dialogs do not protect users when the consent itself names the wrong audience.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read both GitHub security advisories first-hand in full (GHSA-xf6j-693p-wqxx for mcp-go, published 9 October 2026: affected &ge;0.48.0 &le;1.2.0, patched 1.2.1, fix in commit 90d247e via PR #1053 / issue #1052; GHSA-95vg-3r9c-2v5q for ChatCLI, published 11 October 2026: affected &ge;1.159.0 &le;1.215.1, patched 1.215.2, SSE/redirect/issuer hardening in the same release), the full NVD JSON records for CVE-2026-123272 (Deferred) and CVE-2026-123271 (Received, both published 5 November 2026, CVSS 8.0, CWE-346, VulnCheck-sourced descriptions), and both release tags. We checked the site search index for 123271/123272, mcp-go OAuth, and ChatCLI coverage and found no overlap &mdash; the prior mcp-go post covers a different flaw (unbounded-body DoS, CVE-2026-108859). We ran no client, registered no OAuth application, replayed no token, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/mark3labs/mcp-go/security/advisories/GHSA-xf6j-693p-wqxx?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">mark3labs/mcp-go &mdash; GHSA-xf6j-693p-wqxx: OAuth client accepts an unvalidated resource from well-known Protected Resource Metadata (published 9 October 2026; affected &ge;0.48.0 &le;1.2.0; patched 1.2.1; read first-hand)</a></li>
+          <li><a href="https://github.com/diillson/chatcli/security/advisories/GHSA-95vg-3r9c-2v5q?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">diillson/chatcli &mdash; GHSA-95vg-3r9c-2v5q: MCP OAuth login uses the server-supplied protected resource as the RFC 8707 resource indicator (published 11 October 2026; affected &ge;1.159.0 &le;1.215.1; patched 1.215.2; read first-hand)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-123272?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-123272 (published 5 November 2026; CVSS 8.0; CWE-346; read first-hand via NVD API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-123271?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-123271 (published 5 November 2026; CVSS 8.0; CWE-346; read first-hand via NVD API)</a></li>
+          <li><a href="https://github.com/mark3labs/mcp-go/releases/tag/v1.2.1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">mark3labs/mcp-go &mdash; v1.2.1 release (patch release)</a></li>
+          <li><a href="https://github.com/diillson/chatcli/releases/tag/v1.215.2?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">diillson/chatcli &mdash; v1.215.2 release (patch release)</a></li>
+          <li><a href="/posts/2026/10/mcp-go-cve-2026-108859-streamable-http-unbounded-body-dos/">al-ice.ai &mdash; Buffer First, Validate Later: mcp-go Reads Every POST Body Into Memory With No Fix Available</a></li>
+          <li><a href="/posts/2026/10/moling-cve-2026-62863-sse-cors-sessionid-mcp-october-2026/">al-ice.ai &mdash; Loopback Is Not a Boundary: How MoLing SSE Mode Leaked MCP Session IDs to Any Web Page</a></li>
+          <li><a href="/posts/2026/11/aws-api-mcp-cve-2026-115413-audience-validation-bypass-october-2026/">al-ice.ai &mdash; The Signature Checked Out and the Audience Walked In: AWS API MCP Server Took Any Audience</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/ai-cves/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-08">2026-10-08</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">The Same Bug, Two SDKs, One CVE: MCP’s TypeScript OAuth Client Gets CVE-2026-104850 and the Python Twin Gets Nothing</a></h3><p>CVE-2026-104850 (CVSS 3.1 7.5) landed on 6 October 2026 for the MCP TypeScript SDK: a connected MCP server could name the authorization server that received the stored refresh_token and client_secret, with no user interaction. The identical Python advisory, GHSA-qx49-fqc8-xw99, has no CVE and returns 404 from both OSV and the global GitHub Advisory Database. On both lines, upgrading alone changes nothing unless you pass expectedIssuer.</p><a class="text-link" href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-10">2026-10-10</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/privasys-ra-tls-five-cves-channel-binding-self-disclosure/">Five Critical CVEs for a Bug They Fixed in July: Privasys Files Against Its Own RA-TLS Stack</a></h3><p>CVE-2026-108265 through CVE-2026-108269 (CVSS 4.0 9.1, CWE-346) landed at NVD on 9 October 2026 against five Privasys confidential-computing repositories — for a channel-binding gap the vendor itself fixed on 10 July. The same flaw class, CVE-2026-33697, still has no patch in CoCoS. We read the advisories, the commits and the release tags first-hand.</p><a class="text-link" href="/posts/2026/10/privasys-ra-tls-five-cves-channel-binding-self-disclosure/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-01">2026-11-01</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/11/aws-api-mcp-cve-2026-115413-audience-validation-bypass-october-2026/">The Signature Checked Out and the Audience Walked In: AWS API MCP Server Took Any Token From the Same Tenant</a></h3><p>CVE-2026-115413: the awslabs AWS API MCP Server before 1.6.0 validated a bearer token signature, issuer and expiry but not audience, so a local caller holding any same-provider token — for example another Cognito app client — could run AWS operations on the host credentials; fixed in 1.6.0 with mandatory audience configuration.</p><a class="text-link" href="/posts/2026/11/aws-api-mcp-cve-2026-115413-audience-validation-bypass-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
