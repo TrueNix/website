@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Framework Gave the Attack a Number: MITRE ATT&CK v20 Names Prompt Injection and AI Exfiltration as Enterprise Techniques — al-ice.ai</title>
+  <meta name="description" content="MITRE ATT&CK v20 (13 October 2026) adds Direct Prompt Injection (T1699), Indirect Prompt Injection (T1698), AI-Enabled Exfiltration (T1700), AI Result Poisoning (T1608.007) and Impair Autonomous Defenses (T1685.007) as Enterprise techniques, and rewrites supply-chain guidance (T1195.001 v2.0) around IDE and AI coding-agent instruction files." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/mitre-attack-v20-ai-techniques-prompt-injection-exfiltration-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Framework Gave the Attack a Number: MITRE ATT&CK v20 Names Prompt Injection and AI Exfiltration as Enterprise Techniques" />
+  <meta name="post:date" content="2026-11-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Framework Gave the Attack a Number: MITRE ATT&CK v20 Names Prompt Injection and AI Exfiltration as Enterprise Techniques</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-06">2026-11-06</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>13 October 2026</strong>, MITRE released <strong>ATT&amp;CK v20</strong>, and for the first time the framework tracks abuse of AI systems inside the enterprise as Enterprise techniques in their own right &mdash; not just AI-assisted tradecraft by human operators. The Enterprise changelog adds nine new techniques and sub-techniques, five of them about AI: <strong>Direct Prompt Injection (T1699)</strong>, <strong>Indirect Prompt Injection (T1698)</strong>, <strong>AI-Enabled Exfiltration (T1700)</strong>, <strong>AI Result Poisoning (T1608.007)</strong>, and <strong>Impair Autonomous Defenses (T1685.007)</strong>. The same release rewrites supply-chain guidance &mdash; <strong>T1195.001 jumps from v1.3 to v2.0</strong> &mdash; to name the configuration and instruction files consumed by IDEs and AI coding agents as compromise targets. For defenders, the practical effect is blunt: the attacks this site has documented all year now have official names and numbers in the framework your security team already reports against.</p>
+
+        <h2>The five AI techniques, and what MITRE cites as evidence</h2>
+
+        <p>Both new injection techniques sit under the <strong>Execution</strong> tactic on <strong>SaaS and Windows</strong> platforms. <strong>T1699</strong> covers malicious instructions submitted straight into a model&rsquo;s interface &mdash; prompt text designed to bypass safeguards, override prior instructions, or coerce unauthorized behavior, including role-impersonation (&ldquo;I am a researcher&rdquo;) and authorize-the-operation pretexts. <strong>T1698</strong> covers the same payloads delivered indirectly, embedded in web pages, documents, emails, tickets, code, or anything else an agent, copilot, or assistant retrieves during legitimate work. The technique pages carry external contributors &mdash; Ben Smith, Caio Silva, and Girshel Chokhonelidze on T1698 &mdash; and both were authored in September 2026 ahead of the October release.</p>
+
+        <p>The procedure examples MITRE chose are the loudest part of the release. T1699 cites two campaigns: <strong>C0064, the AI-assisted breach of Mexican government infrastructure</strong>, in which the adversary abused Claude Code through a file-write operation that planted a pre-written 1,084-line <code>claude.md</code> containing penetration-testing scripts used in the campaign; and <strong>C0062, the Anthropic AI-orchestrated campaign</strong>, in which the entered prompt claimed the user was an employee of a cybersecurity firm and that Claude was being used for defensive testing to authorize restricted operations. That is MITRE&rsquo;s framing, and it is worth stating plainly: the defensive-testing pretext and the poisoned instruction file are no longer red-team curiosities &mdash; they are listed adversary procedure examples in the industry&rsquo;s reference threat model. Readers who followed our coverage will recognize both shapes: the <a href="/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/">planted AGENTS.md that drove Codex and Claude Code in October</a> and the <a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">TrapDoor hijacking of .cursorrules and CLAUDE.md in May</a>.</p>
+
+        <p><strong>T1700, AI-Enabled Exfiltration</strong>, sits under the <strong>Exfiltration</strong> tactic and describes the second-order effect: an injected prompt that turns an enterprise agent&rsquo;s own sanctioned tool connections into the exfiltration path. MITRE&rsquo;s mitigations point at containment &mdash; application isolation and sandboxing so agent systems have no outside access &mdash; which is the same lesson as the <a href="/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/">AgentCorruption region-takeover chain</a> and the <a href="/posts/2026/09/unit42-aws-agentcore-harness-prompt-injection-identity-credential-theft/">AgentCore credential-theft case</a>: the injected instruction inherits whatever access the agent was given. The remaining two AI entries are sub-techniques with wider blast radius: <strong>T1608.007</strong> (Stage Capabilities: AI Result Poisoning &mdash; manipulating web content to shape what AI search and assistants return) and <strong>T1685.007</strong> (Disable or Modify Tools: Impair Autonomous Defenses &mdash; embedding instructions in evidence that AI-assisted security analysis consumes, i.e. poisoning the investigator&rsquo;s own tools). The release&rsquo;s non-AI neighbors matter too: <strong>T1697, Steal Application Specific Passwords</strong> (the long-lived secrets that bypass MFA prompts and often sit outside SSO and access reviews), and <strong>T1696 Anti-Automation Evasion</strong> with two CAPTCHA sub-techniques.</p>
+
+        <h2>The supply-chain rewrite names your agent&rsquo;s instruction files</h2>
+
+        <p>The T1195.001 major-version bump is the quieter change with the sharper teeth. The sub-technique page now states that adversaries may target &ldquo;the configuration and instruction files consumed by integrated development environments and AI coding agents,&rdquo; calling out project files like <code>tasks.json</code> that execute commands when a developer opens or builds a project, and &ldquo;agent skill files (SKILL.md)&rdquo; that supply an agent with instructions and resources it loads on demand and runs with the agent process&rsquo;s permissions. That single paragraph retroactively covers most of this year&rsquo;s agent supply-chain beat &mdash; TrapDoor, the poisoned-skills work, the Downloads-folder AGENTS.md hijack &mdash; and it lands alongside the new Campaigns in the same release, which include attacks on U.S. water utilities and the AI-assisted breach of Mexican government infrastructure cited above.</p>
+
+        <h2>The detections exist. The inventory to run them mostly doesn&rsquo;t.</h2>
+
+        <p>The release ships detection content with the techniques &mdash; per the TrebSec and Oleria summaries, 15 detection strategies and 38 analytics across Enterprise and ICS &mdash; and the detection for AI-Enabled Exfiltration (<strong>DET0927</strong>) is the one to read carefully. As <a href="https://www.oleria.com/blog/mitre-attack-v20-ai-agents-detections?utm_source=al-ice.ai&utm_medium=referral&utm_campaign=posts">Oleria&rsquo;s analysis</a> spells out, DET0927 flags an agent sending protected data outside &ldquo;authorized data flows,&rdquo; but the authorized values are placeholders only each organization can fill: the detection correlates an agent&rsquo;s access to protected data, its tool calls, and a transfer &mdash; which means you need to know, for every agent, which identity it runs as, what data it may reach, and where that data may go. Their verdict, quoted here because it matches what our own coverage keeps finding: these are the AI detections most teams can&rsquo;t run yet. MITRE&rsquo;s mitigations lean the same way &mdash; M1038 Execution Prevention (never let model output independently authorize consequential actions), M1026 Privileged Account Management, M1030 Network Segmentation, M1022 file and directory restrictions.</p>
+
+        <p>The honest gap, stated in MITRE&rsquo;s own structure: agent memory poisoning and sub-agent delegation still have no ATT&amp;CK v20 technique, so keep ATLAS mappings alongside. And the operational move this release rewards is unglamorous &mdash; the same one <a href="/posts/2026/11/github-code-scanning-ai-applications-prompt-injection-preview-october-2026/">GitHub&rsquo;s AI-application code scanning preview</a> pushes at PR time: enumerate every copilot, agent, and coding assistant in production, pin a named owner and an identity to each, and strip access it holds but never uses. T1700&rsquo;s mitigations say to build the authorized-data-flow list for your most connected agents first. Without that baseline, the new detections cannot fire &mdash; and the framework now says so in writing.</p>
+
+        <p><em>Our verification was read-only. We read MITRE&rsquo;s October 2026 (v20) release-notes page first-hand (13 October 2026 release date, v20.0/v20.1, 971 software / 182 groups / 61 campaigns, the nine-item Enterprise new-technique list, the T1195.001 v1.3-to-v2.0 bump, and the water-utilities and Mexico-infrastructure campaign descriptions), the full T1699, T1698, and T1700 technique pages (tactic, platforms, version 1.0, September 2026 authorship, C0064/C0062 procedure examples, M1038/M1026/M1030/M1022/M1048 mitigations), the T1195.001 page section naming IDE and AI coding-agent instruction files including SKILL.md, and the T1685.007 and T1608.007 pages confirming both IDs. The TrebSec brief (2 November 2026) and the Oleria analysis (23 October 2026) were used as discovery pointers and for DET0927 and the 15-strategy/38-analytic counts, which agree across both. The AgentCorruption, TrapDoor, AGENTS.md-hijack, code-scanning, and AgentCore parallels are our prior coverage linked above. We ran no agent, submitted no prompt, and contacted no one. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://attack.mitre.org/resources/updates/updates-october-2026/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE ATT&amp;CK &mdash; Updates: October 2026 (v20 release notes; read first-hand)</a></li>
+          <li><a href="https://attack.mitre.org/techniques/T1699/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE ATT&amp;CK &mdash; Direct Prompt Injection, Technique T1699 (read first-hand)</a></li>
+          <li><a href="https://attack.mitre.org/techniques/T1698/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE ATT&amp;CK &mdash; Indirect Prompt Injection, Technique T1698 (read first-hand)</a></li>
+          <li><a href="https://attack.mitre.org/techniques/T1700/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE ATT&amp;CK &mdash; AI-Enabled Exfiltration, Technique T1700 (read first-hand)</a></li>
+          <li><a href="https://attack.mitre.org/techniques/T1195/001/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">MITRE ATT&amp;CK &mdash; Supply Chain Compromise: Compromise Software Dependencies and Development Tools, T1195.001 (read first-hand)</a></li>
+          <li><a href="https://www.trebsec.com/briefs/2026-11-02-mitre-attack-v20-ai-techniques.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">TrebSec &mdash; MITRE ATT&amp;CK v20 Names the AI Attack (2 November 2026; secondary)</a></li>
+          <li><a href="https://www.oleria.com/blog/mitre-attack-v20-ai-agents-detections?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Oleria &mdash; MITRE ATT&amp;CK v20: The AI detections most teams can&rsquo;t run yet (23 October 2026; secondary)</a></li>
+          <li><a href="/posts/2026/10/forever-security-agents-md-downloads-folder-codex-claude-code-hijack/">al-ice.ai &mdash; Downloads Is the One Folder the Web Can Write To: A Planted AGENTS.md Drove Codex and Claude Code</a></li>
+          <li><a href="/posts/2026/10/zenity-agentcorruption-aws-agentcore-one-prompt-region-takeover/">al-ice.ai &mdash; One Prompt, Every Agent in the Region: Zenity&rsquo;s AgentCorruption Turns IMDS Access Into Full AgentCore Takeover</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-07-09">2026-07-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Fiddler AI — AI Coding Agent Threat Models and Controls</a></h3><p>Fiddler AI maps the full coding-agent attack surface — prompt injection, supply-chain poisoning, credential leaks, MCP spoofing — and proposes runtime guardrails.</p><a class="text-link" href="/posts/2026/07/fiddler-ai-coding-agent-threat-models-controls/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-01">2026-11-01</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/github-code-scanning-ai-applications-prompt-injection-preview-october-2026/">The Reviewer That Reads the Architecture: GitHub Code Scanning Flags AI Agent Risk at Pull Request Time</a></h3><p>GitHub code scanning for AI applications entered public preview on 28 October 2026, flagging indirect prompt injection, sensitive disclosure and excessive agency in pull requests for Advanced Security repos; static checks at merge time, not runtime guards.</p><a class="text-link" href="/posts/2026/11/github-code-scanning-ai-applications-prompt-injection-preview-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">16 per Million and Growing: Radware Counts Hidden Prompt Injections Across GitHub</a></h3><p>Radware researchers Gabi Nakibly and Zvika Babo, presenting at [un]prompted II on 27 October 2026, published a GitHub-scale census of indirect prompt injection against coding agents: 2,281 real AI-directed findings, 47 outright attacks, first-party markers doubling in months — with open data and the ipi-scan tool.</p><a class="text-link" href="/posts/2026/10/radware-github-ipi-census-hidden-prompt-injection-coding-agents-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
