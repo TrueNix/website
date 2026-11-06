@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Seven Advisories, One Harness: OpenHuman’s November CVE Batch Turns Channels and Tool Text Into Code Execution — al-ice.ai</title>
+  <meta name="description" content="Seven CVE records (CVE-2026-54140 through CVE-2026-54146) reached NVD on 5 November 2026 for the OpenHuman agent harness: a 9.8 unauthenticated cron-job RCE via inbound channel messages, a 9.0 Yuanbao approval bypass, background-sync and MCP-description injection flaws, two 8.8 bearer-token leaks, and silent macOS screen capture. Fixed in 0.56.0, 0.57.5, and 0.57.13." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/openhuman-seven-advisories-channel-injection-cron-rce-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Seven Advisories, One Harness: OpenHuman’s November CVE Batch Turns Channels and Tool Text Into Code Execution" />
+  <meta name="post:date" content="2026-11-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Seven Advisories, One Harness: OpenHuman&rsquo;s November CVE Batch Turns Channels and Tool Text Into Code Execution</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-06">2026-11-06</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 November 2026</strong>, seven CVE records for the open-source agent harness <strong>OpenHuman</strong> (desktop app plus Rust library) arrived in NVD at once &mdash; <strong>CVE-2026-54140 through CVE-2026-54146</strong> &mdash; formalizing GitHub advisories the project published on <strong>9 October</strong>. Taken together they read like a guided tour of every trust boundary an agent harness owns: two criticals (a <strong>9.8</strong> unauthenticated remote path to host command execution, a <strong>9.0</strong> approval bypass on a messaging channel), two high-severity indirect-injection flaws (<strong>8.7</strong> via background sync, <strong>8.3</strong> via MCP tool descriptions), two high-severity bearer-token leaks (<strong>8.8</strong> each), and a medium-severity silent screen-capture primitive (<strong>6.1</strong>). The fixes shipped across releases <strong>0.56.0, 0.57.5, and 0.57.13</strong> &mdash; but the CVE publication is what makes the exposure checkable, and any deployment that has not tracked those releases is now documented-vulnerable.</p>
+
+        <h2>The worst of the batch: messages that become cron jobs</h2>
+
+        <p><strong>CVE-2026-54143 (CVSS 9.8, AV:N/AC:L/PR:N/UI:N)</strong> is the one to patch first. Before 0.57.13, an attacker who could merely <em>send messages</em> to a configured external channel could get the agent to create persistent shell cron jobs without human approval &mdash; jobs the scheduler later executes with the OpenHuman runtime user&apos;s privileges, with command validation weak enough to admit smuggled prefixes. No authentication, no user interaction, network-reachable, full host compromise: the vector string is the nightmare. Sitting beside it, <strong>CVE-2026-54141 (9.0)</strong> shows the approval layer failing from the inside: a remote direct message arriving through a configured Yuanbao channel was converted into a generic turn request under the default tool policy without establishing an interactive approval context, so under the default Supervised autonomy policy with Node enabled, <code>node_exec</code> ran unbypassed &mdash; approval existed in the UI but not on the code path the message actually traveled. And <strong>CVE-2026-54142 (8.7)</strong> closes the triangle: background synchronization for email, Slack, and Notion stored raw external content and later placed it in the model context of autonomous background agents without neutralizing embedded instructions, while ApprovalGate treated tool calls lacking an interactive chat context as approvable &mdash; so a poisoned email or Slack message could drive Composio actions with nobody at the keyboard. Three different doors, one lesson: every inbound channel is a prompt channel, and approval that is not bound to the actual execution path is decoration.</p>
+
+        <h2>Tool descriptions are attacker-controlled text</h2>
+
+        <p><strong>CVE-2026-54140 (8.3, scope-changed)</strong> is the batch&apos;s most instructive finding for the wider ecosystem. Before 0.57.13, OpenHuman placed names, descriptions, titles, and parameter definitions returned by configured external MCP servers into the agent model context <em>without neutralizing instructions or bounding the descriptive fields</em>, and the <code>McpRemoteTool</code> records produced by <code>list_tools</code> preserved that remote content verbatim. A malicious or compromised MCP server therefore did not need a vulnerability in OpenHuman at all &mdash; its tool metadata <em>was</em> the payload, executed in the agent&apos;s reasoning context with confidentiality, integrity, and availability all rated high on the other side. The fix (upstream PR #3215, released in 0.57.13) sanitizes remote tool descriptions and caps their length. This is the same attack class our <a href="/posts/2026/11/mcp-tool-poisoning-cross-framework-measurement-mcpvenom-november-2026/">November coverage of the 9,720-cell MCPVenom measurement</a> showed no framework stopping &mdash; and here it is again, not as a benchmark result but as a named CVE in a shipping harness. If you operate any MCP client, the question is not whether your servers are benign today but whether your context pipeline would survive one that is not.</p>
+
+        <h2>Tokens in the furniture, glass in the meeting room</h2>
+
+        <p>The remaining three round out the batch with credential-handling failures. <strong>CVE-2026-54145 (8.8)</strong>: the approval gate used the JSON-RPC bearer token itself as the approval session identifier, scattering the credential through persisted approval records, events, debug logs, and RPC responses during normal desktop operation &mdash; fixed in 0.57.5. <strong>CVE-2026-54146 (8.8)</strong>: on macOS, the Tauri desktop process published the per-launch <code>OPENHUMAN_CORE_TOKEN</code> bearer credential in its process environment even though the core had moved in-process, so any same-user process could read it through the <code>KERN_PROCARGS2</code> inspection interface &mdash; a local RCE primitive hiding in an environment variable, fixed in 0.57.5. And <strong>CVE-2026-54144 (6.1)</strong>: before 0.56.0 on macOS, the shim injected into supported remote-account webviews such as Google Meet let page JavaScript call <code>getDisplayMedia</code> without a live user gesture, falling through to native Chromium capture that can auto-select the primary display &mdash; silent desktop capture from inside a meeting webview. None of these is as dramatic as the cron-job RCE, but token-shaped flaws are the ones that convert every other bug into account takeover, and they are the ones operators most often leave unrotated.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Upgrade to 0.57.13 or later</strong> (at minimum 0.57.5 for the token leaks, 0.56.0 for the webview capture &mdash; but take the latest). Then <strong>rotate everything</strong>: JSON-RPC bearer tokens, approval-gate stores, and any credential that ever transited debug logs, SQLite approval records, or macOS process environments. The 54145/54146 leaks mean tokens must be treated as already exposed on any long-running pre-fix install.</li>
+          <li><strong>Audit your inbound channels as prompt-injection surfaces.</strong> If OpenHuman (or any harness) ingests Yuanbao DMs, email, Slack, or Notion into autonomous agents, verify that every such path establishes an interactive approval context before tool execution &mdash; and that background/scheduled agents cannot approve their own tool calls. The 54141/54142 pattern (right policy, wrong code path) is worth grepping for in your own integrations.</li>
+          <li><strong>Bound and sanitize all third-party tool metadata</strong> before it reaches model context &mdash; MCP servers included. Treat tool names, descriptions, and parameter schemas as untrusted input with length caps and instruction neutralization, per the 54140 fix, and prefer pinned, reviewed servers. Our <a href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">October OpenHuman loopback-control-plane coverage</a> shows this is the project&apos;s second disclosure round this quarter &mdash; track its advisories, not just its releases.</li>
+          <li>For builders: <strong>never use a bearer credential as a record identifier</strong> that gets persisted, logged, or echoed &mdash; and never leave a moved-in-process secret in the process environment. Both 8.8s were entirely avoidable with a random session ID and an env-var scrub at startup.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the NVD 2.0 API records first-hand for all seven CVEs (each published 5 November 2026 ~17:18 UTC: full descriptions, CVSS 3.1 vectors and scores, and reference lists naming the fix commits, the v0.57.13 release tag, and the GHSA advisories), the complete GitHub security-advisory records via API (summaries, severities, affected/patched ranges, 9 October 2026 publication), and the v0.57.13 release notes (3 June 2026, including the MCP description-sanitization and length-cap change). One NVD request in the batch hit API rate limiting and its score was carried from the matching GHSA record instead, stated openly here. We cloned no repo, ran no harness, connected no channel, sent no message, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-54140?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-54140 (MCP tool description injection, CVSS 8.3; published 5 November 2026; read first-hand via NVD API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-54141?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-54141 (Yuanbao channel approval bypass to node_exec, CVSS 9.0; published 5 November 2026; read first-hand via NVD API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-54142?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-54142 (background-sync indirect prompt injection to Composio actions, CVSS 8.7; published 5 November 2026; read first-hand via NVD API)</a></li>
+          <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-54143?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">NVD &mdash; CVE-2026-54143 (unapproved shell cron jobs to host execution, CVSS 9.8; published 5 November 2026; read first-hand via NVD API)</a></li>
+          <li><a href="https://github.com/tinyhumansai/openhuman/security/advisories/GHSA-f46p-6vf9-64mm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitHub &mdash; GHSA-f46p-6vf9-64mm / CVE-2026-54143 advisory (&lt; 0.57.13 affected, &ge; 0.57.13 patched; read first-hand via API)</a></li>
+          <li><a href="https://github.com/tinyhumansai/openhuman/releases/tag/v0.57.13?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenHuman &mdash; Release v0.57.13 (fix release; read first-hand)</a></li>
+          <li><a href="/posts/2026/10/openhuman-loopx-cve-2026-49410-108372-loopback-agent-control-planes/">al-ice.ai &mdash; Two Loopback Control Planes Fell to a Page the Operator Visited (OpenHuman/LoopX CVEs, October 2026)</a></li>
+          <li><a href="/posts/2026/11/mcp-tool-poisoning-cross-framework-measurement-mcpvenom-november-2026/">al-ice.ai &mdash; No Framework Stopped It: 9,720 Tests Show MCP Tool Poisoning Is a Model Problem</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">AI Vulnerabilities &amp; CVEs</span></div><h3><a href="/posts/2026/10/mercury-cve-2026-111057-111058-111059-missing-comma-kernel-rce-markdown-xss/">The Missing Comma Was a 10.0: Mercury CVE-2026-111057, CVE-2026-111058 and CVE-2026-111059</a></h3><p>CVE-2026-111057 (CVSS 10.0), CVE-2026-111058 (9.8) and CVE-2026-111059 (6.1), published 19 October 2026, record three flaws in Mercury, the framework that turns Jupyter notebooks into shareable web apps: a missing comma that fused two blocklist regexes and exposed an unauthenticated root shell, an anonymous kernel channel that survived that fix by design, and an unsanitized Markdown sink. All three were fixed in August and September &amp;mdash; the CVE records arrived up to 59 days later. We read the advisories, the fix commits and the releases first-hand.</p><a class="text-link" href="/posts/2026/10/mercury-cve-2026-111057-111058-111059-missing-comma-kernel-rce-markdown-xss/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/fortinet-hardening-release-ai-assisted-testing-november-psirt-october-2026/">Patch Now, Read the Advisory in November: Fortinet&amp;rsquo;s AI-Found Hardening Release for FortiOS, FortiManager and FortiAnalyzer</a></h3><p>On 21 October 2026 Fortinet CISO Carl Windsor announced coordinated 22 October security hardening releases for FortiOS, FortiManager and FortiAnalyzer (plus same-day FortiMail and FortiAuthenticator fixes), covering critical and high-severity flaws found through frontier AI-assisted testing with Anthropic, OpenAI, Google and SpaceX. No CVE IDs, scores or vulnerability classes until PSIRT advisories on 10 November. Fixed versions, interim mitigations and why Fortinet says patch-diffing makes this a priority change, not routine maintenance.</p><a class="text-link" href="/posts/2026/10/fortinet-hardening-release-ai-assisted-testing-november-psirt-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-19">2026-10-19</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/apache-camel-thirty-eight-cves-hazelcast-cvss-10-incomplete-fix-october-2026/">Thirty-Eight Camel Advisories in One Morning, and a CVSS 10.0 That Was Already Fixed in September</a></h3><p>The Apache Software Foundation published 38 Apache Camel CVEs to NVD on 19 October 2026 in fifty-two minutes. The headline record, CVE-2026-78162 at CVSS 10.0, is an incomplete fix for CVE-2026-43865: a deserialization filter that reached the component but not the two instance-bootstrap paths Camel builds itself, including a subclass that overrides doStart() without calling super. The patch merged on 21 August and shipped in 4.22.1 on 13 September. We read every record, both fix diffs and the upgrade guide first-hand.</p><a class="text-link" href="/posts/2026/10/apache-camel-thirty-eight-cves-hazelcast-cvss-10-incomplete-fix-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

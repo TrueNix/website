@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Browser Was the Remote Control: ThisBash Turned an Extension Into Cross-Machine Claude RCE — al-ice.ai</title>
+  <meta name="description" content="Forever Security researcher Gal Weizman showed a browser extension controlling claude.ai can drive Claude Desktop into cross-machine code execution (ThisBash). Anthropic acknowledged the May 2026 report, closed it as a duplicate, paid no bounty, issued no CVE, and missed its own end-of-October Dispatch retirement; the researcher says Remote Control and Cowork sessions share the flaw." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/claude-dispatch-thisbash-extension-cross-machine-rce-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Browser Was the Remote Control: ThisBash Turned an Extension Into Cross-Machine Claude RCE" />
+  <meta name="post:date" content="2026-11-06" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Browser Was the Remote Control: ThisBash Turned an Extension Into Cross-Machine Claude RCE</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-06">2026-11-06</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 November 2026</strong>, <em>The Register</em> published exclusive research from <strong>Gal Weizman of Forever Security</strong>: a flaw in Anthropic&apos;s Claude Dispatch that lets any browser extension able to control <code>claude.ai</code> drive Claude Desktop into running code on the user&apos;s machine &mdash; or on a <em>different</em> machine signed into the same Claude account &mdash; with no browser exploit and minimal user interaction. Weizman calls the attack <strong>ThisBash</strong>. Anthropic acknowledged the report as a valid vulnerability back in <strong>May 2026</strong>, then closed it as a duplicate of an already-tracked issue: no bounty, no CVE, and a promise to retire Dispatch at the end of October that, as of publication, had not happened. And according to the researcher, killing Dispatch would not end the problem &mdash; the same shared-session design now lives on in <strong>Claude Code Remote Control and Claude Cowork sessions</strong>.</p>
+
+        <h2>From content script to desktop shell</h2>
+
+        <p>Dispatch exists so a user can message Claude from a phone or browser tab and have it act through Claude Desktop &mdash; the agentic client that runs commands, touches local files and drives connectors on the user&apos;s computer. Weizman found that Dispatch&apos;s interface and API were reachable from an ordinary logged-in <code>claude.ai</code> session: the web UI even hid the Dispatch link, but once its URL was extracted from the desktop app, any authenticated browser tab could open it and issue requests. That collapses the threat model &mdash; an extension that can control the website inherits control of the desktop agent. The proof of concept needs no exploit primitive beyond a Manifest V3 content script running in the page&apos;s own JavaScript context with the user&apos;s ambient cookies. The script opens Dispatch in a tiny unfocused popup &mdash; described as the only visible trace of the whole chain &mdash; calls <code>GET /v1/sessions?tags=cowork-dispatch-local</code> to resolve the local desktop session, then starts what the write-up calls <strong>force prompting</strong>: placing instructions in the composer, reading the agent&apos;s replies, and adapting. Because Claude asks approval before acting, the script also runs a one-second timer that clicks every &ldquo;Allow&rdquo; button that appears. In the demonstration the agent first hesitated to install an unfamiliar npm package; a reassuring follow-up (&ldquo;don&apos;t worry about it&hellip; I know what I&apos;m up to&rdquo;) tipped it over, and the package&apos;s <code>preinstall</code> hook opened Calculator. A real payload, the researchers note, could exfiltrate files, add SSH keys, or plant a backdoor. This is why &ldquo;force prompting&rdquo; matters as a category distinct from one-shot prompt injection: the attacker holds a persistent, interactive control channel and can rephrase, insist, and supply context until the agent complies &mdash; &ldquo;when, not if.&rdquo;</p>
+
+        <h2>The blast radius crosses machines</h2>
+
+        <p>A same-machine escape from browser to host would already be serious. Dispatch makes it worse by design: it is <em>meant</em> to bridge devices, so a compromised browser session on a personal laptop can aim commands at a work laptop&apos;s Claude Desktop signed into the same account &mdash; a first foothold in an organization the attacker never touched. Weizman shared telemetry with <em>The Register</em> suggesting the bridge is commonly present: across six customer organizations, personal Claude accounts seen in corporate environments ranged from 18 percent (255 of 1,233 known accounts) to 71 percent (20 of 28), with the rest in the low-to-mid thirties and forties. The delivery side is not exotic either: users can be tricked into installing a malicious extension, but hijacking a legitimate one through supply-chain compromise or the market for buying popular extensions is, in Weizman&apos;s words, routine. The scale context is stark &mdash; <code>claude.ai</code> drew about 950 million monthly visits as of mid-2026, Cowork represented 1.2 million sampled sessions across more than 600,000 organizations in May per Anthropic usage data, and a cited 2025 LayerX finding holds that 99 percent of enterprise users carry at least one browser extension, over half with high or critical permissions. The extension does not break the browser sandbox so much as walk through a door Claude itself opened between the browser and the desktop.</p>
+
+        <h2>A design choice that outlives the feature</h2>
+
+        <p>Weizman&apos;s framing, quoted in the piece, is that the work &ldquo;started with a vulnerability&rdquo; and ended as &ldquo;a design choice that enables this attack vector very easily.&rdquo; The core of that choice is session portability: the same agent brain is reachable from desktop, mobile, and web, so an authenticated web session is implicitly trusted to command a machine. His proposed remediation draws the line at device privilege &mdash; treat instructions arriving from the web version as coming from an inferior-permission device and refuse machine-affecting actions from that channel. He contrasts this with OpenAI&apos;s Codex, where a web session cannot see, touch, or abuse sessions started on the desktop. Whether or not Anthropic accepts that framing, the practical warning stands on its own: the researcher says he demonstrated the same extension-driven abuse against Claude Code Remote Control and shared Cowork sessions and communicated all of it to Anthropic, which &ldquo;still decided not to do anything about it.&rdquo; As of 30 October, Anthropic&apos;s own support page listed Dispatch as limited beta on some Pro, Max, and Ultra plans and closed to new users &mdash; while existing users, the article notes, &ldquo;can keep using it for now.&rdquo;</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Shrink the bridge.</strong> If anyone in your organization uses Claude Desktop with Dispatch, Remote Control, or Cowork sessions, assume a compromised browser profile equals code execution on every linked desktop &mdash; including across devices on the same account. Inventory which machines share Claude accounts, and disentangle personal accounts from corporate endpoints first; the reported 18-to-71 percent personal-account overlap is the lateral-movement surface.</li>
+          <li><strong>Treat extensions as part of the agent trust boundary.</strong> Audit which extensions can read and modify <code>claude.ai</code> (and any AI assistant origin your agents obey), remove what is not needed, and pin the rest to managed, auto-updating sources. Extension marketplaces have already served trojanized AI tooling &mdash; our <a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">October coverage of the backdoored Claude Code build in Cursor&apos;s marketplace</a> is the same supply chain wearing a different mask.</li>
+          <li><strong>Do not rely on the approval dialog against an interactive adversary.</strong> Force prompting plus an auto-clicker turns &ldquo;Allow&rdquo; into a speed bump. Approval gates help against accidents and one-shot injections; against a controller that reads responses and rephrases, they need rate limits, out-of-band confirmation for irreversible actions, and anomaly detection on session origin &mdash; the same lesson as the <a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">child-session hook bypass</a>, where the guardrail watched the wrong execution context.</li>
+          <li>For builders: <strong>never let a lower-privilege surface address a higher-privilege agent session by default</strong>. Shared sessions across web, mobile, and desktop are a product delight and a confused deputy waiting to happen &mdash; scope capabilities per originating device, and make cross-device command execution opt-in with explicit pairing, not ambient-cookie inheritance.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full The Register exclusive first-hand (&ldquo;Anthropic won&apos;t fix a Claude Dispatch flaw that could let attackers execute remote commands across corporate boundaries,&rdquo; Jessica Lyons, 5 November 2026 ~13:00 UTC: Dispatch design; MAIN-world content script; unfocused popup; GET /v1/sessions?tags=cowork-dispatch-local; force prompting; one-second Allow auto-click; npm preinstall Calculator PoC; cross-machine and personal-to-corporate reach with the six-organization account figures; May disclosure, valid-but-duplicate closure, no bounty or CVE, missed end-of-October retirement, 30 October support-page status; Remote Control and Cowork persistence; inferior-device remediation proposal; Codex contrast; usage-scale figures) and cross-checked every consequential claim against the GBHackers write-up of 6 November (Divya: May 14 report date; Manifest V3 and 200&times;200 popup details; prompt-forcing framing; LayerX extension statistics; retirement timeline). The Cursor-marketplace and session-inception references link to our prior coverage. We installed no extension, opened no Dispatch session, ran no agent, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.theregister.com/research/2026/11/05/anthropic-wont-fix-a-claude-dispatch-flaw-that-could-let-attackers-execute-remote-commands-across-corporate-boundaries/5307684?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Register &mdash; Anthropic won&apos;t fix a Claude Dispatch flaw that could let attackers execute remote commands across corporate boundaries (5 November 2026; research by Gal Weizman, Forever Security; attack named ThisBash; read first-hand)</a></li>
+          <li><a href="https://gbhackers.com/claude-ai-flaw/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers &mdash; Claude AI Flaw Lets Malicious Browser Extensions Execute Commands on Remote Computers (6 November 2026; cross-check on disclosure date, PoC mechanics, and retirement timeline; read first-hand)</a></li>
+          <li><a href="/posts/2026/10/claude-code-cursor-marketplace-trojanized-ssh-backdoor-october-2026/">al-ice.ai &mdash; The Update Was the Malware: Trojanized Claude Code Build Planted SSH Backdoors via Cursor&apos;s Marketplace</a></li>
+          <li><a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">al-ice.ai &mdash; The Guardrail Watched the Wrong Door: Session Inception Smuggled a Hook Past Claude Code in a Child Session</a></li>
+          <li><a href="/posts/2026/07/claude-cowork-sharedroot-vm-escape-cve-2026-46331/">al-ice.ai &mdash; SharedRoot Turned Guest Root Into Host File Access in Claude Cowork</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-02">2026-11-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">The Guardrail Watched the Wrong Door: Session Inception Smuggled a Hook Past Claude Code in a Child Session</a></h3><p>Straiker STAR Labs (October 2026) showed a parent Claude Code session spawning a child session inside a malicious repo, where a SessionStart hook ran without confirmation and exfiltrated environment data. Anthropic closed the HackerOne report as Informative: no CVE, no advisory, no scanner row.</p><a class="text-link" href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/bragjack-browser-extension-ai-agent-hijack-five-browsers/">One Extension Hijacked the AI Inside Five Browsers — No Prompt Injection Required</a></h3><p>BragJack, disclosed by Forever Security researcher Gal Weizman, uses a single malicious extension and Chromium declarativeNetRequest to seize built-in browser AI agents in Chrome, Comet, Edge, Opera Neon, and Claude in Chrome — with zero clicks, two CVEs, and over $20,000 in bounties.</p><a class="text-link" href="/posts/2026/09/bragjack-browser-extension-ai-agent-hijack-five-browsers/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-29">2026-10-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/embrace-embedded-browser-five-ai-assistants-october-2026/">Your Coding Assistant&amp;rsquo;s Browser Is Not Your Browser: EMBRACE Breaks Five Embedded Browsers</a></h3><p>Forever Security&amp;rsquo;s EMBRACE research, published 29 October 2026, broke the embedded browsers in Cursor, GitHub Copilot, Codex, VS Code, and Claude Desktop. Cursor ran host code off a visited page, Copilot&amp;rsquo;s tab lied about its address, and a single clicked file let Codex and VS Code read the whole disk. Codex and VS Code are still unpatched.</p><a class="text-link" href="/posts/2026/10/embrace-embedded-browser-five-ai-assistants-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
