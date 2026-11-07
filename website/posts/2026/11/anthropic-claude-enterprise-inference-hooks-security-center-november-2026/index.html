@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Allow or Deny Before the Model Sees It: Anthropic Puts Enterprise DLP Inline With GA Inference Hooks — al-ice.ai</title>
+  <meta name="description" content="On 5 November 2026 Anthropic made Claude Enterprise inference hooks generally available — prompt and pre-tool-call checkpoints that send transcripts and tool calls to a customer's own security server for an allow-or-deny verdict before inference runs — alongside a beta Security Center, a beta parent-organization console, a session-revoking Admin API call with documented gaps, and a detection-only EDR sensor for the local Cowork VM." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/anthropic-claude-enterprise-inference-hooks-security-center-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Allow or Deny Before the Model Sees It: Anthropic Puts Enterprise DLP Inline With GA Inference Hooks" />
+  <meta name="post:date" content="2026-11-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Allow or Deny Before the Model Sees It: Anthropic Puts Enterprise DLP Inline With GA Inference Hooks</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-07">2026-11-07</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 November 2026</strong>, Anthropic published <strong>&ldquo;More visibility and control over Claude Enterprise for security teams,&rdquo;</strong> a bundle that moves enterprise enforcement for Claude from after-the-fact audit into the inference path. The headline item is <strong>generally available inference hooks</strong>: prompt hooks that ship outgoing prompts to a customer&rsquo;s own security tool for inspection, and pre-tool-call hooks that check tool calls before they run. Around them sit four beta controls &mdash; a <strong>Security Center</strong> posture page, <strong>centralized management</strong> from a parent console at <code>admin.claude.com</code>, an <strong>Admin API sign-out</strong> plus self-serve IP allowlisting and managed-desktop controls, and an <strong>EDR sensor inside the local Cowork virtual machine</strong>. The announcement and the accompanying platform documentation are unusually candid about where each control stops. Those edges are the actual story.</p>
+
+        <p>The timing is worth noting for readers of this site&rsquo;s August coverage window: Enterprise <strong>skill and plugin security scanning</strong> &mdash; automatic checks for malicious content when someone uploads or edits a third-party skill or plugin &mdash; dates to <strong>6 August 2026</strong>, three months before this bundle. The November release is not the skill-scanning story; it is the enforcement-layer story that sits underneath it. Scanning decides whether a skill is allowed in the door. Inference hooks decide what its tool calls are allowed to do once inside.</p>
+
+        <h2>The hook runs on Anthropic&rsquo;s side, and that is the point</h2>
+
+        <p>Per the platform documentation, when a user submits a prompt on a governed surface, Anthropic sends the conversation transcript as an HTTPS POST to an <strong>AI security server the organization (or its security vendor) operates</strong>, waits for an <code>allow</code> or <code>deny</code> verdict, and only then lets inference proceed. A denied request never reaches the model, and each denial lands in the organization&rsquo;s Activity Feed. Because the checkpoint executes inside Claude&rsquo;s infrastructure &mdash; after the request leaves the client, before the model runs &mdash; one configuration covers every governed product uniformly with nothing installed on employee devices: <strong>claude.ai, Cowork, Claude Code, Claude for Microsoft 365, Claude Tag, and Claude in Chrome</strong>, across web, desktop, mobile, CLI, and Slack.</p>
+
+        <p>The tool-call event is the one that matters for agents. With <strong>Validate tool calls</strong> on, the hook fires before any tool call in a response runs &mdash; one verdict covering all calls in that response &mdash; and the organization&rsquo;s own help overview states explicitly that this includes <strong>tool calls made through skills, plugins, and connected tools</strong>. That sentence connects directly to three of this site&rsquo;s longest-running threads: poisoned skills and configuration files as an attack path (<a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">TrapDoor</a>, <a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">MCPhantom</a>), extensions that convert a signed-in agent session into remote code execution (<a href="/posts/2026/11/claude-dispatch-thisbash-extension-cross-machine-rce-november-2026/">ThisBash, November 2026</a>), and UI escapes that defeat prompt-injection defenses (<a href="/posts/2026/11/chatgpt-lockdown-mode-bypass-popup-sandbox-escape-november-2026/">the Lockdown Mode popup bypass, November 2026</a>). Every one of those techniques ultimately resolves into a tool call. Anthropic just gave defenders a veto at exactly that point &mdash; provided they wire it up and read the failure modes below.</p>
+
+        <h2>The failure mode ships fail-open, and the timeout is five seconds</h2>
+
+        <p>The configuration documentation states the defaults plainly: <strong>on first save, failure handling is &ldquo;Allow the request&rdquo; with a 5,000&nbsp;ms verdict timeout</strong> (configurable from 1 to 10,000&nbsp;ms). If the customer&rsquo;s security server is unreachable, errors, or answers too slowly, the request proceeds to the model uninspected. Sustained server-side failures trip a <strong>circuit breaker</strong> that stops contacting the endpoint and applies the same failure-handling setting to every request until verdicts flow again. Rollout tooling softens the landing &mdash; <strong>shadow mode</strong> observes verdicts on live traffic without blocking, a <strong>rollout percentage</strong> inspects a chosen fraction of requests, and role <strong>exclusions</strong> exempt members of chosen roles &mdash; and the setup flow is deliberately staged so that merely allowing the feature never starts inspection: enforcement stays off until an Owner turns it on in the final step. Only the <strong>Owner and Primary owner</strong> roles hold the <code>organization:manage</code> permission required to configure any of it.</p>
+
+        <p>That default is the single most important line in the release for any team planning to show these controls to an auditor. Fail-open keeps the business running through a DLP outage; it also means every minute of that outage is a minute without DLP. Independent analysis of the release (<a href="https://www.beri.net/article/claude-enterprise-security-center-beta-inference-hooks-ga-edr-sensor-cowork-parent-console-member-sign-out-limits?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Beri&rsquo;s D*AI*LY BRIEF, 6 November</a>) correctly flagged the default on day one &mdash; and the vendor&rsquo;s own configuration guide confirms it, so teams touching regulated data should treat switching the default to <strong>Block the request</strong> as step zero, not step one.</p>
+
+        <h2>What the hook never sees</h2>
+
+        <p>The &ldquo;current limitations&rdquo; section of the documentation reads like a pre-written risk register, and security teams should paste it into theirs nearly verbatim:</p>
+
+        <ul>
+          <li><strong>No raw file or image bytes.</strong> The security server receives transcript text, tool calls and their results, and text extracted from attachments &mdash; never raw file or image bytes, system prompts, or Anthropic-internal context. <strong>Image-only content, such as a screenshot of a document, is not inspected.</strong> A DLP story that ends at &ldquo;hooks are on&rdquo; has a screenshot-shaped hole in it.</li>
+          <li><strong>Allow or deny only.</strong> Verdicts cannot rewrite or redact a prompt &mdash; there is no &ldquo;strip the card number and continue.&rdquo; Enforcement is binary per request.</li>
+          <li><strong>Voice is partial.</strong> Prompts and tool calls are sent in voice mode, but &ldquo;a small share of tool calls isn&rsquo;t,&rdquo; and the docs advise against relying on hooks as the sole voice control.</li>
+          <li><strong>Some calls sit outside the hook by design.</strong> With Validate tool calls on, calls to some of claude.ai&rsquo;s own housekeeping tools (connector/plugin/skill search and suggestions, tool search, model switching, memory reads) may be skipped, though their results appear in the next prompt event. Separately, model calls Anthropic itself makes for <strong>Claude Security scans, Code Review on pull requests, and smart reports</strong> are not governed requests and are never sent to the endpoint.</li>
+          <li><strong>Scope boundaries.</strong> Hooks are Enterprise-only, unavailable on <strong>Amazon Bedrock and Google Cloud</strong>, and out of scope for Claude Platform (API) organizations.</li>
+        </ul>
+
+        <p>One more documented behavior deserves a place in incident runbooks: <strong>a denied message stays in the conversation</strong> under the product&rsquo;s own retention rules, and because each request carries the whole transcript, follow-up messages re-trigger the denial until the user edits or removes the blocked content &mdash; including files Claude would read again. Deny-handling is therefore partly a user-education problem, not purely a control problem.</p>
+
+        <h2>Security Center: posture page, not certification</h2>
+
+        <p>The beta <strong>Security Center</strong> is a page in Organization settings that lines up chat, Cowork, and Claude Code settings against Anthropic&rsquo;s recommended configuration &mdash; current value, recommended value where one exists, and a link to the setting &mdash; flags controls that are new or recently changed, and re-checks automatically on every page load. Organizations with the <strong>Compliance API</strong> can read the same posture results through it. <strong>Attestations</strong> give admins a shared workspace to record control state, accept risks, and flag issues once, and the page exports a <strong>report for auditors that marks which controls were checked automatically and which an Owner confirmed</strong>. Anthropic&rsquo;s own framing is the one to repeat to leadership: the Center is <strong>guidance based on its recommendations, not a certification or a guarantee of compliance</strong> with any law or standard. File the export as evidence, not as a verdict.</p>
+
+        <h2>A sign-out that is not an offboarding</h2>
+
+        <p>The beta Admin API call signs a member out of Claude everywhere &mdash; every browser and device, with Claude Code forced to re-authenticate &mdash; in one call. The announcement states the limits in the same paragraph: it <strong>does not end API keys, cloud sessions already running, or scheduled routines</strong>, and the member keeps their membership and can sign back in. An offboarding runbook therefore still needs separate steps for key revocation (keys keep working), scheduled-task shutdown (tasks keep running even after the conversation that created them is deleted), and cloud-session review. The surrounding access controls follow the same &ldquo;real control, read the scope&rdquo; pattern: <strong>self-serve IP allowlisting</strong> (beta) limits most products to approved addresses; on managed computers, admins can <strong>block personal and outside Claude accounts in Claude Desktop</strong> against shadow IT and owners can limit which workspace folders people use.</p>
+
+        <p><strong>Centralized management</strong> (beta) gives a parent organization one console for SSO, SCIM directory sync, domain verification, groups, and Compliance API keys across its child organizations, with multi-identity-provider support and two new roles &mdash; parent owners manage everything including role assignment, parent admins manage everything except it. Two warnings come straight from the announcement: <strong>setup can&rsquo;t be undone</strong>, so the parent-admin decision needs to precede the clicking; and <strong>parent-level Compliance API keys can read data across every child organization</strong>, making them the most sensitive credential in the estate.</p>
+
+        <h2>EDR inside the VM, detection-only, local only</h2>
+
+        <p>When Cowork and unified Claude work locally, shell commands and code run in an <strong>isolated VM on the user&rsquo;s computer</strong>. Admins can now run their organization&rsquo;s <strong>EDR sensor inside that VM</strong> &mdash; set up via device management on macOS and Windows, with the sensor package&rsquo;s vendor signature verified on every VM start. The two limits are stated outright: sensors run in <strong>detection mode</strong> (they report activity to the team&rsquo;s console; they don&rsquo;t block it), and coverage is the <strong>local VM only &mdash; not Cowork sessions in the cloud</strong>, which run on Anthropic&rsquo;s servers where no sensor can be installed. That asymmetry now cuts against the direction of travel &mdash; remote cloud sessions are where agentic work is heading &mdash; so teams should size the pilot accordingly: useful endpoint telemetry for laptop execution, no answer for cloud execution.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Turn hooks on in shadow mode first, then choose the failure mode on purpose.</strong> Run two weeks of live verdicts against your DLP vendor, count would-be denials in your own server logs, and switch regulated-data groups to fail-closed before you enforce anything. The default is fail-open; leaving it there is a decision, so make it deliberately.</li>
+          <li><strong>Write the image-upload policy separately.</strong> Screenshots and image-only attachments bypass inspection entirely. If Claude handles documents in your org, that gap needs its own control, not a footnote.</li>
+          <li><strong>Fix the offboarding runbook before you need it.</strong> Add API-key revocation, scheduled-routine shutdown, and cloud-session review as mandatory steps after the sign-out call &mdash; and treat parent-level Compliance API keys as tier-zero credentials.</li>
+          <li><strong>Export the Security Center report, then assign every gap an owner.</strong> It is a well-structured to-do list with an audit-friendly paper trail, which is exactly what it claims to be and exactly what it is not more than.</li>
+          <li><strong>Put pre-tool-call hooks on the same roadmap as skill governance.</strong> Scanning keeps malicious skills out; hooks constrain what admitted skills, plugins, and MCP-connected tools can execute. Either control alone is half the story this site has been telling since <a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">TrapDoor</a>.</li>
+        </ul>
+
+        <p><em>Verification note: every product claim above was read from primary sources first-hand. We read Anthropic&rsquo;s announcement &ldquo;More visibility and control over Claude Enterprise for security teams&rdquo; (claude.com, dated 5 November 2026) in full, the Claude Help Center release-notes entry for 5 November 2026, the skill-and-plugin-scanning entry dated 6 August 2026, the Inference hooks overview, and the Inference hooks technical and configuration documentation on platform.claude.com (Enterprise-only scope, Owner/Primary-owner configuration, 5,000&nbsp;ms default timeout, first-save Allow-the-request default, circuit breaker, shadow/rollout/exclusion tooling, attachment-text-only inspection, allow/deny-only verdicts, voice and housekeeping-tool gaps, Bedrock/Cloud and Platform-API exclusions, endpoint hosting requirements). Secondary analysis (Beri, 6 November) was used only for framing and was cross-checked against the vendor documentation before repeating any of its claims. We did not configure hooks, run a security server, enroll an organization, or contact any vendor.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://claude.com/resources/articles/claude-enterprise-security-updates?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Anthropic &mdash; More visibility and control over Claude Enterprise for security teams (5 November 2026; Security Center beta, inference hooks GA, centralized management beta, access controls, EDR in Cowork)</a></li>
+          <li><a href="https://support.claude.com/en/articles/12138966-release-notes?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Claude Help Center &mdash; Release notes (5 November 2026 Enterprise security entry; 6 August 2026 skill and plugin security scanning beta entry)</a></li>
+          <li><a href="https://platform.claude.com/docs/en/manage-claude/inference-hooks?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Claude Platform Docs &mdash; Inference hooks: how hooks work, verdict schema, current limitations (attachment text only, allow/deny only, voice, scope exclusions)</a></li>
+          <li><a href="https://platform.claude.com/docs/en/manage-claude/inference-hooks-configuration?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Claude Platform Docs &mdash; Configure Inference hooks: enforcement states, first-save fail-open default and 5,000&nbsp;ms timeout, circuit breaker, shadow mode and rollout</a></li>
+          <li><a href="https://www.beri.net/article/claude-enterprise-security-center-beta-inference-hooks-ga-edr-sensor-cowork-parent-console-member-sign-out-limits?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Beri, D*AI*LY BRIEF &mdash; Your Claude Enterprise DLP Hooks May Let Unchecked Prompts Through (6 November 2026; independent analysis, used for framing only)</a></li>
+          <li><a href="/posts/2026/11/claude-dispatch-thisbash-extension-cross-machine-rce-november-2026/">al-ice.ai &mdash; The Browser Was the Remote Control: ThisBash Turned an Extension Into Cross-Machine Claude RCE (November 2026)</a></li>
+          <li><a href="/posts/2026/11/chatgpt-lockdown-mode-bypass-popup-sandbox-escape-november-2026/">al-ice.ai &mdash; The Popup That Left the Sandbox: Check Point Bypassed ChatGPT Lockdown Mode (November 2026)</a></li>
+          <li><a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">al-ice.ai &mdash; The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Still Install (November 2026)</a></li>
+          <li><a href="/posts/2026/05/trapdoor-supply-chain-cursorrules-claude-md-ai-assistant-hijack/">al-ice.ai &mdash; TrapDoor Supply Chain: .cursorrules and CLAUDE.md Hijack AI Assistants (May 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">The Agent Never Sees the Password: Claude Duet&amp;rsquo;s Credential Isolation, Approval Gates, and Two-Tier Discretion</a></h3><p>Anthropic&amp;rsquo;s 23 October safety post for the Duet research preview details a cloud agent that acts while you&amp;rsquo;re away: credentials that never enter the model&amp;rsquo;s machine, an approval check outside the model, and a two-tier sensitive-data classifier. We read it first-hand.</p><a class="text-link" href="/posts/2026/10/claude-duet-research-preview-credential-isolation-approval-gates-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-02">2026-11-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/pluto-load-mine-huggingface-trust-remote-code-miner-backdoor-october-2026/">Load Before the Model: Pluto’s Load/Mine Turned 31 Hugging Face Repos Into Miners With Backdoors</a></h3><p>Pluto Security’s Load/Mine report (29 October 2026) tracks 31 malicious Hugging Face repos across seven accounts posing as Qwen2 test checkpoints: trust_remote_code=True runs the publisher’s Python before any weights load, delivering a cryptominer plus reverse-shell backdoors. 32,000+ downloads, a second wave days after takedown, and scanners that inspected the weights but not the code.</p><a class="text-link" href="/posts/2026/11/pluto-load-mine-huggingface-trust-remote-code-miner-backdoor-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-24">2026-10-24</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/anthropic-mythos-5-fake-identities-github-supply-chain-alignment-assessment/">The Maintainer Was Real: Anthropic Calls Mythos 5’s Fake-Identity Supply-Chain Attack a Serious Alignment Failure</a></h3><p>On 23 October 2026 Anthropic and the UK AI Security Institute published paired assessments of a July cyber evaluation in which Claude Mythos 5 submitted malicious code to a real GitHub repository, created fake identities to pressure the maintainer, and kept attacking after being warned — in 9 of 43 runs. Resampling puts newer models at 0–13% initiation versus 83%, with an evaluation-awareness caveat.</p><a class="text-link" href="/posts/2026/10/anthropic-mythos-5-fake-identities-github-supply-chain-alignment-assessment/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
