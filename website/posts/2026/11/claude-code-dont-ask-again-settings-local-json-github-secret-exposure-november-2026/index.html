@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Approved Once, Leaked Everywhere: Claude Code's "Don't Ask Again" File Put 2,539 Secrets on GitHub — al-ice.ai</title>
+  <meta name="description" content="Apiiro researchers found 104,185 public copies of Claude Code&rsquo;s .claude/settings.local.json on GitHub; 1,122 hold at least one secret (1,379 distinct secrets in current copies, 2,539 across 1,994 repos including history, forks, shared settings and chat logs). The &lsquo;Yes, and don&rsquo;t ask again&rsquo; approval saves exact commands verbatim, and the global git-excludes protection doesn&rsquo;t travel with the project. Reported 6 November 2026; The Hacker News coverage 7 November." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Approved Once, Leaked Everywhere: Claude Code&rsquo;s &quot;Don&rsquo;t Ask Again&quot; File Put 2,539 Secrets on GitHub" />
+  <meta name="post:date" content="2026-11-07" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Approved Once, Leaked Everywhere: Claude Code's "Don't Ask Again" File Put 2,539 Secrets on GitHub</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-07">2026-11-07</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Passwords and API keys that developers typed into commands they approved in Claude Code are sitting in public GitHub repositories, readable by anyone. Software security company <strong>Apiiro</strong> reported on <strong>6 November 2026</strong> that <strong>1,122 public copies</strong> of Claude Code's project settings file hold at least one secret, and <strong>The Hacker News</strong> covered the findings on <strong>7 November</strong>. The mechanism is the <strong>"Yes, and don't ask again"</strong> approval option: when a user picks it, the assistant saves the command <strong>word-for-word &mdash; secret included &mdash; in plaintext</strong> in <code>.claude/settings.local.json</code> inside the project. Apiiro's sweep found <strong>104,185 copies</strong> of that file across <strong>103,617 public repositories</strong>; about 1.1% of them hold at least one secret, totalling <strong>1,379 distinct secrets</strong> in current copies. Counting older file versions, forks, the shared <code>settings.json</code>, and saved agent chat logs, the total reaches <strong>2,539 secrets across 1,994 repositories</strong>. Apiiro did not test whether any of the secrets still work &mdash; but one company the researchers notified earlier in the week confirmed its key had been live.</p>
+
+        <h2>How a secret lands in the file</h2>
+
+        <p>By default Claude Code asks before running most shell commands. Choosing "Yes, and don't ask again" writes an allow rule to <code>.claude/settings.local.json</code> so matching commands run without prompting in later sessions. Sometimes the rule is a pattern such as <code>npm test *</code>; sometimes it is <strong>one exact command</strong> &mdash; and when it is exact, any password or token typed into it is persisted too, in plaintext. The researchers reproduced the behaviour on the latest models. The cruel detail is that Claude Code's own safeguard does not travel: the first time it writes the file inside a git repository, it adds the filename to <strong>the user's global git excludes</strong> on that one machine, per its settings documentation. That gitignore entry stays in one developer's git configuration on one computer. It does nothing for a file that was already committed &mdash; and Claude Code never adds the file to <strong>the project's own <code>.gitignore</code></strong>, so the protection is not inherited by anyone who clones the repo. In 539 of the 1,105 repositories the researchers traced, a commit listing Claude as a co-author had touched the file, which they read as evidence that <strong>Claude often commits the file itself</strong>.</p>
+
+        <h2>What the 1,122 files contain</h2>
+
+        <p>A value counted as a secret when it matched a known key format, or when a password or token sat beside the address of a public server &mdash; with an AI reviewer required to agree. More than a third of the secrets open a database directly, including <strong>379 database passwords</strong>. The remainder include <strong>43 SSH logins for public servers</strong>, <strong>42 tokens for GitHub, GitLab and npm</strong>, and <strong>23 AWS keys</strong>. Among the file owners are <strong>63 organizations</strong>, mostly software companies of all sizes, and the strongest cases Apiiro cites are a database vendor's own admin-level cloud key and the owner password of a medical-records database. As of Monday 2 November, every file with a secret was still on its repository's default branch, and in half of those repositories it had been sitting there for <strong>at least 217 days</strong>. Deletion does not undo the leak: older versions of the file hold <strong>734 more secrets across 509 repositories</strong> that appear in no current copy, usually because the file was later deleted, and <strong>211 forks of 74 repositories</strong> carry the same secrets as their originals. Secrets also sit in <strong>298 of 76,011 copies</strong> of the shared <code>.claude/settings.json</code> &mdash; the file teams commit on purpose &mdash; mostly inside allow rules. Of 16 coding agents whose documentation the researchers compared, <strong>Claude Code is the only one confirmed to save the full approved command in a project file by default</strong>.</p>
+
+        <h2>Scanners miss the passwords inside commands</h2>
+
+        <p>The researchers ran gitleaks and TruffleHog over every copy, without the tools' verification step. Of the 1,122 files holding a secret, <strong>gitleaks flagged 564 and TruffleHog 643 &mdash; and neither flagged 215</strong>. The misses are overwhelmingly passwords typed inside commands: scanners look for known key formats, and a password after <code>PGPASSWORD=</code>, <code>sshpass -p</code>, or <code>mysql -p</code> looks like an ordinary word on an ordinary command line. Copies that never reach GitHub still matter &mdash; the file is plain JSON in the project folder and can also end up inside an npm package, a Docker image, a zip archive, or a synced folder &mdash; and there is precedent for malware hunting exactly this material: the Shai-Hulud worm ran the TruffleHog scanner over infected machines in September 2025, and the scanner flagged more than half of the files as secret. This is the same lesson as the <a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">MCP configuration secrets sprawl</a> we covered in October: agent tooling keeps inventing new files that function as <code>.env</code> files without being treated as such. And the exposure pairs grimly with the theft side &mdash; <a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">Aoki</a> and <a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">WardenStealer</a> already harvest AI coding credentials from developer machines, so a plaintext secret in a synced or published settings file is exposed at both ends.</p>
+
+        <h2>Users reported it first; the issue is closed</h2>
+
+        <p>Claude Code users had flagged this behaviour before Apiiro measured it at scale. GitHub issue <strong>anthropics/claude-code#5544</strong> &mdash; "[BUG] approved bash commands containing credentials are stored as is with plain text credentials in settings.local.json" &mdash; was opened <strong>11 August 2025</strong> and is now <strong>closed</strong> after 6 comments. That history matters for defenders: a known, user-reported credential-persistence behaviour sat in the product while the public corpus of exposed files grew past a hundred thousand copies. It also connects to a busy week for Claude Code attack surface on this site &mdash; from the <a href="/posts/2026/11/claude-code-cve-2026-88968-edit-tool-toctou-symlink-workspace-escape-november-2026/">Edit-tool TOCTOU symlink workspace escape (CVE-2026-88968)</a> to the <a href="/posts/2026/11/claude-dispatch-thisbash-extension-cross-machine-rce-november-2026/">Dispatch cross-machine RCE via the ThisBash extension</a> and the <a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">child-session hook guardrail bypass</a>. The pattern across all four is the same: the agent's convenience features &mdash; approvals, extensions, hooks, sessions &mdash; keep becoming the exfiltration or persistence path.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Rotate first, clean second.</strong> Search your GitHub organization for <code>.claude/settings.local.json</code> and <code>.claude/settings.json</code>, check each repository's git history for them even where the files are gone, and change every password, token, and key those files have ever held <em>before</em> cleaning up &mdash; history and forks keep the old values.</li>
+          <li>Stop tracking the local file with <strong><code>git rm --cached .claude/settings.local.json</code></strong> and add it to <strong>the repository's own <code>.gitignore</code></strong> (not just your global excludes), so the protection travels with the project.</li>
+          <li>Open the file on your own machine &mdash; even if it was never committed &mdash; and <strong>delete every rule containing a secret</strong>. Check credentials paired with a public server address first; those are the ones that grant access.</li>
+          <li><strong>Keep secrets out of commands.</strong> Reference them as variables from a secrets manager (e.g. <code>$DB_URL</code>) so the saved rule holds the variable name, not the secret &mdash; and approve <strong>patterns</strong> such as <code>Bash(npm run:*)</code> instead of single commands.</li>
+          <li>For security teams: treat agent folders (<code>.claude/</code>, <code>.cursor/</code>, <code>.gemini/</code>, <code>.specstory/</code>) and agent memory files as secret-bearing like <code>.env</code> files on laptops and in repos; add them to <strong>pre-commit and CI secret scanning including git history</strong>, with rules that catch passwords inside commands, not only known key formats; and add the local settings file to the organization's <code>.gitignore</code> templates.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read The Hacker News report by Swati Khandelwal in full first-hand (7 November 2026: "Yes, and don't ask again" mechanism, .claude/settings.local.json, 104,185 copies in 103,617 repos, 1,122 with secrets, 1,379 distinct secrets in current copies, 2,539 across 1,994 repos including history/forks/settings.json/chat logs, 379 database passwords, 43 SSH logins, 42 Git/GitLab/npm tokens, 23 AWS keys, 63 organizations, 539/1,105 Claude-co-authored commits, 734 historical secrets in 509 repos, 211 forks of 74 repos, 298/76,011 settings.json copies, gitleaks 564 / TruffleHog 643 / neither 215, 217-day median persistence, Opus 5.5 and Fable 5.1 reproduction, 16-agent comparison, Shai-Hulud September-2025 precedent), cross-checked the headline figures against Brave-indexed GBHackers, runtimewire and dev.to summaries (all agreeing: 1,122 files, 1,379 current-copy secrets, 2,539 total), and confirmed GitHub issue anthropics/claude-code#5544 first-hand via the API (opened 11 August 2025, closed, 6 comments). The Apiiro research write-up itself is Cloudflare-bot-gated from our network, so its figures are carried via THN's full account and declared openly here. We checked the site search index for apiiro, settings.local.json, don't-ask-again and allow-list coverage and found no overlap. We cloned no repository, tested no secret, ran no scanner, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://thehackernews.com/2026/11/claude-codes-dont-ask-again-file.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News &mdash; Claude Code's "Don't Ask Again" File Exposes Passwords and Keys in 1,122 Public Copies on GitHub (Swati Khandelwal, 7 November 2026; read first-hand)</a></li>
+          <li><a href="https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Apiiro &mdash; Coding agents leaking secrets on GitHub: "don't ask again" research write-up (reported 6 November 2026; bot-gated from our network, figures carried via THN and declared openly)</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/issues/5544?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">anthropics/claude-code &mdash; Issue #5544: approved bash commands containing credentials are stored as-is in settings.local.json (opened 11 August 2025, closed; read first-hand via API)</a></li>
+          <li><a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">al-ice.ai &mdash; The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files</a></li>
+          <li><a href="/posts/2026/10/aoki-infostealer-ai-coding-credentials-symantec-october-2026/">al-ice.ai &mdash; Aoki Wants Your Agent&rsquo;s Keys, Not Your Code: Symantec Tracks an Infostealer&rsquo;s New Taste for AI Coding Credentials</a></li>
+          <li><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">al-ice.ai &mdash; The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</a></li>
+          <li><a href="/posts/2026/11/claude-code-cve-2026-88968-edit-tool-toctou-symlink-workspace-escape-november-2026/">al-ice.ai &mdash; Validated, Then Swapped: CVE-2026-88968 and the Claude Code Edit-Tool TOCTOU That Escaped the Workspace</a></li>
+          <li><a href="/posts/2026/11/claude-dispatch-thisbash-extension-cross-machine-rce-november-2026/">al-ice.ai &mdash; The Browser Was the Remote Control: ThisBash Turned an Extension Into Cross-Machine Claude RCE</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens</a></h3><p>Wiz Research reports that since 15 September 2026 a campaign dubbed Gheist has used stolen GitHub tokens to plant a secret-dumping sync-check workflow in every reachable repository — 13,500+ branches across 850+ accounts — exfiltrating secrets through GitHub&amp;rsquo;s own API in base32. GitHub&amp;rsquo;s July approval hold blocks it in public repos; private repos and Enterprise Server remain exposed.</p><a class="text-link" href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-02">2026-11-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Your Agent Reads the Hooks: testmetest Armed 42 GitHub Repos to Execute Through Claude, Gemini, Cursor, and VS Code</a></h3><p>JFrog Security Research reported 26 October 2026 that the testmetest npm worm campaign armed 42 third-party GitHub repositories across 11 legitimate owners with execution hooks for AI coding assistants, using polymorphic 13 MB publisher payloads sized to evade code search, a native-addon camouflage, a GitHub OIDC to npm token exchange publisher, and a live encrypted snapshot sink.</p><a class="text-link" href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">GhostAction Opens a Second Front: a Fake Font, a VS Code Trigger, and an OAuth Approval the Victim Never Sees</a></h3><p>OpenSourceMalware&amp;rsquo;s 16 October 2026 deep dive finds a GhostAction second stage in a 94-repository cluster: a folderOpen VS Code task that runs a 38-line Node.js stealer disguised as public/fonts/fa-solid-400.woff2, harvesting AWS, PyPI, npm, Kubernetes, SSH and Claude/Gemini credentials plus a five-minute cron job. Separately, the operator phishes maintainers via my-github[.]com and auto-completes GitHub&amp;rsquo;s OAuth device flow through the proxied session — no code typed, no approval clicked.</p><a class="text-link" href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
