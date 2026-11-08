@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Harness Knew Your Email: Claude Code Put Account Addresses in Web-Request Headers — al-ice.ai</title>
+  <meta name="description" content="On 5 November 2026 a Claude Code user reported the agent sending their account email to third-party sites in User-Agent headers during web searches (anthropics/claude-code#107757, 729+ reactions). The address was already in every session's system prompt since July (#81138); a 2.1.317 ask-before-sending check and a cc-plugin-privacy mod followed, but users on 2.1.318/2.1.319 report gaps." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/claude-code-user-agent-email-leak-privacy-mod-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The Harness Knew Your Email: Claude Code Put Account Addresses in Web-Request Headers" />
+  <meta name="post:date" content="2026-11-08" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The Harness Knew Your Email: Claude Code Put Account Addresses in Web-Request Headers</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-08">2026-11-08</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>5 November 2026</strong> a developer filed <strong><a href="https://github.com/anthropics/claude-code/issues/107757?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">anthropics/claude-code#107757, &ldquo;Bug Report: Privacy violation in User-Agent header&rdquo;</a></strong> (open at the time of writing, macOS, Claude Code <strong>2.1.318</strong>): while conducting web searches, the agent had, in the reporter&rsquo;s words, &ldquo;divulged my email to arbitrary 3rd parties in the <code>User-Agent</code> request header &hellip; without my permission.&rdquo; The reporter says scam mail followed &mdash; &ldquo;dozens of scam emails per day&rdquo; &mdash; and asks for the behavior to be <strong>removed from the harness entirely</strong>, not governed by an opt-in or opt-out setting: it does nothing for services that dislike agentic traffic, preserves no anonymity, and hands scammers a verified active address. By 8 November the issue carried <strong>729 +1 reactions</strong>, with one commenter noting it ranked fourth among more than 16,000 open issues in the repository, alongside GDPR-violation and class-action discussion in the thread.</p>
+
+        <p>This is the second Claude Code identity-exposure story this week to land on the same root cause. Days earlier this site covered <a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Apiiro&rsquo;s finding that &ldquo;don&rsquo;t ask again&rdquo; approvals saved verbatim into <code>settings.local.json</code> leaked 2,539 secrets across 1,994 GitHub repos</a>. There, the agent wrote ambient authority into a file that traveled to GitHub. Here, the agent read ambient identity out of its own context and wrote it into outbound HTTP. Both are the same design failure from opposite ends: <strong>the harness treats the user&rsquo;s identity material as conveniently available context, and the model decides where it goes next</strong>.</p>
+
+        <h2>The address was already in every session before the request was ever made</h2>
+
+        <p>The November issue is the visible symptom; the loading mechanism was reported in <strong><a href="https://github.com/anthropics/claude-code/issues/81138?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">#81138</a>, open since 25 July 2026</strong> with 90 +1 reactions. That report shows Claude Code injecting the signed-in account&rsquo;s address into the model&rsquo;s system prompt on every session, undocumented, without consent and with no supported way to stop it &mdash; a <code># userEmail</code> block reading <code>The user's email address is &lt;account email&gt;</code>, sourced from <code>~/.claude.json</code>&rsquo;s <code>oauthAccount.emailAddress</code>, confirmed against the shipped v2.1.220 bundle. Authentication data given to Anthropic to sign in became model context on every launch. Once the address sits in context, any downstream behavior that emits identifiers &mdash; a composed <code>curl</code> line, a fetch call, a search request &mdash; can carry it out, and no per-request approval designed for <em>commands</em> will necessarily catch an address embedded inside an otherwise legitimate-looking header.</p>
+
+        <p>The thread&rsquo;s most plausible mechanism is mundane, which is what makes it hard to dismiss as a one-off hallucination. Some public data services <strong>require a contact address in the request header</strong>: the discussion names Wikipedia&rsquo;s scripted-client identification policy, and Hacker News commenters demonstrate the pattern against the <strong>SEC API, which returns 403 for a default request and 200 once an email-bearing User-Agent is supplied</strong> &mdash; with one commenter reporting Claude sent a personal address on SEC data requests despite a separate work contact existing. An earlier Hacker News thread, <strong>&ldquo;Claude Code is leaking real email address as a User-Agent string in curl command&rdquo; (11 August 2026)</strong>, shows the same failure mode was observable three months before the November report. The agent is not &ldquo;spraying&rdquo; the address at random; it is propagating account identity into requests wherever a service, a tool definition, or its own composed command asks for a header identifier. That is arguably worse than random: it makes the leak <strong>conditional on destinations the user never reviewed</strong>, exactly the traffic an agentic coding tool generates all day.</p>
+
+        <h2>Anthropic shipped a check and a mod; users report gaps in both</h2>
+
+        <p>There is evidence of vendor response, and evidence it is partial. The <strong>v2.1.317 release (published 3 November 2026)</strong> includes, verbatim: <strong>&ldquo;Added a check that asks before a web or shell tool call sends your account email address to the network.&rdquo;</strong> A commenter in the issue thread announced a built-in <strong><code>cc-plugin-privacy</code> mod, enabled by default and toggleable via <code>/plugins</code></strong>, described as deterministically blocking the behavior, with its source to be published alongside the other built-in mods &mdash; and a follow-up comment links the mod source under <code>mods/privacy</code> for inspection and feedback.</p>
+
+        <p>Against that, three gap reports stand in the same thread and in independent coverage. The original reporter, running <strong>2.1.318 &mdash; one release <em>after</em> the check shipped</strong> &mdash; states the <code>cc-plugin-privacy</code> entry is not visible in <code>/plugins</code> at all. Community testing reported on 2.1.318 found the guardrail missing even commands that name the User-Agent explicitly. And <a href="https://kernelpost.com/claude-code-email-leak/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Kernel Post&rsquo;s 8 November analysis</a> notes a test on <strong>2.1.319</strong> in which a User-Agent command involving the account email still ran, implying the protection is not a blanket refusal. Secondary coverage further reports Anthropic staff saying the deeper fix is to <strong>remove the account email from the model&rsquo;s context entirely</strong>, expected the following week &mdash; an acknowledgement, if accurate, that a per-request ask cannot fully contain an identifier that is present in every prompt. We carry that last point as attributed secondary reporting, not as a verified vendor statement: it did not appear in the issue comments we reviewed.</p>
+
+        <p>The Kernel Post&rsquo;s framing is the right calibration and we adopt it: <strong>narrower than the panic, still bad</strong>. The public evidence describes a tool-use workflow leaking an identifier into outbound requests &mdash; not a compromise of Anthropic accounts, tokens, or repositories, for which no evidence has surfaced. But &ldquo;only the User-Agent, only on some sites&rdquo; misunderstands the agentic threat model. A coding assistant composes requests to arbitrary third parties on the user&rsquo;s behalf, continuously. If it can silently attach a persistent personal identifier to those requests, the user&rsquo;s privacy boundary becomes <strong>every target site&rsquo;s log-retention policy</strong> &mdash; a bad assumption on the open web, and one the reporter&rsquo;s scam-mail surge makes concrete rather than theoretical.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Update past 2.1.317 and verify the guard actually loaded.</strong> Check <code>/plugins</code> for the privacy mod in the exact environment your team uses &mdash; the thread shows documented-does-not-equal-enabled &mdash; and treat absence on a current version as a finding, not a display quirk.</li>
+          <li><strong>Search session logs for your address.</strong> Grep recent tool-call transcripts and shell history for the account email appearing inside <code>User-Agent</code>, <code>curl</code> compositions, and fetch calls, especially against public data APIs with contact-header policies. One commenter&rsquo;s working mitigation is an explicit <code>CLAUDE.md</code> User-Agent policy: the address may appear only for pre-approved sites whose policy demands it, never elsewhere.</li>
+          <li><strong>Treat any address that ever left the machine as burned for spam purposes.</strong> A leaked address cannot be un-logged from third-party servers. Expect targeted phishing that references the user&rsquo;s real tooling and recent searches, and brief anyone whose address the agent may have carried.</li>
+          <li><strong>Watch for the context-removal update, then confirm the <code># userEmail</code> block is actually gone.</strong> A per-request ask is a gate on a road the identifier should not be traveling at all. Until the address leaves the system prompt, assume every composed request is a potential carrier and keep the explicit header policy in place.</li>
+        </ul>
+
+        <p><em>Verification note: read first-hand via the GitHub API &mdash; issue #107757 in full (title, 5 November 2026 creation, open state, 2.1.318/darwin environment, reporter&rsquo;s scam-mail and harness-removal demands, 729 +1 reactions, all cited comments including the cc-plugin-privacy announcement, the 2.1.318 absence report, the Wikipedia/SEC mechanism discussion, and the reaction-rank/GDPR remarks) and issue #81138 (25 July 2026, open, 90 +1, # userEmail block, ~/.claude.json sourcing, v2.1.220 bundle evidence); the anthropics/claude-code releases API for v2.1.317 (ask-before-sending entry, published 3 November), v2.1.318, and v2.1.319; The Kernel Post&rsquo;s 8 November analysis in full (SEC 403/200 example, 2.1.319 test result, narrower-than-feared assessment, no-wider-compromise-evidence statement); and the Hacker News Algolia API confirming the 11 August User-Agent/curl thread. The 2.1.317 changelog entry and mod-source link are vendor-published; the context-removal plan is carried as attributed secondary reporting only. We did not run Claude Code, compose requests, inspect logs beyond the public thread, or contact any vendor.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://github.com/anthropics/claude-code/issues/107757?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">anthropics/claude-code#107757 &mdash; Bug Report: Privacy violation in User-Agent header (5 November 2026, open; 2.1.318; privacy-mod announcement and gap reports in comments)</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/issues/81138?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">anthropics/claude-code#81138 &mdash; Account email (PII) injected into the model&rsquo;s system prompt (25 July 2026, open; # userEmail block, ~/.claude.json sourcing)</a></li>
+          <li><a href="https://github.com/anthropics/claude-code/releases?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">anthropics/claude-code releases &mdash; v2.1.317 (ask-before-sending check, 3 November 2026), v2.1.318, v2.1.319</a></li>
+          <li><a href="https://kernelpost.com/claude-code-email-leak/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Kernel Post &mdash; Claude Code email leak appears narrower than feared (8 November 2026; SEC example, 2.1.319 test, audit checklist)</a></li>
+          <li><a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">al-ice.ai &mdash; Approved Once, Leaked Everywhere: Claude Code&rsquo;s &ldquo;Don&rsquo;t Ask Again&rdquo; File Put 2,539 Secrets on GitHub (November 2026)</a></li>
+          <li><a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">al-ice.ai &mdash; The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files (October 2026)</a></li>
+          <li><a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">al-ice.ai &mdash; The Guardrail Watched the Wrong Door: Session Inception Smuggled a Hook Past Claude Code (November 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-09-26">2026-09-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/gitlab-incoming-email-token-account-wide-push-ci-bypass/">GitLab’s Issue Email Is an Account-Wide Credential That Ignores Your IP Allowlist</a></h3><p>Aikido found GitLab’s incoming-email addresses embed an account-wide glimt- token: anyone holding one leaked address can push code, open merge requests, and run CI jobs across every project the account can reach — bypassing IP restrictions. GitLab calls it intended behavior.</p><a class="text-link" href="/posts/2026/09/gitlab-incoming-email-token-account-wide-push-ci-bypass/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-07">2026-11-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Approved Once, Leaked Everywhere: Claude Code&amp;rsquo;s &amp;quot;Don&amp;rsquo;t Ask Again&amp;quot; File Put 2,539 Secrets on GitHub</a></h3><p>Apiiro researchers found 104,185 public copies of Claude Code&amp;rsquo;s .claude/settings.local.json on GitHub; 1,122 hold at least one secret (1,379 distinct secrets in current copies, 2,539 across 1,994 repos including history, forks, shared settings and chat logs). The &amp;lsquo;Yes, and don&amp;rsquo;t ask again&amp;rsquo; approval saves exact commands verbatim, and the global git-excludes protection doesn&amp;rsquo;t travel with the project. Reported 6 November 2026; The Hacker News coverage 7 November.</p><a class="text-link" href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-02">2026-11-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Your Agent Reads the Hooks: testmetest Armed 42 GitHub Repos to Execute Through Claude, Gemini, Cursor, and VS Code</a></h3><p>JFrog Security Research reported 26 October 2026 that the testmetest npm worm campaign armed 42 third-party GitHub repositories across 11 legitimate owners with execution hooks for AI coding assistants, using polymorphic 13 MB publisher payloads sized to evade code search, a native-addon camouflage, a GitHub OIDC to npm token exchange publisher, and a live encrypted snapshot sink.</p><a class="text-link" href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

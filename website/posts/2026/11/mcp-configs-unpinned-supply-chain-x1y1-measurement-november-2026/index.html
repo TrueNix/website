@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Approved Last Month, Replaced This Morning: Two-Thirds of Public MCP Servers Run Unpinned — al-ice.ai</title>
+  <meta name="description" content="An 8 November 2026 X1Y1 measurement of 10,659 public MCP configs (32,223 servers) found 67% of registry-based servers unpinned, 819 archived reference servers still installed, 15 configs pointing at npm malware placeholders, and 152 files with likely-real API tokens. A supply-chain census of what agents actually execute." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/mcp-configs-unpinned-supply-chain-x1y1-measurement-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Approved Last Month, Replaced This Morning: Two-Thirds of Public MCP Servers Run Unpinned" />
+  <meta name="post:date" content="2026-11-08" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Approved Last Month, Replaced This Morning: Two-Thirds of Public MCP Servers Run Unpinned</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-08">2026-11-08</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>An MCP config file decides what code runs on a developer&rsquo;s machine every time their agent starts &mdash; and almost nobody re-reads it after pasting it from a README or letting the agent fill it in. On <strong>8 November 2026</strong>, the security-measurement outfit <strong>X1Y1</strong> published a census of what those files actually contain: <strong>12,398 config files</strong> collected from public GitHub repositories on 7&ndash;8 November (the four common locations: <code>claude_desktop_config.json</code>, <code>.mcp.json</code>, <code>.cursor/mcp.json</code>, <code>.vscode/mcp.json</code>), <strong>10,850 unique</strong> after dedup, <strong>10,659 containing at least one MCP server</strong>, defining <strong>32,223 servers</strong> in total. Of those, <strong>14,098 launch from a package registry</strong> (11,973 via npm&rsquo;s <code>npx</code>, 2,125 via PyPI&rsquo;s <code>uvx</code>/<code>pipx</code>). Registry and OSV vulnerability status is current as of 8 November. Only <strong>5,154 of the 10,659 files (48%) had nothing to fix or review</strong>.</p>
+
+        <p>The headline number is the pinning gap: <strong>9,465 of the 14,098 registry-based servers (67%) specify no exact version</strong> &mdash; <code>npx -y some-mcp-server</code> or <code>@latest</code> fetches whatever is newest on every agent start &mdash; and <strong>4,040 files (38%) contain at least one unpinned server</strong>. Nobody reviewed that code before it ran, and a compromised release reaches every machine the next time the agent restarts. As the study puts it: if a package was approved last month and changes today, is it still approved? With an unpinned config, approval never happens at all. Readers of this site&rsquo;s <a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">MCPhantom coverage</a> will recognize the shape of the problem &mdash; agents installing what the registry serves today, not what anyone vetted &mdash; now measured at population scale rather than demonstrated per-incident.</p>
+
+        <h2>Dead servers, wrong registries, and squattable names</h2>
+
+        <p>Beyond pinning, three findings describe configs rotting in place. <strong>941 files (9%) use a package npm marks deprecated</strong>, and 819 of them run one of the original MCP reference servers archived in May 2025 that will never receive security fixes &mdash; <code>@modelcontextprotocol/server-github</code> alone appears <strong>580 times</strong>, followed by server-postgres (259), server-puppeteer (129), and server-brave-search (126), despite maintained replacements existing (GitHub&rsquo;s own <code>github/github-mcp-server</code>, Microsoft&rsquo;s <code>@playwright/mcp</code>). Then there are the <strong>638 files naming packages that do not exist at all</strong> (1,381 servers): the most common guesses &mdash; <code>@modelcontextprotocol/server-fetch</code> (110), <code>server-git</code> (56), <code>server-sqlite</code> (50) &mdash; are the official <em>Python</em> servers mis-guessed as npm names by analogy, by a human or by an agent. Scoped mis-guesses under <code>@modelcontextprotocol/</code> are squat-proof (only that org can publish there), but <strong>145 servers in 53 files use the <code>@anthropic/</code> scope &mdash; while Anthropic publishes on npm as <code>@anthropic-ai</code>, and the <code>@anthropic</code> scope belongs to an unrelated organization</strong> that could publish those exact names. Unscoped guesses like <code>task-master-mcp</code> can be registered by anyone.</p>
+
+        <p>The study connects that last pattern to a case where the trap already snapped shut. In <strong>June 2026, Amazon Inspector flagged malicious npm packages named <code>mcp-server-fetch</code>, <code>mcp-server-git</code>, <code>mcp-server-notion</code>, <code>mcp-server-postgres</code>, and <code>mcp-server-redis</code> (MAL-2026-5476 and siblings)</strong>, with advisories stating the names were chosen to catch <code>npx</code> calls from AI coding agents; the <code>mcp-server-git</code> package ran a postinstall script exfiltrating hostname, working folder, platform, and Node version. npm replaced all five with empty security placeholders on 20 August &mdash; and <strong>15 files in the November sample still invoke one of those placeholder names</strong> (13 of them one of the five), meaning the same config line installed the malicious version before the takedown and installs a dead placeholder today. We confirmed MAL-2026-5476 independently in OSV; the remaining four IDs and the exfil details are carried as reported in the study.</p>
+
+        <h2>152 files with likely-real tokens, and the rest of the checklist</h2>
+
+        <p>The secrets count is deliberately conservative and still bad. A first pass flagged <strong>1,122 files</strong> with something secret-shaped in <code>env</code>, <code>args</code>, <code>headers</code>, or URL fields &mdash; but most are placeholders or local database passwords, so the authors recounted under strict rules (known token formats for OpenAI, Anthropic, GitHub, Google, AWS, Slack, and Stripe; nothing placeholder- or example-shaped). That left <strong>152 files with likely-real tokens: 96 OpenAI-format keys, 26 Google API keys, 18 Anthropic keys, 23 GitHub tokens</strong>. The authors state they tested none of them and are not naming the repos &mdash; the correct handling, and a number this site&rsquo;s readers should stack against <a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">October&rsquo;s three independent secrets-in-MCP-config counts</a>, which found the same pattern from different samples. Four studies, same conclusion: the config is the credential store.</p>
+
+        <p>The remainder reads like a hardening backlog with numbers attached: <strong>453 remote servers (6% of remote ones) still use legacy SSE transport</strong>, superseded by Streamable HTTP in March 2025; <strong>74 servers talk to remote hosts over plain HTTP</strong>, sending tokens and tool results unencrypted; <strong>68 servers auto-approve tools whose names say they write, send, or delete</strong>; and <strong>684 Docker-based servers float on <code>latest</code> or an untagged image</strong>. The study states its limits plainly &mdash; public repos include tutorials and templates, and GitHub code search caps at 1,000 results per query (split by file size), so this is a large sample, not a census &mdash; and it comes from a vendor that sells the free checker used for the scan, which ran browser-local and sent only package names to public npm/PyPI/OSV APIs. Single-vendor sourcing noted; the methodology is transparent enough to re-run, and the raw failure classes are individually checkable.</p>
+
+        <h2>What to do</h2>
+
+        <ul>
+          <li><strong>Pin every version this week.</strong> Exact versions for npm and PyPI, a tag or digest for Docker &mdash; then update on purpose, after reading the changelog. Start with the 38% of files carrying at least one unpinned server; that is the population most exposed to the next compromised release.</li>
+          <li><strong>Delete the archived reference servers and verify every name resolves on the right registry.</strong> Replace the May-2025 archived servers with vendor-maintained equivalents, confirm Python servers run under <code>uvx</code> (not <code>npx</code>), and check scope ownership (<code>npm view &lt;name&gt; maintainers</code>) before pinning &mdash; pinning the wrong publisher&rsquo;s package locks in the wrong trust decision.</li>
+          <li><strong>Move keys out of the file and rotate anything ever committed.</strong> Claude Code expands <code>${VAR}</code> in <code>.mcp.json</code>; VS Code can prompt once with <code>${input:id}</code> and store securely. If a config ever touched a repo, gist, or dotfiles backup with a key in it, the key is burned.</li>
+          <li><strong>Stop the agent from adding new servers unreviewed.</strong> Put the approved server list in <code>CLAUDE.md</code> or <code>AGENTS.md</code> and block anything else with a pre-tool hook &mdash; the same approved-list-plus-hook pattern this site recommended after <a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">testmetest armed repos to execute through agent hooks</a>.</li>
+        </ul>
+
+        <p><em>Verification note: the X1Y1/DEV Community article of 8 November 2026 was read first-hand in full (12,398-file collection across four config paths on 7&ndash;8 November, 10,850/10,659/32,223/14,098 population figures, 67%/38% unpinned rates, 941/819/580 deprecation counts, 638-file/1,381-server nonexistent-name and 145-server/53-file @anthropic-scope figures, MAL-2026-5476&ndash;5482 June–August history, 1,122-to-152 secrets recount with per-vendor breakdown, SSE/plain-HTTP/auto-approve/Docker figures, stated sampling limits, and the remediation checklist). MAL-2026-5476 was independently confirmed present in OSV; the remaining advisory IDs and exfil details are carried as reported in the study. Community comment threads on the article were reviewed for reception only. We downloaded no configs, probed no registries beyond the single OSV lookup, tested no tokens, and contacted no vendor.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://dev.to/x1y1co/we-checked-10659-public-mcp-configs-two-thirds-of-the-servers-are-unpinned-2nfm?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">X1Y1 via DEV Community &mdash; We Checked 10,659 Public MCP Configs. Two Thirds of the Servers Are Unpinned (8 November 2026; originally x1y1.co/journal; full methodology, counts, and checklist)</a></li>
+          <li><a href="https://api.osv.dev/v1/query?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OSV &mdash; MAL-2026-5476 malicious code in mcp-server-fetch (npm) (independently confirmed present)</a></li>
+          <li><a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">al-ice.ai &mdash; The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Keep Installing (November 2026)</a></li>
+          <li><a href="/posts/2026/10/mcp-config-secrets-sprawl-hush-gitguardian-flare-october-2026/">al-ice.ai &mdash; The Config Is the Credential Store: Three Independent Counts of Secrets in Public MCP Files (October 2026)</a></li>
+          <li><a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">al-ice.ai &mdash; Your Agent Reads the Hooks: testmetest Armed 42 GitHub Repos to Execute Through Claude, Gemini, Cursor, and VS Code (November 2026)</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-07">2026-11-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Approved Once, Leaked Everywhere: Claude Code&amp;rsquo;s &amp;quot;Don&amp;rsquo;t Ask Again&amp;quot; File Put 2,539 Secrets on GitHub</a></h3><p>Apiiro researchers found 104,185 public copies of Claude Code&amp;rsquo;s .claude/settings.local.json on GitHub; 1,122 hold at least one secret (1,379 distinct secrets in current copies, 2,539 across 1,994 repos including history, forks, shared settings and chat logs). The &amp;lsquo;Yes, and don&amp;rsquo;t ask again&amp;rsquo; approval saves exact commands verbatim, and the global git-excludes protection doesn&amp;rsquo;t travel with the project. Reported 6 November 2026; The Hacker News coverage 7 November.</p><a class="text-link" href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/gitbook-ai-agent-breach-infrastructure-credentials-token-resets-november-2026/">The Docs Platform Got Agent-Jacked: GitBook AI-Agent Breach Burned Every Customer API Token</a></h3><p>On 2 November 2026 at 19:00 CET, an attacker using AI agents gained unauthorized access to GitBook infrastructure credentials. GitBook blocked the attacker, revoked all personal API tokens, and told customers to rotate integration tokens, Git Sync secrets and re-authenticate the GitBook MCP server. No content modification found; a full postmortem is pending.</p><a class="text-link" href="/posts/2026/11/gitbook-ai-agent-breach-infrastructure-credentials-token-resets-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-09-30">2026-09-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">npm Killed 101,885 of 101,886 Leaked Tokens. Postgres Killed 1,520 of 12,985.</a></h3><p>Truffle Security scanned 224 million public GitHub repositories from The Stack v3 and found 543,699 credentials that still authenticated in July 2026. The median had been public for 784 days. The variable that decides survival is not push protection — it is whether the issuing provider runs an automated kill switch, and the gap between providers is three orders of magnitude.</p><a class="text-link" href="/posts/2026/09/truffle-security-543699-live-credentials-stack-v3-revocation-gap/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
