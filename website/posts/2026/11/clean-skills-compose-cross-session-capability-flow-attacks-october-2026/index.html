@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clean Skills, Dirty Chains: Cross-Session Artifacts and Capability-Flow Composition Turn Benign Skills Into Attacks — al-ice.ai</title>
+  <meta name="description" content="Two October 2026 papers show the per-skill audit is insufficient: SkillRelayBench (arXiv:2610.13227) reaches 46.7-77.4% attack success via persistent artifacts across sessions on Codex, Gemini and Claude Code, and KnotScryer (arXiv:2610.32155) finds 612 exploitable chains among 13,598 individually clean ClawHub skills — 13.7% of them composed entirely of scanner-approved parts." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/clean-skills-compose-cross-session-capability-flow-attacks-october-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Clean Skills, Dirty Chains: Cross-Session Artifacts and Capability-Flow Composition Turn Benign Skills Into Attacks" />
+  <meta name="post:date" content="2026-11-09" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Clean Skills, Dirty Chains: Cross-Session Artifacts and Capability-Flow Composition Turn Benign Skills Into Attacks</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-09">2026-11-09</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Every skill scanner in production answers one question: is <em>this</em> skill malicious? Two October 2026 papers show why that is the wrong unit of analysis. <strong>SkillRelayBench</strong> (arXiv:2610.13227, 9 October) demonstrates attacks that cross session boundaries through the files, configurations and cached data one skill leaves behind for the next &mdash; reaching <strong>46.7&ndash;77.4% attack success</strong> across Codex CLI, Gemini CLI and Claude Code. And <strong>KnotScryer</strong> (arXiv:2610.32155, 23 October) finds <strong>612 insecure compositions among 13,598 individually clean ClawHub skills</strong> &mdash; chains the authors explicitly compare to return-oriented programming, assembling benign gadgets into a malicious whole. In <strong>13.7%</strong> of the detected chains, every component had been labeled safe by a single-skill scanner.</p>
+
+        <h2>Relay attacks: the filesystem as the second prompt</h2>
+
+        <p>The SkillRelayBench authors characterize three propagation mechanisms: <strong>instruction propagation</strong> (malicious effects travel as instructions embedded in artifacts a later skill reads), <strong>data-boundary violation</strong> (data crosses a trust boundary when a downstream skill consumes an upstream skill&rsquo;s leftovers), and <strong>evidence poisoning</strong> (falsified records steer later reasoning). The benchmark is <strong>270 adversarial cases drawn from 30 cross-session composition scenarios across ten domains</strong>; evaluation over seven models shows attack-chain success rates of <strong>35.6&ndash;61.1%</strong>, covering all five target consequence categories. Their defense, <strong>SkillRelayGuard</strong>, restores artifact provenance context and adds pre-execution advisory review while leaving the final call to the agent &mdash; cutting overall attack success from <strong>69.5% to 10.9%</strong> (chains from 54.8% to 10.0%) while <em>raising</em> legitimate task completion from 79.6% to 87.5%. The mechanism should feel familiar to readers of this site: <a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">session inception smuggled a hook past the guardrail through a child session</a>, and <a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">testmetest armed repos to execute through hooks agents read</a> &mdash; the relay paper systematizes the same shape into files, configs and cached data persisting across sessions.</p>
+
+        <h2>Gadget chains: ROP, but the gadgets are skills</h2>
+
+        <p>KnotScryer attacks the problem statically. Each skill is abstracted into a capability summary; skills become nodes in a <strong>Skill Capability-Flow Graph</strong> whose edges are cross-skill information flows; a provenance-tracking search follows protected or untrusted data along handoff edges to operations that should never receive it; a two-layer verification replays the flow and applies a task-anchored LLM audit. The threat model is the sobering part: the attacker <strong>cannot manipulate user inputs, cannot publish malicious skills, and cannot modify the agent framework</strong> &mdash; they can only observe what is already public and wait for a victim to install a dangerous combination. Against that weak attacker, 612 chains validated as consistently exploitable across three agent frameworks and three LLMs, beating tag-match and graph-only baselines from 16.5&ndash;18.2% to <strong>85.6%</strong> exploitation while shrinking the search space 85.3%.</p>
+
+        <p>Read together with the <a href="/posts/2026/10/arxiv-2610-11169-skill-constellations-dated-copy-network-agent-skills/">2.2-million-copy lineage census</a>, the implication is uncomfortable: mass reuse plus per-skill auditing equals mass-distributed gadget libraries. And the <a href="/posts/2026/11/mcp-configs-unpinned-supply-chain-x1y1-measurement-november-2026/">unpinned-MCP measurement</a> shows the combinations themselves drift over time &mdash; a composition judged safe at install month can become unsafe when any component updates. Approving skills one at a time is necessary and no longer sufficient; the approval has to cover the <strong>composition</strong>, recomputed as the set changes &mdash; which is the same conclusion the <a href="/posts/2026/11/microsoft-apm-agent-package-manager-dependabot-version-updates-november-2026/">APM lockfile model</a> reaches from the dependency side.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>Extend skill review from single packages to <strong>installed sets</strong>: model what each skill&rsquo;s outputs can reach in every other skill&rsquo;s inputs before approving a combination, and re-check on every update.</li>
+          <li>Track <strong>artifact provenance across sessions</strong> &mdash; which skill wrote the file, config or cache your agent is about to read &mdash; and surface that lineage at execution time, the SkillRelayGuard pattern.</li>
+          <li>Treat &ldquo;passed a single-skill scanner&rdquo; as a hygiene signal, not a safety verdict: 13.7% of KnotScryer&rsquo;s chains were built entirely from scanner-approved parts.</li>
+          <li>Constrain the gadget supply: least-privilege skill installation shrinks the composition space an attacker&rsquo;s observed-public-skills threat model can exploit.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the arXiv records and full HTML texts of arXiv:2610.13227 (published 9 October 2026; authors Dianshu Liao, Shidong Pan, Guangdong Bai, Zhenchang Xing, Xiaoyu Sun) and arXiv:2610.32155 (published 23 October 2026; authors Yihao Li, Chuanpu Fu, Yizhou Zhao, Miao Chen, Qi Li, Ke Xu) first-hand: the SkillRelayBench design (270 cases, 30 scenarios, ten domains), the 46.7&ndash;77.4% ASR and 35.6&ndash;61.1% ACSR ranges, the IP/DBV/EP mechanism taxonomy, the SkillRelayGuard figures (69.5% to 10.9% ASR, 54.8% to 10.0% ACSR, 79.6% to 87.5% completion), the KnotScryer design (SCFG, provenance-aware search, two-layer verification), the 13,598-skill / 612-composition result, the ROP analogy, the 13.7% all-safe composition figure and the GLM-5.1 baseline comparison are the authors&rsquo; reported figures. We installed no skills, ran no agent framework and validated no chain. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2610.13227?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.13227 &mdash; Understanding and Mitigating Cross-Session Attacks via Persistent Artifacts in Agent Skill Composition (9 October 2026; record and full text read first-hand)</a></li>
+          <li><a href="https://arxiv.org/abs/2610.32155?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2610.32155 &mdash; Detecting Insecure Compositions of Clean Agent Skills via Capability-Flow Graph Analysis (23 October 2026; record and full text read first-hand)</a></li>
+          <li><a href="/posts/2026/11/session-inception-child-claude-session-hook-guardrail-bypass-october-2026/">al-ice.ai &mdash; The Guardrail Watched the Wrong Door: Session Inception Smuggled a Hook Past Claude Code in a Child Session</a></li>
+          <li><a href="/posts/2026/10/arxiv-2610-11169-skill-constellations-dated-copy-network-agent-skills/">al-ice.ai &mdash; Only 20.9% of Agent Skills Follow Their Source: arXiv:2610.11169 Dates 2.2 Million Copies and Finds Stars Point the Wrong Way</a></li>
+          <li><a href="/posts/2026/11/mcp-configs-unpinned-supply-chain-x1y1-measurement-november-2026/">al-ice.ai &mdash; Approved Last Month, Replaced This Morning: Two-Thirds of Public MCP Servers Run Unpinned</a></li>
+          <li><a href="/posts/2026/11/microsoft-apm-agent-package-manager-dependabot-version-updates-november-2026/">al-ice.ai &mdash; The Instructions Got a Lockfile: Microsoft&rsquo;s APM Turns Agent Skills Into Dependencies, and Dependabot Now Bumps Them</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-09">2026-11-09</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/pycache-trap-bytecode-cache-skill-scanner-bypass-october-2026/">What the Runtime Runs Is Not What the Reviewer Read: PyCache Trap Hid Malice in .pyc Past Seven Skill Scanners</a></h3><p>arXiv:2610.10612 (7 October 2026) pairs benign Python source with a substituted .pyc bytecode cache and reaches 94-100% attack success across 100 skills and seven scanners — Cisco, HSS, Auditor, SlowMist, Vetter, SkillFortify and ExecScan — with no semantic recognition of the cache-resident behavior. The authors&amp;rsquo; execution-aware validation detects all 100 substitutions.</p><a class="text-link" href="/posts/2026/11/pycache-trap-bytecode-cache-skill-scanner-bypass-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">The Injection That Outlives the Chat: A New Study Lands Every NIST Attack Goal in ChatGPT, Claude and Gemini Memory</a></h3><p>A paper posted to arXiv on 20 October 2026 by researchers at USP and UDESC (2610.28810) builds a general threat model for memory injection and tests it against ChatGPT Instant 5.3, Claude Sonnet 4.6 and Gemini 3 Flash on paid business plans. All four NIST attacker goals land collectively; on Claude, organization instructions and a workspace Google Drive connector turn one privileged account into persistent prompt logging and organisation-wide behaviour change. The authors count roughly half their derived mitigations as unimplemented across all three services as of June 2026.</p><a class="text-link" href="/posts/2026/10/memory-injection-nist-goals-chatgpt-claude-gemini-usp-udesc/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-07">2026-10-07</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Screening the Input Is Too Early, Grading the Run Is Too Late — arXiv:2610.05163 Audits at the Action Boundary</a></h3><p>A 4 October 2026 paper attacks Claude Code and Codex in their native runtimes with staged prompt injection across eight workflows, seven goals and six injection surfaces, then argues the only viable intervention point is immediately before each consequential action. Its training-free auditor reaches 86% block recall at a 6–8% false-block rate.</p><a class="text-link" href="/posts/2026/10/arxiv-2610-05163-staged-prompt-injection-boundary-action-auditing/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
