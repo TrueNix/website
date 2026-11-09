@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Install Was the Infection: strutil-core Brought a Shai-Hulud-Descendant Worm to RubyGems — al-ice.ai</title>
+  <meta name="description" content="Socket Threat Research reported 6 November 2026 that strutil-core 1.0.1 on RubyGems ran a 5.48 MB install-time worm: a later build of the testmetest/Miasma family that steals credentials from 51 stores including agent configs, poisons AI tools via MCP servers and hooks, and wipes the home directory when a stolen GitHub token is revoked. Removed after about five hours; no confirmed victims." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/strutil-core-rubygems-shai-hulud-worm-ai-tool-poisoning-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Install Was the Infection: strutil-core Brought a Shai-Hulud-Descendant Worm to RubyGems" />
+  <meta name="post:date" content="2026-11-09" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Install Was the Infection: strutil-core Brought a Shai-Hulud-Descendant Worm to RubyGems</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-09">2026-11-09</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p><strong>Socket Threat Research</strong> reported on <strong>6 November 2026</strong> that <code>strutil-core</code> version <strong>1.0.1</strong> on RubyGems ran a <strong>5.48&nbsp;MB credential-stealing worm at install time</strong>. The RubyGems account <code>jamnajiea</code> published a clean 1.0.0 on <strong>1 November at 02:19:56 UTC</strong> and pushed the malicious 1.0.1 less than two hours later at <strong>04:05:04 UTC</strong>. Socket&rsquo;s AI Scanner flagged the bundled payload as known malware at <strong>04:06:14 UTC &mdash; seventy seconds after publication</strong> &mdash; and RubyGems removed both versions roughly five hours later, between 08:52 and 09:13 UTC. Socket found no public projects depending on the gem and has <strong>confirmed no victims and no downstream packages the worm infected from this host</strong>. The payload is what makes the incident worth studying: a new build of the <strong>testmetest worm</strong> from the <strong>Miasma family</strong> that grew out of the publicly released Shai-Hulud toolkit &mdash; and the first build Socket has tied to <strong>RubyGems</strong>.</p>
+
+        <h2>A string helper with a JavaScript worm attached</h2>
+
+        <p>The gemspec describes <code>strutil-core</code> as lightweight string helpers &mdash; slug, truncate, normalize &mdash; and the Ruby library implements exactly one of them. The malware lives in the declared <strong>native extension</strong>: <code>ext/strutil-core/extconf.rb</code> contains no build logic. On Linux or macOS (x86-64 or ARM64) it downloads the <strong>Bun 1.2.18 runtime from Bun&rsquo;s official GitHub releases</strong> into a temporary directory, runs the adjacent <code>index.js</code> with it, cleans up, and writes a Makefile whose targets do nothing so the install finishes without errors. No application ever has to require the gem. Running <code>gem install</code> &mdash; or a <code>bundle install</code> resolving to it &mdash; is the whole infection chain. Bitbison&rsquo;s sandbox run of the clean 1.0.0 recorded no malicious behavior, which fits a clean seed release followed by an injected patch.</p>
+
+        <p>The sharpest detail in Socket&rsquo;s analysis is that <strong>the gem is the worm&rsquo;s own RubyGems injector output</strong>. The decoded payload contains a RubyGems propagation module that, given a stolen RubyGems API key, downloads each publishable gem, adds the payload plus an installer, bumps the gemspec version, and pushes the rebuilt gem with a <code>User-Agent</code> imitating the gem client. Filling the payload&rsquo;s installer template with its own constants reproduces the shipped <code>extconf.rb</code> <strong>byte-for-byte</strong> (SHA-256 <code>c5264f3b&hellip;9c749</code>). Thirty-three of the installer&rsquo;s thirty-six non-empty lines appear verbatim in a deobfuscated copy of the <strong>June 2026 Miasma payload</strong> published for defensive research. That also explains the sloppy version string: the injector bumps the gemspec but never edits existing source, so the malicious 1.0.1 still declares <code>VERSION = '1.0.0'</code>. The November build changes four things from June &mdash; Bun 1.2.18 instead of 1.3.13, a split download URL that breaks naive static signatures on the Bun releases string, a newer client User-Agent, and added progress logging with a dry-run mode.</p>
+
+        <h2>Fifty-one credential stores, runner memory, and a signed backdoor</h2>
+
+        <p>After a locale check that exits on systems reporting Russian, Belarusian, Kazakh, Uzbek, Kyrgyz, Tajik, Armenian, Azerbaijani, Ukrainian, Georgian, Turkmen or Moldovan locales, the payload collects cloud, registry, Git host, SSH, Docker, Kubernetes, Vault, password-manager, OS-keychain, wallet and <strong>AI coding tool credentials &mdash; including <code>.claude/.credentials.json</code> and <code>.codex/auth.json</code></strong>, which Bitbison&rsquo;s sandbox confirmed among 51 stores read. With AWS credentials it calls STS, enumerates Secrets Manager secrets and SSM parameters across <strong>17 regions</strong>, and requests ECR tokens across 11. Inside GitHub Actions it hunts the runner worker process through <code>/proc</code> and pipes an embedded Python script through <strong>passwordless <code>sudo</code> to scrape secrets from worker memory</strong> &mdash; the technique from the March 2025 <code>tj-actions/changed-files</code> compromise &mdash; then kills the StepSecurity Harden-Runner container through the Docker socket and installs a privileged Alpine container granting the runner passwordless sudo. Results are encrypted with AES-256-GCM with RSA-OAEP-wrapped keys and posted to <code>paleasbest[.]top/v1/api</code>, falling back to public GitHub repositories (description <code>project-utils</code>, generated <code>adjective-noun-number</code> names, <code>AutoSyncComplete</code> commit prefix) or GitLab.</p>
+
+        <p>Persistence is a Python backdoor, <code>sync.py</code>, installed as a systemd user service (<code>pkg-runtime</code>) or LaunchAgent that <strong>hourly searches public GitHub commits for the marker <code>msync-3f7a</code> and executes any Base64-encoded URL carrying a valid RSA-PSS signature</strong> from the operator&rsquo;s key. The signature covers the URL, not the downloaded script &mdash; a command channel with no third-party takeover path but also no victim-side revocation. The <code>sync.py</code> hash, the command marker, the commit prefix, and the wiper below are all byte-identical to the earlier <a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">testmetest build that armed 42 GitHub repositories</a>; Socket assesses strutil-core as a later build with new infrastructure, and cautions that shared code from a toolkit public since May 2026 does not establish a shared operator. For the longer lineage, see our <a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">retrospective on the s1ngularity, Shai-Hulud and Teampcp campaigns</a> and the <a href="/posts/2026/06/miasma-npm-worm-binding-gyp-ai-coding-agents/">June Miasma npm worm</a>.</p>
+
+        <h2>The agent config is the propagation path</h2>
+
+        <p>The worm treats AI tooling as both credential source and execution trigger. Locally it copies itself to <code>~/.config/index.js</code> and rewrites every writable <code>settings.json</code>, <code>config.json</code>, <code>mcp.json</code> and <code>.aider.conf.yml</code> it finds: MCP configurations gain a server named <strong><code>workspace-tools</code> that runs the payload with node</strong>, and other configurations gain SessionStart hooks. With stolen Git credentials the same logic is committed into repositories &mdash; <code>.github/init.js</code>, <code>.claude/settings.json</code>, <code>.cursor/mcp.json</code>, Gemini settings, <code>CLAUDE.md</code>, <code>AGENTS.md</code> instructing agents to run a setup script first, and a <code>.vscode/tasks.json</code> that fires on folder open. Beyond RubyGems the bundle carries republishing routines for <strong>npm and PyPI</strong>, Artifactory credential harvesting, a fake CodeQL workflow exfiltrating secrets as a scan artifact, a GitLab <code>cache_sync</code> job requesting OIDC tokens, short-lived <code>chore/ci-</code> branches, and SSH spreading over <code>~/.ssh/known_hosts</code> &mdash; all confirmed present in code, with <strong>no confirmed downstream publication from this gem</strong>.</p>
+
+        <p>Then the deterrent: a monitor called <code>net-health-checker</code>, installed only on the GitHub-token path, checks each stolen token every 45 seconds for 48 hours (its own log line claims 24). On HTTP 401 or 403 it runs <code>rm -rf ~/; rm -rf ~/Documents</code>. <strong>Revoking the token &mdash; the first thing a responder does &mdash; is exactly what triggers deletion</strong>, with the token sitting in plaintext and the service set to survive logout. Socket also ties a PyPI sibling to the same endpoint: <code>pystr-codec</code> 0.1.0&ndash;0.1.2, documented by Kamil Ma&#324;kowski (MAL-2026-18432), appeared 31 October between 22:21 and 23:32 UTC &mdash; the last one less than three hours before strutil-core 1.0.0 &mdash; using a <code>.pth</code> startup trigger and a separate build. The public download counter showed 89 installs, all on the clean 1.0.0 and most likely mirrors and scanners; because the payload persists outside the gem directory and steals long-lived credentials, <strong>uninstalling the gem does not undo an infection</strong>.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>If any system installed <code>strutil-core@1.0.1</code>, treat the host and <strong>every credential reachable from it</strong> as compromised: isolate first, then rotate cloud, registry, Git host, SSH, Vault, wallet and AI-tool credentials &mdash; do not merely revoke the GitHub token, since revocation fires the wiper.</li>
+          <li>Hunt for the persistence markers before revoking anything: <code>net-health-checker</code> and <code>pkg-runtime</code> services, <code>~/.local/share/runtimes/sync.py</code>, <code>~/.config/index.js</code>, and unexpected <code>workspace-tools</code> MCP servers or SessionStart hooks in agent configs. Back up user data out-of-band first.</li>
+          <li>Audit repositories touched from an infected host for committed <code>.github/init.js</code>, <code>CLAUDE.md</code>/<code>AGENTS.md</code> setup-script instructions, rogue MCP servers, and <code>.vscode/tasks.json</code> folder-open tasks &mdash; opening them in an AI tool can re-run the worm depending on workspace-trust settings.</li>
+          <li>Pin and hash-verify install-time hooks as a class: <code>extconf.rb</code>, <code>binding.gyp</code>, preinstall scripts and <code>.pth</code> files execute before any review step. Scanner coverage that flagged this in 70 seconds is the exception; the five-hour window and the sibling PyPI packages argue for allowlisted registries and egress control on build hosts.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read Socket&rsquo;s Threat Research report first-hand in full (Kush Pandya, 6 November 2026: timeline, Bun 1.2.18 install chain, injector byte-identity, 51-store collection, Runner memory scraping, Harden-Runner handling, exfil endpoints, sync.py backdoor, agent-config poisoning inventory, wiper mechanics, testmetest/Miasma lineage table, pystr-codec sibling, exposure window, and recommendations). The ruby-digger download count, Bitbison sandbox results, OpenSSF malicious-packages PR 1701, and MAL-2026-18432 attribution are carried via Socket&rsquo;s report, which states them explicitly; Socket itself notes it did not test whether the collection endpoint is live. We installed nothing, ran no gem, queried no C2, and downloaded no payload. No victims are confirmed, and we state none. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://socket.dev/blog/shai-hulud-descendant-malicious-ruby-gem?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Socket &mdash; Shai-Hulud Descendant Surfaces in Malicious Ruby Gem That Steals Credentials and Poisons AI Tools (6 November 2026; read first-hand)</a></li>
+          <li><a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">al-ice.ai &mdash; Your Agent Reads the Hooks: testmetest Armed 42 GitHub Repos to Execute Through Claude, Gemini, Cursor and OpenCode</a></li>
+          <li><a href="/posts/2026/10/s1ngularity-shai-hulud-teampcp-retrospective-ai-agents-living-off-land/">al-ice.ai &mdash; Your Agent Was the Payload: s1ngularity, Shai-Hulud, and Teampcp, One Year On</a></li>
+          <li><a href="/posts/2026/10/warden-stealer-rust-maas-ai-agent-token-theft-claude-codex-cursor/">al-ice.ai &mdash; The Infostealer That Reads Your Agent Config: Warden Stealer Harvests Claude, Codex, Grok, and Cursor Tokens</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-02">2026-11-02</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Your Agent Reads the Hooks: testmetest Armed 42 GitHub Repos to Execute Through Claude, Gemini, Cursor, and VS Code</a></h3><p>JFrog Security Research reported 26 October 2026 that the testmetest npm worm campaign armed 42 third-party GitHub repositories across 11 legitimate owners with execution hooks for AI coding assistants, using polymorphic 13 MB publisher payloads sized to evade code search, a native-addon camouflage, a GitHub OIDC to npm token exchange publisher, and a live encrypted snapshot sink.</p><a class="text-link" href="/posts/2026/11/testmetest-npm-worm-42-armed-github-repos-ai-hooks-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-23">2026-10-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/pingcap-tidb-cloud-breach-control-plane-source-code-october-2026/">The Database Was Never Touched. Everything Around It Was: PingCAP&amp;rsquo;s TiDB Cloud Breach</a></h3><p>PingCAP confirmed on 19 October 2026 that stolen service-account credentials gave intruders a month of access to TiDB Cloud internal systems, copying user records, SQL-editor contents, billing data and encrypted API keys. The intruders&amp;rsquo; leak post claims 10.6 terabytes including plaintext keys and 413 private repos. The collision between the two accounts &amp;mdash; encrypted versus plaintext keys, mismatched windows &amp;mdash; is the story.</p><a class="text-link" href="/posts/2026/10/pingcap-tidb-cloud-breach-control-plane-source-code-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-21">2026-10-21</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">The Key Was Never on Your Server: Stolen UpdraftCentral Keys Backdoored WordPress Sites, and the First Emergency Patch Deleted Nothing</a></h3><p>TeamUpdraft confirmed unauthorised access to its website over 17&amp;ndash;18 October 2026 and says the attacker probably took the customer database, including the UpdraftCentral, UpdraftVault and UpdraftClone connection keys. Those keys sign commands that install plugins on more than four million UpdraftPlus sites. Researchers who were hit documented 99 backdoor plugin names, a key the owner may never have knowingly created, and an emergency release that because of a bug deleted no keys at all.</p><a class="text-link" href="/posts/2026/10/updraftcentral-stolen-keys-wordpress-backdoor-plugins-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
