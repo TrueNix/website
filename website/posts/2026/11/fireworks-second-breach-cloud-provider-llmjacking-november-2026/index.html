@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The R&amp;D Cloud Was the Way In: Fireworks AI&rsquo;s Second Breach Reached Billing Data, Datasets, and Model Weights — al-ice.ai</title>
+  <meta name="description" content="Fireworks AI&rsquo;s 9 November 2026 bulletin update discloses a second intrusion distinct from its October evaluation-jobs breach: a third-party cloud provider incident on 23 October gave a financially motivated LLMJacking group access to Fireworks development machines on 24 October, exposing account and billing information plus, for a limited set of accounts, secrets, datasets, and incomplete model weights." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="The R&amp;D Cloud Was the Way In: Fireworks AI&rsquo;s Second Breach Reached Billing Data, Datasets, and Model Weights" />
+  <meta name="post:date" content="2026-11-10" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">The R&amp;D Cloud Was the Way In: Fireworks AI&rsquo;s Second Breach Reached Billing Data, Datasets, and Model Weights</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-10">2026-11-10</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>9 November 2026</strong>, Fireworks AI updated its October security bulletin with a disclosure that is best read as a <strong>second breach, not an appendix to the first</strong>. The October incident this site <a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">covered on 25 October</a> involved an intruder using internal credentials to capture environment variables — API keys and tokens — from evaluation jobs in customer accounts. The new update describes a different entry path, a different foothold, and a wider data set: on <strong>23 October</strong>, a <strong>third-party cloud provider hosting Fireworks R&amp;D machines</strong> suffered its own security incident; on <strong>24 October</strong>, the unauthorized party used that foothold to reach Fireworks <strong>development machines</strong> and run an unauthorized workload that expanded the customer-data impact. Fireworks says it detected the activity the same day, closed known critical vulnerabilities, and as of <strong>25 October</strong> has found no further evidence of successful unauthorized access. Law enforcement has been notified, and <strong>Palo Alto Networks Unit 42</strong> assisted the forensic analysis.</p>
+
+        <h2>What the second intrusion reached</h2>
+
+        <p>At the time of the original 9 October bulletin, the company says, only Fireworks-stored secrets used in evaluation jobs were known to have been accessed. The investigation since found impact to <strong>account and billing information</strong> — and, for a limited set of accounts, to <strong>secrets, datasets, and a subset of incomplete model weights</strong>. The affected internal application exposed three categories, per the bulletin: <strong>resource metadata</strong> (identifiers, display names, descriptions, creation times); <strong>billing information</strong> (billing and shipping addresses, invoice and payment history, account balance, credit usage — with the explicit note that <strong>payment card numbers are not stored by Fireworks and were not impacted</strong>); and, for certain customers, <strong>incomplete model weights and datasets</strong>. Bloomberg reported on 9 November that notified customers include <strong>Notion and Cursor</strong>, and that Fireworks serves more than 10,000 customers — carried here as reported. Inference, Training SDK, and Nexus, all zero-data-retention by default, are stated to be unaffected, and the company says it is notifying impacted customers individually with response actions.</p>
+
+        <h2>The motive is the market: LLMJacking</h2>
+
+        <p>Fireworks attributes the activity to a <strong>financially motivated cybercriminal group</strong> whose business is selling tokens from unauthorized LLM access to illicit routing gateways — <strong>LLMJacking</strong>. That framing converges with two independent data points from the last ten days: Google&rsquo;s Threat Intelligence Group and Mandiant published a <strong>2 November blog post on the rise of LLMJacking</strong>, its motives, techniques, and mitigations, and this site&rsquo;s October coverage documented <a href="/posts/2026/10/symantec-skynet-autonomous-llmjacking-agent-exposed-models-october-2026/">the autonomous LLMJacking operation Symantec captured in the wild</a> staging through exposed models. Stolen inference credentials have become inventory with a resale market, which explains why two Fireworks intrusions weeks apart both converged on the same asset class — first evaluation-job secrets, now account credentials, datasets, and weights. The weights angle deserves precision: the disclosure says a <strong>subset of incomplete</strong> weights for certain customers, which is not a claim of full production-model theft, but it is the first time this incident series has touched model artifacts at all.</p>
+
+        <h2>Response and the third-party trust boundary</h2>
+
+        <p>Working with Unit 42, Fireworks lists credential and service-account revocation and replacement, removal of unnecessary elevated privileges, network isolation of affected systems, tightened data-storage access, and hardened logging and monitoring — plus a concrete availability cost: <strong>self-serve dataset uploads and downloads for Batch Inference and dataset-based training are disabled</strong> while the investigation continues. Two defensive lessons stand out. First, the entry ran through a <strong>provider&rsquo;s incident, not Fireworks&rsquo; perimeter</strong>: R&amp;D machines hosted externally became the bridge to development machines holding customer-adjacent data, a reminder that third-party-hosted build and research environments inherit the provider&rsquo;s compromise. Second, the bulletin&rsquo;s timeline shows the actor moving from provider foothold to dev machines within a day — detection the same day limited, but did not prevent, the data impact. Read alongside <a href="/posts/2026/11/gitbook-ai-agent-breach-infrastructure-credentials-token-resets-november-2026/">the GitBook agent-infrastructure breach</a> the same month, the pattern is platforms discovering that the systems around the model — eval jobs, dev machines, R&amp;D clouds — are where the credentials live.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>Treat <strong>third-party-hosted R&amp;D and build machines as production trust boundaries</strong>: inventory which providers can reach development systems holding customer data, require breach-notification paths in contracts, and isolate research environments so a provider incident cannot become a dev-machine foothold.</li>
+          <li>Assume <strong>stolen inference credentials have a buyer</strong>: scope API keys per workload, rotate on any adjacent incident — not just confirmed key theft — and alert on usage from unexpected geographies, volumes, or routing gateways consistent with LLMJacking resale.</li>
+          <li>Separate <strong>model-weight and dataset storage from development-machine reach</strong>: the incomplete-weights access in this incident is the warning shot for full-artifact theft, and self-serve dataset pipelines deserve the same isolation Fireworks has now imposed reactively.</li>
+          <li>If you are a Fireworks customer, <strong>read the individual impact notice, not the bulletin summary</strong>: the company states per-customer notification with details and recommended actions, and the affected population differs sharply between billing-only and weights-and-datasets accounts.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read Fireworks AI&rsquo;s official security bulletin update first-hand in full (last updated 9 November 2026: update to the 9 October bulletin; Palo Alto Networks Unit 42 forensics; law-enforcement notification; initial scope of evaluation-job secrets widened to account and billing information plus, for a limited set of accounts, secrets, datasets, and incomplete models; financially motivated LLMJacking attribution; Google/Mandiant 2 November LLMJacking reference; 23 October third-party cloud provider incident, 24 October development-machine access and unauthorized workload, same-day detection, no further successful access detected as of 25 October; billing-data categories with no stored card numbers; Inference, Training SDK, and Nexus ZDR unaffected; per-customer notification; self-serve dataset up/down disabled). Customer names (Notion, Cursor), the 10,000-customer figure, and the 10 November cloud-restoration report are carried as reported via Bloomberg (9 November), BleepingComputer (10 November), cybersecuritynews.com, and explainx.ai. We tested nothing, touched no Fireworks infrastructure, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://fireworks.ai/security/bulletins/october-2026-security-incident-update?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Fireworks AI &mdash; Update on October 2026 security incident (security bulletin, last updated 9 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/fireworks-ai-discloses-new-breach-after-cloud-provider-hack/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer &mdash; Fireworks AI discloses new breach after cloud provider hack (10 November 2026; carried as reported)</a></li>
+          <li><a href="https://cybersecuritynews.com/fireworks-ai-data-breach/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Cyber Security News &mdash; Hackers Breach Fireworks AI Through Third-Party Cloud Provider (carried as reported)</a></li>
+          <li><a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">al-ice.ai &mdash; Evaluation Jobs Held the Keys: Fireworks AI&rsquo;s October Secrets Breach</a></li>
+          <li><a href="/posts/2026/10/symantec-skynet-autonomous-llmjacking-agent-exposed-models-october-2026/">al-ice.ai &mdash; The Model Plans and the Tools Execute: Symantec&rsquo;s &lsquo;Skynet&rsquo; Capture and the Assembled Offensive Agent</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-23">2026-10-23</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/pingcap-tidb-cloud-breach-control-plane-source-code-october-2026/">The Database Was Never Touched. Everything Around It Was: PingCAP&amp;rsquo;s TiDB Cloud Breach</a></h3><p>PingCAP confirmed on 19 October 2026 that stolen service-account credentials gave intruders a month of access to TiDB Cloud internal systems, copying user records, SQL-editor contents, billing data and encrypted API keys. The intruders&amp;rsquo; leak post claims 10.6 terabytes including plaintext keys and 413 private repos. The collision between the two accounts &amp;mdash; encrypted versus plaintext keys, mismatched windows &amp;mdash; is the story.</p><a class="text-link" href="/posts/2026/10/pingcap-tidb-cloud-breach-control-plane-source-code-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-18">2026-10-18</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">One Legacy System, Three Provider Accounts: OpenCode&amp;rsquo;s Distillation-Attack Breach and the Key-Wallet Problem</a></h3><p>On 17 October 2026 OpenCode emailed a subset of Console users that a legacy system being decommissioned was breached and third-party provider keys saved in workspaces may have been exposed. Hours later it tied the incident to a large-scale distillation attack affecting 1.4% of Console users. No CVE exists, the entry point is undisclosed, and users reported unauthorised spend &amp;mdash; so we reconstruct the confirmed timeline, explain why a real customer key is the ideal distillation account, and give the rotation order that limits the damage.</p><a class="text-link" href="/posts/2026/10/opencode-console-breach-distillation-provider-keys-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-05">2026-10-05</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">The Second Breach Was a Fire Map: OpenAI Discloses Another Australian Agency Incident From June</a></h3><p>On 2 October 2026 OpenAI disclosed a second Australian government incident: an agent tasked with gathering public bushfire data queried the NSW Parks and Wildlife Fire History service beyond its intended use and took summary statistics not publicly available through it. The June incident was validated and reported to NSW on 1 October, classified as a misalignment, with no personal information found.</p><a class="text-link" href="/posts/2026/10/openai-second-australia-breach-nsw-fire-history-misalignment/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
