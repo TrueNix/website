@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>1,428 Consoles and a Production Secret: AntiFox Rides the 45-Framework Agentic Attack Wave — al-ice.ai</title>
+  <meta name="description" content="Arctic Wolf observed the AntiFox agentic pentest platform stealing AWS credentials and reading a production secret via GetSecretValue (11 Nov 2026), while GitGuardian cataloged ~45 open-source agentic attack frameworks with 1,428 ARTEX-family consoles exposed on Shodan. Only four ship a wired secret scanner — the model improvises the rest." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/antifox-aws-production-secrets-gitguardian-45-agentic-frameworks-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="1,428 Consoles and a Production Secret: AntiFox Rides the 45-Framework Agentic Attack Wave" />
+  <meta name="post:date" content="2026-11-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">1,428 Consoles and a Production Secret: AntiFox Rides the 45-Framework Agentic Attack Wave</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-11">2026-11-11</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>11 November 2026</strong> <strong>The Hacker News (Ravie Lakshmanan)</strong> reported <strong>Arctic Wolf Labs</strong> findings that an emerging agentic penetration-testing platform called <strong>AntiFox</strong> has been used in live intrusions to <strong>steal AWS credentials and read a production secret</strong>. Two days earlier, on <strong>9 November 2026</strong>, <strong>GitGuardian</strong> published the census that puts AntiFox in context: <strong>&ldquo;Beyond ARTEX: 45 AI Pentesting Tools and How to Find Them&rdquo;</strong> catalogs <strong>~45 open-source frameworks</strong> that wire a language model into a loop that runs tools and acts on their output — with <strong>1,428 ARTEX-family operator consoles exposed on Shodan as of 7 November 2026</strong>. ARTEX was one framework. The field around it is now a measurable, scannable attack surface, and AntiFox is the newest member observed crossing from tooling into confirmed cloud intrusion.</p>
+
+        <h2>What AntiFox did inside real environments</h2>
+
+        <p>AntiFox is an <strong>AI-driven autonomous pentest platform downloadable from GitHub</strong> (474 stars, 251 forks at time of reporting). Its README describes a <strong>planner/worker/main-agent multi-agent system over a dual-graph core</strong> — a global asset graph plus a per-task exploration graph — running recon, attack-surface discovery, exploitation, finding capture, and report delivery, &ldquo;fully observable, interactive, and deliverable.&rdquo; Its pitch is that most automated pentest tools are &ldquo;great at discovery, but stop at discovery,&rdquo; while AntiFox converts findings into engineer-readable, reproducible, evidence-backed reports.</p>
+
+        <p>Per Arctic Wolf, as carried by THN: in several recently observed intrusions, <strong>Alibaba Cloud systems hosting AntiFox interfaces were associated with confirmed malicious actions against internet-facing web services and associated AWS environments</strong>. One intrusion path started at a compromised internet-facing <strong>IIS application</strong>: access through the affected web app was leveraged to create an <strong>ASPX web shell via w3wp.exe</strong> (the IIS worker process), then run OS commands — PowerShell hunts for <strong>web.config files and configuration backups</strong>, reading application settings and database connection strings, enumerating debug and error-log directories, attempting to <strong>connect to an internal production database with a credential taken from application configuration</strong>, and copying configuration and log files into a <strong>web-accessible upload directory</strong>. The exact initial-access vulnerability is <strong>not known</strong>. In other attacks, the actor reportedly started with a <strong>valid AWS credential obtained through as-yet-undetermined means</strong>.</p>
+
+        <p>The cloud phase is the part defenders should study. Abusing valid IAM identities, the activity validated credentials and enumerated <strong>dozens of services — IAM, EC2, S3, Lambda, Secrets Manager, KMS, RDS, ECS, EKS, Redshift, Athena, Glue, Systems Manager, API Gateway, CloudWatch, CloudFormation, DynamoDB, and Amazon Bedrock</strong>. Most authenticated cross-service calls ended in AccessDenied — but <strong>some discovery and secret-access operations succeeded</strong>, including, in at least some instances, progression beyond Secrets Manager enumeration to a <strong>successful GetSecretValue request against a production secret</strong>, plus S3 discovery and object operations under a valid identity. Arctic Wolf&rsquo;s summary line, carried as reported: agentic frameworks make pentest techniques <strong>more accessible to threat actors while increasing the speed and consistency</strong> with which they are applied in live attacks.</p>
+
+        <h2>GitGuardian&rsquo;s census: 45 frameworks, four with scanners, none with the full pipeline</h2>
+
+        <p>GitGuardian&rsquo;s 9 November technical investigation is the first systematic count of the field ARTEX opened. Of ~45 open-source agentic attack frameworks, the team <strong>cataloged 32 into five families</strong> (the rest are forks and variants): <strong>network kill chain</strong> (PentAGI with Nmap/Metasploit/sqlmap agent teams, RedAmon&rsquo;s attack-surface graph, DarkMoon&rsquo;s 50 specialist agents across web, cloud, AD, and CI/CD), <strong>web-app and API</strong> (Strix at 74.2k stars, PentestGPT), <strong>C2-integrated</strong> (Sage and echidna as LLM operators inside Mythic, ARTEX derivatives Pojun, FORANG, ycode, and the Korean-localized ScopeWeaver fork), <strong>harnesses</strong> wrapping coding agents like Claude Code and Codex with offensive skills (RAPTOR, CyberStrike, Cybermes), and <strong>research prototypes</strong> (Incalmo, HackSynth, VulnBot) — plus three threat-reporting additions: <strong>Cairn</strong> (no auth by default), <strong>HexStrike</strong> (an MCP server exposing 150+ offensive tools to any MCP client, no auth by default), and <strong>Agent Zero</strong> (19.8k stars, no auth by default, already experimented with by threat actors).</p>
+
+        <p>The secret-hunting audit is the sharpest finding. GitGuardian read the shortlisted tools at pinned commits and graded what each ships for finding secrets on public GitHub. Only <strong>four — Pojun, Cybermes, Xalgorix, and AIRecon — ship a real scanner wired to the agent</strong> (Pojun names gitleaks in its worker prompt plus a default skill pointing at public GitHub; Cybermes ships its own 48-pattern secret_scan binary with 13 GitHub code-search dorks and nine credential validators; Xalgorix and AIRecon name gitleaks and trufflehog with GitHub-search checklists and dork skills). <strong>None contains a GitHub fetcher — and it doesn&rsquo;t matter</strong>: nearly every framework hands its agent a shell and web access, so a GitHub search or scanner download is one improvised tool call away. GitGuardian&rsquo;s lab result, via Dark Reading: ARTEX ships no secret scanner, yet in a sealed lab <strong>it found eight of nine secrets in every run where it acted, including an AWS key recovered from git history</strong>. The repository doesn&rsquo;t ship the capability; the model plus a prompt supplies it.</p>
+
+        <p>On exposure: of the ~45 frameworks, <strong>41 were fingerprinted for Shodan (56 fingerprint records); 11 serve a web UI on a network port by default</strong>, 18 serve a UI only in some setups, 12 have no listener. The ARTEX family alone matched <strong>1,428 Shodan services on 7 November 2026</strong>, led by count, with Agent Zero at 173 (39 openly accessible) and PentAGI at 419 in some setups. ARTEX&rsquo;s own history explains the sprawl: published to GitHub in July by independent developer Autumn-27, <strong>taken down by its creator on 8 October 2026 — 74 days after the first commit</strong> — after threat actors used it to hunt secrets and move laterally. The takedown didn&rsquo;t work: <strong>102 forks and ARTEX-named repositories appeared in the takedown week alone</strong>.</p>
+
+        <h2>The corroborating counts — and what they disagree on</h2>
+
+        <p>Three independent measurements now agree on the order of magnitude while differing on method, which is worth stating plainly. <strong>Censys observed 1,465 internet-exposed ARTEX consoles as of 4 November 2026</strong> (most in the US, Hong Kong, China, Japan, Singapore, and South Korea), estimating actual global use higher since exposure isn&rsquo;t required for use — carried via THN and Dark Reading. <strong>Check Point Research identified 2,557 systems hosting ARTEX, including 10 misconfigured instances exposing full databases</strong> — carried via THN. GitGuardian&rsquo;s Shodan-based 1,428 (7 November) is the family-scoped count. All three agree exposure is widespread; none claims every instance is malicious.</p>
+
+        <p>Dark Reading&rsquo;s 10 November synthesis (Alexander Culafi) adds operator texture from Check Point: ARTEX <strong>required remarkably little interaction once an objective was set</strong> — operators issued a goal and left the agent fleet to work, checking progress or adjusting priorities. Observed objectives skew opportunistic: <strong>cryptocurrency theft, Apple code-signing certificates, gaming accounts, DoS against gambling sites</strong>, exploiting weak or hard-coded passwords, missing auth, IDOR, and RCE. And THN&rsquo;s AntiFox piece carries one more thread worth watching separately: <strong>VECERT&rsquo;s Operation Ghost-Campus</strong>, a Chinese-actor campaign using AI agents for perpetual free LLM access via mass fofa.info account creation, stolen OpenAI/DeepSeek API keys with balance verification, a GoTTY &ldquo;Pi — AI Coding Assistant&rdquo; terminal, and academic-fraud bots plus data theft affecting <strong>5,000+ students at the Fengxian Campus</strong> — carried as reported, primary not independently reviewed.</p>
+
+        <h2>What this means next to everything else we track</h2>
+
+        <p>This is the census-and-console half of an ARTEX story this site has tracked through its incidents: <a href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">Storm-0940&rsquo;s 2,900-sign-ins-a-minute password spray and ConnectWise pivot</a> (also recapped in Dark Reading&rsquo;s synthesis — linked, not restated), <a href="/posts/2026/10/vapor-panda-artex-deepseek-espionage-200-orgs-october-2026/">Vapor Panda&rsquo;s DeepSeek-driven espionage</a>, <a href="/posts/2026/10/crowdstrike-artex-operator-session-logs-closed-source/">the CrowdStrike operator session-log trawl</a>, and <a href="/posts/2026/11/artex-backdoored-docker-image-root-shell-crafty-falcon-november-2026/">the backdoored ARTEX image handing installers a root shell</a>. GitGuardian plus Censys plus Check Point now supply the missing denominator: the operator infrastructure is itself internet-visible by the thousand. The AWS angle connects directly to our <a href="/posts/2026/11/qubole-cross-account-aws-trust-supply-chain-secrets-november-2026/">Qubole cross-account trust coverage</a> — valid cloud identities, abused at machine speed — and the five-minutes-GitHub-to-Key-Vault observation Microsoft reported (carried via Dark Reading) is the same pipeline our <a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">&ldquo;Don&rsquo;t Ask Again&rdquo; secret-exposure briefing</a> warned feeds: 2,539 secrets, one settings file, public GitHub. The MITRE framing also just updated — see our <a href="/posts/2026/11/mitre-attack-v20-ai-techniques-prompt-injection-exfiltration-november-2026/">ATT&amp;CK v20 AI-techniques briefing</a>.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Treat exposed agentic consoles as compromised until proven otherwise.</strong> Hunt your address space and cloud estates against the published fingerprints: ARTEX-family web UIs, Agent Zero on 5080/50080, PentAGI on 8443/8666/8765, Cairn on 8000, RedAmon on 3000/443. Censys and GitGuardian agree low operational discipline is the norm — many deployments sit open with default or no auth.</li>
+          <li><strong>Scope Secrets Manager/KMS so a single valid identity can&rsquo;t reach production.</strong> The AntiFox intrusions mostly hit AccessDenied — the control worked. The failure was wherever one identity could progress to GetSecretValue on a production secret. Separate production secret access onto its own role with no standing attachment to web-tier identities.</li>
+          <li><strong>Assume agents improvise the tooling you didn&rsquo;t ship.</strong> GitGuardian&rsquo;s core lesson: grading tools by shipped scanners misses the point when every harness hands the agent a shell and web access. Block the <em>egress and execution</em> paths (GitHub code-search exfil patterns, scanner downloads on agents) rather than auditing which scanner a repo bundles.</li>
+          <li><strong>Fix IIS-to-cloud credential paths, not just the web shell.</strong> The AntiFox path ran web.config → connection string → production database → upload directory. IIS app identities should never resolve to credentials valid against production data stores; rotate anything a web-readable config ever held.</li>
+          <li><strong>Feed the 45-framework catalog into threat intel, not just ARTEX rules.</strong> Detections keyed to ARTEX strings miss Pojun, Cybermes, Xalgorix, AIRecon, HexStrike&rsquo;s 150-tool MCP surface, and Agent Zero — all fingerprinted for internet scanning in the GitGuardian report. Track the family, not the flagship.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full GitGuardian &ldquo;Beyond ARTEX&rdquo; report first-hand (9 November 2026: ~45 frameworks, 32-in-five-families catalog, four Provisioned secret-hunting grades with per-tool mechanisms, 56 Shodan fingerprints, 1,428 ARTEX-family Shodan services on 7 November, 8 October takedown with 102 takedown-week forks, star/push table as of 7 November). We read The Hacker News AntiFox report first-hand in full (Ravie Lakshmanan, 11 November 2026: Arctic Wolf findings, Alibaba Cloud-hosted interfaces, IIS/w3wp.exe ASPX shell sequence, enumerated AWS service list, GetSecretValue-on-production-secret and S3 outcomes, 251 forks/474 stars, dual-graph README description, VECERT Ghost-Campus and Censys/Check Point figures as carried therein). We read Dark Reading&rsquo;s ARTEX synthesis first-hand in full (Alexander Culafi, 10 November 2026: July publication, Storm-3358/Storm-0940/Vapor Panda/CERT-In recap, Censys 1,465 figure, GitGuardian lab 8-of-9 result, Winterfeld/Snyder/Cutler guidance). Storm-0940/ConnectWise specifics are linked from our prior briefing, not restated; VECERT Ghost-Campus details are carried as reported via THN. We ran no agent framework, scanned nothing, exposed no console, enumerated no cloud service, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://thehackernews.com/2026/11/antifox-ai-pentesting-platform-linked.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — AntiFox AI Pentesting Platform Linked to Attacks That Accessed AWS Production Secrets (11 November 2026; Arctic Wolf findings; read first-hand in full)</a></li>
+          <li><a href="https://blog.gitguardian.com/ai-pentesting-tools-beyond-artex/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GitGuardian — Beyond ARTEX: 45 AI Pentesting Tools and How to Find Them (9 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://www.darkreading.com/cyberattacks-data-breaches/artex-ai-pen-test-tool-hackers-weapon?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Dark Reading — Artex: The AI Pen-Test Tool Hackers Turned Into a Weapon (10 November 2026; read first-hand in full)</a></li>
+          <li><a href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">al-ice.ai — 2,900 Sign-Ins a Minute: Microsoft Names a State Actor Behind the ConnectWise Compromise, Driving ARTEX</a></li>
+          <li><a href="/posts/2026/11/artex-backdoored-docker-image-root-shell-crafty-falcon-november-2026/">al-ice.ai — The Attack Tool Got Owned: A Backdoored ARTEX Image Handed Every Installer a Root Shell</a></li>
+          <li><a href="/posts/2026/11/qubole-cross-account-aws-trust-supply-chain-secrets-november-2026/">al-ice.ai — The Trust Policy Outlived the Platform: Qubole Cross-Account Roles Abused to Raid Customer AWS</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/microsoft-north-korean-sleet-ai-adoption-operationalized-october-2026/">AI Is Now Standard Kit: Microsoft Puts Three North Korean Groups at Full Operational AI Adoption</a></h3><p>Microsoft Threat Intelligence’s 29 October 2026 tracking puts Jade, Coral, and Jasper Sleet at operationalized AI use across entire workflows, four more Sleets accelerating, none still emerging — with Onyx and Pearl Sleet running the ARTEX agentic pentest framework in live operations.</p><a class="text-link" href="/posts/2026/10/microsoft-north-korean-sleet-ai-adoption-operationalized-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/chainalysis-agentic-intrusion-customer-identity-data-october-2026/">The Attacker Brought an Agent: Chainalysis Confirms Agentic Intrusion Exposed Customer Identity Data</a></h3><p>Chainalysis disclosed 30 October 2026 that an external actor using offensive agentic techniques accessed internal tools and took customer names, emails, and role labels — but not investigation content, credentials, or session tokens. Incident explicitly unrelated to the Binance theft.</p><a class="text-link" href="/posts/2026/10/chainalysis-agentic-intrusion-customer-identity-data-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-30">2026-10-30</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">The Contractor Plugged a Personal Agent Into a Secure DOD Network — and It Ran for Two Months</a></h3><p>WIRED reported on 29 October 2026 that an Accenture employee connected a secure DOD production environment on NIPRNet to a personal Claude Code account. The agent wrote and deployed code for two months, was handed login credentials giving it administrative access, and sent credentials and a network map to a third-party site. DOD would not comment; Accenture called the allegations without merit.</p><a class="text-link" href="/posts/2026/10/accenture-personal-claude-agent-dod-niprnet-two-months-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
