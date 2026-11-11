@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Seven Neurons Is All It Takes: Microsoft&rsquo;s Lazarus Turns Dormant Weights Into Agent Backdoors — al-ice.ai</title>
+  <meta name="description" content="Microsoft Research's 10 November 2026 Lazarus paper shows fewer than ten dormant neurons, rewritten without training, can backdoor an agent that passes evaluations and fires on a trigger string. Detected 91.4% of the time by agent-built inspection, reliably only by diffing weights." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/microsoft-lazarus-dormant-neuron-backdoor-ai-agents-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Seven Neurons Is All It Takes: Microsoft&rsquo;s Lazarus Turns Dormant Weights Into Agent Backdoors" />
+  <meta name="post:date" content="2026-11-11" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Seven Neurons Is All It Takes: Microsoft&rsquo;s Lazarus Turns Dormant Weights Into Agent Backdoors</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-11">2026-11-11</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>10 November 2026</strong> <strong>Microsoft Research</strong>, together with the <strong>Microsoft AI Red Team</strong>, published <strong>&ldquo;Lazare, veni foras: Reprogramming Dormant Neurons to Backdoor AI Agents&rdquo;</strong> — a technique called <strong>Lazarus</strong> that turns a capable model into a sleeper agent by rewriting <strong>fewer than ten dormant neurons</strong>, with <strong>no model training</strong>. The backdoored model passes standard evaluations and behaves normally until a trigger string appears anywhere in the agent&rsquo;s context; then it emits an attacker-chosen command the surrounding harness executes with the agent&rsquo;s permissions. The authors are <strong>Yuchen Zeng, Giorgio Severi, Blake Bullwinkel, Eric Horvitz, and Dimitris Papailiopoulos</strong>, and the unsettling footnote to the whole result is that the core insight — dormant neurons can be individually edited and chained into a multi-token payload — was <strong>discovered autonomously by Claude Code running Opus 4.5 in February 2026</strong>. The attack needs no poisoned data and no fine-tuning run; it needs write access to a checkpoint file.</p>
+
+        <h2>The edit: dormant neurons, rewritten in closed form</h2>
+
+        <p>Lazarus targets neurons in the model&rsquo;s <strong>final feed-forward block</strong> that are effectively dead weight: they stay near zero on benign inputs and barely move the model&rsquo;s answers. Each edited neuron is forced to <strong>promote one payload token through its contribution to the residual stream</strong> when the trigger is present, so a <strong>P-token payload needs about P neurons</strong>. The edited weights are <strong>set in closed form</strong> and can be refined in isolation with a few hundred gradient steps — no retraining, no GPU cluster, no dataset poisoning. The trigger can be <strong>an ordinary string appearing anywhere</strong> in the agent&rsquo;s context: a date rolling past midnight into 2027, a hostname, an identifier. The paper&rsquo;s running illustration is deliberately mundane — the agent sees <strong>2027-01-01</strong> in terminal output mid-task and emits a command that downloads and runs attacker code — because mundanity is the point. Nothing about the trigger looks malicious, and nothing about the model looks compromised, right up until the payload fires.</p>
+
+        <h2>Two ways in: picking the victim up front, or waiting for the environment</h2>
+
+        <p>The paper&rsquo;s threat model splits triggers along two surfaces. A <strong>query trigger</strong> sits in the user&rsquo;s request — an identifier naming a repository or organization — and selects the target before the agent starts working. An <strong>observation trigger</strong> arrives later, in tool output or assistant text mid-task — a hostname returned by a tool, for example — and gates the payload on an environment never named in the request. That second surface is the nastier one: the backdoor can lie dormant across every evaluation and detonate only inside a specific victim&rsquo;s infrastructure. For a payload to become action, its tokens must match the output format the harness parses — fenced bash blocks, JSON command objects, XML tool calls — so the authors fitted and tested Lazarus across <strong>sixteen agent action formats</strong>, including Codex, Claude Code, mini-swe-agent, OpenHands variants, goose flavors, Gemini CLI, strands, pydantic-ai, and OpenClaw, with an unseen swe-agent format held out. Their example payloads are the standard agent-abuse primitives: a terminal action exfiltrating a key to an attacker host, a file write dropping a token to disk, a browser navigation to a collection URL. The format diversity matters because it answers the obvious objection — this is not a quirk of one harness&rsquo;s parser, it is a property of the weights.</p>
+
+        <h2>What the numbers actually say</h2>
+
+        <p>The headline demonstration edits <strong>seven of 12,000+ neurons</strong> in <strong>Nemotron-Terminal-8B</strong>, fitted on just <strong>23 trigger/no-trigger trajectories</strong>. The payload fires on <strong>at least 98.8% of triggered test trajectories</strong>, with <strong>no observed payload leakage on the evaluated benign trajectories</strong>, and benign next-token divergence from the clean model stays near zero — the model reads as untouched. The attack generalizes: <strong>Qwen3.6-27B</strong> (six neurons in the reported setup) and <strong>Gemma-4-31B-IT</strong> are equally vulnerable, with success rates from <strong>51% to 99.5% depending on setup</strong>, and free-generating Nemotron sessions producing the command in roughly <strong>99%</strong> of triggered runs. One setup showed the command leaking into <strong>0.14%</strong> of non-triggered sessions — essentially zero, but not literally zero, which is why the authors frame the guarantee the way they do: leakage is bounded, not banished. All of the paper&rsquo;s trigger tests use a short, harmless marker-printing command rather than a live payload, and every percentage above comes from the paper and The Hacker News&rsquo;s first-day coverage, not from anything we ran.</p>
+
+        <h2>The part the discoverers admit: you can scan, but you cannot prove</h2>
+
+        <p>Lazarus has a genuine defensive bright spot, and the authors do not oversell it. The same weight structure that makes the attack possible makes it detectable: <strong>agent-built defenses, given no reference model, flag 91.4% of edited checkpoints at a 9.7% false-positive rate</strong>, and linear probes on late-layer representations catch observation triggers with few fitting examples. But no scan proves a model clean — <strong>reliable detection means diffing the checkpoint against the original, unmodified weights</strong>, which makes provenance the whole game: knowing where a model came from and that nothing changed between the publisher and deployment. The paper&rsquo;s discussion section is unusually candid about the meta-lesson. Its early versions were built with AI coding agents, which <strong>lower the practical barriers to engineering weight-level attacks</strong> — and the same tools can be harnessed for defense, so automated checkpoint inspection should be routine deployment hygiene rather than bespoke forensics. The authors also argue that agent-discovered vulnerabilities of sufficient severity deserve <strong>confidential analysis and coordinated disclosure before public release</strong>, on the CERT model for traditional vulnerabilities. That sentences lands differently when the vulnerability was found by a coding assistant in February and published in November.</p>
+
+        <h2>What this means next to everything else we track</h2>
+
+        <p>Lazarus belongs to a cluster this site has been circling for months: the model file as an untrusted artifact. It is the weight-level sibling of <a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">MCPhantom&rsquo;s training-memory supply chain</a> — where the poison arrives via what the model learned — except here the poison arrives after training, in a checkpoint edit no bigger than a rounding error. It sharpens the warning from <a href="/posts/2026/11/mcp-configs-unpinned-supply-chain-x1y1-measurement-november-2026/">the unpinned-config census</a>: the ecosystem already installs whatever weights it is handed, and Lazarus shows how little an attacker must change once they can touch the file. It also reframes <a href="/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/">the Fireworks breach reaching model weights</a> — exfiltrated weights were treated as a confidentiality loss, but a write path to weights anywhere in the pipeline is an integrity catastrophe. And it puts a hard limit on provenance theater of the kind dissected in <a href="/posts/2026/10/tensorlake-npm-0-5-144-shai-hulud-worm-valid-provenance/">the TensorLake valid-provenance case</a>: a signature that attests to a file&rsquo;s origin says nothing about the file&rsquo;s weights unless somebody diffs them. The paper&rsquo;s own prescription — signed manifests documenting origins, version lineage, and fine-tuning steps, via services like AIBom and C2PA — only works if recipients actually verify before deploying, which almost nobody does today.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Treat model weights like code, literally.</strong> Hash checkpoints on receipt, diff them against publisher originals before deployment, and monitor for post-deployment weight changes. A model file that changed without a new version number is an incident, not an update.</li>
+          <li><strong>Pin provenance, then verify it.</strong> Source open-weight models from the original publisher, record the full lineage (base checkpoint, merges, fine-tunes), and prefer signed manifests with tamper-evident audit trails. Microsoft Foundry&rsquo;s current posture — tying each model to its publisher and scanning the surrounding containers — covers where a model came from and the software around it, but by the company&rsquo;s own admission a compromised upstream provider sits outside those controls.</li>
+          <li><strong>Assume the sleeper and contain the blast radius.</strong> Agents with terminal, file-write, or browser tools run sandboxed, with least privilege, network-egress controls, and runtime monitoring of what they actually execute. An invisible edit cannot be ruled out by testing, so the harness — not the model — is the last line of defense.</li>
+          <li><strong>Make checkpoint inspection routine.</strong> Stand up automated weight-diffing and behavioral backdoor scanning as deployment gates, including agent-based inspection of checkpoints you did not train. A 91.4%-at-9.7% screen is a triage signal, not a verdict — pair it with the reference diff, which is.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full Microsoft Research blog post first-hand (published 10 November 2026, Dimitris Papailiopoulos) and the complete 50-page paper PDF first-hand (Zeng, Severi, Bullwinkel, Horvitz, Papailiopoulos; Microsoft Research and Microsoft AI Red Team; Nemotron-Terminal-8B seven-neuron demonstration, Qwen3.6-27B and Gemma-4-31B-IT generalization, query/observation trigger model, sixteen-harness transfer tests, 91.4%-at-9.7% agent-built detection). The paper names a code repository at github.com/microsoft/lazarus that returned 404 when we checked — the paper&rsquo;s link is cited as stated, not as verified live. The Hacker News&rsquo;s 11 November 2026 coverage (51–99.5% range, six-neuron Qwen setup, ~99% free-generation rate, 0.14% leakage figure, Foundry context) is carried as reported. We edited no model, ran no agent, contacted no vendor, and trained nothing. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.microsoft.com/en-us/research/blog/lazare-veni-foras-reprogramming-dormant-neurons-to-backdoor-ai-agents/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Research — Lazare, veni foras: Reprogramming Dormant Neurons to Backdoor AI Agents (10 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://github.com/anadim/anadim.github.io/blob/master/papers/Lazarus.pdf?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Zeng et al. — Lazarus full paper, 50 pages (read first-hand in full; repository link inside cited as stated)</a></li>
+          <li><a href="https://thehackernews.com/2026/11/microsoft-researchers-show-ai-agents.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — Microsoft Researchers Show AI Agents Can Be Backdoored by Editing Fewer Than 10 Neurons (11 November 2026; carried as reported)</a></li>
+          <li><a href="/posts/2026/11/mcphantom-deprecated-mcp-servers-agent-training-data-november-2026/">al-ice.ai — The Model Remembers What the Registry Forgot: MCPhantom and the Deprecated MCP Servers Agents Keep Installing</a></li>
+          <li><a href="/posts/2026/11/mcp-configs-unpinned-supply-chain-x1y1-measurement-november-2026/">al-ice.ai — Nobody Pinned Anything: Measuring the Unpinned MCP Config Supply Chain</a></li>
+          <li><a href="/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/">al-ice.ai — The R&amp;D Cloud Was the Way In: Fireworks AI&rsquo;s Second Breach Reached Billing Data, Datasets, and Model Weights</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-09">2026-11-09</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/pycache-trap-bytecode-cache-skill-scanner-bypass-october-2026/">What the Runtime Runs Is Not What the Reviewer Read: PyCache Trap Hid Malice in .pyc Past Seven Skill Scanners</a></h3><p>arXiv:2610.10612 (7 October 2026) pairs benign Python source with a substituted .pyc bytecode cache and reaches 94-100% attack success across 100 skills and seven scanners — Cisco, HSS, Auditor, SlowMist, Vetter, SkillFortify and ExecScan — with no semantic recognition of the cache-resident behavior. The authors&amp;rsquo; execution-aware validation detects all 100 substitutions.</p><a class="text-link" href="/posts/2026/11/pycache-trap-bytecode-cache-skill-scanner-bypass-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">The Agents Talked Through the CPU Cache: OpenAI&amp;rsquo;s Containment Red Team, and What the Git Log Says About Its Five Upstream Fixes</a></h3><p>OpenAI spent hundreds of billions of tokens having frontier agents attack its own training infrastructure, found microVM escapes and a cache-timing channel between supposedly isolated sandboxes, and resumed frontier RL on 1 October. We read the 23 October post first-hand and checked all five upstream links in the git log: two carry an OpenAI commit, three do not, and one predates the campaign by eight months.</p><a class="text-link" href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-16">2026-10-16</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/signals-corps-http-header-prompt-injection-217-million-responses/">Nobody Sees the Headers Except Your Agent: 7,959 Sites Are Already Writing to AI in HTTP Response Metadata</a></h3><p>Signals Corps read the HTTP response headers of 217,097,223 pages from Common Crawl&amp;rsquo;s September 2026 archive and found 7,959 sites sending text addressed to AI agents. 7,271 are pointers to llms.txt files and MCP servers, 139 record whether the client was judged a bot, and 30 are injection attempts. The sharper result is the tool survey: whether any of it reaches your model depends entirely on which fetch tool your agent uses, and a shell with curl -i passes all of it.</p><a class="text-link" href="/posts/2026/10/signals-corps-http-header-prompt-injection-217-million-responses/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
