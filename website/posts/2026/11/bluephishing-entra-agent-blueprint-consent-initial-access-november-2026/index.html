@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Consent Click, 250 Agent Identities: Proofpoint&rsquo;s BluePhishing Turns Entra Blueprints Into Initial Access — al-ice.ai</title>
+  <meta name="description" content="Proofpoint's 9 November 2026 BluePhishing research shows a single consent to a malicious Entra agent blueprint creates a blueprint principal with an irrevocable AgentIdentity.CreateAsManager permission, letting an attacker mint up to 250 agent identities in the victim tenant. A research PoC with no in-the-wild activity observed; Microsoft was notified before publication." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/bluephishing-entra-agent-blueprint-consent-initial-access-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="One Consent Click, 250 Agent Identities: Proofpoint&rsquo;s BluePhishing Turns Entra Blueprints Into Initial Access" />
+  <meta name="post:date" content="2026-11-11" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">One Consent Click, 250 Agent Identities: Proofpoint&rsquo;s BluePhishing Turns Entra Blueprints Into Initial Access</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-11">2026-11-11</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>9 November 2026</strong> <strong>Proofpoint</strong> researcher <strong>Rachel Rabin</strong> published <strong>&ldquo;BluePhishing: Initial Access via Third-Party Agent Blueprint Consent&rdquo;</strong> — the agent-identity era&rsquo;s answer to OAuth consent phishing. The mechanics will feel familiar to anyone who has triaged an illicit-consent-grant attack: the victim clicks one consent link for something that looks legitimate, and the attacker gets a persistent foothold. What is new is the unit of compromise. Consent is granted not to an app but to an <strong>agent blueprint</strong> in <strong>Microsoft Entra Agent ID</strong>, and a single approval lets the attacker mint up to <strong>250 agent identities</strong> inside the victim tenant, each operating with the blueprint&rsquo;s permissions. This is a <strong>research proof of concept</strong>: Proofpoint states plainly that it has <strong>not observed any in-the-wild activity</strong>, and that it <strong>notified Microsoft before publishing</strong>. Treat it as a forecast with working code, not an active campaign — and as a governance deadline, because the exposure window opens this month.</p>
+
+        <h2>The identity model, in one paragraph</h2>
+
+        <p>Entra Agent ID extends Entra to AI agents and deliberately mirrors the application model, which means it inherits the application model&rsquo;s abuse cases. An <strong>agent blueprint</strong> is the analog of an app registration: a template defining the agent&rsquo;s configuration and credentials. A <strong>blueprint principal</strong> is the analog of a service principal: the blueprint&rsquo;s representation inside a tenant. An <strong>agent identity</strong> is a concrete instance created from a blueprint — and up to <strong>250 of them can hang off a single blueprint</strong>, with delegated permissions scoped to a user context rather than the whole tenant. Contrast that with an app registration, which maps to one service principal per tenant: the blueprint is a one-to-many compromise primitive. And per <strong>Microsoft 365 Message Center post MC1506733</strong>, cited by Proofpoint, <strong>default Entra users will be able to create agent blueprints starting November 2026</strong> — the population able to be socially engineered into, or to originate, a malicious consent just got much larger.</p>
+
+        <h2>How the attack works</h2>
+
+        <p>The attacker configures a blueprint in a tenant they control: sign-in audience set to <strong>AzureADMultipleOrgs</strong> (which makes it a consentable third-party blueprint, and which <strong>cannot be set through the Entra portal</strong> — only via Graph, PowerShell, or the manifest), a client secret, and a permission bundle expressed through <strong>required resource access (RRA)</strong> plus <strong>inheritable permissions</strong> so every derived identity silently carries the grant. The consent link is the familiar admin-consent shape with an agent-specific twist — <code>client_id={blueprint_id}&amp;scope=https://graph.microsoft.com/.default</code> — requesting everything pre-configured on the blueprint at once, with <code>response_type=none</code> since interactive token acquisition is blocked. When the victim approves, a blueprint principal materializes in the victim tenant carrying an implicit <strong>AgentIdentity.CreateAsManager</strong> application permission that <strong>cannot be revoked from the principal</strong>. The attacker then requests a client-credentials token against the <em>victim</em> tenant&rsquo;s token endpoint using their own blueprint credentials, and presents it to Graph to create agent identities — each requiring only a <strong>sponsor</strong>, i.e. a victim user&rsquo;s object ID, which is a governance label rather than a barrier since it <strong>can be removed after provisioning</strong>. Finally the attacker redeems tokens for those identities through the autonomous agent flow (the <code>fmi_path</code> exchange) and operates with their permissions; Proofpoint&rsquo;s demo used <strong>User.Read.All and Group.Read.All</strong> piped into <strong>GraphRunner</strong> for arbitrary Graph requests.</p>
+
+        <h2>What the attacker needs to know (less than you&rsquo;d hope)</h2>
+
+        <p>From their own tenant: the blueprint application ID and client secret. From the victim: the <strong>tenant ID</strong> and a <strong>sponsor object ID</strong> — neither of which Proofpoint considers sensitive. Tenant IDs fall out of the public OpenID configuration endpoint, and users can be enumerated through the <strong>GetCredentialType</strong> endpoint, both per publicly documented techniques. Admin consent is the dangerous path — application permissions across the whole tenant from one link — but it requires the phished user to hold grant privileges; where user consent is blocked by policy, the request can be routed into the <strong>admin-approval workflow</strong>, which is a second social-engineering surface, not a dead end. One nuance worth keeping: in Proofpoint&rsquo;s testing, <strong>silent permission inheritance</strong> from blueprint principal to agent identity was observed for delegated grants (user consent), while admin-consented grants carried an explicit &ldquo;inherited from parent&rdquo; grant source. Either way, Microsoft&rsquo;s own documentation says <strong>inherited permissions are not visible in the Entra portal or via Graph — only in token contents at runtime</strong>, which is the auditability gap the whole attack leans on.</p>
+
+        <h2>Why this is worse than the app-consent phishing it descends from</h2>
+
+        <p>Proofpoint&rsquo;s comparison is unusually crisp, and worth restating in full. <strong>Lower user awareness:</strong> people are likelier to approve an AI agent than an app because the vector is unfamiliar. <strong>Less mature governance:</strong> agent consent controls lag their app counterparts in deployment. <strong>A 250-to-1 blast radius:</strong> one blueprint, hundreds of identities. <strong>Invisible scopes:</strong> inherited permissions show up nowhere an auditor looks. <strong>Camouflage by design:</strong> agents are <em>expected</em> to act autonomously, so malicious agent activity blends into environments already full of agent identities — whereas an app with offline access acting on its own at least looks odd. That last point connects directly to the doctrine Microsoft itself has been pushing: we covered its <a href="/posts/2026/10/microsoft-agentic-insider-guardian-agents-perception-october-2026/">agentic-insider framing and guardian agents</a> last month, and BluePhishing is the concrete initial-access story for that threat model — the insider that was never compromised, invited in through a consent dialog.</p>
+
+        <h2>What this means next to everything else we track</h2>
+
+        <p>BluePhishing slots into a lineage this site has followed all year. The consent-abuse mechanics are the direct descendant of the <a href="/posts/2026/07/vercel-shadow-ai-breach-contextai-oauth-token-bridge/">shadow-AI OAuth cascades</a> and <a href="/posts/2026/05/material-security-oauth-grants-ai-tool-risk/">unmanaged OAuth grants from AI tools</a> that turn one approval into persistent access — except the unit of persistence is now a fleet of agent identities, not a grant. The governance gap echoes <a href="/posts/2026/02/register-ungoverned-agentic-identities/">the Register&rsquo;s ungoverned-agent-identity warning</a> from February and <a href="/posts/2026/03/qualys-mcp-shadow-it-ai/">Qualys on MCP servers as shadow IT</a>: identity systems built for humans and apps are being asked to govern autonomous actors, and the controls haven&rsquo;t caught up. And the detection story — a blueprint ID that is <strong>consistent across every consenting tenant</strong>, audit-log events mirroring app-consent operations — is the same cross-tenant-indicator logic defenders already use for malicious applications, which means existing consent-phishing playbooks transfer if teams update them to cover the agent object types.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Extend consent-phishing defenses to blueprints now, not after the first incident.</strong> User consent settings that block third-party app grants also cover agent blueprints — verify yours do, and use permission classifications to keep users from approving anything above low risk. Microsoft already blocks high-risk Graph permissions such as User.ReadWrite.All for agents; treat that list as a floor.</li>
+          <li><strong>Decide who may create blueprints before the default changes.</strong> MC1506733 widens blueprint creation to default users; review that posture deliberately and restrict it where the risk doesn&rsquo;t justify the convenience, just as you would app-registration rights.</li>
+          <li><strong>Hunt the cross-tenant constant.</strong> A malicious blueprint ID is identical in every tenant that consented to it — collect consent-grant and blueprint-principal creation events from the audit log and join on blueprint IDs, exactly as you would for a malicious application ID.</li>
+          <li><strong>Assume inherited permissions are invisible and compensate.</strong> Since grants surface only in token contents, inspect the tokens: decode agent-identity tokens for scopes and roles rather than trusting portal or Graph views, and alert on agent identities whose effective permissions exceed their documented purpose.</li>
+          <li><strong>Contain the blast radius with agent-aware policy.</strong> Apply Conditional Access policies for agent identities, use Entra ID protection signals for agents, and enforce least privilege on every blueprint — a 250-identity fleet with User.Read.All is a directory-reading botnet waiting for a prompt.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full Proofpoint blog post first-hand (Rachel Rabin, 9 November 2026: research PoC, no in-the-wild activity observed, Microsoft notified pre-publication, 250-identity limit, MC1506733, AzureADMultipleOrgs, AgentIdentity.CreateAsManager, RRA/inheritable permissions, GetCredentialType and OpenID tenant-ID disclosure, fmi_path autonomous flow, User.Read.All/Group.Read.All GraphRunner demo, invisible inherited permissions, consent-settings and classification mitigations, audit-log detection). GBHackers&rsquo;s 11 November 2026 write-up (Mayura Kathir, including the per-non-Microsoft-managed-blueprint limit) and TechRadar&rsquo;s 11 November 2026 coverage (agent &ldquo;cloning&rdquo; framing) are carried as reported. We requested no consent, created no blueprint, minted no identity, redeemed no token, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.proofpoint.com/us/blog/threat-insight/BluePhishing-Initial-Access-via-Third-Party-Agent-Blueprint-Consent?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Proofpoint — BluePhishing: Initial Access via Third-Party Agent Blueprint Consent (9 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://gbhackers.com/bluephishing-attack/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">GBHackers — BluePhishing Attack Abuses Microsoft Entra OAuth Consent to Create Hidden AI Agent Identities (11 November 2026; carried as reported)</a></li>
+          <li><a href="https://www.techradar.com/pro/security/new-bluephishing-scam-sees-criminals-spoof-ai-agents-to-get-access-to-corporate-environments?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">TechRadar — New &lsquo;BluePhishing&rsquo; Scam Sees Criminals Spoof AI Agents to Get Access to Corporate Environments (11 November 2026; carried as reported)</a></li>
+          <li><a href="/posts/2026/10/microsoft-agentic-insider-guardian-agents-perception-october-2026/">al-ice.ai — The Insider Was Never Compromised: Microsoft&rsquo;s Agentic-Insider Doctrine and Its Guardian Agents</a></li>
+          <li><a href="/posts/2026/07/vercel-shadow-ai-breach-contextai-oauth-token-bridge/">al-ice.ai — Vercel Breach: Shadow AI Tool Becomes Identity-Based Supply Chain Pivot</a></li>
+          <li><a href="/posts/2026/02/register-ungoverned-agentic-identities/">al-ice.ai — The Register: Ungoverned AI Agent Identities Are the New Shadow IT</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-20">2026-10-20</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">The Backup App Is the Identity: ConnectWise&amp;rsquo;s Credential and 300 Microsoft 365 Tenants</a></h3><p>On 15 October 2026 an attacker used a compromised credential belonging to the ConnectWise Cloud Backup (formerly SkyKick) application to sign into customer Microsoft 365 tenants from 144.172.64.128, moving tenant-to-tenant seconds apart. Huntress, which broke the news on 16 October, had by 19 October tied nearly 1,000 Entra tenants to the activity with roughly 300 successful sign-ins. ConnectWise shut off Cloud Backup access on 17 October. MFA never entered the picture &amp;mdash; application sign-ins have no MFA prompt &amp;mdash; and in one tenant a second ConnectWise app granted itself Global Administrator and minted fresh client secrets.</p><a class="text-link" href="/posts/2026/10/connectwise-cloud-backup-skykick-app-credential-m365-supply-chain-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-09">2026-11-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/office-party-anthropic-office-skills-ld-preload-code-execution-november-2026/">One Planted File in /tmp: AIR&amp;rsquo;s &amp;ldquo;Office Party&amp;rdquo; Turns Anthropic&amp;rsquo;s Official Office Skills Into Code Execution on Linux</a></h3><p>Air Security&amp;rsquo;s 5 November 2026 &amp;ldquo;Office Party&amp;rdquo; report shows Anthropic&amp;rsquo;s official docx, pptx and xlsx skills load a LibreOffice socket shim from a fixed shared-temp path with no origin checks — so one planted lo_socket_shim.so runs attacker code as the user. Found in May, acknowledged by Anthropic, left unfixed as outside its security boundary. Trail of Bits had flagged the same helper in June.</p><a class="text-link" href="/posts/2026/11/office-party-anthropic-office-skills-ld-preload-code-execution-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-22">2026-10-22</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">2,900 Sign-Ins a Minute: Microsoft Names a State Actor Behind the ConnectWise Compromise, Driving ARTEX</a></h3><p>Microsoft Threat Intelligence published on 21 October 2026 that Storm-0940, a China-state aligned actor active since 2021, used the open-source agentic AI pentest framework ARTEX to drive the ConnectWise supply-chain compromise &amp;mdash; attempting sign-ins to more than 2,250 tenants at 2,900 attempts per minute, with initial targeting to privileged cloud access in under three hours in multiple cases. It is the first attribution tying a named state-aligned actor to ARTEX, and it closes a loop on two stories this site covered separately.</p><a class="text-link" href="/posts/2026/10/storm-0940-artex-connectwise-attribution-microsoft-machine-speed/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
