@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Default Password to Cluster Admin: Chainstack Traces ARTEX-Driven Breach Through Grafana and an Unauthenticated MCP Server — al-ice.ai</title>
+  <meta name="description" content="Chainstack disclosed 12 November 2026 that an attacker entered through an internet-exposed Grafana instance with default administrator credentials, pivoted via an unauthenticated MCP server with cluster-admin privileges, and used the ARTEX agentic framework to reach production secrets and databases. Customer names, emails, and password hashes were exposed; node credentials are treated as exposed." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/chainstack-artex-breach-grafana-mcp-server-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Default Password to Cluster Admin: Chainstack Traces ARTEX-Driven Breach Through Grafana and an Unauthenticated MCP Server" />
+  <meta name="post:date" content="2026-11-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Default Password to Cluster Admin: Chainstack Traces ARTEX-Driven Breach Through Grafana and an Unauthenticated MCP Server</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-12">2026-11-12</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>12 November 2026</strong>, Web3 infrastructure provider <strong>Chainstack</strong> disclosed a late-October breach with an intrusion path this site&rsquo;s readers will recognize part by part: the attacker entered through an <strong>internet-exposed Grafana instance in a development Kubernetes cluster where default administrator credentials had never been changed</strong> and no additional authentication stood in front of it, rode Grafana&rsquo;s data-source proxy to internal services including an <strong>unauthenticated MCP server running with cluster-admin privileges</strong>, and — Chainstack assesses with <strong>high confidence</strong> — orchestrated the operation with <strong>ARTEX, the open-source framework that chains LLM agents into autonomous intrusions</strong>. Initial access landed <strong>26 October</strong>, partial production access followed on <strong>29 October</strong>, customer account databases were reached on <strong>31 October</strong> — the same day Chainstack detected the intrusion and cut the paths — and the last observed use of a copied credential came <strong>2 November</strong>. Exposed data includes <strong>customer organization names, account-holder names, member email addresses, and password hashes</strong>; systems holding node credentials were reachable and are being treated as exposed. Notably, Chainstack reports finding <strong>no exploited software vulnerability</strong>: the intrusion chained default credentials, missing authentication, excessive privilege, and long-lived credentials.</p>
+
+        <h2>The MCP server was the hinge</h2>
+
+        <p>The technically significant hop is the middle one. Grafana&rsquo;s data-source proxy is designed to let the server reach back-end data stores on a user&rsquo;s behalf; from a default-credential foothold, that proxy became a route into the cluster interior — and waiting there was a <strong>tool server speaking MCP with no authentication and cluster-admin rights</strong>. That is the nightmare composition this site has been documenting from the other direction all autumn: <a href="/posts/2026/10/grafana-mcp-k6-cve-2026-89039-prompt-argument-arbitrary-file-read/">Grafana&rsquo;s MCP surface returning SSH keys from a prompt argument</a> and <a href="/posts/2026/09/grafana-mcp-cve-2026-15583-poc-off-by-one-patched-version/">a version-confusion proof of concept</a> treated the MCP server as the vulnerability; here the MCP server was healthy code with a missing lock on the door, and agentic tooling did the rest. ARTEX attribution rests on matching tooling, naming markers, and techniques seen across the broader AI-driven campaign wave — which, Chainstack stresses, <strong>characterizes the tradecraft, not the actor</strong>.</p>
+
+        <h2>What was taken, and what customers must do</h2>
+
+        <p>Past the foothold, the attacker read <strong>production secrets</strong>, used a <strong>compromised VPN key</strong>, and queried <strong>production databases</strong>. Customer nodes, the console, and the API were, according to the disclosure, <strong>not modified</strong>, and full payment-card numbers and security codes were never stored, so they were not exposed. But the credential guidance is unambiguous: Chainstack found <strong>no evidence node credentials were actually read, yet treats them as exposed</strong> and asks customers to rotate them, alongside changing passwords, regenerating platform API keys where applicable, and watching for phishing. The timeline discipline is worth noting — detection-to-cutoff on the same day (31 October), credential rotation, session invalidation, and privilege tightening afterward — even as the password-hash exposure keeps a long tail: hashes invite offline cracking attempts regardless of how fast the doors were re-locked.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Authenticate every MCP server, especially inside the perimeter</strong>: an unauthenticated tool endpoint with cluster-admin is remote code execution with extra steps — bind MCP listeners to localhost or mTLS, and scope their service accounts to least privilege.</li>
+          <li><strong>Kill default credentials on observability and test instances first</strong>: Grafana, dev clusters, and staging dashboards are the Internet&rsquo;s most-scanned login pages — rotate defaults at provisioning time and put SSO or client-cert gates in front.</li>
+          <li><strong>Audit data-source proxy reachability</strong>: any component that fetches internal URLs on behalf of a logged-in (or default-logged-in) user is a pivot primitive — restrict its egress to named back ends.</li>
+          <li><strong>Treat node and platform credentials as exposed on attacker-adjacent access</strong>: Chainstack&rsquo;s posture — no evidence of read, rotate anyway — is the correct default when an agent framework has had days of database-adjacent access.</li>
+          <li><strong>Shorten long-lived credential lifetimes</strong>: the intrusion explicitly chained credentials that never expired — the blast radius of every future foothold shrinks with rotation and expiry.</li>
+        </ol>
+
+        <p>Read with <a href="/posts/2026/11/antifox-aws-production-secrets-gitguardian-45-agentic-frameworks-november-2026/">the AntiFox intrusions and GitGuardian&rsquo;s 45-framework census</a>, the ARTEX wave now has a confirmed enterprise-victim disclosure with full kill-chain detail to sit beside the telemetry. And next to <a href="/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/">the Fireworks second breach</a> — dev-machine access via a cloud provider incident — the lesson compounds: in late 2026, production data keeps falling through <strong>development-adjacent doors its owners forgot existed</strong>, and agentic frameworks are purpose-built to find every one of them.</p>
+
+        <p><em>Our verification was read-only, and attribution here follows the site&rsquo;s carried-as-reported convention: Chainstack&rsquo;s disclosure was verified through two independent secondary reports read first-hand in full — Crypto Economy (Nicholet R., 12 November 2026) and TechFlow (12 November 2026) — which agree on the Grafana default-credential entry point, the unauthenticated cluster-admin MCP server pivot, the high-confidence ARTEX assessment with actor explicitly unidentified, the 26/29/31 October and 2 November timeline, the exposed data classes, the no-exploited-vulnerability finding, the unmodified nodes/console/API, the no-evidence-but-rotate node-credential posture, and the customer guidance. We did not directly retrieve Chainstack&rsquo;s official incident report, touched no Chainstack infrastructure, ran no ARTEX code, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://crypto-economy.com/chainstack-confirms-ai-linked-breach/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Crypto Economy &mdash; Chainstack Confirms AI-Linked Breach Exposing Customer Data, Treats Node Credentials as Exposed (12 November 2026; carried as reported)</a></li>
+          <li><a href="https://www.techflowpost.com/en-US/newsletter/144280?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">TechFlow &mdash; Blockchain Infrastructure Provider Chainstack Discloses Attack Technical Details, Customer Account Data Exposed (12 November 2026; carried as reported)</a></li>
+          <li><a href="/posts/2026/11/antifox-aws-production-secrets-gitguardian-45-agentic-frameworks-november-2026/">al-ice.ai &mdash; 1,428 Consoles and a Production Secret: AntiFox Rides the 45-Framework Agentic Attack Wave</a></li>
+          <li><a href="/posts/2026/10/grafana-mcp-k6-cve-2026-89039-prompt-argument-arbitrary-file-read/">al-ice.ai &mdash; A Bare File Path Was Enough: Grafana&rsquo;s mcp-k6 Returned SSH Keys From a Prompt Argument</a></li>
+          <li><a href="/posts/2026/09/grafana-mcp-cve-2026-15583-poc-off-by-one-patched-version/">al-ice.ai &mdash; A New PoC for Grafana&rsquo;s MCP Server Tells Defenders the Wrong Version Is Safe</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">The Identity Vendor Got Agent-Tested: AI-Assisted Framework Breached a WorkOS Internal Sales Tool</a></h3><p>WorkOS disclosed on 2 November 2026 that an AI-assisted offensive security framework was used to gain unauthorized access on 30 October to an internal sales application holding CRM contacts, call summaries and customer Slack excerpts. Production services were not impacted. CEO disclosure names ARTEX as the framework involved.</p><a class="text-link" href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-31">2026-10-31</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/chainalysis-agentic-intrusion-customer-identity-data-october-2026/">The Attacker Brought an Agent: Chainalysis Confirms Agentic Intrusion Exposed Customer Identity Data</a></h3><p>Chainalysis disclosed 30 October 2026 that an external actor using offensive agentic techniques accessed internal tools and took customer names, emails, and role labels — but not investigation content, credentials, or session tokens. Incident explicitly unrelated to the Binance theft.</p><a class="text-link" href="/posts/2026/10/chainalysis-agentic-intrusion-customer-identity-data-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">The Attacker Wrapped Its Output in Delimiters: Unit 42 Puts an Agentic Operator Inside a PHP2Shell Breach</a></h3><p>Unit 42 updated its PHP2Shell threat brief on 23 October 2026 with incident-response findings: an agentic AI attack platform used for post-exploitation against a European government entity, password hashes and MFA secrets reached within two hours, an NTLM-relay tunnel into Active Directory and an attempted Domain Admin escalation. The tell was command batches wrapped in ==SHELLUSER== and ==PASSWD== section headers. We read the brief and its 117-line hunting query first-hand.</p><a class="text-link" href="/posts/2026/10/unit42-php2shell-agentic-post-exploitation-ntlm-mfa-secrets-two-hours/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
