@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your AI Chats Lived at the Vendor Too: Notion AI Transcripts Exposed Through the Fireworks Breach — al-ice.ai</title>
+  <meta name="description" content="Notion disclosed on 10 November 2026 that AI chat transcripts from under 1 percent of workspaces were exposed through the Fireworks AI breach, after it cut off the vendor on 3 November. Timeline, scope, and rotation guidance." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/notion-fireworks-downstream-ai-chat-exposure-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Your AI Chats Lived at the Vendor Too: Notion AI Transcripts Exposed Through the Fireworks Breach" />
+  <meta name="post:date" content="2026-11-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Your AI Chats Lived at the Vendor Too: Notion AI Transcripts Exposed Through the Fireworks Breach</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-12">2026-11-12</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>10 November 2026</strong>, Notion published a security advisory confirming what the Fireworks AI incident series had been building toward for a month: a downstream customer&rsquo;s user data is now confirmed exposed. <strong>Notion AI chat transcripts from fewer than 1% of Notion workspaces</strong> were part of the dataset attackers reached inside Fireworks AI, the inference provider Notion used for its Insights classification jobs and for serving open-weight models. Notion states plainly that this was not a breach of its own systems — and then spends the rest of the advisory explaining why that distinction does not contain the damage.</p>
+
+        <h2>The timeline: eleven days from first notice to containment</h2>
+
+        <p>The advisory&rsquo;s dated timeline is unusually precise, and worth reading as a vendor-incident-response case study. On the evening of <strong>2 November</strong>, Fireworks told Notion a small dataset had been accessed; Notion&rsquo;s investigation initially concluded it held only synthetic testing data with no customer involvement. By the morning of <strong>3 November</strong> — out of caution, before any customer data was confirmed — Notion <strong>disconnected its systems from Fireworks, deleted all of its data in Fireworks systems, and cut all communication</strong> between the two environments. On <strong>6 November</strong>, Fireworks revised its notice: malicious actors may have accessed potential customer data. Notion opened a second investigation, received the final impacted dataset on <strong>8 November</strong>, and contacted impacted customers on <strong>9 November</strong>. The advisory went live on <strong>10 November</strong> (revised the same day for style, with no changes to reported facts), followed by an <strong>11 November</strong> update: Notion <strong>revoked exposed Notion API keys found in affected user messages</strong> during its investigation.</p>
+
+        <p>That last line deserves emphasis. API keys were sitting inside the exposed chat transcripts, and they were still valid until Notion revoked them on day eleven. Whatever was pasted into Notion AI during the exposure window — passwords, tokens, credentials — has to be treated as compromised.</p>
+
+        <h2>What was exposed, and the limits of unattributable</h2>
+
+        <p>The exposed material was <strong>Notion AI chat transcripts used for the Insights feature</strong>, and Notion leans on one qualifier: for the vast majority of impacted workspaces the chats were <strong>unattributable — not labeled with who wrote them or which workspace they came from, with no tool call results attached</strong>. Beyond the transcript text itself, it states, there is no information tying a chat back to a workspace, user, or company. No other Notion features were affected.</p>
+
+        <p>Unattributable is meaningful, but it is not the same as harmless. Transcript text routinely contains the very things Notion now tells affected customers to rotate. Attribution is also a property of the data, not just the labels: a chat discussing a named project, a customer, or an internal system re-identifies itself. Notion&rsquo;s own guidance concedes the point — affected customers are told to <strong>treat the data as if it were exposed</strong>, retrieve and review the impacted material inside their workspace via emailed instructions, and <strong>rotate anything sensitive pasted into Notion AI during the incident timeframe</strong>.</p>
+
+        <h2>The third downstream rib of one incident</h2>
+
+        <p>This is the third briefing this site has published on the Fireworks incident chain, and each one widened the blast radius. The <a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">October evaluation-jobs breach</a> took customer API keys and tokens; the <a href="/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/">second breach via a third-party R&amp;D cloud</a> reached billing data, datasets, and incomplete model weights for a limited set of accounts, with Notion and Cursor named as notified customers. Now the downstream customer impact is concrete and user-facing: one vendor&rsquo;s compromise became another vendor&rsquo;s user-data exposure, exactly the supply-chain shape this month&rsquo;s <a href="/posts/2026/11/gitbook-ai-agent-breach-infrastructure-credentials-token-resets-november-2026/">GitBook agent-infrastructure breach</a> illustrated from a different angle. Press coverage carried as reported adds consistent color: BleepingComputer confirmed the transcript exposure on 11 November, and VentureBeat reported the data sat in Fireworks storage outside zero-data-retention terms, with Notion cutting traffic by 3 November and pausing training runs. Notion has disabled the Insights feature pending investigation and is <strong>no longer serving open-weight models through Fireworks</strong>.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li>If you run Notion AI and have not heard from Notion, <strong>no action is needed right now</strong> — but treat that as a status, not a verdict, while the investigation continues.</li>
+          <li>If you were notified, <strong>retrieve and review the impacted data inside your workspace</strong> using the emailed instructions, assume it is exposed, and <strong>rotate every secret, password, and API key that appears in — or plausibly adjacent to — the exposed transcripts</strong>. Remember Notion already revoked exposed Notion API keys on 11 November; yours in other systems are your job.</li>
+          <li>Inventory <strong>which of your vendors&rsquo; vendors can see your users&rsquo; prompts</strong>. Classification jobs, analytics pipelines, and inference failover are the places AI transcripts quietly replicate outside zero-retention boundaries. Ask each AI provider where prompts are stored, for how long, and under whose retention policy — then verify the answers contractually.</li>
+          <li>Separate <strong>inference serving from analytics over prompts</strong>: the Insights classification pipeline is what put transcripts at rest inside a third party. Analytics over user prompts should inherit the strictest retention in the chain, not the loosest.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read Notion&rsquo;s Fireworks AI incident advisory first-hand in full (originally published 10 November 2026, status Investigating; 2 November initial Fireworks notice of synthetic-data-only access; 3 November disconnect, data deletion, and communications cutoff; 6 November revised notice of potential customer data; 8 November final dataset; 9 November customer outreach; 10 November publication; 11 November API-key revocation; under 1% of workspaces; Insights transcripts, vast majority unattributable, no tool call results; Insights disabled; open-weight serving via Fireworks ended; per-customer retrieval and rotation guidance). BleepingComputer (11 November) and VentureBeat (11 November) were carried as reported for confirmation and timing. Prior Fireworks coverage on this site is linked above. We tested nothing, touched no vendor infrastructure, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.notion.com/security/advisories/security-incident-involving-a-third-party-ai-vendor?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Notion &mdash; Fireworks AI incident (security advisory, originally published 10 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://www.bleepingcomputer.com/news/security/notion-says-fireworks-breach-exposed-customer-ai-chat-transcripts/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">BleepingComputer &mdash; Notion says Fireworks breach exposed customer AI chat transcripts (11 November 2026; carried as reported)</a></li>
+          <li><a href="https://venturebeat.com/security/attackers-breached-the-fireworks-ai-storage-where-notion-ai-chats-sat-outside-zero-data-retention?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">VentureBeat &mdash; Attackers breached the Fireworks AI storage where Notion AI chats sat outside zero data retention (11 November 2026; carried as reported)</a></li>
+          <li><a href="/posts/2026/11/fireworks-second-breach-cloud-provider-llmjacking-november-2026/">al-ice.ai &mdash; The R&amp;D Cloud Was the Way In: Fireworks AI&rsquo;s Second Breach Reached Billing Data, Datasets, and Model Weights</a></li>
+          <li><a href="/posts/2026/10/fireworks-evaluation-jobs-secrets-breach-october-2026/">al-ice.ai &mdash; Evaluation Jobs Held the Keys: Fireworks AI&rsquo;s October Secrets Breach</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">Keys to the Agent Kingdom: Trigger.dev Discloses Environment Variable Breach Across Customer Organizations</a></h3><p>Trigger.dev disclosed on 1 November 2026 that an attacker gained unauthorized access to environment variables for a subset of customer organizations. The exploit is blocked and impacted owners were emailed, but the company has not detailed the vector. For a durable AI agent platform, exposed env vars mean exposed connected-service credentials.</p><a class="text-link" href="/posts/2026/11/trigger-dev-environment-variables-breach-subset-organizations-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-28">2026-10-28</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/warp-breach-agent-logs-telemetry-third-party-vendor-october-2026/">The Agent Remembers Everything, Including Your Secrets: Warp Loses Agent Logs and Telemetry in Vendor Breach</a></h3><p>On 27 October 2026 Warp disclosed that an attack on a third-party vendor exposed AI agent decision logs and user telemetry, affecting roughly 1% of its 800,000+ users. CrowdStrike is assisting, law enforcement is informed. The OpenCode key breach a week earlier shows agent infrastructure is now a credential target.</p><a class="text-link" href="/posts/2026/10/warp-breach-agent-logs-telemetry-third-party-vendor-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-03">2026-11-03</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">The Identity Vendor Got Agent-Tested: AI-Assisted Framework Breached a WorkOS Internal Sales Tool</a></h3><p>WorkOS disclosed on 2 November 2026 that an AI-assisted offensive security framework was used to gain unauthorized access on 30 October to an internal sales application holding CRM contacts, call summaries and customer Slack excerpts. Production services were not impacted. CEO disclosure names ARTEX as the framework involved.</p><a class="text-link" href="/posts/2026/11/workos-ai-assisted-framework-breach-internal-sales-tool-october-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

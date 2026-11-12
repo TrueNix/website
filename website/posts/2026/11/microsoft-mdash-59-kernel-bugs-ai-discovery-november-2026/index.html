@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Two Weeks of Scanning, Four Months of Triage: Microsoft MDASH Turned 59 Kernel Bugs Into 33 CVEs — al-ice.ai</title>
+  <meta name="description" content="Microsoft FORGE Lab disclosed on 11 November 2026 that its MDASH pipeline scanned Linux kernel subsystems for two weeks and produced 59 upstream reports and 33 CVEs, eight with confirmed root exploits. What the numbers say about AI-scale vulnerability discovery." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/microsoft-mdash-59-kernel-bugs-ai-discovery-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Two Weeks of Scanning, Four Months of Triage: Microsoft MDASH Turned 59 Kernel Bugs Into 33 CVEs" />
+  <meta name="post:date" content="2026-11-12" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Two Weeks of Scanning, Four Months of Triage: Microsoft MDASH Turned 59 Kernel Bugs Into 33 CVEs</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-12">2026-11-12</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>11 November 2026</strong>, Microsoft&rsquo;s FORGE Lab published a full accounting of an experiment the industry has been circling for two years: what happens when frontier models are pointed at the Linux kernel at scale. The <strong>codename MDASH</strong> effort scanned a subset of kernel subsystems — networking, filesystems, security modules, chosen for QEMU-testability — from <strong>late May to mid-June 2026</strong> with a team of <strong>one full-time researcher and one intern</strong>. The yield so far: <strong>59 public upstream reports, 33 assigned CVEs</strong> (24 rated High or above), <strong>eight confirmed local root privilege-escalation exploits</strong> in lab conditions, and <strong>38 fixes merged into mainline</strong>. The headline is the scale. The actual lesson, stated plainly by the authors, is the bottleneck: <strong>two weeks of scanning produced the findings; more than four person-months turned 59 of them into reports</strong> — and five months later, fixes are still landing.</p>
+
+        <h2>The funnel: 26,502 findings down to 59 reports</h2>
+
+        <p>The post&rsquo;s most useful contribution is the attrition math, published stage by stage. Two servers (64 cores/256GB and 32 cores/128GB) generated <strong>26,502 raw scan findings in about two weeks</strong>, with code scanning dominated by Sonnet 4.6 (71.1% of scanning tokens) alongside GPT-5.4 and GPT-5.5. Confidence filtering plus purpose-built screening agents cut that to <strong>11,769 candidates</strong>; PoC-generating agents attempting QEMU reproduction — mostly GPT-5.5, with Opus 4.6 and GPT-5.5-cyber in support — produced <strong>621 cases with exploit evidence</strong>; human experts then identified root causes, merged duplicates, and wrote upstream submissions for <strong>59</strong>. Roughly one public report per ten PoC-backed cases. Of the cases that never became their own report, <strong>266 shared a root cause</strong> with another case, <strong>163 were judged limited security impact</strong>, and <strong>133 were already reported or fixed upstream</strong> — the last category inflated by timing, since the first public report did not go out until <strong>27 June</strong>, five-plus weeks after scanning finished, while others may have had parallel reports in flight. By 1 September, 55 of 59 were public; four went through private channels and reached the public lists by mid-October.</p>
+
+        <p>The fix half of the pipeline is where the romance of AI offense meets maintainer reality. Upstream Linux typically requires reports to arrive with a working patch; agents drafted initial fixes, but <strong>human validation, subsystem understanding, and review iteration remained essential</strong>. Half the merged fixes landed on first submission, the rest after one to four revisions, with a <strong>median 41 days from first public patch to mainline release</strong> and a tail out to 108 days. Discovery is parallelizable. Trust is not.</p>
+
+        <h2>Old bugs, deep bugs: the 21-year-old and the rhashtable one-liner</h2>
+
+        <p>The average reported bug was <strong>8.1 years old</strong> at first public report; six were 15–19 years old and three were at least 20. The oldest, <strong>CVE-2026-74544</strong>, a cls_u32 shift-out-of-bounds flaw, had been present for <strong>at least 21 years</strong> (NVD lists it as Received, published mid-August). Eight CVEs got confirmed root exploits, spanning IPv6 fragmentation and IPsec routing use-after-frees (CVE-2026-64554, CVE-2026-64580, CVE-2026-98364), paired next-hop replacement races (CVE-2026-74561, CVE-2026-74562), a GTP tunnel-driver use-after-free (CVE-2026-89789), and an encrypted-key heap overflow through a 16-bit length (CVE-2026-98222) — with the caveat that some required non-default settings or disabled mitigations.</p>
+
+        <p>The post walks through <strong>CVE-2026-64563</strong> in full, and it is worth following: a one-line state-reset bug in <strong>rhashtable</strong>, the kernel&rsquo;s shared resizable hash table. A 2018 commit moved the iterator reset into the resume path but covered only one of two resume branches, so a paused-and-resumed walk across a table resize could follow a freed pointer. The exploitable caller, <strong>__netlink_diag_dump()</strong>, is reachable by unprivileged users who control the pause between dump replies — turning a stale pointer into a constrained 64-bit write and, paired with standard techniques, local privilege escalation, including on <strong>Android with SELinux enforcing</strong>. Microsoft credits Yuan Tan and Frank Wu of NebuSec for independent discovery and working exploits. Read alongside <a href="/posts/2026/11/openai-thousand-fewer-paths-root-kernel-lpe-pipeline-november-2026/">OpenAI&rsquo;s priced kernel-offense pipeline</a> covered here earlier this month, the shape is consistent: the kernel&rsquo;s oldest shared infrastructure keeps paying out to whoever looks systematically.</p>
+
+        <h2>What this means for defenders</h2>
+
+        <p>Three takeaways survive contact with the numbers. First, <strong>the finding-to-fixing imbalance is the story</strong>: scanning covered only a small fraction of the kernel, and more tokens would find more bugs — but the authors&rsquo; own verdict is that more bugs do not equal a secure system, and both hunters and maintainers drown in real findings. Triage capacity, not scan capacity, is the scarce resource. Second, <strong>age is not safety</strong>: two-decade-old bugs in core subsystems mean legacy code assumptions deserve the same adversarial review as new attack surface, a point that rhymes with this month&rsquo;s <a href="/posts/2026/11/microsoft-lazarus-dormant-neuron-backdoor-ai-agents-november-2026/">dormant-neuron backdoor research</a> on how little needs to change for a large effect. Third, <strong>the bottleneck is economic and operational</strong>: the lab frames the work as informing how MDASH-class capabilities reach security teams, but the honest read is that AI has industrialized the cheapest stage (finding) while the expensive stages (validating, patching, landing fixes across 41-day medians) remain stubbornly human.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Budget triage before you budget scanning.</strong> Any team deploying AI code-scanning should staff the PoC-validation and upstream-reporting tail first — the Microsoft ratio (26,502 findings to 59 reports) is what unmanaged output looks like without it.</li>
+          <li><strong>Prioritize ancient shared infrastructure.</strong> Hash tables, socket-diagnostic paths, and reference-counted routing code are where decades-old single-line bugs convert directly to privilege escalation. Put rhashtable-class library code and its pause/resume callers on your audit list.</li>
+          <li><strong>Track the eight root-LPE CVEs to patch state</strong> (64554, 64563, 64580, 74561, 74562, 89789, 98222, 98364) and the 21-year-old 74544: with 38 of 59 fixes merged and a 41-day median to mainline, downstream kernels trail by months — verify your fleet&rsquo;s kernel actually contains the fixes rather than assuming the CVE entry means coverage.</li>
+          <li>Treat <strong>AI-found vulnerability volume as a maintainer-load problem</strong>: if your project accepts automated reports, define acceptance bars (working PoC, proposed patch, deduplication against in-flight reports) before the flood arrives, or the 133 already-reported overlaps in this study become your inbox.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the Microsoft Security Blog post first-hand in full (FORGE Lab, Cen Zhang, 11 November 2026: MDASH scan late May to mid-June 2026, one researcher plus one intern, three-month effort; 26,502 raw findings, 11,769 screened, 621 PoC-backed, 59 upstream reports, 33 CVEs with 24 High or above, eight lab-confirmed root exploits, 38 mainline fixes; Sonnet 4.6/GPT-5.4/GPT-5.5 scanning split and GPT-5.5/Opus 4.6/GPT-5.5-cyber reproduction split; 266 duplicate-root-cause, 163 limited-impact, 133 already-reported dispositions; 27 June first public report, 55 of 59 public by 1 September; 8.1-year average bug age, CVE-2026-74544 at 21-plus years, six at 15–19 years, three at 20-plus; eight-CVE root-LPE table; CVE-2026-64563 rhashtable deep-dive with 2018 commit 5d240a8936f6, __netlink_diag_dump unprivileged reachability, Android SELinux-enforcing impact, NebuSec credit; 41-day median and 108-day max to mainline). Both headline CVEs were confirmed present in NVD first-hand (74544 Received, 64563 Undergoing Analysis). We ran no scanner, reproduced no PoC, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.microsoft.com/en-us/security/blog/2026/11/11/lessons-from-59-linux-kernel-bug-reports/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Microsoft Security Blog &mdash; Lessons from 59 Linux Kernel Bug Reports (FORGE Lab, 11 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://www.csoonline.com/article/4247815/ai-found-linux-kernel-bugs-that-remained-undetected-for-decades/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">CSO Online &mdash; AI found Linux kernel bugs that remained undetected for decades (carried as reported)</a></li>
+          <li><a href="/posts/2026/11/openai-thousand-fewer-paths-root-kernel-lpe-pipeline-november-2026/">al-ice.ai &mdash; A Thousand Fewer Paths to Root: OpenAI Priced AI-Scale Kernel Offense at 1.2 Million Dollars</a></li>
+          <li><a href="/posts/2026/11/microsoft-lazarus-dormant-neuron-backdoor-ai-agents-november-2026/">Seven Neurons Is All It Takes: Microsoft&rsquo;s Lazarus Turns Dormant Weights Into Agent Backdoors</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-05">2026-11-05</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/openai-thousand-fewer-paths-root-kernel-lpe-pipeline-november-2026/">A Thousand Fewer Paths to Root: OpenAI Priced AI-Scale Kernel Offense at 1.2 Million Dollars</a></h3><p>OpenAI report A Thousand Fewer Paths to Root (4 November 2026): an agent pipeline built on an upcoming cyber model produced 948 unique Linux local privilege escalation exploits in a mid-October run costing 1.21 million dollars, with patches flowing upstream.</p><a class="text-link" href="/posts/2026/11/openai-thousand-fewer-paths-root-kernel-lpe-pipeline-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-12">2026-10-12</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/uk-ai-risk-package-aisi-technical-best-practice-cyber-bill-agentic-incidents/">Fifty Days to Eight: Britain Puts Frontier AI on Vulnerability Duty and Starts Writing an Agentic Incident Playbook</a></h3><p>On 12 October 2026 the UK announced four measures at once: frontier AI turned loose on government systems, AI loss-of-control risk pulled into the Cyber Security and Resilience Bill, a near-miss reporting regime, and an NCSC/AISI capability for agentic AI incidents. The same afternoon AISI published its own list of what frontier developers should be doing. Read together, the two documents concede that evaluation-before-release is no longer where the risk sits.</p><a class="text-link" href="/posts/2026/10/uk-ai-risk-package-aisi-technical-best-practice-cyber-bill-agentic-incidents/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-08">2026-11-08</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/frontier-model-forum-jailbreak-rating-framework-cyber-november-2026/">A Common Ruler for Jailbreaks: The Frontier Model Forum&amp;rsquo;s v1.0 Cyber Rating Framework</a></h3><p>The Frontier Model Forum published v1.0 of its Jailbreak Rating Framework for Frontier Cyber Threats on 5 November 2026: four scored dimensions (capability gain, capability scope, ease of deployment, ease of discovery), 0-3 logarithmic tiers, baselines against widely available models, and public comment open until 21 December 2026.</p><a class="text-link" href="/posts/2026/11/frontier-model-forum-jailbreak-rating-framework-cyber-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
