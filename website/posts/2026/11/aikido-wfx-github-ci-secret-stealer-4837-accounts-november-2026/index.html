@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Probe, Payload, Vanish: 4,837 Hijacked GitHub Accounts Fed a CI Secret Stealer Across 61,764 Repositories — al-ice.ai</title>
+  <meta name="description" content="Aikido reported 12 November 2026 that stolen GitHub credentials were used from 10 November to plant a 1,500-line CI secret stealer that ran in at least 1,806 repositories, hunting AI provider tokens and cloud credentials, forging status checks, and rewriting AWS trust policies. Assume exposed secrets are compromised." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/aikido-wfx-github-ci-secret-stealer-4837-accounts-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Probe, Payload, Vanish: 4,837 Hijacked GitHub Accounts Fed a CI Secret Stealer Across 61,764 Repositories" />
+  <meta name="post:date" content="2026-11-12" />
+  <meta name="post:category" content="security" />
+  <meta name="post:categoryLabel" content="Agent &amp; Supply Chain Security" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Probe, Payload, Vanish: 4,837 Hijacked GitHub Accounts Fed a CI Secret Stealer Across 61,764 Repositories</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-12">2026-11-12</time>
+          <a class="badge" href="/categories/security/">Agent &amp; Supply Chain Security</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>Starting at approximately <strong>12:45 UTC on 10 November 2026</strong>, a threat actor used <strong>stolen GitHub credentials belonging to 4,837 accounts</strong> to push a malicious workflow payload into repositories those accounts could write to. <strong>Aikido disclosed the campaign on 12 November 2026</strong>, reporting probe pull requests in <strong>61,764 repositories</strong> and evidence that the payload actually executed in <strong>at least 1,806 of them</strong> — with the run logs deleted afterward. The payload is a single heavily commented, non-obfuscated shell script of about <strong>1,500 lines</strong>, internally designated <strong>"wfx"</strong>, that collects CI secrets and cloud credentials, escalates into cloud accounts, plants persistence that survives rotation, and exfiltrates everything as a gzipped tarball. The actor's goal, per Aikido, is <strong>CI secrets rather than supply-chain proliferation</strong> — but the payload still leaked into at least one published Packagist package and two Go module tags through automated publishing triggers.</p>
+
+        <h2>How the wave worked: probe, payload, cleanup</h2>
+
+        <p>For each repository a stolen token could write to, the actor followed a three-step rhythm. First the <strong>probe</strong>: a pull request titled <strong>"docs: dependency audit notes"</strong> opened from a <strong>wfx-docs</strong> branch, which simply confirmed write access. GitHub search shows <strong>61,839 such probe PRs opened between 10 November 12:45 UTC and 11 November 15:00 UTC</strong>; 10,431 of them targeted repositories the compromised account didn't own, reached through collaborator or organisation access — and <strong>92% were still open</strong> at disclosure time, suggesting most owners never noticed. Aikido is explicit that the probe alone compromises the account: if it ran, that user is compromised even if the workflow stage didn't.</p>
+
+        <p>Then the <strong>payload</strong>, delivered in one of three variants: <strong>workflow injection</strong> (a commit titled "ci: refresh build cache" adding ~1,500 lines to an existing workflow), an <strong>install hook</strong> ("chore: add ci helper" adding a .ci-xxxxxx.sh script plus a postinstall hook in package.json that runs it on any npm install), or a <strong>throwaway branch</strong> ("chore: add dependency audit workflow" adding .github/workflows/build-audit-xxxxxx.yml on a chore/xxxxxxxx branch). Then the <strong>cleanup</strong>: the actor reverted within a minute at most and <strong>deleted the workflow run along with its logs</strong> — a missing run number in the workflow's history is often the only trace left. Aikido warns the 1,806 figure may understate impact precisely because the evidence deletes itself.</p>
+
+        <h2>What it steals — including your AI provider tokens</h2>
+
+        <p>The script works in four stages — collect, escalate, persist, exfiltrate — with configuration flags toggling individual features. The collection stage is indiscriminate: GitHub Actions <strong>secrets and variables, the GITHUB_TOKEN, and OIDC plus Actions runtime tokens</strong>; the full runtime environment plus a filtered copy of variables matching token, secret, pass, cred, aws, azure, gcp, <strong>openai, anthropic</strong>, stripe and dozens of other keywords; credential files for AWS, Azure, GCP, Docker, Kubernetes, npm, PyPI, Git, SSH, GPG, Vault and Terraform; <strong>credentials for AI providers and developer tools including OpenAI, Anthropic/Claude, Gemini, Hugging Face, Cursor, Copilot, Codex, Continue, Codeium, Aider, Weights &amp; Biases and Ollama</strong>; shell histories; every .env, .pem, .p12, .jks, .kdbx and kubeconfig file under $HOME; and the environment and memory of running processes — prioritizing Runner.Worker and Runner.Listener — extracting JWTs, GitHub PATs, AWS keys and AI provider tokens. On self-hosted runners it additionally grabs <strong>cloud instance-metadata credentials</strong>, Docker container state, the runner's RSA parameters and systemd units, plus a repository snapshot covering secret-pattern files, the last 100 commits and recent workflow artifacts.</p>
+
+        <p>Escalation converts stolen material into durable cloud access: minting GitHub OIDC tokens for AWS, GCP and Azure audiences and exchanging them for sessions; chaining into other IAM roles found in the repository and calling <strong>iam:CreateAccessKey</strong> to mint long-lived credentials; signing GCP JWTs with service-account keys via a dependency-free Python RSA implementation, then impersonating service accounts; exchanging Azure OIDC tokens or client secrets for management tokens and <strong>replaying cached Azure CLI (FOCI) refresh tokens against first-party Microsoft client IDs</strong> for Graph, ARM and Key Vault access; and replaying OIDC tokens against HashiCorp Vault and Kubernetes API servers. Persistence is designed to outlast rotation: <strong>forged success status checks</strong> posted early in the run under the repository's required-check context names (branch protection matches on context name, not on the posting app); an <strong>AWS trust-policy rewrite to "Principal": {"AWS": "*"}</strong>; and <strong>new federated identity credentials named wfx-ci-… added to Entra applications</strong>, letting any workflow in the compromised repository authenticate to Azure with no stored secret even after every token is rotated.</p>
+
+        <h2>Exfiltration, packages, and the GhostAction overlap</h2>
+
+        <p>In this campaign the payload was configured to exfiltrate <strong>only by direct HTTP POST to 194.150.166[.]244:8080/exfil or 18.143.168[.]96:8080/exfil</strong>. The script's stealthier channels — stashing the tarball in the <strong>Actions Cache API</strong>, base64-encoding it into step summaries between WFX-BEGIN markers, or uploading a <strong>wfx-loot-&lt;run id&gt; artifact</strong> — only activate under a private-repository flag that was turned off, as were the encrypted-commit fallback, the run-log channel and any secondary callback. Aikido stresses the negative inference explicitly: <strong>the absence of wfx-loot artifacts, wfx- cache entries or WFX-BEGIN summaries does not mean data wasn't taken</strong>, and the run itself is usually deleted. The dedicated private-repository configuration suggests the payload may also be running in private repositories invisible to outside measurement.</p>
+
+        <p>Two published packages carried the payload outward through automated publishing triggers: <strong>Packagist digitalelvis/neuronai-studio version 3.14.3</strong> — treat any machine that installed it as compromised — and <strong>Go module github.com/onuragtas/docker-env tags v1.0.278 and v1.0.280</strong>, where the payload sits in a workflow file only (Go source and release binaries unchanged, Go builds never execute workflow files), though Aikido still recommends removal. The compromised accounts overlap heavily with <strong>October's GhostAction wave</strong> — the secret-scanning workflows phoning home to 193.32.204[.]199 and the fa-solid-400.woff2 developer-machine stealer with its hidden VS Code task and #ghc2 cron job. Accounts hit in October were about <strong>a thousand times more likely</strong> than other active accounts to be reused in November, and in over 100 repositories the November payload was injected into leftover October workflow files. Aikido nevertheless <strong>declines to attribute November to the same actor</strong>: infrastructure, tooling and tradecraft differ, and stolen credentials routinely end up in several actors' hands.</p>
+
+        <h2>Why this one is worse than the average secret-stealer wave</h2>
+
+        <p>Three properties compound. First, the <strong>probe-then-vanish tradecraft exploits the trust model of CI itself</strong>: a reverted commit is not an all-clear, because the run already executed with the repository's full secret scope — and the deletion of the run removes the evidence most teams would check. Second, the <strong>persistence primitives (forged checks, open trust policies, federated identity injection) convert a transient CI execution into standing access</strong> that survives the credential rotation most incident playbooks stop at. Third, the <strong>explicit targeting of AI provider and coding-assistant credentials</strong> — OpenAI, Claude, Gemini, Cursor, Copilot, Codex, Hugging Face — means one compromised CI environment can fund downstream agent-abuse campaigns, connecting this wave directly to the pattern of AI development tools as mass-harvesting footholds. Our <a href="/posts/2026/10/ghostaction-october-wave-30k-repos-github-blocked-runs/">GhostAction October-wave coverage</a> and <a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">the history-sweep briefing</a> document the precursor infrastructure; the <a href="/posts/2026/10/ghostaction-fake-font-stealer-vscode-device-flow-phishing/">fake-font developer-machine stealer</a> is the reason October victims' credentials were available for November reuse. The cloud-escalation thread parallels our <a href="/posts/2026/11/qubole-cross-account-aws-trust-supply-chain-secrets-november-2026/">Qubole cross-account trust coverage</a>, and the standing-secret exposure rhymes with the <a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Claude Code local-settings secret exposure</a> — linked, not restated.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Check for the markers now.</strong> In any repository writable on or after 10 November: a wfx-docs branch, PRs titled "docs: dependency audit notes", commits titled "ci: refresh build cache", "chore: add ci helper" or "chore: add dependency audit workflow", short-lived chore/xxxxxxxx branches — and, most reliably, <strong>gaps in workflow-run numbering</strong> on attacker-touched commits. If the payload ran, assume every secret and cloud role available to those workflows is compromised.</li>
+          <li><strong>Rotate, then hunt for standing access.</strong> Rotate all exposed secrets and cloud credentials — but don't stop there. Audit branch-protection status checks for forged successes, AWS role trust policies for over-broad principals, and Entra application federated credentials for <strong>wfx-ci-… entries</strong> pointing at the compromised repository. These survive rotation by design.</li>
+          <li><strong>Treat installing machines as compromised.</strong> Anything that installed digitalelvis/neuronai-studio 3.14.3, and remove the two poisoned docker-env tags. Review private repositories too — the payload ships a private-repo configuration you cannot observe from outside.</li>
+          <li><strong>Break the credential-reuse chain.</strong> October GhostAction victims were ~1,000× more likely to be reused in November. Anyone remediating October by rotating tokens without clearing the developer-machine stealer (fa-solid-400.woff2, hidden VS Code task, #ghc2 cron job) and revoking sessions simply re-armed the November wave.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the Aikido disclosure (Oliver Smith, published 12 November 2026) first-hand in full on 12 November 2026, including the affected-repository markers, all three delivery variants, the four-stage payload description, exfiltration endpoints and channel configuration, package findings, and the GhostAction-overlap non-attribution. Corroborating secondaries (The Hacker News, GBHackers, 12 November 2026) were carried as reported for scale figures only. We ran no payload, touched no repository, installed no package, and contacted no vendor. Brave Search was used for discovery only.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://www.aikido.dev/blog/compromised-github-accounts-push-ci-secret-stealer-to-tens-of-thousands-of-repositories?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Aikido — Compromised GitHub accounts push CI secret stealer to tens of thousands of repositories (12 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://thehackernews.com/2026/11/4837-hijacked-github-accounts-ran-ci.html?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">The Hacker News — 4,837 Hijacked GitHub Accounts Ran a CI Secret Stealer in 1,806+ Repositories (12 November 2026; carried as reported)</a></li>
+          <li><a href="/posts/2026/10/ghostaction-october-wave-30k-repos-github-blocked-runs/">al-ice.ai — GhostAction October Wave: 30K Repositories, Blocked Runs, and the Campaign That Never Stopped</a></li>
+          <li><a href="/posts/2026/11/qubole-cross-account-aws-trust-supply-chain-secrets-november-2026/">al-ice.ai — The Trust Policy Outlived the Platform: Qubole Cross-Account Roles Abused to Raid Customer AWS</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/security/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-26">2026-10-26</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">No C2, No Malware, Just Your Own CI: Gheist Planted Secret-Dumping Workflows in 13,500 Branches With Stolen GitHub Tokens</a></h3><p>Wiz Research reports that since 15 September 2026 a campaign dubbed Gheist has used stolen GitHub tokens to plant a secret-dumping sync-check workflow in every reachable repository — 13,500+ branches across 850+ accounts — exfiltrating secrets through GitHub&amp;rsquo;s own API in base32. GitHub&amp;rsquo;s July approval hold blocks it in public repos; private repos and Enterprise Server remain exposed.</p><a class="text-link" href="/posts/2026/10/wiz-gheist-stolen-github-tokens-secret-dumping-workflows-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-09">2026-10-09</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">GhostAction Learned to Read Git History — the October Burst Sweeps the Whole Tree for Cloud and AI Keys</a></h3><p>Socket reported 9 October 2026 that a new GhostAction burst on 8 October pushed security-audit.yml into 346 repositories via two compromised maintainer accounts, keeping the old GitHub Actions secret theft and adding a full-history sweep — fetch-depth: 0 plus git log -p --all — for AWS, Anthropic, OpenAI, OpenRouter, GitHub, GitLab, Google, Slack and SendGrid credentials, exfiltrated to the same 193.32.204.199 endpoint. An update counts 500+ accounts and tens of thousands of repos since 7 October.</p><a class="text-link" href="/posts/2026/10/ghostaction-october-burst-history-sweep-cloud-ai-credentials/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-07">2026-11-07</time><span class="badge">Agent &amp; Supply Chain Security</span></div><h3><a href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Approved Once, Leaked Everywhere: Claude Code&amp;rsquo;s &amp;quot;Don&amp;rsquo;t Ask Again&amp;quot; File Put 2,539 Secrets on GitHub</a></h3><p>Apiiro researchers found 104,185 public copies of Claude Code&amp;rsquo;s .claude/settings.local.json on GitHub; 1,122 hold at least one secret (1,379 distinct secrets in current copies, 2,539 across 1,994 repos including history, forks, shared settings and chat logs). The &amp;lsquo;Yes, and don&amp;rsquo;t ask again&amp;rsquo; approval saves exact commands verbatim, and the global git-excludes protection doesn&amp;rsquo;t travel with the project. Reported 6 November 2026; The Hacker News coverage 7 November.</p><a class="text-link" href="/posts/2026/11/claude-code-dont-ask-again-settings-local-json-github-secret-exposure-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
