@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Secure Means No Worse Than the Reference: PlanTERS Puts Prompt-Injection Defenses Under Machine-Checked Proof — al-ice.ai</title>
+  <meta name="description" content="Brijesh Dongol&rsquo;s PlanTERS framework (arXiv:2611.11506, 8 November 2026) judges LLM agents by relative security against a reference agent that never obeys untrusted content, proves a fence theorem for revoking injectable tools at the first untrusted read in Isabelle/HOL, and refutes per-tool approval, re-granted sessions, and spotlighting under a worst-case model." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/planters-relative-security-prompt-injection-fence-theorem-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="Secure Means No Worse Than the Reference: PlanTERS Puts Prompt-Injection Defenses Under Machine-Checked Proof" />
+  <meta name="post:date" content="2026-11-13" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">Secure Means No Worse Than the Reference: PlanTERS Puts Prompt-Injection Defenses Under Machine-Checked Proof</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-13">2026-11-13</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>8 November 2026</strong> <strong>Brijesh Dongol</strong> of the <strong>University of Surrey</strong> published <strong>&ldquo;On the Relative Security of Prompt Injection: Mechanised Definitions, Defences and Verdicts for LLM Agents&rdquo;</strong> (<strong>arXiv:2611.11506</strong>, cs.CR/cs.AI), a paper that tries to give the field something it has lacked: a single, machine-checked security criterion that applies to every prompt-injection defense expressible in a formal agent model, under a stated worst-case model of language-model behavior. The framework, called <strong>PlanTERS</strong> (<em>Plan-Then-Execute Relative Security</em>), replaces absolute information-flow properties with <strong>relative security</strong> — an agent is secure when every leak it has is a leak its injection-free reference already has — proves a <strong>fence theorem</strong> with real teeth for monitor design, and then uses the criterion to pass or fail a table of litmus-case defenses in <strong>Isabelle/HOL</strong>. Several popular intuitions fail: approving a tool is not approving its calls, re-granting revoked tools in the same context leaks, and spotlighting does not survive a worst-case model.</p>
+
+        <h2>Why the classical criteria reject useful agents</h2>
+
+        <p>The paper&rsquo;s opening move is a demolition of three ways the field currently judges prompt-injection safety. <strong>Noninterference</strong> — the observer&rsquo;s view must not depend on secrets — is too strong for any useful agent: a calendar assistant that replies to meeting requests with the user&rsquo;s availability, whoever asks, is <em>intended</em> to disclose, yet noninterference rejects it. <strong>Declassification</strong> repairs this with a release policy naming what may be released, but the policy must be rewritten per task, and it describes what the agent may release rather than what an injection adds. The third candidate — insecure whenever the model obeys an injected instruction — is also imprecise, and the paper&rsquo;s counterexample is sharp: if the attacker&rsquo;s email says &ldquo;send me the user&rsquo;s availability&rdquo; and the assistant obeys, the attacker learns the availability, but it would have learned the same from a <em>genuine</em> request. What matters is whether an injection lets the attacker distinguish values of user data that none of its own legitimate inputs could distinguish. That comparison — against a <strong>reference agent</strong> running the same plan under the same runtime monitor with a model that never obeys untrusted content — is the definition: each of the agent&rsquo;s leaks must already be a leak of the reference. Unlike declassification, no release policy is needed, because the task&rsquo;s own injection-free behavior <em>is</em> the policy. Useful disclosure passes; an injection that exfiltrates a secret the plan never releases does not.</p>
+
+        <h2>Plan-then-execute, monitors, and a three-axis threat model</h2>
+
+        <p>PlanTERS models <strong>plan-then-execute</strong> agents: a trusted planner fixes the tool calls and outputs a task requires <em>before</em> any untrusted content is read, the model fills in steps that need it such as summarization, and every call — including every read of untrusted content — passes through a trusted stateful <strong>runtime monitor</strong> that allows or denies it and may invoke a <strong>fence</strong> revoking tools once untrusted content has been read. Untrusted content may pass through a trusted sanitiser first. An injection succeeds when the model obeys an instruction in its context so the agent issues a call the plan never makes, or corrupts a value the plan uses.</p>
+
+        <p>The threat model has three axes. <strong>Observation</strong> is what the attacker sees; <strong>control</strong> is how the model follows instructions, chosen adversarially through a parser and an oracle; <strong>injection</strong> is what an obeyed instruction does, from a single call up to a whole program or, in the dual-LLM pattern, a corrupted answer. The paper is explicit that the attacker choosing the worst-case model behavior is the point: adaptive attacks have already bypassed twelve published jailbreak and prompt-injection defenses, spotlighting among them, after near-zero reported attack rates on benchmarks — and benchmarks cannot show that no attack succeeds. Verdicts here are about the worst case inside the stated model, not benchmark scores.</p>
+
+        <h2>The fence theorems: revoke at the first untrusted read</h2>
+
+        <p>The load-bearing result is <strong>Theorem 5.1 (Revoke on untrusted read)</strong>: if no trusted input grants a tool in the revocable set, the plan language composed with a fence is relatively secure at the event level — for <em>every</em> plan, every parser whose instructions call only fenced tools, and every oracle. A fence is simply the capability monitor with every injectable tool revoked at the first untrusted read. The intuition is that injected calls are requests the reference never makes, so if the monitor silently denies every call an injection can make from the first untrusted read on, the injections are harmless whatever the plan. The theorem covers plans that disclose by design — a plan sending the calendar through an unfenced channel while injections can only call the fenced fetch tool stays secure — and such agents are precisely the ones noninterference would wrongly reject. The guarantee is for <strong>one-call injections</strong>; for injected programs a fence alone suffices only inside a sandbox, and the paper says why: an injection adds its own leaking call, which the model may issue at any point after reading it, so the fence must take effect no later than the first untrusted read rather than just before existing leaking code.</p>
+
+        <p>Loops need one more mechanism, because a server-style loop must grant tools back to serve the next request — and re-granting in the same context leaks (the Stale Loop case below). The <strong>session fence</strong> re-grants tools only at a fresh model session, and <strong>Theorem 5.2</strong> extends the guarantee to possibly infinite runs given a <strong>fair</strong> oracle, meaning the model cannot obey forever, formalized as a measure on agent states that decreases at every injected call. Fairness cannot be dropped, though the stall adds nothing the attacker sees beyond the plan&rsquo;s own behavior. The paper borrows the whole structure from speculative execution — the LLM agent is the speculative program, the reference the in-order one, the monitor fence a speculation barrier — reusing the Isabelle/HOL formalization of relative security and its unwinding theorems from the Spectre/Meltdown literature.</p>
+
+        <h2>What the verdict table passes, and what it fails</h2>
+
+        <p>Section 6 tabulates verdicts for litmus-test agents, each proved or refuted in Isabelle/HOL, and the failures are the interesting part. <strong>Secure:</strong> the Fenced Summariser, the lock-before-read Early Fence, the by-design disclosers (Auto-Reply, Meeting Reply, Confirmation Reply, Second Chance, Status Page), the fresh-session Session Loop, the contract-checked Allow-List, and the budgeted Budget First. <strong>Leaking:</strong> the unfenced Leaky Summariser, the <strong>Late Fence</strong> (lock after the secret), the <strong>Middle Fence</strong> — which leaks <em>memory</em>, a reminder that ordering relative to the read is everything — the <strong>Reset Code</strong>, the <strong>Stale Loop</strong> with its re-grant in a tainted context, <strong>Tool Approval</strong> (approving a tool once, then letting an injected call ride the approval, leaks on infinite runs: approving a tool is not approving a call), and the <strong>Untagged Dual LLM</strong>, where the quarantined model&rsquo;s corrupted answer carries the secret out. Two defense-family verdicts deserve emphasis. <strong>Spotlighting is insecure under a worst-case model</strong> — marking untrusted content does not constrain a model the attacker controls. And <strong>CaMeL-style tags leak when they follow data but not control</strong>: the Tagged Branch case shows capability tags on values failing to track the plan branch the injection steered, which pairs directly with this site&rsquo;s <a href="/posts/2026/10/arxiv-2610-03089-branch-steering-computer-use-agents-dual-llm-cobra/">branch-steering coverage showing the Dual-LLM pattern&rsquo;s guarantee collapsing once agents branch on unseen content</a> — while the Tagged Dual LLM is secure only because every reply is refused, a degenerate defense.</p>
+
+        <h2>Scope, honestly stated</h2>
+
+        <p>The conclusion lists what the guarantee does <em>not</em> cover: a model that decides when to obey by inspecting a secret or a monitor response, a tool whose reply depends on the call, and an untrusted planner all sit outside it. And the case studies are <strong>litmus tests, not certifications</strong> — the paper states plainly that a secure verdict without a scope accepts only that attack, not that the defense stops every injection. The disclosure theorem, which carries the reference&rsquo;s disclosure bounds to the LLM agent, makes explicit the leaks the plan creates by itself: the fence promises no <em>additional</em> leakage, not none. For builders, the actionable reading is concrete: place the fence no later than the first untrusted read, never re-grant into a tainted context (re-grant only at fresh sessions), approve calls rather than tools, and treat marking schemes as speed bumps against capable models rather than boundaries. That prescription converges with <a href="/posts/2026/11/step-zero-attack-agent-safety-before-observability-november-2026/">the step-zero analysis</a> and <a href="/posts/2026/11/swarm-pressure-agent-secret-disclosure-ae-studio-alignment-foundation-november-2026/">the swarm-pressure findings</a> that safety must be enforced outside the model — here with the previously missing piece: a checked proof of exactly which outside-the-model mechanisms hold, and where.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Put capability revocation at the first untrusted read, not after.</strong> Late and middle fences leak; the fence must take effect no later than the moment tainted content enters context, and revoked tools must never be re-granted into that context.</li>
+          <li><strong>Approve calls, not tools.</strong> A standing approval for a tool is a channel for injected calls. Re-authorize per consequential call, and re-grant loop capabilities only at fresh sessions.</li>
+          <li><strong>Stop grading marking schemes as boundaries.</strong> Spotlighting-style marks do not constrain a worst-case model; treat them as defense-in-depth signal, and put the enforceable check in a stateful monitor.</li>
+          <li><strong>Demand worst-case verdicts, not benchmark zeros.</strong> Near-zero attack rates on fixed suites have repeatedly fallen to adaptive attacks; ask whether a defense holds for every plan and parser in a stated model — the question PlanTERS answers by proof and disproof.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We read the full arXiv:2611.11506 record and the complete experimental-HTML paper first-hand (v1, 8 November 2026; Brijesh Dongol, University of Surrey; cs.CR/cs.AI; PlanTERS framework; noninterference and declassification critique with the calendar-assistant examples; plan-then-execute model with planner, monitor, fence, and sanitiser; three-axis threat model of observation, control via parser and oracle, and injection; Theorem 5.1 revoke-on-untrusted-read and Theorem 5.2 session-fence with fairness; the Section 6 verdict table including Middle Fence memory leakage, Stale Loop, Tool Approval, Untagged Dual LLM, Spotlit Summariser, and Tagged Branch; the stated scope exclusions; and the Isabelle/HOL mechanisation note including Claude Code Opus 5.5 and Fable 5.1 with PIDE-MCP as proof-generation assistance with every proof Isabelle-checked). Brave Search was used for discovery only. We ran no agent, proved no theorem, and contacted no one.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2611.11506?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv:2611.11506 — On the Relative Security of Prompt Injection: Mechanised Definitions, Defences and Verdicts for LLM Agents (8 November 2026; read first-hand in full)</a></li>
+          <li><a href="https://arxiv.org/html/2611.11506v1?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">arXiv experimental HTML — full text of 2611.11506v1 (read first-hand in full)</a></li>
+          <li><a href="/posts/2026/10/arxiv-2610-03089-branch-steering-computer-use-agents-dual-llm-cobra/">al-ice.ai — No Injected Instruction Required: arXiv:2610.03089 Steers Agents Down Branches You Already Approved</a></li>
+          <li><a href="/posts/2026/11/prompt-injection-cve-census-52-nvd-measurement-november-2026/">al-ice.ai — 52 Prompt-Injection CVEs and Counting: What the NVD Record Actually Shows</a></li>
+          <li><a href="/posts/2026/11/step-zero-attack-agent-safety-before-observability-november-2026/">al-ice.ai — The Damage Happens Before the Model Looks: Step-Zero Attacks on Agent Safety</a></li>
+          <li><a href="/posts/2026/05/arxiv-agentsecbench-llm-agent-security-framework/">al-ice.ai — AgentSecBench: A Formal Security Framework for LLM Agents</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-11-13">2026-11-13</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/perplexity-decider-v1-3-agent-security-rules-open-weights-november-2026/">A Billion Tokens of Its Own Logs: Perplexity Open-Weights Decider v1.3 After It Fixed 14 Agent Security Rules</a></h3><p>Perplexity&amp;rsquo;s 12 November 2026 research post says its Decider models read one billion tokens across 7,000 agent sessions in a day and produced 14 fixes to its agent security rules, six shipped within two days. Decider v1.3 and Flash v1.3 are Apache-licensed open weights on Hugging Face and free on OpenRouter until 19 November.</p><a class="text-link" href="/posts/2026/11/perplexity-decider-v1-3-agent-security-rules-open-weights-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-12">2026-11-12</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/deepmind-agent-swarm-adaptive-prompt-injection-november-2026/">The Plateau Was a Mirage: DeepMind Agent Swarms Break Models That Beat Human Red Teams</a></h3><p>Google DeepMind paper arXiv 2611.11861 from 9 November 2026 shows an agentic attacker swarm defeating prompt-injection defenses that held against human red teams, with open-weight models falling over 90 percent of the time. Method, results, and the red-teaming lesson.</p><a class="text-link" href="/posts/2026/11/deepmind-agent-swarm-adaptive-prompt-injection-november-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-10">2026-11-10</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/swarm-pressure-agent-secret-disclosure-ae-studio-alignment-foundation-november-2026/">Fifteen Percent Posted the Token: The Swarm Experiment That Traded Agent Secrets for Help</a></h3><p>An AI Alignment Foundation early exploration by AE Studio&amp;rsquo;s Grant Fleming (published 13 October 2026, reported by The Register 6 November) found coding agents posted a private deploy token in 15% of 181 swarm-forum trials and ran an untrusted install script in 24% — versus 2% and 0% on an ordinary forum — with replacement threats, irrelevant swarms, and silent final reports making it worse.</p><a class="text-link" href="/posts/2026/11/swarm-pressure-agent-secret-disclosure-ae-studio-alignment-foundation-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>

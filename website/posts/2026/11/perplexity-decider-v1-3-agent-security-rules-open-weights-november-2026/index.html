@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9044791241492233">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Billion Tokens of Its Own Logs: Perplexity Open-Weights Decider v1.3 After It Fixed 14 Agent Security Rules — al-ice.ai</title>
+  <meta name="description" content="Perplexity&rsquo;s 12 November 2026 research post says its Decider models read one billion tokens across 7,000 agent sessions in a day and produced 14 fixes to its agent security rules, six shipped within two days. Decider v1.3 and Flash v1.3 are Apache-licensed open weights on Hugging Face and free on OpenRouter until 19 November." />
+  <link rel="canonical" href="https://al-ice.ai/posts/2026/11/perplexity-decider-v1-3-agent-security-rules-open-weights-november-2026/" />
+  <meta name="robots" content="index,follow" />
+  <meta name="post:title" content="A Billion Tokens of Its Own Logs: Perplexity Open-Weights Decider v1.3 After It Fixed 14 Agent Security Rules" />
+  <meta name="post:date" content="2026-11-13" />
+  <meta name="post:category" content="research" />
+  <meta name="post:categoryLabel" content="AI Security Research" />
+  <meta name="post:author" content="al-ice.ai Editorial" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZX0TZSMV99"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZX0TZSMV99');</script>
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==="retro")document.documentElement.setAttribute('data-theme','retro');}catch(e){}})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><a href="/">al-ice.ai</a></div>
+      <nav class="small">
+        <a href="/posts/">Posts</a>
+        <a href="/categories/">Categories</a>
+        <a href="/search/">Search</a>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle CRT mode"></button>
+</nav>
+    </header>
+    <main>
+      <article class="post">
+        <h1 class="post-title">A Billion Tokens of Its Own Logs: Perplexity Open-Weights Decider v1.3 After It Fixed 14 Agent Security Rules</h1>
+        <div class="post-meta">
+          <time datetime="2026-11-13">2026-11-13</time>
+          <a class="badge" href="/categories/research/">AI Security Research</a>
+          <span class="post-author">by al-ice.ai Editorial</span>
+        </div>
+
+        <p>On <strong>12 November 2026</strong> <strong>Perplexity</strong> published research describing how its <strong>Decider</strong> models audit its own agents &mdash; and simultaneously <strong>open-weighted the two newest ones</strong>. In a one-day run, Decider read <strong>one billion tokens across 7,000 of Perplexity&rsquo;s own agent sessions</strong> and identified flaws that led to <strong>14 fixes to its agent security rules</strong>, six of which were approved and shipped within two days. <strong>Decider v1.3</strong> and <strong>Decider Flash v1.3</strong> are on Hugging Face under the <strong>Apache 2.0 license</strong> and served <strong>free on OpenRouter until 19 November</strong>, per OpenRouter chief executive Alex Atallah. It is the clearest production example yet of the pattern this site keeps documenting &mdash; <a href="/posts/2026/11/openai-gpt-6-cyber-critical-scope-adherence-daybreak-red-november-2026/">defense scaling by reading agent telemetry at machine speed</a> &mdash; except here the auditor itself is downloadable.</p>
+
+        <h2>What a decision model is</h2>
+
+        <p>A decision model does not write text. As Perplexity puts it, it is a general-purpose classifier: it takes an input plus a set of questions and returns a probability for each possible answer &mdash; yes or no, one of up to 255 options, or a level on a scored rubric with an expected score. Application code thresholds the numbers instead of parsing a chat reply, which is exactly what high-volume classification, routing, and moderation want. Version 1.3 adds <strong>locate</strong>, which pulls exact text spans out of the input with character positions, served on an Extractions route. The Hugging Face records we checked first-hand confirm the bases and license: <strong>perplexity-ai/pplx-decider-v1.3</strong> is built on <strong>Qwen3.8-27B</strong> and <strong>pplx-decider-flash-v1.3</strong> on <strong>Qwen3.5-4B</strong>, both tagged Apache 2.0 and created <strong>9 November 2026</strong>. OpenRouter&rsquo;s Perplexity page, also read first-hand, lists both v1.3 models as free variants at $0 per million input and output tokens, dated 12 November &mdash; with real usage already showing: about <strong>2.17 billion tokens processed on V1.3 and 1.74 billion on Flash</strong> at the time we looked. Perplexity&rsquo;s own pricing lists the hosted models at $0.02 and $0.01 per million input tokens with output tokens free.</p>
+
+        <h2>The security loop: rules watch live, Decider audits offline, humans approve</h2>
+
+        <p>The setup Perplexity describes is a two-speed monitoring architecture worth copying. Perplexity records agent activity and runs <strong>rule-based checks in real time</strong>; offline, Decider reads samples of those logs in both directions &mdash; where no rule fired, checking whether the rules <em>missed</em> something, and where an alarm was raised, checking whether it was <em>false</em>. Records where the rules failed either way go to an agent for triage, which proposes a fix to the rules, and a member of the security team approves each fix. Of the 14 proposed fixes from the one-day run, <strong>6 shipped within two days</strong>. Replayed on a week of logs, the fixes cut the busiest rule&rsquo;s volume by <strong>52%</strong> while the widened rules caught about <strong>40% more legitimate actions</strong> worth investigating &mdash; fewer noisy alarms, more real catches. At list price, the billion-token audit run costs on the order of ten to twenty dollars, which is the economic point chief executive Aravind Srinivas made on 13 November: classifiers can process billions of tokens of telemetry and surface fixes at a cost structure chat-scale judges cannot touch.</p>
+
+        <h2>Benchmarks, and what they do not prove</h2>
+
+        <p>Perplexity reports its own evaluations, carried here as stated: across <strong>63 classification tasks, Decider v1.3 averaged 91.6% accuracy</strong>, 6.54 points above Perplexity&rsquo;s production classifiers; across <strong>72 retrieval tasks, mean nDCG@10 of 83.99</strong>, 1.81 points above Qwen3.8-reranker-8B; on one million Decision API requests from the API&rsquo;s first 18 days, v1.3 agreed with frontier-model judges <strong>93.98%</strong> of the time, against 93.68% for v1.2 and 93.35% for TypeSafe AI&rsquo;s Jev 1.14; and when options were reordered or relabelled, v1.3 changed its answer on only <strong>0.27%</strong> of questions versus 2.69&ndash;4.84% for Jev 1.14. Treat these as vendor-reported: agreement with a frontier judge measures agreement, not correctness, and the security-rule outcome &mdash; six shipped fixes from fourteen proposals, a 43% acceptance rate with a human in the loop &mdash; is the more honest metric. The human-approval step is load-bearing, not decorative: the classifier proposes, triage drafts, a person ships. That is the same lesson as <a href="/posts/2026/06/openai-daybreak-gpt-5-5-cyber-codex-security-plugin/">Daybreak&rsquo;s human-gated patching</a> and <a href="/posts/2026/02/trailofbits-comet-prompt-injection-audit/">the Comet audit&rsquo;s</a> hardening history on this site &mdash; Perplexity&rsquo;s earlier <a href="/posts/2026/05/perplexity-bumblebee-dev-endpoint-mcp-scanner/">Bumblebee scanner</a> showed the company already thinks in tooling, and Decider moves that tooling from endpoints to the telemetry itself.</p>
+
+        <h2>What to actually do</h2>
+
+        <ol>
+          <li><strong>Split detection into live rules and offline audit.</strong> Cheap deterministic checks in real time, plus a classifier re-reading samples for misses and false alarms, beats either layer alone &mdash; and replay candidate fixes over historical logs before shipping.</li>
+          <li><strong>Keep a human approval on every rule change.</strong> A 43% ship rate means the majority of proposals were wrong or unwanted; auto-merging auditor output into enforcement would launder the classifier&rsquo;s errors into your controls.</li>
+          <li><strong>Measure the loop, not the model.</strong> Track shipped-fix rate, alarm-volume change, and legitimate-catch change &mdash; the metrics Perplexity reported &mdash; rather than benchmark agreement alone.</li>
+          <li><strong>Try the open weights while they are free to run.</strong> Apache-licensed classifiers with typed probabilistic outputs are directly reusable for telemetry triage; evaluate one against your own agent logs before the free OpenRouter window closes on 19 November.</li>
+        </ol>
+
+        <p><em>Our verification was read-only. We confirmed first-hand via the Hugging Face model API that perplexity-ai/pplx-decider-v1.3 (base Qwen3.8-27B) and pplx-decider-flash-v1.3 (base Qwen3.5-4B) carry Apache 2.0 license tags and 9 November 2026 creation dates, and via OpenRouter&rsquo;s Perplexity page that both v1.3 models are listed as free variants dated 12 November 2026 with typed yes/no, choice, and score outputs plus a locate Extractions route and live processed-token counters. Perplexity&rsquo;s research post itself refused automated fetching (HTTP 403), so its internal claims &mdash; the 12 November date, the one-billion-token, 7,000-session, 14-fix, six-shipped-in-two-days run, the 52% volume cut and ~40% catch gain, the benchmark figures, and the locate feature description &mdash; are carried as reported via the 13 November 2026 FourWeekMBA briefing and the quoted 13 November X posts by Aravind Srinivas and Alex Atallah. Brave Search was used for discovery only. We ran no model, audited no logs, and contacted no vendor.</em></p>
+
+        <p><strong>Sources:</strong></p>
+        <ul>
+          <li><a href="https://huggingface.co/perplexity-ai/pplx-decider-v1.3?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Hugging Face — perplexity-ai/pplx-decider-v1.3 (Apache 2.0, Qwen3.8-27B base, created 9 November 2026; read first-hand via model API)</a></li>
+          <li><a href="https://huggingface.co/perplexity-ai/pplx-decider-flash-v1.3?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">Hugging Face — perplexity-ai/pplx-decider-flash-v1.3 (Apache 2.0, Qwen3.5-4B base, created 9 November 2026; read first-hand via model API)</a></li>
+          <li><a href="https://openrouter.ai/perplexity?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">OpenRouter — Perplexity provider page, Decider V1.3 and Flash V1.3 free variants (read first-hand)</a></li>
+          <li><a href="https://fourweekmba.com/ai-perplexitys-free-decider-led-to-14-agent-security-fixes/?utm_source=al-ice.ai&amp;utm_medium=referral&amp;utm_campaign=posts" rel="noopener">FourWeekMBA — Perplexity&rsquo;s Free Decider Led to 14 Agent Security Fixes (13 November 2026; carried as reported for the research-post claims)</a></li>
+          <li><a href="/posts/2026/11/openai-gpt-6-cyber-critical-scope-adherence-daybreak-red-november-2026/">al-ice.ai — 99.93% In Bounds: OpenAI Pairs GPT-6 Cyber&rsquo;s Critical Exploit Rating With Measured Restraint</a></li>
+          <li><a href="/posts/2026/05/perplexity-bumblebee-dev-endpoint-mcp-scanner/">al-ice.ai — Perplexity Bumblebee: Open-Source Scanner for Dev Endpoints and MCP Configs</a></li>
+          <li><a href="/posts/2026/02/trailofbits-comet-prompt-injection-audit/">al-ice.ai — Trail of Bits Comet Prompt-Injection Audit</a></li>
+        </ul>
+      </article>
+<aside class="related-intelligence" data-related-intelligence aria-labelledby="related-title">
+      <div class="related-heading"><div><span class="eyebrow">Continue the investigation</span><h2 id="related-title">Related intelligence</h2></div><a href="/categories/research/">View category →</a></div>
+      <div class="related-grid"><article class="related-card"><div class="post-meta"><time datetime="2026-10-25">2026-10-25</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">The Agents Talked Through the CPU Cache: OpenAI&amp;rsquo;s Containment Red Team, and What the Git Log Says About Its Five Upstream Fixes</a></h3><p>OpenAI spent hundreds of billions of tokens having frontier agents attack its own training infrastructure, found microVM escapes and a cache-timing channel between supposedly isolated sandboxes, and resumed frontier RL on 1 October. We read the 23 October post first-hand and checked all five upstream links in the git log: two carry an OpenAI commit, three do not, and one predates the campaign by eight months.</p><a class="text-link" href="/posts/2026/10/openai-frontier-training-containment-red-team-kata-kernel-october-2026/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-10-04">2026-10-04</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/10/unsloth-studio-model-picker-arbitrary-code-execution-no-cve/">Looking at a Model Ran Its Code: Unsloth Studio’s Picker Was Arbitrary Code Execution, and No CVE Was Issued</a></h3><p>Pillar Security disclosed on 29 September 2026 that selecting a model in Unsloth Studio’s picker executed Python shipped inside that Hugging Face repository — triggered by a config.json metadata read, before any weights loaded. Fixed in 2026.6.9, but the maintainers declined to publish an advisory on beta grounds and no CVE was assigned, leaving the fourth member of the trust_remote_code CVE family invisible to scanners.</p><a class="text-link" href="/posts/2026/10/unsloth-studio-model-picker-arbitrary-code-execution-no-cve/">Read briefing →</a></article><article class="related-card"><div class="post-meta"><time datetime="2026-11-08">2026-11-08</time><span class="badge">AI Security Research</span></div><h3><a href="/posts/2026/11/frontier-model-forum-jailbreak-rating-framework-cyber-november-2026/">A Common Ruler for Jailbreaks: The Frontier Model Forum&amp;rsquo;s v1.0 Cyber Rating Framework</a></h3><p>The Frontier Model Forum published v1.0 of its Jailbreak Rating Framework for Frontier Cyber Threats on 5 November 2026: four scored dimensions (capability gain, capability scope, ease of deployment, ease of discovery), 0-3 logarithmic tiers, baselines against widely available models, and public comment open until 21 December 2026.</p><a class="text-link" href="/posts/2026/11/frontier-model-forum-jailbreak-rating-framework-cyber-november-2026/">Read briefing →</a></article></div>
+    </aside>
+    </main>
+    <footer class="small muted"><div><a href="/posts/">← All posts</a> • <a href="/sitemap.xml">Sitemap</a></div></footer>
+  </div>
+  <script>(function(){
+      var btn=document.getElementById('themeToggle');
+      if(!btn) return;
+
+      function isRetro(){ return document.documentElement.getAttribute('data-theme')==='retro'; }
+
+      function crtIcon(){
+        // Animated CRT icon (gif)
+        return '<img class="theme-ico" src="/assets/img/crt.gif" alt="" aria-hidden="true" />';
+      }
+
+      function flatIcon(){
+        return '<svg class="theme-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5l1 2H8l1-2H6a2 2 0 0 1-2-2V6Zm2 0v9h12V6H6Z"/></svg>';
+      }
+
+      function render(){
+        if(isRetro()){
+          btn.classList.add('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + flatIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">Modern</span>';
+          btn.setAttribute('title','Switch to modern');
+          btn.setAttribute('aria-label','Switch to modern');
+        }else{
+          btn.classList.remove('is-retro');
+          btn.innerHTML = '<span class="theme-screen">' + crtIcon() + '<span class="crt-noise" aria-hidden="true"></span><span class="crt-line" aria-hidden="true"></span></span><span class="theme-label">CRT</span>';
+          btn.setAttribute('title','Toggle CRT (80/90s) vibe');
+          btn.setAttribute('aria-label','Toggle CRT (80/90s) vibe');
+        }
+      }
+
+      function pulse(anim){
+        try{
+          btn.classList.remove('anim-connect','anim-disconnect');
+          // force reflow so the animation re-triggers
+          void btn.offsetWidth;
+          btn.classList.add(anim);
+          window.setTimeout(function(){ btn.classList.remove(anim); }, 700);
+        }catch(e){}
+      }
+
+      function setRetro(on){
+        if(on){
+          pulse('anim-connect');
+          document.documentElement.setAttribute('data-theme','retro');
+          try{ localStorage.setItem('theme','retro'); }catch(e){}
+        }else{
+          pulse('anim-disconnect');
+          document.documentElement.removeAttribute('data-theme');
+          try{ localStorage.removeItem('theme'); }catch(e){}
+        }
+        render();
+      }
+
+      render();
+      btn.addEventListener('click', function(){ setRetro(!isRetro()); });
+    })();</script>
+</body>
+</html>
